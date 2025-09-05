@@ -1,20 +1,24 @@
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
 import { NextResponse } from 'next/server';
 
 import connectDB from '../db';
-import { User } from '../models';
+import { User, Tenant } from '../models';
 import { verifyToken, type JWTPayload } from './jwt';
 
 // ----------------------------------------------------------------------
 
 export interface AuthenticatedRequest extends NextRequest {
   user: JWTPayload;
+  tenant?: any;
+  tenantId?: string;
 }
 
 // ----------------------------------------------------------------------
 
-export const withAuth = (handler: (req: AuthenticatedRequest) => Promise<NextResponse>) => async (req: NextRequest): Promise<NextResponse> => {
+export const withAuth =
+  (handler: (req: AuthenticatedRequest) => Promise<NextResponse>) =>
+  async (req: NextRequest): Promise<NextResponse> => {
     try {
       // Get token from Authorization header
       const authHeader = req.headers.get('authorization');
@@ -42,9 +46,11 @@ export const withAuth = (handler: (req: AuthenticatedRequest) => Promise<NextRes
       }
 
       // Add user info to request
-      (req as AuthenticatedRequest).user = payload;
+      const authenticatedReq = req as AuthenticatedRequest;
+      authenticatedReq.user = payload;
+      authenticatedReq.tenantId = payload.tenantId;
 
-      return handler(req as AuthenticatedRequest);
+      return handler(authenticatedReq);
     } catch (error) {
       console.error('Auth middleware error:', error);
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
@@ -53,7 +59,9 @@ export const withAuth = (handler: (req: AuthenticatedRequest) => Promise<NextRes
 
 // ----------------------------------------------------------------------
 
-export const withRole = (allowedRoles: string[]) => (handler: (req: AuthenticatedRequest) => Promise<NextResponse>) => withAuth(async (req: AuthenticatedRequest) => {
+export const withRole =
+  (allowedRoles: string[]) => (handler: (req: AuthenticatedRequest) => Promise<NextResponse>) =>
+    withAuth(async (req: AuthenticatedRequest) => {
       if (!allowedRoles.includes(req.user.role)) {
         return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
       }
@@ -63,8 +71,9 @@ export const withRole = (allowedRoles: string[]) => (handler: (req: Authenticate
 
 // ----------------------------------------------------------------------
 
-export const withTenant = (handler: (req: AuthenticatedRequest) => Promise<NextResponse>) => withAuth(async (req: AuthenticatedRequest) => 
+export const withTenant = (handler: (req: AuthenticatedRequest) => Promise<NextResponse>) =>
+  withAuth(async (req: AuthenticatedRequest) =>
     // Tenant ID is already verified in withAuth
     // Additional tenant-specific logic can be added here
-     handler(req)
+    handler(req)
   );

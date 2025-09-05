@@ -104,8 +104,8 @@ export function UserTableToolbar({ filters, options, onResetPage }: Props) {
               slotProps: { paper: { sx: { maxHeight: 240 } } },
             }}
           >
-            {options.roles.map((option) => (
-              <MenuItem key={option} value={option}>
+            {options.roles.map((option, idx) => (
+              <MenuItem key={`${option}-${idx}`} value={option}>
                 <Checkbox
                   disableRipple
                   size="small"

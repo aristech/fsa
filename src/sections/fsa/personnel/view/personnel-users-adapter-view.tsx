@@ -4,12 +4,11 @@ import type { TableHeadCellProps } from 'src/components/table';
 import type { IUserItem, IUserTableFilters } from 'src/types/user';
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { varAlpha } from 'minimal-shared/utils';
 import { useBoolean, useSetState } from 'minimal-shared/hooks';
 
+import { useTenantAPI } from 'src/hooks/use-tenant';
+
 import Box from '@mui/material/Box';
-import Tab from '@mui/material/Tab';
-import Tabs from '@mui/material/Tabs';
 import Card from '@mui/material/Card';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
@@ -22,7 +21,6 @@ import { RouterLink } from 'src/routes/components';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 
-import { Label } from 'src/components/label';
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
@@ -40,23 +38,18 @@ import {
   TablePaginationCustom,
 } from 'src/components/table';
 
-import { UserTableRow } from 'src/sections/user/user-table-row';
+import { PersonnelUserTableRow } from '../list/personnel-user-table-row';
 import { UserTableToolbar } from 'src/sections/user/user-table-toolbar';
+import { PersonnelCreateView } from '../create/personnel-create-view';
 import { UserTableFiltersResult } from 'src/sections/user/user-table-filters-result';
 
 // ----------------------------------------------------------------------
 
-const STATUS_OPTIONS = [
-  { value: 'all', label: 'All' },
-  { value: 'active', label: 'Active' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'banned', label: 'Inactive' },
-];
+// Status tabs removed
 
 const TABLE_HEAD: TableHeadCellProps[] = [
   { id: 'name', label: 'Name' },
   { id: 'phoneNumber', label: 'Phone number', width: 180 },
-  { id: 'company', label: 'Company', width: 220 },
   { id: 'role', label: 'Role', width: 180 },
   { id: 'status', label: 'Status', width: 100 },
   { id: '', width: 88 },
@@ -106,45 +99,81 @@ function mapPersonnelToUserItem(person: PersonnelApi): { row: IUserItem; editHre
 
 export function PersonnelUsersAdapterView() {
   const table = useTable();
+  const { getURL, tenantId } = useTenantAPI();
 
   const confirmDialog = useBoolean();
+  const createDialog = useBoolean();
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [tableData, setTableData] = useState<IUserItem[]>([]);
   const [editHrefs, setEditHrefs] = useState<Record<string, string>>({});
-  const [roleOptions, setRoleOptions] = useState<string[]>([]);
+  const [roleOptions, setRoleOptions] = useState<{ id: string; name: string }[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
 
   const filters = useSetState<IUserTableFilters>({ name: '', role: [], status: 'all' });
   const { state: currentFilters, setState: updateFilters } = filters;
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [personnelRes, rolesRes] = await Promise.all([
-          fetch('/api/v1/personnel/'),
-          fetch('/api/v1/roles/'),
-        ]);
+  const loadData = async () => {
+    try {
+      const apiPage = table.page + 1;
+      const apiLimit = table.rowsPerPage;
+      const statusQuery =
+        currentFilters.status && currentFilters.status !== 'all'
+          ? `&status=${currentFilters.status}`
+          : '';
+      // Map selected role name → role id for server query
+      const selectedRoleName = currentFilters.role[0];
+      const selectedRole = roleOptions.find((r) => r.name === selectedRoleName);
+      const roleQuery = selectedRole ? `&roleId=${encodeURIComponent(selectedRole.id)}` : '';
+      const searchQuery = currentFilters.name
+        ? `&q=${encodeURIComponent(currentFilters.name)}`
+        : '';
 
-        const personnelJson = await personnelRes.json();
-        const rolesJson = await rolesRes.json();
+      // Fetch personnel and roles with tenant scoping
+      const [personnelRes, rolesRes] = await Promise.all([
+        fetch(
+          getURL(
+            `/api/v1/personnel/?page=${apiPage}&limit=${apiLimit}${statusQuery}${roleQuery}${searchQuery}`
+          )
+        ),
+        fetch(getURL('/api/v1/roles/')),
+      ]);
 
-        if (Array.isArray(rolesJson?.data)) {
-          setRoleOptions(rolesJson.data.map((r: RoleApi) => r.name));
-        }
+      const personnelJson = await personnelRes.json();
+      const rolesJson = await rolesRes.json();
 
-        if (Array.isArray(personnelJson?.data)) {
-          const mapped = (personnelJson.data as PersonnelApi[]).map(mapPersonnelToUserItem);
-          setTableData(mapped.map((m) => m.row));
-          setEditHrefs(Object.fromEntries(mapped.map((m) => [m.row.id, m.editHref])));
-        }
-      } catch (err) {
-        // Silent fail; UI will show empty state
-        // eslint-disable-next-line no-console
-        console.error('Failed to load personnel/roles', err);
+      if (Array.isArray(rolesJson?.data)) {
+        setRoleOptions(rolesJson.data.map((r: RoleApi) => ({ id: r._id, name: r.name })));
       }
-    };
 
+      if (Array.isArray(personnelJson?.data)) {
+        const mapped = (personnelJson.data as PersonnelApi[]).map(mapPersonnelToUserItem);
+        setTableData(mapped.map((m) => m.row));
+        setEditHrefs(Object.fromEntries(mapped.map((m) => [m.row.id, m.editHref])));
+        if (typeof personnelJson.meta?.totalFiltered === 'number') {
+          setTotalCount(personnelJson.meta.totalFiltered);
+        } else {
+          setTotalCount(mapped.length);
+        }
+        // Update tab labels via statusCounts if needed
+      }
+    } catch (err) {
+      // Silent fail; UI will show empty state
+      // eslint-disable-next-line no-console
+      console.error('Failed to load personnel/roles', err);
+    }
+  };
+
+  useEffect(() => {
     loadData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    table.page,
+    table.rowsPerPage,
+    currentFilters.status,
+    currentFilters.role,
+    currentFilters.name,
+  ]);
 
   const dataFiltered = useMemo(
     () =>
@@ -164,16 +193,18 @@ export function PersonnelUsersAdapterView() {
   const notFound = (!dataFiltered.length && canReset) || !dataFiltered.length;
 
   const handleDeleteRow = useCallback(
-    (id: string) => {
-      const deleteRow = tableData.filter((row) => row.id !== id);
-
-      toast.success('Delete success!');
-
-      setTableData(deleteRow);
-
-      table.onUpdatePageDeleteRow(dataInPage.length);
+    async (id: string) => {
+      try {
+        const res = await fetch(getURL(`/api/v1/personnel/?id=${id}`), { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete');
+        setTableData((prev) => prev.filter((row) => row.id !== id));
+        table.onUpdatePageDeleteRow(dataInPage.length);
+        toast.success('Delete success!');
+      } catch (err) {
+        toast.error('Delete failed');
+      }
     },
-    [dataInPage.length, table, tableData]
+    [dataInPage.length, table]
   );
 
   const handleDeleteRows = useCallback(() => {
@@ -186,13 +217,7 @@ export function PersonnelUsersAdapterView() {
     table.onUpdatePageDeleteRows(dataInPage.length, dataFiltered.length);
   }, [dataFiltered.length, dataInPage.length, table, tableData]);
 
-  const handleFilterStatus = useCallback(
-    (event: React.SyntheticEvent, newValue: string) => {
-      table.onResetPage();
-      updateFilters({ status: newValue });
-    },
-    [updateFilters, table]
-  );
+  // Removed status tabs handler
 
   const renderConfirmDialog = () => (
     <ConfirmDialog
@@ -231,10 +256,9 @@ export function PersonnelUsersAdapterView() {
           ]}
           action={
             <Button
-              component={RouterLink}
-              href={paths.dashboard.user.new}
               variant="contained"
               startIcon={<Iconify icon="mingcute:add-line" />}
+              onClick={createDialog.onTrue}
             >
               Add personnel
             </Button>
@@ -243,48 +267,10 @@ export function PersonnelUsersAdapterView() {
         />
 
         <Card>
-          <Tabs
-            value={currentFilters.status}
-            onChange={handleFilterStatus}
-            sx={[
-              (theme) => ({
-                px: { md: 2.5 },
-                boxShadow: `inset 0 -2px 0 0 ${varAlpha(theme.vars.palette.grey['500Channel'], 0.08)}`,
-              }),
-            ]}
-          >
-            {STATUS_OPTIONS.map((tab) => (
-              <Tab
-                key={tab.value}
-                iconPosition="end"
-                value={tab.value}
-                label={tab.label}
-                icon={
-                  <Label
-                    variant={
-                      ((tab.value === 'all' || tab.value === currentFilters.status) && 'filled') ||
-                      'soft'
-                    }
-                    color={
-                      (tab.value === 'active' && 'success') ||
-                      (tab.value === 'pending' && 'warning') ||
-                      (tab.value === 'banned' && 'error') ||
-                      'default'
-                    }
-                  >
-                    {['active', 'pending', 'banned'].includes(tab.value)
-                      ? tableData.filter((user) => user.status === tab.value).length
-                      : tableData.length}
-                  </Label>
-                }
-              />
-            ))}
-          </Tabs>
-
           <UserTableToolbar
             filters={filters}
             onResetPage={table.onResetPage}
-            options={{ roles: roleOptions }}
+            options={{ roles: Array.from(new Set(roleOptions.map((r) => r.name))) }}
           />
 
           {canReset && (
@@ -322,7 +308,7 @@ export function PersonnelUsersAdapterView() {
                   order={table.order}
                   orderBy={table.orderBy}
                   headCells={TABLE_HEAD}
-                  rowCount={dataFiltered.length}
+                  rowCount={totalCount}
                   numSelected={table.selected.length}
                   onSort={table.onSort}
                   onSelectAllRows={(checked) =>
@@ -334,26 +320,20 @@ export function PersonnelUsersAdapterView() {
                 />
 
                 <TableBody>
-                  {dataFiltered
-                    .slice(
-                      table.page * table.rowsPerPage,
-                      table.page * table.rowsPerPage + table.rowsPerPage
-                    )
-                    .map((row) => (
-                      <UserTableRow
-                        key={row.id}
-                        row={row}
-                        selected={table.selected.includes(row.id)}
-                        onSelectRow={() => table.onSelectRow(row.id)}
-                        onDeleteRow={() => handleDeleteRow(row.id)}
-                        editHref={editHrefs[row.id] || paths.dashboard.user.list}
-                      />
-                    ))}
-
-                  <TableEmptyRows
-                    height={table.dense ? 56 : 56 + 20}
-                    emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered.length)}
-                  />
+                  {dataFiltered.map((row) => (
+                    <PersonnelUserTableRow
+                      key={row.id}
+                      row={row}
+                      selected={table.selected.includes(row.id)}
+                      onSelectRow={() => table.onSelectRow(row.id)}
+                      onDeleteRow={() => handleDeleteRow(row.id)}
+                      editHref="#"
+                      onEdit={() => {
+                        setEditingId(row.id);
+                        createDialog.onTrue();
+                      }}
+                    />
+                  ))}
 
                   <TableNoData notFound={notFound} />
                 </TableBody>
@@ -364,7 +344,7 @@ export function PersonnelUsersAdapterView() {
           <TablePaginationCustom
             page={table.page}
             dense={table.dense}
-            count={dataFiltered.length}
+            count={totalCount}
             rowsPerPage={table.rowsPerPage}
             onPageChange={table.onChangePage}
             onChangeDense={table.onChangeDense}
@@ -372,6 +352,19 @@ export function PersonnelUsersAdapterView() {
           />
         </Card>
       </DashboardContent>
+
+      <PersonnelCreateView
+        open={createDialog.value}
+        onClose={() => {
+          createDialog.onFalse();
+          setEditingId(null);
+        }}
+        onCreated={() => {
+          setEditingId(null);
+          loadData();
+        }}
+        personnelId={editingId}
+      />
 
       {renderConfirmDialog()}
     </>

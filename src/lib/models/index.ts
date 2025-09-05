@@ -11,3 +11,5 @@ export { Personnel, type IPersonnel } from './Personnel';
 export { WorkOrder, type IWorkOrder } from './WorkOrder';
 export { Technician, type ITechnician } from './Technician';
 export { Assignment, type IAssignment } from './Assignment';
+export { Skill, type ISkill } from './Skill';
+export { Certification, type ICertification } from './Certification';

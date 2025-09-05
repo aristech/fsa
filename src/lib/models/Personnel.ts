@@ -30,7 +30,9 @@ export interface IPersonnel extends Document {
     address: string;
     lastUpdated: Date;
   };
+  notes?: string;
   isActive: boolean;
+  status: 'active' | 'pending' | 'inactive' | 'banned';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -117,9 +119,20 @@ const PersonnelSchema: Schema = new Schema(
       address: { type: String },
       lastUpdated: { type: Date },
     },
+    notes: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     isActive: {
       type: Boolean,
       default: true,
+    },
+    status: {
+      type: String,
+      enum: ['active', 'pending', 'inactive', 'banned'],
+      default: 'pending',
+      index: true,
     },
   },
   {

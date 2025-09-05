@@ -155,7 +155,6 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         <BlockLabel>Reporter</BlockLabel>
         <Avatar alt={task.reporter.name} src={task.reporter.avatarUrl} />
       </Box>
-
       {/* Assignee */}
       <Box sx={{ display: 'flex' }}>
         <BlockLabel sx={{ height: 40, lineHeight: '40px' }}>Assignee</BlockLabel>
@@ -186,7 +185,6 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           />
         </Box>
       </Box>
-
       {/* Label */}
       <Box sx={{ display: 'flex' }}>
         <BlockLabel sx={{ height: 24, lineHeight: '24px' }}>Labels</BlockLabel>
@@ -199,7 +197,6 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           </Box>
         )}
       </Box>
-
       {/* Due date */}
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <BlockLabel> Due date </BlockLabel>
@@ -237,13 +234,11 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           error={rangePicker.error}
         />
       </Box>
-
       {/* Priority */}
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <BlockLabel>Priority</BlockLabel>
         <KanbanDetailsPriority priority={priority} onChangePriority={handleChangePriority} />
       </Box>
-
       {/* Description */}
       <Box sx={{ display: 'flex' }}>
         <BlockLabel> Description </BlockLabel>
@@ -257,7 +252,6 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           slotProps={{ input: { sx: { typography: 'body2' } } }}
         />
       </Box>
-
       {/* Attachments */}
       <Box sx={{ display: 'flex' }}>
         <BlockLabel>Attachments</BlockLabel>

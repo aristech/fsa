@@ -1,4 +1,21 @@
-export type UserType = Record<string, any> | null;
+export type TenantType = {
+  _id: string;
+  name: string;
+  slug: string;
+  email: string;
+  isActive: boolean;
+} | null;
+
+export type UserType = {
+  _id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  tenantId: string;
+  tenant?: TenantType;
+  accessToken?: string;
+} | null;
 
 export type AuthState = {
   user: UserType;
@@ -7,6 +24,7 @@ export type AuthState = {
 
 export type AuthContextValue = {
   user: UserType;
+  tenant: TenantType;
   loading: boolean;
   authenticated: boolean;
   unauthenticated: boolean;
