@@ -19,7 +19,8 @@ export interface JWTPayload {
 
 // ----------------------------------------------------------------------
 
-export const generateToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): string => jwt.sign(payload, JWT_SECRET, {
+export const generateToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): string =>
+  jwt.sign(payload, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN,
   });
 
@@ -28,7 +29,7 @@ export const generateToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): string 
 export const verifyToken = (token: string): JWTPayload => {
   try {
     return jwt.verify(token, JWT_SECRET) as JWTPayload;
-  } catch (error) {
+  } catch {
     throw new Error('Invalid or expired token');
   }
 };
@@ -42,7 +43,5 @@ export const hashPassword = async (password: string): Promise<string> => {
 
 // ----------------------------------------------------------------------
 
-export const comparePassword = async (
-  password: string,
-  hashedPassword: string
-): Promise<boolean> => bcrypt.compare(password, hashedPassword);
+export const comparePassword = async (password: string, hashedPassword: string): Promise<boolean> =>
+  bcrypt.compare(password, hashedPassword);

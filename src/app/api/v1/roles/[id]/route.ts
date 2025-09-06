@@ -1,9 +1,9 @@
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
 import { z } from 'zod';
 import { NextResponse } from 'next/server';
 
-import { Role, Personnel } from 'src/lib/models';
+import { Role, Tenant, Personnel } from 'src/lib/models';
 
 // ----------------------------------------------------------------------
 
@@ -26,7 +26,12 @@ const updateRoleSchema = z.object({
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const tenantId = '68bacc230e20f67f2394e52f'; // Hardcoded for testing
+    // Get tenant ID from the first tenant (for demo purposes)
+    const tenant = await Tenant.findOne({ isActive: true });
+    if (!tenant) {
+      return NextResponse.json({ message: 'No active tenant found' }, { status: 404 });
+    }
+    const tenantId = tenant._id.toString();
 
     const role = await Role.findOne({
       _id: params.id,
@@ -53,7 +58,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   try {
     const body = await request.json();
     const validatedData = updateRoleSchema.parse(body);
-    const tenantId = '68bacc230e20f67f2394e52f'; // Hardcoded for testing
+
+    // Get tenant ID from the first tenant (for demo purposes)
+    const tenant = await Tenant.findOne({ isActive: true });
+    if (!tenant) {
+      return NextResponse.json({ message: 'No active tenant found' }, { status: 404 });
+    }
+    const tenantId = tenant._id.toString();
 
     // Check if role exists
     const existingRole = await Role.findOne({
@@ -108,7 +119,12 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const tenantId = '68bacc230e20f67f2394e52f'; // Hardcoded for testing
+    // Get tenant ID from the first tenant (for demo purposes)
+    const tenant = await Tenant.findOne({ isActive: true });
+    if (!tenant) {
+      return NextResponse.json({ message: 'No active tenant found' }, { status: 404 });
+    }
+    const tenantId = tenant._id.toString();
 
     const role = await Role.findOne({
       _id: params.id,

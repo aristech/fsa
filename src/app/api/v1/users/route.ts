@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    // eslint-disable-next-line no-console
+     
     console.error('Error fetching users:', error);
     return NextResponse.json({ success: false, message: 'Failed to fetch users' }, { status: 500 });
   }

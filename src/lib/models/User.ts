@@ -82,7 +82,7 @@ const UserSchema = new Schema<IUser>(
 // ----------------------------------------------------------------------
 
 // Indexes for better performance
-UserSchema.index({ tenantId: 1, email: 1 });
+// Note: email index is automatically created by unique: true
 UserSchema.index({ tenantId: 1, role: 1 });
 UserSchema.index({ isActive: 1 });
 

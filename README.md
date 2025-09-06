@@ -1,8 +1,35 @@
 ## Prerequisites
 
 - Node.js >=20 (Recommended)
+- MongoDB running on localhost:27017
+- Yarn package manager
 
-## Installation
+## Quick Setup
+
+For a fresh installation, simply run:
+
+```sh
+# 1. Install dependencies
+yarn install
+
+# 2. Start the development server (in one terminal)
+yarn dev
+
+# 3. Run the complete setup script (in another terminal)
+node setup-initial-data.js
+```
+
+That's it! The setup script will handle everything automatically.
+
+**Login Credentials:**
+- URL: http://localhost:8082
+- Email: admin@fsa-demo.com
+- Password: admin123
+- Tenant Slug: fsa-demo
+
+For detailed setup instructions, see [SETUP.md](./SETUP.md).
+
+## Manual Installation
 
 **Using Yarn (Recommended)**
 

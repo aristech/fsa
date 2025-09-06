@@ -1,9 +1,9 @@
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
 import { z } from 'zod';
 import { NextResponse } from 'next/server';
 
-import { Role } from 'src/lib/models';
+import { Role, Tenant } from 'src/lib/models';
 
 // ----------------------------------------------------------------------
 
@@ -17,20 +17,20 @@ const createRoleSchema = z.object({
   permissions: z.array(z.string()).optional(),
 });
 
-const updateRoleSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Role name is required')
-    .max(50, 'Role name must be less than 50 characters')
-    .optional(),
-  description: z.string().optional(),
-  color: z
-    .string()
-    .regex(/^#[0-9A-F]{6}$/i, 'Color must be a valid hex color code')
-    .optional(),
-  permissions: z.array(z.string()).optional(),
-  isActive: z.boolean().optional(),
-});
+// const updateRoleSchema = z.object({
+//   name: z
+//     .string()
+//     .min(1, 'Role name is required')
+//     .max(50, 'Role name must be less than 50 characters')
+//     .optional(),
+//   description: z.string().optional(),
+//   color: z
+//     .string()
+//     .regex(/^#[0-9A-F]{6}$/i, 'Color must be a valid hex color code')
+//     .optional(),
+//   permissions: z.array(z.string()).optional(),
+//   isActive: z.boolean().optional(),
+// });
 
 // ----------------------------------------------------------------------
 
@@ -38,7 +38,13 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const includeInactive = searchParams.get('includeInactive') === 'true';
-    const tenantId = '68bacc230e20f67f2394e52f'; // Hardcoded for testing
+
+    // Get tenant ID from the first tenant (for demo purposes)
+    const tenant = await Tenant.findOne({ isActive: true });
+    if (!tenant) {
+      return NextResponse.json({ message: 'No active tenant found' }, { status: 404 });
+    }
+    const tenantId = tenant._id.toString();
 
     const query: any = { tenantId };
     if (!includeInactive) {
@@ -63,7 +69,13 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = createRoleSchema.parse(body);
-    const tenantId = '68bacc230e20f67f2394e52f'; // Hardcoded for testing
+
+    // Get tenant ID from the first tenant (for demo purposes)
+    const tenant = await Tenant.findOne({ isActive: true });
+    if (!tenant) {
+      return NextResponse.json({ message: 'No active tenant found' }, { status: 404 });
+    }
+    const tenantId = tenant._id.toString();
 
     // Check if role name already exists for this tenant
     const existingRole = await Role.findOne({

@@ -15,6 +15,8 @@ import {
   FormControl,
 } from '@mui/material';
 
+import axios from 'src/lib/axios';
+
 // ----------------------------------------------------------------------
 
 interface PersonnelFiltersProps {
@@ -46,8 +48,8 @@ export function PersonnelFilters({
   useEffect(() => {
     const fetchRoles = async () => {
       try {
-        const response = await fetch('/api/v1/roles/');
-        const data = await response.json();
+        const response = await axios.get('/api/v1/roles/');
+        const data = response.data;
 
         if (data.success) {
           setRoles(data.data);

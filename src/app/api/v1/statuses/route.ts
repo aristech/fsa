@@ -1,4 +1,4 @@
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
 import { z } from 'zod';
 import { NextResponse } from 'next/server';
@@ -17,20 +17,20 @@ const createStatusSchema = z.object({
   order: z.number().int().min(0).optional(),
 });
 
-const updateStatusSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Status name is required')
-    .max(50, 'Status name must be less than 50 characters')
-    .optional(),
-  description: z.string().optional(),
-  color: z
-    .string()
-    .regex(/^#[0-9A-F]{6}$/i, 'Color must be a valid hex color code')
-    .optional(),
-  order: z.number().int().min(0).optional(),
-  isActive: z.boolean().optional(),
-});
+// const updateStatusSchema = z.object({
+//   name: z
+//     .string()
+//     .min(1, 'Status name is required')
+//     .max(50, 'Status name must be less than 50 characters')
+//     .optional(),
+//   description: z.string().optional(),
+//   color: z
+//     .string()
+//     .regex(/^#[0-9A-F]{6}$/i, 'Color must be a valid hex color code')
+//     .optional(),
+//   order: z.number().int().min(0).optional(),
+//   isActive: z.boolean().optional(),
+// });
 
 // ----------------------------------------------------------------------
 

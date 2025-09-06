@@ -1,10 +1,10 @@
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
 import { z } from 'zod';
 import { NextResponse } from 'next/server';
 
 import connectDB from 'src/lib/db';
-import { User, Tenant } from 'src/lib/models';
+import { User, Tenant, Personnel } from 'src/lib/models';
 import { generateToken, comparePassword } from 'src/lib/auth/jwt';
 
 // ----------------------------------------------------------------------
@@ -46,6 +46,25 @@ export async function POST(req: NextRequest) {
     const isPasswordValid = await comparePassword(password, user.password);
     if (!isPasswordValid) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+
+    // Check if user has an active personnel record (for personnel users)
+    if (user.role === 'technician' || user.role === 'supervisor') {
+      const personnel = await Personnel.findOne({
+        userId: user._id,
+        tenantId: tenant._id,
+        isActive: true,
+      });
+
+      if (!personnel) {
+        return NextResponse.json(
+          {
+            error:
+              'Your account has been deactivated. Please contact your administrator for assistance.',
+          },
+          { status: 403 }
+        );
+      }
     }
 
     // Update last login

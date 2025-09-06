@@ -3,10 +3,8 @@
 import type { TableHeadCellProps } from 'src/components/table';
 import type { IUserItem, IUserTableFilters } from 'src/types/user';
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useBoolean, useSetState } from 'minimal-shared/hooks';
-
-import { useTenantAPI } from 'src/hooks/use-tenant';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -17,8 +15,10 @@ import TableBody from '@mui/material/TableBody';
 import IconButton from '@mui/material/IconButton';
 
 import { paths } from 'src/routes/paths';
-import { RouterLink } from 'src/routes/components';
 
+import { useTenantAPI } from 'src/hooks/use-tenant';
+
+import axios from 'src/lib/axios';
 import { DashboardContent } from 'src/layouts/dashboard';
 
 import { toast } from 'src/components/snackbar';
@@ -28,20 +28,19 @@ import { ConfirmDialog } from 'src/components/custom-dialog';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 import {
   useTable,
-  emptyRows,
   rowInPage,
   TableNoData,
   getComparator,
-  TableEmptyRows,
   TableHeadCustom,
   TableSelectedAction,
   TablePaginationCustom,
 } from 'src/components/table';
 
-import { PersonnelUserTableRow } from '../list/personnel-user-table-row';
 import { UserTableToolbar } from 'src/sections/user/user-table-toolbar';
-import { PersonnelCreateView } from '../create/personnel-create-view';
 import { UserTableFiltersResult } from 'src/sections/user/user-table-filters-result';
+
+import { PersonnelCreateView } from '../create/personnel-create-view';
+import { PersonnelUserTableRow } from '../list/personnel-user-table-row';
 
 // ----------------------------------------------------------------------
 
@@ -52,6 +51,7 @@ const TABLE_HEAD: TableHeadCellProps[] = [
   { id: 'phoneNumber', label: 'Phone number', width: 180 },
   { id: 'role', label: 'Role', width: 180 },
   { id: 'status', label: 'Status', width: 100 },
+  { id: 'isActive', label: 'Active', width: 100 },
   { id: '', width: 88 },
 ];
 
@@ -88,6 +88,7 @@ function mapPersonnelToUserItem(person: PersonnelApi): { row: IUserItem; editHre
     country: '',
     zipCode: '',
     isVerified: false,
+    isActive: person.isActive,
   };
 
   const editHref = user ? paths.dashboard.user.edit(user._id) : paths.dashboard.user.list;
@@ -125,25 +126,37 @@ export function PersonnelUsersAdapterView() {
       const selectedRoleName = currentFilters.role[0];
       const selectedRole = roleOptions.find((r) => r.name === selectedRoleName);
       const roleQuery = selectedRole ? `&roleId=${encodeURIComponent(selectedRole.id)}` : '';
+
+      // Debug logging
+      if (currentFilters.role.length > 0) {
+        console.log('Role filter debug:', {
+          selectedRoleName,
+          selectedRole,
+          roleOptions,
+          roleQuery,
+        });
+      }
       const searchQuery = currentFilters.name
         ? `&q=${encodeURIComponent(currentFilters.name)}`
         : '';
 
       // Fetch personnel and roles with tenant scoping
       const [personnelRes, rolesRes] = await Promise.all([
-        fetch(
+        axios.get(
           getURL(
             `/api/v1/personnel/?page=${apiPage}&limit=${apiLimit}${statusQuery}${roleQuery}${searchQuery}`
           )
         ),
-        fetch(getURL('/api/v1/roles/')),
+        axios.get(getURL('/api/v1/roles/')),
       ]);
 
-      const personnelJson = await personnelRes.json();
-      const rolesJson = await rolesRes.json();
+      const personnelJson = personnelRes.data;
+      const rolesJson = rolesRes.data;
 
       if (Array.isArray(rolesJson?.data)) {
-        setRoleOptions(rolesJson.data.map((r: RoleApi) => ({ id: r._id, name: r.name })));
+        const mappedRoles = rolesJson.data.map((r: RoleApi) => ({ id: r._id, name: r.name }));
+        console.log('Roles loaded:', mappedRoles);
+        setRoleOptions(mappedRoles);
       }
 
       if (Array.isArray(personnelJson?.data)) {
@@ -159,7 +172,7 @@ export function PersonnelUsersAdapterView() {
       }
     } catch (err) {
       // Silent fail; UI will show empty state
-      // eslint-disable-next-line no-console
+       
       console.error('Failed to load personnel/roles', err);
     }
   };

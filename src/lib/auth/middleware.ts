@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 import connectDB from '../db';
-import { User, Tenant } from '../models';
+import { User } from '../models';
 import { verifyToken, type JWTPayload } from './jwt';
 
 // ----------------------------------------------------------------------

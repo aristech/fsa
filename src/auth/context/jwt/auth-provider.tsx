@@ -42,7 +42,7 @@ export function AuthProvider({ children }: Props) {
       } else {
         setState({ user: null, loading: false });
       }
-    } catch (error) {
+    } catch {
       // Silently handle authentication errors as they're expected when no valid session exists
       setState({ user: null, loading: false });
     }

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
-import { Personnel, User, Role, Skill, Certification, Tenant } from '../lib/models';
+
+import { User, Role, Skill, Tenant, Personnel, Certification } from '../lib/models';
 
 // ----------------------------------------------------------------------
 

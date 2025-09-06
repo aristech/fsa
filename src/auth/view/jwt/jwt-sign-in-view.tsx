@@ -55,9 +55,9 @@ export function JwtSignInView() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const defaultValues: SignInSchemaType = {
-    email: 'admin@acme.com',
-    password: 'password123',
-    tenantSlug: 'acme-field-services',
+    email: 'admin@fsa-demo.com',
+    password: 'admin123',
+    tenantSlug: 'fsa-demo',
   };
 
   const methods = useForm({

@@ -1,8 +1,8 @@
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 
 import { NextResponse } from 'next/server';
 
-import { Project, WorkOrder, Assignment } from 'src/lib/models';
+import { Task, Project, WorkOrder, Assignment } from 'src/lib/models';
 
 // ----------------------------------------------------------------------
 
@@ -11,7 +11,13 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const start = searchParams.get('start');
     const end = searchParams.get('end');
-    const tenantId = '68bacc230e20f67f2394e52f'; // Actual tenant ID from database
+    // Get the active tenant dynamically
+    const { Tenant } = await import('src/lib/models');
+    const tenant = await Tenant.findOne({ isActive: true });
+    if (!tenant) {
+      return NextResponse.json({ message: 'No active tenant found' }, { status: 404 });
+    }
+    const tenantId = tenant._id.toString();
 
     // Fetch work orders with scheduled dates
     const workOrders = await WorkOrder.find({
@@ -54,111 +60,193 @@ export async function GET(request: NextRequest) {
       .populate('managerId', 'name email')
       .sort({ startDate: 1 });
 
-    // Transform work orders to calendar events
-    const workOrderEvents = workOrders.map((wo) => ({
-      id: `wo-${wo._id}`,
-      title: wo.title,
-      start: wo.scheduledDate,
-      end: wo.scheduledDate
-        ? new Date(new Date(wo.scheduledDate).getTime() + (wo.estimatedDuration || 60) * 60000)
-        : undefined,
-      allDay: false,
-      extendedProps: {
-        type: 'work-order',
-        status: wo.status,
-        priority: wo.priority,
-        category: wo.category,
-        customer: wo.customerId?.name || 'Unknown Customer',
-        description: wo.description,
-        location: wo.location,
-        estimatedDuration: wo.estimatedDuration,
+    // Fetch tasks with due dates
+    const tasks = await Task.find({
+      tenantId,
+      dueDate: {
+        $gte: start ? new Date(start) : new Date(),
+        $lte: end ? new Date(end) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       },
-      backgroundColor:
+    }).sort({ dueDate: 1 });
+
+    // Transform work orders to calendar events
+    const workOrderEvents = workOrders.map((wo) => {
+      const backgroundColor =
         wo.priority === 'urgent'
           ? '#f44336'
           : wo.priority === 'high'
             ? '#ff9800'
             : wo.priority === 'medium'
               ? '#2196f3'
-              : '#4caf50',
-      borderColor:
-        wo.priority === 'urgent'
-          ? '#d32f2f'
-          : wo.priority === 'high'
-            ? '#f57c00'
-            : wo.priority === 'medium'
-              ? '#1976d2'
-              : '#388e3c',
-    }));
+              : '#4caf50';
+
+      return {
+        id: `wo-${wo._id}`,
+        title: wo.title,
+        start: wo.scheduledDate,
+        end: wo.scheduledDate
+          ? new Date(new Date(wo.scheduledDate).getTime() + (wo.estimatedDuration || 60) * 60000)
+          : undefined,
+        allDay: false,
+        color: backgroundColor,
+        backgroundColor,
+        borderColor:
+          wo.priority === 'urgent'
+            ? '#d32f2f'
+            : wo.priority === 'high'
+              ? '#f57c00'
+              : wo.priority === 'medium'
+                ? '#1976d2'
+                : '#388e3c',
+        extendedProps: {
+          type: 'work-order',
+          status: wo.status,
+          priority: wo.priority,
+          category: wo.category,
+          customer: wo.customerId?.name || 'Unknown Customer',
+          description: wo.description,
+          location: wo.location,
+          estimatedDuration: wo.estimatedDuration,
+        },
+      };
+    });
 
     // Transform assignments to calendar events
-    const assignmentEvents = assignments.map((assignment) => ({
-      id: `assignment-${assignment._id}`,
-      title: `${assignment.technicianId?.name || 'Technician'} - ${assignment.workOrderId?.title || 'Work Order'}`,
-      start: assignment.scheduledStartDate,
-      end: assignment.scheduledEndDate,
-      allDay: false,
-      extendedProps: {
-        type: 'assignment',
-        status: assignment.status,
-        technician: assignment.technicianId?.name || 'Unknown Technician',
-        workOrder: assignment.workOrderId?.title || 'Unknown Work Order',
-        workOrderId: assignment.workOrderId?._id,
-        estimatedHours: assignment.estimatedHours,
-        actualHours: assignment.actualHours,
-      },
-      backgroundColor:
+    const assignmentEvents = assignments.map((assignment) => {
+      const backgroundColor =
         assignment.status === 'completed'
           ? '#4caf50'
           : assignment.status === 'in-progress'
             ? '#2196f3'
-            : '#ff9800',
-      borderColor:
-        assignment.status === 'completed'
-          ? '#388e3c'
-          : assignment.status === 'in-progress'
-            ? '#1976d2'
-            : '#f57c00',
-    }));
+            : '#ff9800';
+
+      return {
+        id: `assignment-${assignment._id}`,
+        title: `${assignment.technicianId?.name || 'Technician'} - ${assignment.workOrderId?.title || 'Work Order'}`,
+        start: assignment.scheduledStartDate,
+        end: assignment.scheduledEndDate,
+        allDay: false,
+        color: backgroundColor,
+        backgroundColor,
+        borderColor:
+          assignment.status === 'completed'
+            ? '#388e3c'
+            : assignment.status === 'in-progress'
+              ? '#1976d2'
+              : '#f57c00',
+        extendedProps: {
+          type: 'assignment',
+          status: assignment.status,
+          technician: assignment.technicianId?.name || 'Unknown Technician',
+          workOrder: assignment.workOrderId?.title || 'Unknown Work Order',
+          workOrderId: assignment.workOrderId?._id,
+          estimatedHours: assignment.estimatedHours,
+          actualHours: assignment.actualHours,
+        },
+      };
+    });
 
     // Transform projects to calendar events
-    const projectEvents = projects.map((project) => ({
-      id: `project-${project._id}`,
-      title: project.name,
-      start: project.startDate,
-      end: project.endDate,
-      allDay: true,
-      extendedProps: {
-        type: 'project',
-        status: project.status,
-        priority: project.priority,
-        customer: project.customerId?.name || 'Unknown Customer',
-        manager: project.managerId?.name || 'Unknown Manager',
-        budget: project.budget,
-        progress: project.progress,
-      },
-      backgroundColor:
+    const projectEvents = projects.map((project) => {
+      const backgroundColor =
         project.priority === 'urgent'
           ? '#f44336'
           : project.priority === 'high'
             ? '#ff9800'
             : project.priority === 'medium'
               ? '#2196f3'
-              : '#4caf50',
-      borderColor:
-        project.priority === 'urgent'
-          ? '#d32f2f'
-          : project.priority === 'high'
-            ? '#f57c00'
-            : project.priority === 'medium'
+              : '#4caf50';
+
+      return {
+        id: `project-${project._id}`,
+        title: project.name,
+        start: project.startDate,
+        end: project.endDate,
+        allDay: true,
+        color: backgroundColor,
+        backgroundColor,
+        borderColor:
+          project.priority === 'urgent'
+            ? '#d32f2f'
+            : project.priority === 'high'
+              ? '#f57c00'
+              : project.priority === 'medium'
+                ? '#1976d2'
+                : '#388e3c',
+        extendedProps: {
+          type: 'project',
+          status: project.status,
+          priority: project.priority,
+          customer: project.customerId?.name || 'Unknown Customer',
+          manager: project.managerId?.name || 'Unknown Manager',
+          budget: project.budget,
+          progress: project.progress,
+        },
+      };
+    });
+
+    // Transform tasks to calendar events
+    const taskEvents = tasks.map((task) => {
+      const backgroundColor =
+        task.status === 'done'
+          ? '#4caf50'
+          : task.status === 'in-progress'
+            ? '#2196f3'
+            : task.status === 'review'
+              ? '#ff9800'
+              : task.priority === 'urgent'
+                ? '#f44336'
+                : task.priority === 'high'
+                  ? '#ff5722'
+                  : task.priority === 'medium'
+                    ? '#9c27b0'
+                    : '#607d8b';
+
+      return {
+        id: `task-${task._id}`,
+        title: task.title,
+        start: task.dueDate,
+        end: task.dueDate
+          ? new Date(new Date(task.dueDate).getTime() + (task.estimatedHours || 1) * 60 * 60 * 1000)
+          : undefined,
+        allDay: false,
+        color: backgroundColor,
+        backgroundColor,
+        borderColor:
+          task.status === 'done'
+            ? '#388e3c'
+            : task.status === 'in-progress'
               ? '#1976d2'
-              : '#388e3c',
-    }));
+              : task.status === 'review'
+                ? '#f57c00'
+                : task.priority === 'urgent'
+                  ? '#d32f2f'
+                  : task.priority === 'high'
+                    ? '#e64a19'
+                    : task.priority === 'medium'
+                      ? '#7b1fa2'
+                      : '#455a64',
+        extendedProps: {
+          type: 'task',
+          status: task.status,
+          priority: task.priority,
+          assignedTo: task.assignedTo?.name || 'Unassigned',
+          createdBy: task.createdBy?.name || 'Unknown',
+          project: task.projectId?.name || null,
+          workOrder: task.workOrderId?.title || null,
+          estimatedHours: task.estimatedHours,
+          actualHours: task.actualHours,
+          description: task.description,
+          tags: task.tags,
+          notes: task.notes,
+        },
+      };
+    });
 
     // Combine all events
-    const events = [...workOrderEvents, ...assignmentEvents, ...projectEvents];
+    const events = [...workOrderEvents, ...assignmentEvents, ...projectEvents, ...taskEvents];
 
-    return NextResponse.json(events);
+    return NextResponse.json({ events });
   } catch (error) {
     console.error('Error fetching calendar data:', error);
     return NextResponse.json({ message: 'Failed to fetch calendar data' }, { status: 500 });
@@ -170,12 +258,18 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const tenantId = '68bacc230e20f67f2394e52f'; // Actual tenant ID from database
+    // Get the active tenant dynamically
+    const { Tenant } = await import('src/lib/models');
+    const tenant = await Tenant.findOne({ isActive: true });
+    if (!tenant) {
+      return NextResponse.json({ message: 'No active tenant found' }, { status: 404 });
+    }
+    const tenantId = tenant._id.toString();
     const userId = 'admin-user-id'; // Hardcoded for testing
     const { type, title, start, end, extendedProps } = body;
 
     switch (type) {
-      case 'work-order':
+      case 'work-order': {
         // Create a new work order
         const workOrder = new WorkOrder({
           tenantId,
@@ -197,8 +291,9 @@ export async function POST(request: NextRequest) {
         });
         await workOrder.save();
         return NextResponse.json({ message: 'Work order created', id: workOrder._id });
+      }
 
-      case 'assignment':
+      case 'assignment': {
         // Create a new assignment
         const assignment = new Assignment({
           tenantId,
@@ -212,8 +307,9 @@ export async function POST(request: NextRequest) {
         });
         await assignment.save();
         return NextResponse.json({ message: 'Assignment created', id: assignment._id });
+      }
 
-      case 'project':
+      case 'project': {
         // Create a new project
         const project = new Project({
           tenantId,
@@ -231,6 +327,28 @@ export async function POST(request: NextRequest) {
         });
         await project.save();
         return NextResponse.json({ message: 'Project created', id: project._id });
+      }
+
+      case 'task': {
+        // Create a new task
+        const task = new Task({
+          tenantId,
+          title,
+          description: extendedProps?.description || '',
+          status: 'todo',
+          priority: extendedProps?.priority || 'medium',
+          dueDate: new Date(start),
+          estimatedHours: extendedProps?.estimatedHours || 1,
+          assignedTo: extendedProps?.assignedTo,
+          createdBy: userId,
+          projectId: extendedProps?.projectId,
+          workOrderId: extendedProps?.workOrderId,
+          tags: extendedProps?.tags || [],
+          notes: extendedProps?.notes || '',
+        });
+        await task.save();
+        return NextResponse.json({ message: 'Task created', id: task._id });
+      }
 
       default:
         return NextResponse.json({ message: 'Unknown event type' }, { status: 400 });
@@ -246,7 +364,13 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const tenantId = '68bacc230e20f67f2394e52f'; // Actual tenant ID from database
+    // Get the active tenant dynamically
+    const { Tenant } = await import('src/lib/models');
+    const tenant = await Tenant.findOne({ isActive: true });
+    if (!tenant) {
+      return NextResponse.json({ message: 'No active tenant found' }, { status: 404 });
+    }
+    const tenantId = tenant._id.toString();
     const { id, start, end, extendedProps } = body;
 
     // Determine the type from the ID prefix
@@ -279,6 +403,15 @@ export async function PUT(request: NextRequest) {
           ...(extendedProps && { ...extendedProps }),
         }
       );
+    } else if (id.startsWith('task-')) {
+      const taskId = id.replace('task-', '');
+      await Task.findOneAndUpdate(
+        { _id: taskId, tenantId },
+        {
+          dueDate: new Date(start),
+          ...(extendedProps && { ...extendedProps }),
+        }
+      );
     }
 
     return NextResponse.json({ message: 'Event updated' });
@@ -294,7 +427,13 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const tenantId = '68bacc230e20f67f2394e52f'; // Actual tenant ID from database
+    // Get the active tenant dynamically
+    const { Tenant } = await import('src/lib/models');
+    const tenant = await Tenant.findOne({ isActive: true });
+    if (!tenant) {
+      return NextResponse.json({ message: 'No active tenant found' }, { status: 404 });
+    }
+    const tenantId = tenant._id.toString();
 
     if (!id) {
       return NextResponse.json({ message: 'ID is required' }, { status: 400 });
@@ -310,6 +449,9 @@ export async function DELETE(request: NextRequest) {
     } else if (id.startsWith('project-')) {
       const projectId = id.replace('project-', '');
       await Project.findOneAndDelete({ _id: projectId, tenantId });
+    } else if (id.startsWith('task-')) {
+      const taskId = id.replace('task-', '');
+      await Task.findOneAndDelete({ _id: taskId, tenantId });
     }
 
     return NextResponse.json({ message: 'Event deleted' });

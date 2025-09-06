@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+
 import { useParams, useRouter } from 'src/routes/hooks';
 
 import { PersonnelCreateView } from 'src/sections/fsa/personnel/create/personnel-create-view';

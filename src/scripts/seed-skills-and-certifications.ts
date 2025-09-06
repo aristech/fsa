@@ -3,8 +3,9 @@
 */
 
 import mongoose from 'mongoose';
+
 import { connectDB } from 'src/lib/db';
-import { Tenant, Skill, Certification } from 'src/lib/models';
+import { Skill, Tenant, Certification } from 'src/lib/models';
 
 const DEFAULT_TENANT_SLUG = process.env.TENANT_SLUG || 'acme-field-services';
 
@@ -31,12 +32,12 @@ async function main() {
   const tenantId = new mongoose.Types.ObjectId(String(tenant._id));
 
   for (const name of SKILLS) {
-    // eslint-disable-next-line no-await-in-loop
+     
     await Skill.updateOne({ tenantId, name }, { $setOnInsert: { name } }, { upsert: true });
   }
 
   for (const name of CERTS) {
-    // eslint-disable-next-line no-await-in-loop
+     
     await Certification.updateOne({ tenantId, name }, { $setOnInsert: { name } }, { upsert: true });
   }
 

@@ -3,7 +3,8 @@ import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { NextResponse } from 'next/server';
 
-import { User, Role, Personnel, Tenant } from 'src/lib/models';
+import { sendPersonnelInvitation } from 'src/lib/email';
+import { User, Role, Tenant, Personnel } from 'src/lib/models';
 
 // ----------------------------------------------------------------------
 
@@ -37,6 +38,7 @@ const createPersonnelSchema = z.object({
       address: z.string().optional(),
     })
     .optional(),
+  sendInvitation: z.boolean().optional(),
 });
 
 // Allow partial updates on PUT
@@ -323,7 +325,7 @@ export async function POST(request: NextRequest) {
       let unique = false;
       while (!unique) {
         const idCandidate = `EMP-${Math.floor(Math.random() * 900000 + 100000)}`;
-        // eslint-disable-next-line no-await-in-loop
+         
         const exists = await Personnel.findOne({ tenantId, employeeId: idCandidate });
         if (!exists) {
           employeeId = idCandidate;
@@ -352,6 +354,19 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+      if (!role.isActive) {
+        return NextResponse.json(
+          { success: false, message: 'Role is not active' },
+          { status: 400 }
+        );
+      }
+    } else {
+      // If no role provided, assign a default role
+      const defaultRole = await Role.findOne({ tenantId, isDefault: true, isActive: true });
+      if (defaultRole) {
+        validatedData.roleId = defaultRole._id.toString();
+        console.log(`Assigned default role "${defaultRole.name}" to new personnel`);
+      }
     }
 
     const personnel = new Personnel({
@@ -363,6 +378,58 @@ export async function POST(request: NextRequest) {
     });
 
     await personnel.save();
+
+    // Send invitation email if requested
+    if (validatedData.sendInvitation && validatedData.email) {
+      console.log(`📧 Sending invitation email to: ${validatedData.email}`);
+      try {
+        const tenant = await Tenant.findById(tenantId);
+        const user = await User.findById(userId);
+
+        if (tenant && user) {
+          // Generate a temporary password (in production, you might want to use a more secure method)
+          const temporaryPassword = `TempPass${Math.floor(Math.random() * 10000)}`;
+          console.log(`📧 Generated temporary password for user: ${user.email}`);
+
+          // Update user with temporary password
+          await User.findByIdAndUpdate(userId, {
+            password: await import('bcryptjs').then((bcrypt) => bcrypt.hash(temporaryPassword, 10)),
+          });
+          console.log(`📧 Updated user password in database`);
+
+          const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:8082'}/auth/jwt/sign-in`;
+          console.log(`📧 Login URL: ${loginUrl}`);
+
+          console.log(`📧 Calling sendPersonnelInvitation with:`, {
+            to: validatedData.email,
+            personnelName: `${user.firstName} ${user.lastName}`,
+            companyName: tenant.name,
+            loginUrl,
+            temporaryPassword: '***hidden***',
+          });
+
+          const emailResult = await sendPersonnelInvitation({
+            to: validatedData.email,
+            personnelName: user.firstName + ' ' + user.lastName,
+            companyName: tenant.name,
+            loginUrl,
+            temporaryPassword,
+          });
+
+          console.log(`📧 Email sending result:`, {
+            success: emailResult.success,
+            messageId: emailResult.messageId,
+            error: emailResult.error,
+            duration: emailResult.duration,
+          });
+
+          console.log(`✅ Invitation email sent to ${validatedData.email}`);
+        }
+      } catch (emailError) {
+        console.error('❌ Failed to send invitation email:', emailError);
+        // Don't fail the entire request if email fails
+      }
+    }
 
     // Populate and normalize the response
     const populatedPersonnel = await Personnel.findById(personnel._id)
@@ -440,7 +507,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Determine linked user to update (allow switching userId)
-    let linkedUserId: string = payload.userId || String(current.userId);
+    const linkedUserId: string = payload.userId || String(current.userId);
     if (payload.userId) {
       const u = await User.findById(payload.userId);
       if (!u)

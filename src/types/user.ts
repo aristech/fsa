@@ -89,6 +89,7 @@ export type IUserItem = {
   avatarUrl: string;
   phoneNumber: string;
   isVerified: boolean;
+  isActive?: boolean;
 };
 
 export type IUserAccountBillingHistory = {

@@ -107,8 +107,7 @@ const TenantSchema = new Schema<ITenant>(
 // ----------------------------------------------------------------------
 
 // Indexes for better performance
-TenantSchema.index({ slug: 1 });
-TenantSchema.index({ email: 1 });
+// Note: slug and email indexes are automatically created by unique: true
 TenantSchema.index({ isActive: 1 });
 
 // ----------------------------------------------------------------------

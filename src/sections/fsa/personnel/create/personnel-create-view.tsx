@@ -1,13 +1,23 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
 import { z as zod } from 'zod';
+import { useMemo, useState, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, Controller } from 'react-hook-form';
 
-import { useTenantAPI } from 'src/hooks/use-tenant';
+import {
+  Stack,
+  Drawer,
+  Button,
+  Divider,
+  Checkbox,
+  TextField,
+  Typography,
+  Autocomplete,
+  FormControlLabel,
+} from '@mui/material';
 
-import { Drawer, Button, TextField, Autocomplete, Stack, Typography, Divider } from '@mui/material';
+import { useTenantAPI } from 'src/hooks/use-tenant';
 
 import { Form, RHFTextField } from 'src/components/hook-form';
 
@@ -34,6 +44,7 @@ const schema = zod.object({
   notes: zod.string().optional(),
   skills: zod.array(zod.string()).optional(),
   certifications: zod.array(zod.string()).optional(),
+  sendInvitation: zod.boolean().optional(),
   availability: zod
     .object({
       monday: zod.object({ start: zod.string(), end: zod.string(), available: zod.boolean() }),
@@ -80,6 +91,7 @@ export function PersonnelCreateView({
       notes: '',
       skills: [],
       certifications: [],
+      sendInvitation: false,
       availability: {
         monday: { start: '09:00', end: '17:00', available: true },
         tuesday: { start: '09:00', end: '17:00', available: true },
@@ -210,23 +222,32 @@ export function PersonnelCreateView({
       ? getURL(`/api/v1/personnel/?id=${personnelId}`)
       : getURL('/api/v1/personnel/');
     const method = isEdit ? 'PUT' : 'POST';
+
+    const payload = {
+      roleId: data.roleId,
+      hourlyRate: data.hourlyRate,
+      notes: data.notes,
+      skills: data.skills,
+      certifications: data.certifications,
+      availability: data.availability,
+      location: data.location,
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      userId: data.userId || undefined,
+    };
+
+    // Add invitation flag for new personnel
+    if (!isEdit && data.sendInvitation) {
+      payload.sendInvitation = true;
+    }
+
     const res = await fetch(endpoint, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        roleId: data.roleId,
-        hourlyRate: data.hourlyRate,
-        notes: data.notes,
-        skills: data.skills,
-        certifications: data.certifications,
-        availability: data.availability,
-        location: data.location,
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        userId: data.userId || undefined,
-      }),
+      body: JSON.stringify(payload),
     });
+
     if (res.ok) {
       reset();
       onClose();
@@ -338,6 +359,17 @@ export function PersonnelCreateView({
                   renderInput={(params) => (
                     <TextField {...params} label="Certifications" placeholder="Add certification" />
                   )}
+                />
+              )}
+            />
+
+            <Controller
+              name="sendInvitation"
+              control={control}
+              render={({ field }) => (
+                <FormControlLabel
+                  control={<Checkbox checked={field.value} onChange={field.onChange} />}
+                  label="Send email invitation to personnel"
                 />
               )}
             />

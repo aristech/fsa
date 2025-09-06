@@ -7,11 +7,15 @@ import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
+import Switch from '@mui/material/Switch';
 import Tooltip from '@mui/material/Tooltip';
 import TableRow from '@mui/material/TableRow';
 import Checkbox from '@mui/material/Checkbox';
 import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
+import FormControlLabel from '@mui/material/FormControlLabel';
+
+import { useTenantAPI } from 'src/hooks/use-tenant';
 
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
@@ -37,6 +41,29 @@ export function PersonnelUserTableRow({
   onEdit,
 }: Props) {
   const confirmDialog = useBoolean();
+  const { getURL } = useTenantAPI();
+
+  const handleToggleActive = async (checked: boolean) => {
+    try {
+      const response = await fetch(getURL(`/api/v1/personnel/${row.id}/toggle-active`), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Personnel status updated:', result);
+        // You might want to trigger a refresh of the data here
+        // or update the local state
+      } else {
+        console.error('Failed to update personnel status');
+      }
+    } catch (error) {
+      console.error('Error updating personnel status:', error);
+    }
+  };
 
   const renderConfirmDialog = () => (
     <ConfirmDialog
@@ -109,6 +136,20 @@ export function PersonnelUserTableRow({
           >
             {row.status}
           </Label>
+        </TableCell>
+
+        <TableCell>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={row.isActive ?? true}
+                onChange={(e) => handleToggleActive(e.target.checked)}
+                size="small"
+              />
+            }
+            label=""
+            sx={{ margin: 0 }}
+          />
         </TableCell>
 
         <TableCell align="right">

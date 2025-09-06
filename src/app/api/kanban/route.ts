@@ -1,9 +1,9 @@
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 import type { IKanban, IKanbanTask, IKanbanColumn } from 'src/types/kanban';
 
 import { NextResponse } from 'next/server';
 
-import { Task, Status, Project } from 'src/lib/models';
+import { Task, Status, Tenant, Project } from 'src/lib/models';
 
 // ----------------------------------------------------------------------
 
@@ -18,13 +18,21 @@ function statusToKanbanColumn(status: any): IKanbanColumn {
 // ----------------------------------------------------------------------
 
 function transformProjectToKanbanTask(project: any, statuses: any[]): IKanbanTask {
-  // Find the status object for this project
-  const statusObj = statuses.find((s) => s.name === project.status);
+  // Map project status to kanban status name
+  const statusMapping: Record<string, string> = {
+    planning: 'Created',
+    active: 'In Progress',
+    'on-hold': 'Assigned',
+    completed: 'Completed',
+    cancelled: 'Completed',
+  };
+
+  const kanbanStatus = statusMapping[project.status] || 'Created';
 
   return {
     id: project._id,
     name: project.name,
-    status: project.status, // Keep the original status name
+    status: kanbanStatus, // Use mapped status name
     priority: project.priority,
     labels: project.tags || ['Technology'],
     description: project.description || 'No description available',
@@ -33,14 +41,14 @@ function transformProjectToKanbanTask(project: any, statuses: any[]): IKanbanTas
     assignee: project.assignedTechnician
       ? [
           {
-            id: project.assignedTechnician._id,
-            name: project.assignedTechnician.name,
+            id: project.assignedTechnician._id || 'unknown',
+            name: project.assignedTechnician.name || 'Unknown Technician',
             role: 'Technician',
-            email: project.assignedTechnician.email,
-            status: project.assignedTechnician.availability,
+            email: project.assignedTechnician.email || '',
+            status: project.assignedTechnician.availability || 'available',
             address: project.assignedTechnician.location?.address || '',
             avatarUrl: 'https://api-prod-minimal-v700.pages.dev/assets/images/avatar/avatar-1.webp',
-            phoneNumber: project.assignedTechnician.phone,
+            phoneNumber: project.assignedTechnician.phone || '',
             lastActivity: new Date().toISOString(),
           },
         ]
@@ -49,21 +57,28 @@ function transformProjectToKanbanTask(project: any, statuses: any[]): IKanbanTas
       ? [new Date().toISOString(), project.endDate.toISOString()]
       : [new Date().toISOString(), new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()],
     reporter: {
-      id: project.managerId?._id || 'admin-user-id',
-      name: project.managerId?.name || 'Project Manager',
+      id: project.managerId || 'admin-user-id',
+      name: 'Project Manager',
       avatarUrl: 'https://api-prod-minimal-v700.pages.dev/assets/images/avatar/avatar-17.webp',
     },
   };
 }
 
 function transformTaskToKanbanTask(task: any, statuses: any[]): IKanbanTask {
-  // Find the status object for this task
-  const statusObj = statuses.find((s) => s.name === task.status);
+  // Map task status to kanban status name
+  const statusMapping: Record<string, string> = {
+    todo: 'Created',
+    'in-progress': 'In Progress',
+    review: 'Assigned',
+    done: 'Completed',
+  };
+
+  const kanbanStatus = statusMapping[task.status] || 'Created';
 
   return {
     id: task._id,
     name: task.title,
-    status: task.status, // Keep the original status name
+    status: kanbanStatus, // Use mapped status name
     priority: task.priority,
     labels: task.tags || ['Technology'],
     description: task.description || 'No description available',
@@ -72,14 +87,14 @@ function transformTaskToKanbanTask(task: any, statuses: any[]): IKanbanTask {
     assignee: task.assignedTo
       ? [
           {
-            id: task.assignedTo._id,
-            name: task.assignedTo.name,
+            id: task.assignedTo._id || 'unknown',
+            name: task.assignedTo.name || 'Unknown Technician',
             role: 'Technician',
-            email: task.assignedTo.email,
+            email: task.assignedTo.email || '',
             status: task.assignedTo.availability || 'available',
             address: task.assignedTo.location?.address || '',
             avatarUrl: 'https://api-prod-minimal-v700.pages.dev/assets/images/avatar/avatar-2.webp',
-            phoneNumber: task.assignedTo.phone,
+            phoneNumber: task.assignedTo.phone || '',
             lastActivity: new Date().toISOString(),
           },
         ]
@@ -88,8 +103,8 @@ function transformTaskToKanbanTask(task: any, statuses: any[]): IKanbanTask {
       ? [new Date().toISOString(), task.dueDate.toISOString()]
       : [new Date().toISOString(), new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()],
     reporter: {
-      id: task.createdBy?._id || 'admin-user-id',
-      name: task.createdBy?.name || 'Task Creator',
+      id: task.createdBy || 'admin-user-id',
+      name: 'Task Creator',
       avatarUrl: 'https://api-prod-minimal-v700.pages.dev/assets/images/avatar/avatar-17.webp',
     },
   };
@@ -101,22 +116,18 @@ function transformTaskToKanbanTask(task: any, statuses: any[]): IKanbanTask {
 
 export async function GET(request: NextRequest) {
   try {
-    // For now, let's use a hardcoded tenant ID for testing
-    const tenantId = '68bacc230e20f67f2394e52f'; // Actual tenant ID from database
+    // Get tenant ID from the first tenant (for demo purposes)
+    const tenant = await Tenant.findOne({ isActive: true });
+    if (!tenant) {
+      return NextResponse.json({ message: 'No active tenant found' }, { status: 404 });
+    }
+    const tenantId = tenant._id.toString();
 
     // Fetch statuses, projects and tasks
     const [statuses, projects, tasks] = await Promise.all([
       Status.find({ tenantId, isActive: true }).sort({ order: 1, createdAt: 1 }),
-      Project.find({ tenantId })
-        .populate('managerId', 'name email')
-        .populate('customerId', 'name email')
-        .sort({ createdAt: -1 }),
-      Task.find({ tenantId })
-        .populate('assignedTo', 'name email phone availability location')
-        .populate('createdBy', 'name email')
-        .populate('projectId', 'name')
-        .populate('workOrderId', 'title')
-        .sort({ createdAt: -1 }),
+      Project.find({ tenantId }).sort({ createdAt: -1 }),
+      Task.find({ tenantId }).sort({ createdAt: -1 }),
     ]);
 
     // Convert statuses to Kanban columns
@@ -160,7 +171,12 @@ export async function POST(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const endpoint = searchParams.get('endpoint');
     const body = await request.json();
-    const tenantId = '68bacc230e20f67f2394e52f'; // Actual tenant ID from database
+    // Get tenant ID from the first tenant (for demo purposes)
+    const tenant = await Tenant.findOne({ isActive: true });
+    if (!tenant) {
+      return NextResponse.json({ message: 'No active tenant found' }, { status: 404 });
+    }
+    const tenantId = tenant._id.toString();
     const userId = 'admin-user-id'; // Hardcoded for testing
 
     switch (endpoint) {
@@ -176,7 +192,7 @@ export async function POST(request: NextRequest) {
         // For now, we'll use predefined columns
         return NextResponse.json({ message: 'Columns are predefined for FSA' });
 
-      case 'clear-column':
+      case 'clear-column': {
         // Clear tasks in a specific column
         const { columnId } = body;
         await Promise.all([
@@ -184,8 +200,9 @@ export async function POST(request: NextRequest) {
           Task.updateMany({ tenantId, status: columnId }, { status: 'cancelled' }),
         ]);
         return NextResponse.json({ message: 'Column cleared' });
+      }
 
-      case 'create-task':
+      case 'create-task': {
         // Create a new task
         const { name, description, priority, labels, assignee, due } = body;
         const newTask = new Task({
@@ -201,8 +218,9 @@ export async function POST(request: NextRequest) {
         });
         await newTask.save();
         return NextResponse.json({ message: 'Task created' });
+      }
 
-      case 'update-task':
+      case 'update-task': {
         // Update an existing task
         const { taskId, ...updateData } = body;
         await Task.findOneAndUpdate(
@@ -217,18 +235,19 @@ export async function POST(request: NextRequest) {
           }
         );
         return NextResponse.json({ message: 'Task updated' });
+      }
 
-      case 'move-task':
+      case 'move-task': {
         // Move task between columns (update status)
         const { updateTasks } = body;
-        for (const [columnId, tasks] of Object.entries(updateTasks)) {
+        for (const [taskColumnId, tasks] of Object.entries(updateTasks)) {
           const taskIds = (tasks as IKanbanTask[]).map((task) => task.id);
 
           // Map column IDs to statuses
           let newStatus = 'todo';
           let newProjectStatus = 'planning';
 
-          switch (columnId) {
+          switch (taskColumnId) {
             case '1-column-e99f09a7-dd88-49d5-b1c8-1daf80c2d7b2': // To do
               newStatus = 'todo';
               newProjectStatus = 'planning';
@@ -245,6 +264,9 @@ export async function POST(request: NextRequest) {
               newStatus = 'done';
               newProjectStatus = 'completed';
               break;
+            default:
+              // Keep default values
+              break;
           }
 
           await Promise.all([
@@ -253,12 +275,14 @@ export async function POST(request: NextRequest) {
           ]);
         }
         return NextResponse.json({ message: 'Tasks moved' });
+      }
 
-      case 'delete-task':
+      case 'delete-task': {
         // Delete a task
         const { taskId: deleteTaskId } = body;
         await Task.findOneAndDelete({ _id: deleteTaskId, tenantId });
         return NextResponse.json({ message: 'Task deleted' });
+      }
 
       default:
         return NextResponse.json({ message: 'Unknown endpoint' }, { status: 400 });

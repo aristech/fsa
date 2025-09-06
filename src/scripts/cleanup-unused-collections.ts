@@ -11,6 +11,7 @@
 */
 
 import mongoose from 'mongoose';
+
 import { connectDB } from 'src/lib/db';
 
 async function main() {
@@ -76,7 +77,7 @@ async function main() {
 
   for (const name of toDrop) {
     try {
-      // eslint-disable-next-line no-await-in-loop
+       
       await db.dropCollection(name);
       console.log(`Dropped collection: ${name}`);
     } catch (err) {

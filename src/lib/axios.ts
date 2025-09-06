@@ -62,12 +62,12 @@ export const fetcher = async <T = unknown>(
 
 export const endpoints = {
   chat: '/api/chat',
-  kanban: '/api/kanban',
+  kanban: '/api/kanban/',
   calendar: '/api/calendar',
   auth: {
     me: '/api/v1/auth/me',
-    signIn: '/api/v1/auth/sign-in',
-    signUp: '/api/v1/auth/sign-up',
+    signIn: '/api/v1/auth/sign-in/',
+    signUp: '/api/v1/auth/sign-up/',
   },
   mail: {
     list: '/api/mail/list',
@@ -126,7 +126,7 @@ export const endpoints = {
     tenants: {
       list: '/api/v1/tenants',
       details: (id: string) => `/api/v1/tenants/${id}`,
-      setup: '/api/v1/tenants/setup',
+      setup: '/api/v1/tenants/setup/',
     },
   },
 } as const;

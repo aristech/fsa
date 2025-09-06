@@ -20,7 +20,6 @@ const TECHNICIANS = [
     skills: ['HVAC', 'Electrical', 'Plumbing'],
     certifications: ['HVAC Certified', 'Electrical License'],
     hourlyRate: 45,
-    availability: 'available',
     location: {
       address: '123 Main St',
       city: 'New York',
@@ -36,7 +35,6 @@ const TECHNICIANS = [
     skills: ['Fire Safety', 'Security Systems', 'General Maintenance'],
     certifications: ['Fire Safety Certified', 'Security Systems License'],
     hourlyRate: 50,
-    availability: 'available',
     location: {
       address: '456 Oak Ave',
       city: 'Chicago',
@@ -52,7 +50,6 @@ const TECHNICIANS = [
     skills: ['Plumbing', 'HVAC', 'Emergency Repair'],
     certifications: ['Plumbing License', 'HVAC Certified'],
     hourlyRate: 42,
-    availability: 'busy',
     location: {
       address: '789 Pine St',
       city: 'Los Angeles',
@@ -68,7 +65,6 @@ const TECHNICIANS = [
     skills: ['Electrical', 'Data Cabling', 'Network Installation'],
     certifications: ['Electrical License', 'Network+ Certified'],
     hourlyRate: 48,
-    availability: 'available',
     location: {
       address: '321 Elm St',
       city: 'Houston',
@@ -84,7 +80,6 @@ const TECHNICIANS = [
     skills: ['General Maintenance', 'Painting', 'Carpentry'],
     certifications: ['General Contractor License'],
     hourlyRate: 35,
-    availability: 'available',
     location: {
       address: '654 Maple Dr',
       city: 'Phoenix',
@@ -424,7 +419,7 @@ async function seedFSAData() {
             email: technicianData.email,
             password: await hashPassword('technician123'),
             role: 'technician',
-            isEmailVerified: true,
+            permissions: [],
           });
           await user.save();
         }
