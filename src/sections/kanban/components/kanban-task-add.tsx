@@ -4,6 +4,7 @@ import { uuidv4 } from 'minimal-shared/utils';
 import { useMemo, useState, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
 import FormHelperText from '@mui/material/FormHelperText';
 import ClickAwayListener from '@mui/material/ClickAwayListener';
@@ -12,6 +13,7 @@ import InputBase, { inputBaseClasses } from '@mui/material/InputBase';
 import { fAdd, today } from 'src/utils/format-time';
 
 import { _mock } from 'src/_mock';
+import { useClient } from 'src/contexts/client-context';
 
 // ----------------------------------------------------------------------
 
@@ -24,6 +26,7 @@ type Props = {
 
 export function KanbanTaskAdd({ status, openAddTask, onAddTask, onCloseAddTask }: Props) {
   const [taskName, setTaskName] = useState('');
+  const { selectedClient } = useClient();
 
   const defaultTask: IKanbanTask = useMemo(
     () => ({
@@ -37,8 +40,14 @@ export function KanbanTaskAdd({ status, openAddTask, onAddTask, onCloseAddTask }
       assignee: [],
       due: [today(), fAdd({ days: 1 })],
       reporter: { id: _mock.id(16), name: _mock.fullName(16), avatarUrl: _mock.image.avatar(16) },
+      // Add client information if available
+      ...(selectedClient && {
+        clientId: selectedClient._id,
+        clientName: selectedClient.name,
+        clientCompany: selectedClient.company,
+      }),
     }),
-    [status, taskName]
+    [status, taskName, selectedClient]
   );
 
   const handleChangeName = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,7 +99,23 @@ export function KanbanTaskAdd({ status, openAddTask, onAddTask, onCloseAddTask }
           />
         </Paper>
 
-        <FormHelperText sx={{ mx: 1 }}>Press Enter to create the task.</FormHelperText>
+        {/* Client indicator */}
+        {selectedClient && (
+          <Box sx={{ mt: 1, mx: 1 }}>
+            <Chip
+              size="small"
+              label={`Client: ${selectedClient.name}${selectedClient.company ? ` (${selectedClient.company})` : ''}`}
+              color="info"
+              variant="outlined"
+              sx={{ fontSize: '0.75rem' }}
+            />
+          </Box>
+        )}
+
+        <FormHelperText sx={{ mx: 1 }}>
+          Press Enter to create the task.
+          {selectedClient && ' Task will be associated with the selected client.'}
+        </FormHelperText>
       </Box>
     </ClickAwayListener>
   );

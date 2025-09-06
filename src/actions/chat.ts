@@ -9,7 +9,7 @@ import axios, { fetcher, endpoints } from 'src/lib/axios';
 
 // ----------------------------------------------------------------------
 
-const enableServer = false;
+const enableServer = true;
 
 const CHAT_ENDPOINT = endpoints.chat;
 

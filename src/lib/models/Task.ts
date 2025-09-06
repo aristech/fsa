@@ -21,6 +21,10 @@ export interface ITask extends Document {
   tags: string[];
   attachments: string[];
   notes?: string;
+  // Client information (optional)
+  customerId?: string; // Reference to Customer
+  clientName?: string; // Cached client name for display
+  clientCompany?: string; // Cached client company for display
   createdAt: Date;
   updatedAt: Date;
 }
@@ -97,6 +101,19 @@ const TaskSchema = new Schema<ITask>(
       type: String,
       trim: true,
     },
+    // Client information (optional)
+    customerId: {
+      type: String,
+      ref: 'Customer',
+    },
+    clientName: {
+      type: String,
+      trim: true,
+    },
+    clientCompany: {
+      type: String,
+      trim: true,
+    },
   },
   {
     timestamps: true,
@@ -109,5 +126,6 @@ TaskSchema.index({ tenantId: 1, workOrderId: 1 });
 TaskSchema.index({ tenantId: 1, assignedTo: 1 });
 TaskSchema.index({ tenantId: 1, status: 1 });
 TaskSchema.index({ tenantId: 1, priority: 1 });
+TaskSchema.index({ tenantId: 1, customerId: 1 });
 
 export const Task = mongoose.models.Task || mongoose.model<ITask>('Task', TaskSchema);

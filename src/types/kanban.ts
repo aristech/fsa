@@ -39,6 +39,10 @@ export type IKanbanTask = {
     name: string;
     avatarUrl: string;
   };
+  // Client information (optional)
+  clientId?: string;
+  clientName?: string;
+  clientCompany?: string;
 };
 
 export type IKanbanColumn = {

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 
 import { User, Tenant, Customer } from 'src/lib/models';
 import { verifyToken } from 'src/lib/auth/jwt';
+import connectDB from 'src/lib/db';
 
 // ----------------------------------------------------------------------
 
@@ -47,13 +48,19 @@ export interface RequestContextMiddlewareOptions {
 
 // ----------------------------------------------------------------------
 
-export async function withRequestContext(
+export function withRequestContext(
   handler: (request: NextRequest, context: RequestContext) => Promise<NextResponse>,
   options: RequestContextMiddlewareOptions = {}
 ) {
   return async (request: NextRequest): Promise<NextResponse> => {
     try {
+      console.log('Middleware: Starting request processing');
       const { requireAuth = true, requireClient = false, allowedRoles } = options;
+
+      // Connect to database
+      console.log('Middleware: Connecting to database');
+      await connectDB();
+      console.log('Middleware: Database connected');
 
       // 1. Extract and verify authentication
       let user = null;

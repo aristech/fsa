@@ -9,7 +9,7 @@ import { useClient } from 'src/contexts/client-context';
 
 // ----------------------------------------------------------------------
 
-const enableServer = false;
+const enableServer = true;
 
 const CALENDAR_ENDPOINT = endpoints.calendar;
 

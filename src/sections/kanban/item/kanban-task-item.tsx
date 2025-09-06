@@ -7,6 +7,9 @@ import { createPortal } from 'react-dom';
 import { useBoolean } from 'minimal-shared/hooks';
 import { mergeClasses } from 'minimal-shared/utils';
 
+import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
+
 import { deleteTask, updateTask } from 'src/actions/kanban';
 
 import { kanbanClasses } from '../classes';
@@ -112,6 +115,24 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
       <ItemContent>
         <ItemStatus status={task.priority} />
         <ItemName name={task.name} />
+        {/* Client indicator */}
+        {task.clientName && (
+          <Box sx={{ mt: 0.5, mb: 0.5 }}>
+            <Chip
+              size="small"
+              label={task.clientName}
+              color="info"
+              variant="outlined"
+              sx={{
+                fontSize: '0.7rem',
+                height: 20,
+                '& .MuiChip-label': {
+                  px: 1,
+                },
+              }}
+            />
+          </Box>
+        )}
         <ItemInfo
           comments={task.comments}
           assignee={task.assignee}

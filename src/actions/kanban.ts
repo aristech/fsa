@@ -9,7 +9,7 @@ import { useClient } from 'src/contexts/client-context';
 
 // ----------------------------------------------------------------------
 
-const enableServer = false;
+const enableServer = true;
 
 const KANBAN_ENDPOINT = endpoints.kanban;
 
@@ -221,7 +221,18 @@ export async function createTask(columnId: IKanbanColumn['id'], taskData: IKanba
    * Work on server
    */
   if (enableServer) {
-    const data = { columnId, taskData };
+    const data = {
+      columnId,
+      taskData: {
+        ...taskData,
+        // Include client information if available
+        ...(taskData.clientId && {
+          clientId: taskData.clientId,
+          clientName: taskData.clientName,
+          clientCompany: taskData.clientCompany,
+        }),
+      },
+    };
     await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'create-task' } });
   }
 
