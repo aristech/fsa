@@ -3,71 +3,105 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 import { Task, Project, WorkOrder, Assignment } from 'src/lib/models';
+import {
+  withRequestContext,
+  buildFilters,
+  getRelatedEntityIds,
+  type RequestContext,
+} from 'src/lib/middleware/request-context';
 
 // ----------------------------------------------------------------------
 
-export async function GET(request: NextRequest) {
+async function getCalendarData(request: NextRequest, context: RequestContext) {
   try {
-    const { searchParams } = new URL(request.url);
-    const start = searchParams.get('start');
-    const end = searchParams.get('end');
-    // Get the active tenant dynamically
-    const { Tenant } = await import('src/lib/models');
-    const tenant = await Tenant.findOne({ isActive: true });
-    if (!tenant) {
-      return NextResponse.json({ message: 'No active tenant found' }, { status: 404 });
-    }
-    const tenantId = tenant._id.toString();
+    const { tenant, client, filters } = context;
+
+    // Build filters using the middleware helper
+    const { baseFilter, dateFilters } = buildFilters(context);
+
+    // Build work order filter
+    const workOrderFilter: any = {
+      ...baseFilter,
+      scheduledDate: dateFilters || {
+        $gte: new Date(),
+        $lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      },
+    };
 
     // Fetch work orders with scheduled dates
-    const workOrders = await WorkOrder.find({
-      tenantId,
-      scheduledDate: {
-        $gte: start ? new Date(start) : new Date(),
-        $lte: end ? new Date(end) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-      },
-    })
+    const workOrders = await WorkOrder.find(workOrderFilter)
       .populate('customerId', 'name email company')
       .populate('createdBy', 'name email')
       .sort({ scheduledDate: 1 });
 
-    // Fetch assignments with scheduled dates
-    const assignments = await Assignment.find({
-      tenantId,
-      scheduledStartDate: {
-        $gte: start ? new Date(start) : new Date(),
-        $lte: end ? new Date(end) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    // Build assignment filter
+    const assignmentFilter: any = {
+      ...baseFilter,
+      scheduledStartDate: dateFilters || {
+        $gte: new Date(),
+        $lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       },
-    })
+    };
+
+    if (client) {
+      // For assignments, filter by work orders that belong to this client
+      const clientWorkOrderIds = await getRelatedEntityIds(context, 'workOrders');
+      if (clientWorkOrderIds.length > 0) {
+        assignmentFilter.workOrderId = { $in: clientWorkOrderIds };
+      } else {
+        // No work orders for this client, return empty assignment list
+        assignmentFilter._id = { $in: [] };
+      }
+    }
+
+    // Fetch assignments with scheduled dates
+    const assignments = await Assignment.find(assignmentFilter)
       .populate('workOrderId', 'title description status priority')
       .populate('technicianId', 'name email skills')
       .populate('assignedBy', 'name email')
       .sort({ scheduledStartDate: 1 });
 
-    // Fetch projects with start/end dates
-    const projects = await Project.find({
-      tenantId,
+    // Build project filter
+    const projectFilter: any = {
+      ...baseFilter,
       $or: [
-        { startDate: { $gte: start ? new Date(start) : new Date() } },
+        { startDate: dateFilters || { $gte: new Date() } },
         {
-          endDate: {
-            $lte: end ? new Date(end) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          endDate: dateFilters || {
+            $lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           },
         },
       ],
-    })
+    };
+
+    // Fetch projects with start/end dates
+    const projects = await Project.find(projectFilter)
       .populate('customerId', 'name email company')
       .populate('managerId', 'name email')
       .sort({ startDate: 1 });
 
-    // Fetch tasks with due dates
-    const tasks = await Task.find({
-      tenantId,
-      dueDate: {
-        $gte: start ? new Date(start) : new Date(),
-        $lte: end ? new Date(end) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    // Build task filter
+    const taskFilter: any = {
+      ...baseFilter,
+      dueDate: dateFilters || {
+        $gte: new Date(),
+        $lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       },
-    }).sort({ dueDate: 1 });
+    };
+
+    if (client) {
+      // For tasks, filter by projects that belong to this client
+      const clientProjectIds = await getRelatedEntityIds(context, 'projects');
+      if (clientProjectIds.length > 0) {
+        taskFilter.projectId = { $in: clientProjectIds };
+      } else {
+        // No projects for this client, return empty task list
+        taskFilter._id = { $in: [] };
+      }
+    }
+
+    // Fetch tasks with due dates
+    const tasks = await Task.find(taskFilter).sort({ dueDate: 1 });
 
     // Transform work orders to calendar events
     const workOrderEvents = workOrders.map((wo) => {
@@ -252,6 +286,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: 'Failed to fetch calendar data' }, { status: 500 });
   }
 }
+
+// Export the middleware-wrapped function
+export const GET = withRequestContext(getCalendarData, {
+  requireAuth: true,
+  requireClient: false,
+});
 
 // ----------------------------------------------------------------------
 

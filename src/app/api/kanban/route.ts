@@ -3,7 +3,13 @@ import type { IKanban, IKanbanTask, IKanbanColumn } from 'src/types/kanban';
 
 import { NextResponse } from 'next/server';
 
-import { Task, Status, Tenant, Project } from 'src/lib/models';
+import { Task, Status, Project } from 'src/lib/models';
+import {
+  buildFilters,
+  getRelatedEntityIds,
+  withRequestContext,
+  type RequestContext,
+} from 'src/lib/middleware/request-context';
 
 // ----------------------------------------------------------------------
 
@@ -114,20 +120,35 @@ function transformTaskToKanbanTask(task: any, statuses: any[]): IKanbanTask {
 
 // ----------------------------------------------------------------------
 
-export async function GET(request: NextRequest) {
+async function getKanbanData(request: NextRequest, context: RequestContext) {
   try {
-    // Get tenant ID from the first tenant (for demo purposes)
-    const tenant = await Tenant.findOne({ isActive: true });
-    if (!tenant) {
-      return NextResponse.json({ message: 'No active tenant found' }, { status: 404 });
+    const { tenant, client } = context;
+
+    // Build filters using the middleware helper
+    const { baseFilter } = buildFilters(context);
+
+    // Build project filter
+    const projectFilter = { ...baseFilter };
+
+    // Build task filter
+    const taskFilter = { ...baseFilter };
+
+    // If client is specified, filter tasks by projects that belong to this client
+    if (client) {
+      const clientProjectIds = await getRelatedEntityIds(context, 'projects');
+      if (clientProjectIds.length > 0) {
+        taskFilter.projectId = { $in: clientProjectIds };
+      } else {
+        // No projects for this client, return empty task list
+        taskFilter._id = { $in: [] };
+      }
     }
-    const tenantId = tenant._id.toString();
 
     // Fetch statuses, projects and tasks
     const [statuses, projects, tasks] = await Promise.all([
-      Status.find({ tenantId, isActive: true }).sort({ order: 1, createdAt: 1 }),
-      Project.find({ tenantId }).sort({ createdAt: -1 }),
-      Task.find({ tenantId }).sort({ createdAt: -1 }),
+      Status.find({ tenantId: tenant._id, isActive: true }).sort({ order: 1, createdAt: 1 }),
+      Project.find(projectFilter).sort({ createdAt: -1 }),
+      Task.find(taskFilter).sort({ createdAt: -1 }),
     ]);
 
     // Convert statuses to Kanban columns
@@ -164,20 +185,20 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Export the middleware-wrapped function
+export const GET = withRequestContext(getKanbanData, {
+  requireAuth: true,
+  requireClient: false,
+});
+
 // ----------------------------------------------------------------------
 
-export async function POST(request: NextRequest) {
+async function postKanbanData(request: NextRequest, context: RequestContext) {
   try {
     const { searchParams } = new URL(request.url);
     const endpoint = searchParams.get('endpoint');
     const body = await request.json();
-    // Get tenant ID from the first tenant (for demo purposes)
-    const tenant = await Tenant.findOne({ isActive: true });
-    if (!tenant) {
-      return NextResponse.json({ message: 'No active tenant found' }, { status: 404 });
-    }
-    const tenantId = tenant._id.toString();
-    const userId = 'admin-user-id'; // Hardcoded for testing
+    const { tenant, user } = context;
 
     switch (endpoint) {
       case 'create-column':
@@ -196,8 +217,8 @@ export async function POST(request: NextRequest) {
         // Clear tasks in a specific column
         const { columnId } = body;
         await Promise.all([
-          Project.updateMany({ tenantId, status: columnId }, { status: 'cancelled' }),
-          Task.updateMany({ tenantId, status: columnId }, { status: 'cancelled' }),
+          Project.updateMany({ tenantId: tenant._id, status: columnId }, { status: 'cancelled' }),
+          Task.updateMany({ tenantId: tenant._id, status: columnId }, { status: 'cancelled' }),
         ]);
         return NextResponse.json({ message: 'Column cleared' });
       }
@@ -206,7 +227,7 @@ export async function POST(request: NextRequest) {
         // Create a new task
         const { name, description, priority, labels, assignee, due } = body;
         const newTask = new Task({
-          tenantId,
+          tenantId: tenant._id,
           title: name,
           description,
           priority: priority || 'medium',
@@ -214,7 +235,7 @@ export async function POST(request: NextRequest) {
           tags: labels || [],
           assignedTo: assignee?.[0]?.id,
           dueDate: due?.[1] ? new Date(due[1]) : undefined,
-          createdBy: userId,
+          createdBy: user._id,
         });
         await newTask.save();
         return NextResponse.json({ message: 'Task created' });
@@ -224,7 +245,7 @@ export async function POST(request: NextRequest) {
         // Update an existing task
         const { taskId, ...updateData } = body;
         await Task.findOneAndUpdate(
-          { _id: taskId, tenantId },
+          { _id: taskId, tenantId: tenant._id },
           {
             title: updateData.name,
             description: updateData.description,
@@ -270,8 +291,11 @@ export async function POST(request: NextRequest) {
           }
 
           await Promise.all([
-            Task.updateMany({ _id: { $in: taskIds }, tenantId }, { status: newStatus }),
-            Project.updateMany({ _id: { $in: taskIds }, tenantId }, { status: newProjectStatus }),
+            Task.updateMany({ _id: { $in: taskIds }, tenantId: tenant._id }, { status: newStatus }),
+            Project.updateMany(
+              { _id: { $in: taskIds }, tenantId: tenant._id },
+              { status: newProjectStatus }
+            ),
           ]);
         }
         return NextResponse.json({ message: 'Tasks moved' });
@@ -280,7 +304,7 @@ export async function POST(request: NextRequest) {
       case 'delete-task': {
         // Delete a task
         const { taskId: deleteTaskId } = body;
-        await Task.findOneAndDelete({ _id: deleteTaskId, tenantId });
+        await Task.findOneAndDelete({ _id: deleteTaskId, tenantId: tenant._id });
         return NextResponse.json({ message: 'Task deleted' });
       }
 
@@ -292,3 +316,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: 'Failed to process request' }, { status: 500 });
   }
 }
+
+// Export the middleware-wrapped function
+export const POST = withRequestContext(postKanbanData, {
+  requireAuth: true,
+  requireClient: false,
+});

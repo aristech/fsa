@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 
 import axios, { fetcher, endpoints } from 'src/lib/axios';
+import { useClient } from 'src/contexts/client-context';
 
 // ----------------------------------------------------------------------
 
@@ -25,7 +26,14 @@ type EventsData = {
 };
 
 export function useGetEvents() {
-  const { data, isLoading, error, isValidating } = useSWR<EventsData>(CALENDAR_ENDPOINT, fetcher, {
+  const { selectedClient } = useClient();
+
+  // Build URL with client filter
+  const url = selectedClient
+    ? `${CALENDAR_ENDPOINT}?clientId=${selectedClient._id}`
+    : CALENDAR_ENDPOINT;
+
+  const { data, isLoading, error, isValidating } = useSWR<EventsData>(url, fetcher, {
     ...swrOptions,
   });
 

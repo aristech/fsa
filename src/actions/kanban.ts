@@ -5,6 +5,7 @@ import useSWR, { mutate } from 'swr';
 import { useMemo, startTransition } from 'react';
 
 import axios, { fetcher, endpoints } from 'src/lib/axios';
+import { useClient } from 'src/contexts/client-context';
 
 // ----------------------------------------------------------------------
 
@@ -25,7 +26,14 @@ type BoardData = {
 };
 
 export function useGetBoard() {
-  const { data, isLoading, error, isValidating } = useSWR<BoardData>(KANBAN_ENDPOINT, fetcher, {
+  const { selectedClient } = useClient();
+
+  // Build URL with client filter
+  const url = selectedClient
+    ? `${KANBAN_ENDPOINT}?clientId=${selectedClient._id}`
+    : KANBAN_ENDPOINT;
+
+  const { data, isLoading, error, isValidating } = useSWR<BoardData>(url, fetcher, {
     ...swrOptions,
   });
 
