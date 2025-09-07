@@ -1,7 +1,7 @@
 'use client';
 
 import type { Breakpoint } from '@mui/material/styles';
-import type { NavItemProps, NavSectionProps } from 'src/components/nav-section';
+import type { NavSectionProps } from 'src/components/nav-section';
 import type { MainSectionProps, HeaderSectionProps, LayoutSectionProps } from '../core';
 
 import { merge } from 'es-toolkit';
@@ -13,14 +13,11 @@ import { useTheme } from '@mui/material/styles';
 import { iconButtonClasses } from '@mui/material/IconButton';
 
 import { allLangs } from 'src/locales';
-import { _contacts, _notifications } from 'src/_mock';
 import { ClientProvider } from 'src/contexts/client-context';
 import { ClientsPopover } from 'src/layouts/components/clients-popover';
 
 import { Logo } from 'src/components/logo';
 import { useSettingsContext } from 'src/components/settings';
-
-import { useMockedUser } from 'src/auth/hooks';
 
 import { NavMobile } from './nav-mobile';
 import { VerticalDivider } from './content';
@@ -29,13 +26,13 @@ import { NavHorizontal } from './nav-horizontal';
 import { _account } from '../nav-config-account';
 import { Searchbar } from '../components/searchbar';
 import { MenuButton } from '../components/menu-button';
-import { AccountDrawer } from '../components/account-drawer';
 import { SettingsButton } from '../components/settings-button';
 import { LanguagePopover } from '../components/language-popover';
 import { ContactsPopover } from '../components/contacts-popover';
 import { navData as dashboardNavData } from '../nav-config-dashboard';
 import { dashboardLayoutVars, dashboardNavColorVars } from './css-vars';
 import { NotificationsDrawer } from '../components/notifications-drawer';
+import { EnhancedAccountDrawer } from '../components/enhanced-account-drawer';
 import { MainSection, layoutClasses, HeaderSection, LayoutSection } from '../core';
 
 // ----------------------------------------------------------------------
@@ -62,7 +59,7 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
   const theme = useTheme();
 
-  const { user } = useMockedUser();
+  // User data will be handled by auth context in child components
 
   const settings = useSettingsContext();
 
@@ -76,8 +73,7 @@ export function DashboardLayout({
   const isNavHorizontal = settings.state.navLayout === 'horizontal';
   const isNavVertical = isNavMini || settings.state.navLayout === 'vertical';
 
-  const canDisplayItemByRole = (allowedRoles: NavItemProps['allowedRoles']): boolean =>
-    !allowedRoles?.includes(user?.role);
+  // Role-based filtering will be handled by permission guards in navigation components
 
   const renderHeader = () => {
     const headerSlotProps: HeaderSectionProps['slotProps'] = {
@@ -101,12 +97,7 @@ export function DashboardLayout({
         </Alert>
       ),
       bottomArea: isNavHorizontal ? (
-        <NavHorizontal
-          data={navData}
-          layoutQuery={layoutQuery}
-          cssVars={navVars.section}
-          checkPermissions={canDisplayItemByRole}
-        />
+        <NavHorizontal data={navData} layoutQuery={layoutQuery} cssVars={navVars.section} />
       ) : null,
       leftArea: (
         <>
@@ -115,13 +106,7 @@ export function DashboardLayout({
             onClick={onOpen}
             sx={{ mr: 1, ml: -1, [theme.breakpoints.up(layoutQuery)]: { display: 'none' } }}
           />
-          <NavMobile
-            data={navData}
-            open={open}
-            onClose={onClose}
-            cssVars={navVars.section}
-            checkPermissions={canDisplayItemByRole}
-          />
+          <NavMobile data={navData} open={open} onClose={onClose} cssVars={navVars.section} />
 
           {/** @slot Logo */}
           {isNavHorizontal && (
@@ -153,16 +138,16 @@ export function DashboardLayout({
           <LanguagePopover data={allLangs} />
 
           {/** @slot Notifications popover */}
-          <NotificationsDrawer data={_notifications} />
+          <NotificationsDrawer data={[]} />
 
           {/** @slot Contacts popover */}
-          <ContactsPopover data={_contacts} />
+          <ContactsPopover data={[]} />
 
           {/** @slot Settings button */}
           <SettingsButton />
 
           {/** @slot Account drawer */}
-          <AccountDrawer data={_account} />
+          <EnhancedAccountDrawer data={_account} />
         </Box>
       ),
     };
@@ -185,7 +170,6 @@ export function DashboardLayout({
       isNavMini={isNavMini}
       layoutQuery={layoutQuery}
       cssVars={navVars.section}
-      checkPermissions={canDisplayItemByRole}
       onToggleNav={() =>
         settings.setField(
           'navLayout',

@@ -1,9 +1,11 @@
-import { FastifyInstance } from "fastify";
+import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { User } from "../models/User";
+import { Role } from "../models";
 import { Personnel } from "../models/Personnel";
+import { authenticate } from "../middleware/auth";
 
 const signInSchema = z.object({
   email: z.string().email(),
@@ -159,7 +161,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // Verify token
+  // Verify token and get user info with permissions
   fastify.get("/verify", async (request, reply) => {
     try {
       const token = request.headers.authorization?.replace("Bearer ", "");
@@ -184,17 +186,71 @@ export async function authRoutes(fastify: FastifyInstance) {
         });
       }
 
+      // Get user's role and permissions
+      let permissions: string[] = [];
+      if (user.isTenantOwner) {
+        // Tenant owner has all permissions
+        permissions = [
+          "workOrders.view",
+          "workOrders.create",
+          "workOrders.edit",
+          "workOrders.delete",
+          "workOrders.assign",
+          "projects.view",
+          "projects.create",
+          "projects.edit",
+          "projects.delete",
+          "tasks.view",
+          "tasks.create",
+          "tasks.edit",
+          "tasks.delete",
+          "clients.view",
+          "clients.create",
+          "clients.edit",
+          "clients.delete",
+          "personnel.view",
+          "personnel.create",
+          "personnel.edit",
+          "personnel.delete",
+          "calendar.view",
+          "calendar.edit",
+          "reports.view",
+          "reports.export",
+          "roles.manage",
+          "statuses.manage",
+          "settings.manage",
+          "tenant.manage",
+        ];
+      } else {
+        // Get permissions from role using slug
+        const role = await Role.findOne({
+          tenantId: user.tenantId,
+          slug: user.role,
+          isActive: true,
+        });
+
+        permissions = role?.permissions || [];
+      }
+
       return reply.send({
         success: true,
         data: {
           user: {
             id: user._id,
-            name: `${user.firstName} ${user.lastName}`,
             email: user.email,
-            role: user.role || "admin",
-            avatarUrl: user.avatar,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: user.role,
+            tenantId: user.tenantId,
+            permissions,
+            isTenantOwner: user.isTenantOwner,
+            isActive: user.isActive,
+            phone: user.phone,
+            avatar: user.avatar,
+            lastLoginAt: user.lastLoginAt,
           },
         },
+        message: "User verified successfully",
       });
     } catch (error) {
       fastify.log.error(error);

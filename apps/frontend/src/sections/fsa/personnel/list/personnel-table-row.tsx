@@ -25,13 +25,13 @@ import { PersonnelQuickEditForm } from './personnel-quick-edit-form';
 interface Personnel {
   _id: string;
   employeeId: string;
-  userId: {
+  user?: {
     _id: string;
     name: string;
     email: string;
     phone?: string;
   };
-  roleId?: {
+  role?: {
     _id: string;
     name: string;
     color: string;
@@ -65,7 +65,7 @@ export function PersonnelTableRow({ row, selected, onSelectRow }: PersonnelTable
   };
 
   const getStatusColor = () => {
-    if (!row.roleId) {
+    if (!row.role) {
       return theme.palette.error.main; // No role assigned
     }
     if (!row.isActive) {
@@ -75,7 +75,7 @@ export function PersonnelTableRow({ row, selected, onSelectRow }: PersonnelTable
   };
 
   const getStatusLabel = () => {
-    if (!row.roleId) {
+    if (!row.role) {
       return 'No Role';
     }
     if (!row.isActive) {
@@ -94,13 +94,13 @@ export function PersonnelTableRow({ row, selected, onSelectRow }: PersonnelTable
         <TableCell>
           <Stack direction="row" alignItems="center" spacing={2}>
             <Avatar
-              alt={row.userId.name}
-              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${row.userId.name}`}
+              alt={row.user?.name || 'Unknown'}
+              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${row.user?.name || 'Unknown'}`}
               sx={{ width: 40, height: 40 }}
             />
             <Box>
               <Typography variant="subtitle2" noWrap>
-                {row.userId.name}
+                {row.user?.name || 'Unknown'}
               </Typography>
               <Typography variant="body2" color="text.secondary" noWrap>
                 {row.employeeId}
@@ -110,12 +110,12 @@ export function PersonnelTableRow({ row, selected, onSelectRow }: PersonnelTable
         </TableCell>
 
         <TableCell>
-          {row.roleId ? (
+          {row.role ? (
             <Chip
-              label={row.roleId.name}
+              label={row.role.name}
               size="small"
               sx={{
-                backgroundColor: row.roleId.color,
+                backgroundColor: row.role.color,
                 color: 'white',
                 fontWeight: 600,
               }}

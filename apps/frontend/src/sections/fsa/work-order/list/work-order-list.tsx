@@ -1,8 +1,9 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { useState } from 'react';
 import { usePopover } from 'minimal-shared/hooks';
 import useSWR, { type SWRConfiguration } from 'swr';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
   Box,
@@ -19,6 +20,8 @@ import {
   TableHead,
   IconButton,
   Typography,
+  LinearProgress,
+  TablePagination,
   CircularProgress,
 } from '@mui/material';
 
@@ -48,8 +51,20 @@ interface WorkOrder {
   status: 'created' | 'assigned' | 'in-progress' | 'completed' | 'cancelled' | 'on-hold';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   scheduledDate?: string;
-  technicianId?: string | { _id: string; employeeId: string; userId: string };
-  estimatedDuration: number;
+  personnelIds?: Array<{
+    _id: string;
+    employeeId: string;
+    user?: { name: string };
+    role?: { name: string };
+  }>;
+  estimatedDuration?: { value?: number; unit?: 'hours' | 'days' | 'weeks' | 'months' } | number;
+  // Progress fields
+  progress?: number;
+  progressMode?: 'computed' | 'manual' | 'weighted';
+  tasksTotal?: number;
+  tasksCompleted?: number;
+  tasksInProgress?: number;
+  tasksBlocked?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -93,19 +108,34 @@ const getPriorityColor = (priority: string) => {
 export function WorkOrderList() {
   const popover = usePopover();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // Get clientId from URL parameters
   const clientId = searchParams.get('clientId');
 
-  // Build API URL with client filter
+  // Build API URL with client filter and pagination
   const apiUrl = clientId
-    ? `${endpoints.fsa.workOrders.list}?clientId=${clientId}`
-    : endpoints.fsa.workOrders.list;
+    ? `${endpoints.fsa.workOrders.list}?clientId=${clientId}&page=${page + 1}&limit=${rowsPerPage}`
+    : `${endpoints.fsa.workOrders.list}?page=${page + 1}&limit=${rowsPerPage}`;
 
   // Fetch work orders data
   const { data, error, isLoading } = useSWR(apiUrl, fetcher, swrOptions);
 
   const workOrders = data?.data?.workOrders || [];
+  const pagination = data?.data?.pagination || { total: 0, pages: 0 };
+
+  // Pagination handlers
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   if (isLoading) {
     return (
@@ -153,7 +183,8 @@ export function WorkOrderList() {
                 <TableCell>Client</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Priority</TableCell>
-                <TableCell>Technician</TableCell>
+                <TableCell width={220}>Progress</TableCell>
+                <TableCell>Personnel</TableCell>
                 <TableCell>Scheduled</TableCell>
                 <TableCell>Duration</TableCell>
                 <TableCell align="right">Actions</TableCell>
@@ -215,21 +246,70 @@ export function WorkOrderList() {
                     </TableCell>
 
                     <TableCell>
-                      {typeof row.technicianId === 'object'
-                        ? row.technicianId.employeeId
-                        : 'Unassigned'}
+                      <Stack spacing={0.5}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Typography variant="caption" color="text.secondary">
+                            {(row.progress ?? 0).toString()}%
+                          </Typography>
+                          {row.progressMode && (
+                            <Chip label={row.progressMode} size="small" variant="outlined" />
+                          )}
+                        </Stack>
+                        <LinearProgress
+                          variant="determinate"
+                          value={Math.max(0, Math.min(100, row.progress ?? 0))}
+                          sx={{ height: 6, borderRadius: 1 }}
+                        />
+                        <Typography variant="caption" color="text.secondary">
+                          {`${row.tasksCompleted ?? 0}/${row.tasksTotal ?? 0} completed`}
+                          {typeof row.tasksInProgress === 'number' ||
+                          typeof row.tasksBlocked === 'number'
+                            ? ` • ${row.tasksInProgress ?? 0} in progress • ${row.tasksBlocked ?? 0} blocked`
+                            : ''}
+                        </Typography>
+                      </Stack>
+                    </TableCell>
+
+                    <TableCell>
+                      {row.personnelIds && row.personnelIds.length > 0 ? (
+                        <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                          {row.personnelIds.map((personnel, index) => (
+                            <Chip
+                              key={personnel._id}
+                              label={personnel.user?.name || personnel.employeeId}
+                              size="small"
+                              variant="outlined"
+                              sx={{ mb: 0.5 }}
+                            />
+                          ))}
+                        </Stack>
+                      ) : (
+                        'Unassigned'
+                      )}
                     </TableCell>
 
                     <TableCell>
                       {row.scheduledDate ? fDateTime(row.scheduledDate) : 'Not scheduled'}
                     </TableCell>
 
-                    <TableCell>{row.estimatedDuration} min</TableCell>
+                    <TableCell>
+                      {(() => {
+                        const ed = row.estimatedDuration as any;
+                        if (!ed) return '—';
+                        if (typeof ed === 'number') return `${ed} min`;
+                        if (typeof ed?.value === 'number' && ed?.unit)
+                          return `${ed.value} ${ed.unit}`;
+                        return '—';
+                      })()}
+                    </TableCell>
 
                     <TableCell align="right">
                       <IconButton
                         color={popover.open ? 'inherit' : 'default'}
-                        onClick={popover.onOpen}
+                        onClick={(event) => {
+                          setSelectedId(row._id);
+                          popover.onOpen(event);
+                        }}
                       >
                         <Iconify icon="eva:more-vertical-fill" />
                       </IconButton>
@@ -240,6 +320,16 @@ export function WorkOrderList() {
             </TableBody>
           </Table>
         </Scrollbar>
+
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component="div"
+          count={pagination.total}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
       </Card>
 
       <Popover
@@ -252,17 +342,43 @@ export function WorkOrderList() {
           sx: { width: 160 },
         }}
       >
-        <MenuItem onClick={popover.onClose}>
+        <MenuItem
+          onClick={() => {
+            popover.onClose();
+            if (selectedId) router.push(`/dashboard/work-orders/${selectedId}`);
+          }}
+        >
           <Iconify icon="solar:eye-bold" sx={{ mr: 2 }} />
           View
         </MenuItem>
 
-        <MenuItem onClick={popover.onClose}>
+        <MenuItem
+          onClick={() => {
+            popover.onClose();
+            if (selectedId) router.push(`/dashboard/work-orders/${selectedId}/edit`);
+          }}
+        >
           <Iconify icon="solar:pen-bold" sx={{ mr: 2 }} />
           Edit
         </MenuItem>
 
-        <MenuItem onClick={popover.onClose} sx={{ color: 'error.main' }}>
+        <MenuItem
+          onClick={async () => {
+            popover.onClose();
+            if (!selectedId) return;
+            const ok = window.confirm('Delete this work order?');
+            if (!ok) return;
+            try {
+              const res = await fetch(`/api/v1/work-orders/${selectedId}`, { method: 'DELETE' });
+              if (!res.ok) throw new Error('Failed to delete');
+              // refresh
+              window.location.reload();
+            } catch (e) {
+              console.error('Failed to delete work order', e);
+            }
+          }}
+          sx={{ color: 'error.main' }}
+        >
           <Iconify icon="solar:trash-bin-trash-bold" sx={{ mr: 2 }} />
           Delete
         </MenuItem>

@@ -1,7 +1,7 @@
-import type { Document } from 'mongoose';
-import type { ITenant } from './Tenant';
+import type { Document } from "mongoose";
+import type { ITenant } from "./Tenant";
 
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Schema } from "mongoose";
 
 // ----------------------------------------------------------------------
 
@@ -9,6 +9,7 @@ export interface IRole extends Document {
   _id: string;
   tenantId: mongoose.Types.ObjectId | ITenant;
   name: string;
+  slug: string;
   description?: string;
   color: string;
   permissions: string[];
@@ -24,14 +25,21 @@ const RoleSchema: Schema = new Schema(
   {
     tenantId: {
       type: Schema.Types.ObjectId,
-      ref: 'Tenant',
+      ref: "Tenant",
       required: true,
       index: true,
     },
     name: {
       type: String,
-      required: [true, 'Role name is required'],
+      required: [true, "Role name is required"],
       trim: true,
+    },
+    slug: {
+      type: String,
+      required: [true, "Role slug is required"],
+      trim: true,
+      lowercase: true,
+      unique: true,
     },
     description: {
       type: String,
@@ -39,43 +47,72 @@ const RoleSchema: Schema = new Schema(
     },
     color: {
       type: String,
-      required: [true, 'Role color is required'],
-      default: '#2196f3',
+      required: [true, "Role color is required"],
+      default: "#2196f3",
       validate: {
-        validator (v: string) {
+        validator(v: string) {
           return /^#[0-9A-F]{6}$/i.test(v);
         },
-        message: 'Color must be a valid hex color code',
+        message: "Color must be a valid hex color code",
       },
     },
     permissions: [
       {
         type: String,
         enum: [
-          'view_work_orders',
-          'create_work_orders',
-          'edit_work_orders',
-          'delete_work_orders',
-          'view_projects',
-          'create_projects',
-          'edit_projects',
-          'delete_projects',
-          'view_tasks',
-          'create_tasks',
-          'edit_tasks',
-          'delete_tasks',
-          'view_customers',
-          'create_customers',
-          'edit_customers',
-          'delete_customers',
-          'view_personnel',
-          'create_personnel',
-          'edit_personnel',
-          'delete_personnel',
-          'view_reports',
-          'manage_roles',
-          'manage_statuses',
-          'admin_access',
+          // Work Orders
+          "workOrders.view",
+          "workOrders.create",
+          "workOrders.edit",
+          "workOrders.delete",
+          "workOrders.assign",
+          "workOrders.viewOwn",
+          "workOrders.editOwn",
+
+          // Projects
+          "projects.view",
+          "projects.create",
+          "projects.edit",
+          "projects.delete",
+
+          // Tasks
+          "tasks.view",
+          "tasks.create",
+          "tasks.edit",
+          "tasks.delete",
+          "tasks.viewOwn",
+          "tasks.editOwn",
+
+          // Clients
+          "clients.view",
+          "clients.create",
+          "clients.edit",
+          "clients.delete",
+
+          // Personnel
+          "personnel.view",
+          "personnel.create",
+          "personnel.edit",
+          "personnel.delete",
+
+          // Calendar
+          "calendar.view",
+          "calendar.edit",
+          "calendar.viewOwn",
+          "calendar.editOwn",
+
+          // Reports
+          "reports.view",
+          "reports.export",
+
+          // System Management
+          "roles.manage",
+          "statuses.manage",
+          "settings.manage",
+          "tenant.manage",
+
+          // Admin
+          "admin.access",
         ],
       },
     ],
@@ -95,5 +132,10 @@ const RoleSchema: Schema = new Schema(
 
 // Ensure unique role names per tenant
 RoleSchema.index({ tenantId: 1, name: 1 }, { unique: true });
+// Ensure unique slugs globally
+RoleSchema.index({ slug: 1 }, { unique: true });
 
-export const Role = mongoose.models.Role || mongoose.model<IRole>('Role', RoleSchema);
+// Note: Slug generation is now handled in the API routes for better control
+
+export const Role =
+  mongoose.models.Role || mongoose.model<IRole>("Role", RoleSchema);

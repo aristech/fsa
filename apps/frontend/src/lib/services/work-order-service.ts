@@ -8,22 +8,22 @@ export interface WorkOrder {
   clientId: string | { _id: string; name: string; email: string; phone: string; company: string };
   technicianId?: string | { _id: string; employeeId: string; userId: string };
   title: string;
-  description: string;
+  details: string; // Rich text content from TipTap
   priority: 'low' | 'medium' | 'high' | 'urgent';
   status: 'created' | 'assigned' | 'in-progress' | 'completed' | 'cancelled' | 'on-hold';
-  category: string;
+  tags: string[]; // Array of tags instead of single category
   location: {
     address: string;
-    city: string;
-    state: string;
-    zipCode: string;
     coordinates?: {
       latitude: number;
       longitude: number;
     };
   };
   scheduledDate?: string;
-  estimatedDuration: number;
+  estimatedDuration: {
+    value: number;
+    unit: 'hours' | 'days' | 'weeks' | 'months';
+  };
   actualDuration?: number;
   cost: {
     labor: number;
@@ -36,7 +36,6 @@ export interface WorkOrder {
     unitPrice: number;
     total: number;
   }>;
-  notes?: string;
   history: Array<{
     status: string;
     timestamp: string;
@@ -51,44 +50,44 @@ export interface CreateWorkOrderRequest {
   clientId: string;
   technicianId?: string;
   title: string;
-  description: string;
+  details: string; // Rich text content from TipTap
   priority: 'low' | 'medium' | 'high' | 'urgent';
-  category: string;
+  tags: string[]; // Array of tags instead of single category
   location: {
     address: string;
-    city: string;
-    state: string;
-    zipCode: string;
     coordinates?: {
       latitude: number;
       longitude: number;
     };
   };
   scheduledDate?: string;
-  estimatedDuration: number;
-  notes?: string;
+  estimatedDuration: {
+    value: number;
+    unit: 'hours' | 'days' | 'weeks' | 'months';
+  };
+  attachments?: string[];
 }
 
 export interface UpdateWorkOrderRequest {
   clientId?: string;
   technicianId?: string;
   title?: string;
-  description?: string;
+  details?: string; // Rich text content from TipTap
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   status?: 'created' | 'assigned' | 'in-progress' | 'completed' | 'cancelled' | 'on-hold';
-  category?: string;
+  tags?: string[]; // Array of tags instead of single category
   location?: {
     address: string;
-    city: string;
-    state: string;
-    zipCode: string;
     coordinates?: {
       latitude: number;
       longitude: number;
     };
   };
   scheduledDate?: string;
-  estimatedDuration?: number;
+  estimatedDuration?: {
+    value: number;
+    unit: 'hours' | 'days' | 'weeks' | 'months';
+  };
   actualDuration?: number;
   cost?: {
     labor: number;
@@ -101,7 +100,7 @@ export interface UpdateWorkOrderRequest {
     unitPrice: number;
     total: number;
   }>;
-  notes?: string;
+  attachments?: string[];
 }
 
 export interface WorkOrderListResponse {

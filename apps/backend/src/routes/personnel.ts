@@ -74,7 +74,53 @@ export async function personnelRoutes(fastify: FastifyInstance) {
   // GET /api/v1/personnel - Get all personnel
   fastify.get("/", async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { tenantId } = request.query as { tenantId?: string };
+      const { id, tenantId } = request.query as {
+        id?: string;
+        tenantId?: string;
+      };
+
+      // If specific personnel ID is requested
+      if (id) {
+        const personnel = await Personnel.findById(id)
+          .populate("userId", "firstName lastName email phone")
+          .populate("roleId", "name color");
+
+        if (!personnel) {
+          return reply.status(404).send({
+            success: false,
+            message: "Personnel not found",
+          });
+        }
+
+        // Transform the response
+        const obj: any = personnel.toObject();
+        if (obj.userId && typeof obj.userId === "object") {
+          const first = obj.userId.firstName || "";
+          const last = obj.userId.lastName || "";
+          const full = `${first} ${last}`.trim();
+          obj.user = {
+            _id: obj.userId._id,
+            name: full,
+            email: obj.userId.email,
+            phone: obj.userId.phone,
+          };
+          delete obj.userId;
+        }
+        if (obj.roleId && typeof obj.roleId === "object") {
+          obj.role = {
+            _id: obj.roleId._id,
+            name: obj.roleId.name,
+            color: obj.roleId.color,
+          };
+          delete obj.roleId;
+        }
+
+        return reply.send({
+          success: true,
+          data: obj,
+          message: "Personnel fetched successfully",
+        });
+      }
 
       // Get tenant
       const tenant = await Tenant.findOne({ isActive: true });
@@ -93,17 +139,31 @@ export async function personnelRoutes(fastify: FastifyInstance) {
       // Transform the response
       const transformedPersonnel = personnel.map((p) => {
         const obj: any = p.toObject();
+
+        // Transform userId to user
         if (obj.userId && typeof obj.userId === "object") {
           const first = obj.userId.firstName || "";
           const last = obj.userId.lastName || "";
           const full = `${first} ${last}`.trim();
-          obj.userId = {
+          obj.user = {
             _id: obj.userId._id,
+            name: full,
             email: obj.userId.email,
             phone: obj.userId.phone,
-            name: obj.userId.name || full,
           };
+          delete obj.userId;
         }
+
+        // Transform roleId to role
+        if (obj.roleId && typeof obj.roleId === "object") {
+          obj.role = {
+            _id: obj.roleId._id,
+            name: obj.roleId.name,
+            color: obj.roleId.color,
+          };
+          delete obj.roleId;
+        }
+
         return obj;
       });
 
@@ -153,6 +213,20 @@ export async function personnelRoutes(fastify: FastifyInstance) {
           email: validatedData.email,
         });
         if (!user) {
+          // Get the role for this personnel (either provided or default)
+          let role = null;
+          if (validatedData.roleId) {
+            role = await Role.findById(validatedData.roleId);
+          } else {
+            // Get default technician role for permissions
+            role = await Role.findOne({
+              tenantId: tenant._id,
+              name: "Technician",
+              isDefault: true,
+              isActive: true,
+            });
+          }
+
           user = await User.create({
             tenantId: tenant._id,
             email: validatedData.email,
@@ -160,8 +234,8 @@ export async function personnelRoutes(fastify: FastifyInstance) {
             firstName,
             lastName,
             phone: validatedData.phone,
-            role: "technician",
-            permissions: [],
+            role: role?.slug || "technician",
+            permissions: role?.permissions || [],
             isActive: true,
           });
         }
@@ -345,9 +419,12 @@ export async function personnelRoutes(fastify: FastifyInstance) {
       }
 
       fastify.log.error("Error creating personnel:", error);
+      console.error("Detailed error:", error);
       return reply.status(500).send({
         success: false,
         message: "Failed to create personnel",
+        error: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
       });
     }
   });
@@ -381,6 +458,17 @@ export async function personnelRoutes(fastify: FastifyInstance) {
       // Update personnel
       Object.assign(personnel, validatedData);
       await personnel.save();
+
+      // If roleId was updated, also update the User's role and permissions
+      if (validatedData.roleId) {
+        const role = await Role.findById(validatedData.roleId);
+        if (role) {
+          await User.findByIdAndUpdate(personnel.userId, {
+            role: role.slug,
+            permissions: role.permissions,
+          });
+        }
+      }
 
       // Populate and normalize the response
       const populatedPersonnel = await Personnel.findById(personnel._id)

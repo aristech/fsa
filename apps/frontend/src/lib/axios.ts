@@ -89,7 +89,9 @@ export const endpoints = {
   fsa: {
     workOrders: {
       list: '/api/v1/work-orders',
+      create: '/api/v1/work-orders',
       details: (id: string) => `/api/v1/work-orders/${id}`,
+      summary: (id: string) => `/api/v1/work-orders/${id}/summary`,
     },
     clients: {
       list: '/api/v1/clients',

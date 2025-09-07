@@ -18,6 +18,8 @@ import {
   TableContainer,
 } from '@mui/material';
 
+import axiosInstance from 'src/lib/axios';
+
 import { PersonnelTableRow } from './personnel-table-row';
 import { PersonnelTableHead } from './personnel-table-head';
 import { PersonnelTableToolbar } from './personnel-table-toolbar';
@@ -27,13 +29,13 @@ import { PersonnelTableToolbar } from './personnel-table-toolbar';
 interface Personnel {
   _id: string;
   employeeId: string;
-  userId: {
+  user?: {
     _id: string;
     name: string;
     email: string;
     phone?: string;
   };
-  roleId?: {
+  role?: {
     _id: string;
     name: string;
     color: string;
@@ -86,8 +88,8 @@ export function PersonnelList({ filters }: PersonnelListProps) {
     const fetchPersonnel = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/v1/personnel/');
-        const data = await response.json();
+        const response = await axiosInstance.get('/api/v1/personnel/');
+        const data = response.data;
 
         if (data.success) {
           setPersonnel(data.data);
@@ -109,8 +111,8 @@ export function PersonnelList({ filters }: PersonnelListProps) {
   useEffect(() => {
     const fetchRoles = async () => {
       try {
-        const response = await fetch('/api/v1/roles/');
-        const data = await response.json();
+        const response = await axiosInstance.get('/api/v1/roles/');
+        const data = response.data;
 
         if (data.success) {
           setRoles(data.data);
@@ -141,14 +143,14 @@ export function PersonnelList({ filters }: PersonnelListProps) {
       {
         label: 'Pending',
         value: 'pending',
-        count: personnel.filter((p) => !p.roleId).length,
+        count: personnel.filter((p) => !p.role).length,
         color: theme.palette.warning.main,
       },
     ];
 
     // Add role-specific tabs
     roles.forEach((role) => {
-      const rolePersonnel = personnel.filter((p) => p.roleId?._id === role._id);
+      const rolePersonnel = personnel.filter((p) => p.role?._id === role._id);
       if (rolePersonnel.length > 0) {
         tabs.push({
           label: role.name,
@@ -193,14 +195,14 @@ export function PersonnelList({ filters }: PersonnelListProps) {
       if (activeTabValue === 'active') {
         filtered = filtered.filter((p) => p.isActive);
       } else if (activeTabValue === 'pending') {
-        filtered = filtered.filter((p) => !p.roleId);
+        filtered = filtered.filter((p) => !p.role);
       } else if (activeTabValue === 'assigned') {
         filtered = filtered.filter((p) => p.totalAssignments > 0);
       } else if (activeTabValue === 'unassigned') {
         filtered = filtered.filter((p) => p.totalAssignments === 0);
       } else if (activeTabValue && activeTabValue !== 'all') {
         // Role-specific filter
-        filtered = filtered.filter((p) => p.roleId?._id === activeTabValue);
+        filtered = filtered.filter((p) => p.role?._id === activeTabValue);
       }
     }
 
@@ -208,13 +210,13 @@ export function PersonnelList({ filters }: PersonnelListProps) {
     if (filters.name) {
       filtered = filtered.filter(
         (p) =>
-          p.userId.name.toLowerCase().includes(filters.name.toLowerCase()) ||
+          (p.user?.name || '').toLowerCase().includes(filters.name.toLowerCase()) ||
           p.employeeId.toLowerCase().includes(filters.name.toLowerCase())
       );
     }
 
     if (filters.role) {
-      filtered = filtered.filter((p) => p.roleId?._id === filters.role);
+      filtered = filtered.filter((p) => p.role?._id === filters.role);
     }
 
     if (filters.status === 'active') {

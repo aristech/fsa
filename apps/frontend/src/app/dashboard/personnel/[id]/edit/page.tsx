@@ -22,6 +22,7 @@ export default function Page() {
       open={open}
       onClose={() => router.push('/dashboard/personnel')}
       onCreated={() => router.push('/dashboard/personnel')}
+      personnelId={id}
     />
   );
 }

@@ -12,6 +12,7 @@ import ButtonBase from '@mui/material/ButtonBase';
 import { Iconify } from '../../iconify';
 import { createNavItem } from '../utils';
 import { navItemStyles, navSectionClasses } from '../styles';
+import { NavItemPermissionGuard } from '../nav-section-permission-guard';
 
 // ----------------------------------------------------------------------
 
@@ -33,6 +34,8 @@ export function NavItem({
   className,
   externalLink,
   enabledRootRedirect,
+  requiredPermissions,
+  allowedRoles,
   ...other
 }: NavItemProps) {
   const navItem = createNavItem({
@@ -54,59 +57,75 @@ export function NavItem({
   };
 
   return (
-    <ItemRoot
-      aria-label={title}
-      {...ownerState}
-      {...navItem.baseProps}
-      className={mergeClasses([navSectionClasses.item.root, className], {
-        [navSectionClasses.state.open]: open,
-        [navSectionClasses.state.active]: active,
-        [navSectionClasses.state.disabled]: disabled,
-      })}
-      sx={slotProps?.sx}
-      {...other}
+    <NavItemPermissionGuard
+      item={{
+        path,
+        title,
+        icon,
+        info,
+        caption,
+        requiredPermissions,
+        allowedRoles,
+      }}
     >
-      {icon && (
-        <ItemIcon {...ownerState} className={navSectionClasses.item.icon} sx={slotProps?.icon}>
-          {navItem.renderIcon}
-        </ItemIcon>
-      )}
+      <ItemRoot
+        aria-label={title}
+        {...ownerState}
+        {...navItem.baseProps}
+        className={mergeClasses([navSectionClasses.item.root, className], {
+          [navSectionClasses.state.open]: open,
+          [navSectionClasses.state.active]: active,
+          [navSectionClasses.state.disabled]: disabled,
+        })}
+        sx={slotProps?.sx}
+        {...other}
+      >
+        {icon && (
+          <ItemIcon {...ownerState} className={navSectionClasses.item.icon} sx={slotProps?.icon}>
+            {navItem.renderIcon}
+          </ItemIcon>
+        )}
 
-      {title && (
-        <ItemTexts {...ownerState} className={navSectionClasses.item.texts} sx={slotProps?.texts}>
-          <ItemTitle {...ownerState} className={navSectionClasses.item.title} sx={slotProps?.title}>
-            {title}
-          </ItemTitle>
+        {title && (
+          <ItemTexts {...ownerState} className={navSectionClasses.item.texts} sx={slotProps?.texts}>
+            <ItemTitle
+              {...ownerState}
+              className={navSectionClasses.item.title}
+              sx={slotProps?.title}
+            >
+              {title}
+            </ItemTitle>
 
-          {caption && (
-            <Tooltip title={caption} placement="top-start">
-              <ItemCaptionText
-                {...ownerState}
-                className={navSectionClasses.item.caption}
-                sx={slotProps?.caption}
-              >
-                {caption}
-              </ItemCaptionText>
-            </Tooltip>
-          )}
-        </ItemTexts>
-      )}
+            {caption && (
+              <Tooltip title={caption} placement="top-start">
+                <ItemCaptionText
+                  {...ownerState}
+                  className={navSectionClasses.item.caption}
+                  sx={slotProps?.caption}
+                >
+                  {caption}
+                </ItemCaptionText>
+              </Tooltip>
+            )}
+          </ItemTexts>
+        )}
 
-      {info && (
-        <ItemInfo {...ownerState} className={navSectionClasses.item.info} sx={slotProps?.info}>
-          {navItem.renderInfo}
-        </ItemInfo>
-      )}
+        {info && (
+          <ItemInfo {...ownerState} className={navSectionClasses.item.info} sx={slotProps?.info}>
+            {navItem.renderInfo}
+          </ItemInfo>
+        )}
 
-      {hasChild && (
-        <ItemArrow
-          {...ownerState}
-          icon={open ? 'eva:arrow-ios-downward-fill' : 'eva:arrow-ios-forward-fill'}
-          className={navSectionClasses.item.arrow}
-          sx={slotProps?.arrow}
-        />
-      )}
-    </ItemRoot>
+        {hasChild && (
+          <ItemArrow
+            {...ownerState}
+            icon={open ? 'eva:arrow-ios-downward-fill' : 'eva:arrow-ios-forward-fill'}
+            className={navSectionClasses.item.arrow}
+            sx={slotProps?.arrow}
+          />
+        )}
+      </ItemRoot>
+    </NavItemPermissionGuard>
   );
 }
 

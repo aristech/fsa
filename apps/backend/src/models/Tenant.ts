@@ -1,4 +1,4 @@
-import { model, Schema, models } from 'mongoose';
+import { model, Schema, models } from "mongoose";
 
 // ----------------------------------------------------------------------
 
@@ -8,6 +8,7 @@ export interface ITenant {
   slug: string;
   email: string;
   phone?: string;
+  ownerId: string;
   address?: {
     street: string;
     city: string;
@@ -26,8 +27,8 @@ export interface ITenant {
     };
   };
   subscription: {
-    plan: 'free' | 'basic' | 'premium' | 'enterprise';
-    status: 'active' | 'inactive' | 'cancelled';
+    plan: "free" | "basic" | "premium" | "enterprise";
+    status: "active" | "inactive" | "cancelled";
     startDate: Date;
     endDate?: Date;
   };
@@ -42,19 +43,19 @@ const TenantSchema = new Schema<ITenant>(
   {
     name: {
       type: String,
-      required: [true, 'Tenant name is required'],
+      required: [true, "Tenant name is required"],
       trim: true,
     },
     slug: {
       type: String,
-      required: [true, 'Tenant slug is required'],
+      required: [true, "Tenant slug is required"],
       unique: true,
       lowercase: true,
       trim: true,
     },
     email: {
       type: String,
-      required: [true, 'Email is required'],
+      required: [true, "Email is required"],
       unique: true,
       lowercase: true,
       trim: true,
@@ -63,33 +64,38 @@ const TenantSchema = new Schema<ITenant>(
       type: String,
       trim: true,
     },
+    ownerId: {
+      type: String,
+      required: [true, "Owner ID is required"],
+      index: true,
+    },
     address: {
       street: { type: String, trim: true },
       city: { type: String, trim: true },
       state: { type: String, trim: true },
       zipCode: { type: String, trim: true },
-      country: { type: String, trim: true, default: 'US' },
+      country: { type: String, trim: true, default: "US" },
     },
     settings: {
-      timezone: { type: String, default: 'America/New_York' },
-      currency: { type: String, default: 'USD' },
-      dateFormat: { type: String, default: 'MM/DD/YYYY' },
+      timezone: { type: String, default: "America/New_York" },
+      currency: { type: String, default: "USD" },
+      dateFormat: { type: String, default: "MM/DD/YYYY" },
       workingHours: {
-        start: { type: String, default: '09:00' },
-        end: { type: String, default: '17:00' },
+        start: { type: String, default: "09:00" },
+        end: { type: String, default: "17:00" },
         days: { type: [Number], default: [1, 2, 3, 4, 5] }, // Monday to Friday
       },
     },
     subscription: {
       plan: {
         type: String,
-        enum: ['free', 'basic', 'premium', 'enterprise'],
-        default: 'free',
+        enum: ["free", "basic", "premium", "enterprise"],
+        default: "free",
       },
       status: {
         type: String,
-        enum: ['active', 'inactive', 'cancelled'],
-        default: 'active',
+        enum: ["active", "inactive", "cancelled"],
+        default: "active",
       },
       startDate: { type: Date, default: Date.now },
       endDate: Date,
@@ -106,10 +112,12 @@ const TenantSchema = new Schema<ITenant>(
 
 // ----------------------------------------------------------------------
 
+// Note: Slug generation is now handled in the API routes for better control
+
 // Indexes for better performance
 // Note: slug and email indexes are automatically created by unique: true
 TenantSchema.index({ isActive: 1 });
 
 // ----------------------------------------------------------------------
 
-export const Tenant = models.Tenant || model<ITenant>('Tenant', TenantSchema);
+export const Tenant = models.Tenant || model<ITenant>("Tenant", TenantSchema);

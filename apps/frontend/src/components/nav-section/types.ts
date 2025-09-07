@@ -53,6 +53,7 @@ export type NavItemDataProps = Pick<NavItemStateProps, 'disabled'> & {
   caption?: string;
   deepMatch?: boolean;
   allowedRoles?: string | string[];
+  requiredPermissions?: string | string[];
   children?: NavItemDataProps[];
 };
 

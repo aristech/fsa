@@ -24,6 +24,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  TablePagination,
   CircularProgress,
   DialogContentText,
 } from '@mui/material';
@@ -68,14 +69,30 @@ export function ClientList() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  // Fetch clients from API
+  // Fetch clients from API with pagination
   const { data, error, isLoading, mutate } = useSWR(
-    endpoints.fsa.clients.list,
-    fetcher<{ success: boolean; data: { clients: Client[] } }>
+    `${endpoints.fsa.clients.list}?limit=${rowsPerPage}&offset=${page * rowsPerPage}`,
+    fetcher<{
+      success: boolean;
+      data: { clients: Client[]; total: number; limit: number; offset: number };
+    }>
   );
 
   const clients = data?.data?.clients || [];
+  const total = data?.data?.total || 0;
+
+  // Pagination handlers
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   // Action handlers
   const handleEditClient = (client: Client) => {
@@ -218,6 +235,16 @@ export function ClientList() {
             </TableBody>
           </Table>
         </Scrollbar>
+
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component="div"
+          count={total}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
       </Card>
 
       <Popover

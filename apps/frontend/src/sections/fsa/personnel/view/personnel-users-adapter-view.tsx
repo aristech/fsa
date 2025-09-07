@@ -60,16 +60,16 @@ const TABLE_HEAD: TableHeadCellProps[] = [
 type PersonnelApi = {
   _id: string;
   employeeId: string;
-  userId: { _id: string; name: string; email: string; phone?: string } | string;
-  roleId?: { _id: string; name: string; color: string } | string;
+  user?: { _id: string; name: string; email: string; phone?: string };
+  role?: { _id: string; name: string; color: string };
   isActive: boolean;
 };
 
 type RoleApi = { _id: string; name: string };
 
 function mapPersonnelToUserItem(person: PersonnelApi): { row: IUserItem; editHref: string } {
-  const user = typeof person.userId === 'string' ? undefined : person.userId;
-  const role = typeof person.roleId === 'string' ? undefined : person.roleId;
+  const user = person.user;
+  const role = person.role;
 
   const status: IUserItem['status'] = person.isActive ? (role ? 'active' : 'pending') : 'banned';
 
@@ -172,7 +172,7 @@ export function PersonnelUsersAdapterView() {
       }
     } catch (err) {
       // Silent fail; UI will show empty state
-       
+
       console.error('Failed to load personnel/roles', err);
     }
   };

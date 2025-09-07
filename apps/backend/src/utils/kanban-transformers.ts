@@ -41,7 +41,7 @@ export function transformProjectToKanbanTask(
           {
             id: project.managerId.toString(),
             name: "Project Manager", // This would be populated from user data
-            avatarUrl: "/assets/images/mock/avatar/avatar-1.webp",
+            avatarUrl: undefined,
           },
         ]
       : [],
@@ -51,7 +51,7 @@ export function transformProjectToKanbanTask(
     reporter: {
       id: project.managerId?.toString() || "unknown",
       name: "Project Manager", // This would be populated from user data
-      avatarUrl: "/assets/images/mock/avatar/avatar-1.webp",
+      avatarUrl: undefined,
     },
     attachments: [], // Projects don't have attachments in the current model
     comments: [], // Projects don't have comments in the current model
@@ -79,7 +79,7 @@ export function transformTaskToKanbanTask(
           {
             id: task.assignedTo.toString(),
             name: "Assigned User", // This would be populated from user data
-            avatarUrl: "/assets/images/mock/avatar/avatar-1.webp",
+            avatarUrl: undefined,
           },
         ]
       : [],
@@ -89,7 +89,7 @@ export function transformTaskToKanbanTask(
     reporter: {
       id: task.createdBy?.toString() || "unknown",
       name: "Task Creator", // This would be populated from user data
-      avatarUrl: "/assets/images/mock/avatar/avatar-1.webp",
+      avatarUrl: undefined,
     },
     attachments: task.attachments || [],
     comments: task.comments || [],

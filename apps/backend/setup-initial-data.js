@@ -32,27 +32,100 @@ async function setupInitialData() {
     );
     console.log("✅ Default tenant created/updated");
 
-    // Create default roles
+    // Create default roles using the new permission structure
     console.log("👥 Creating default roles...");
     const roles = [
-      { name: "admin", displayName: "Administrator", permissions: ["all"] },
       {
-        name: "supervisor",
-        displayName: "Supervisor",
-        permissions: ["read", "write", "assign"],
+        name: "Supervisor",
+        slug: "supervisor",
+        description:
+          "Full permissions on the tenant - can manage all aspects of the system",
+        color: "#1976d2",
+        isDefault: true,
+        isActive: true,
+        tenantId: tenant._id,
+        permissions: [
+          // Work Orders - Full access
+          "work_orders.view",
+          "work_orders.create",
+          "work_orders.edit",
+          "work_orders.delete",
+          "work_orders.assign",
+
+          // Projects - Full access
+          "projects.view",
+          "projects.create",
+          "projects.edit",
+          "projects.delete",
+
+          // Tasks - Full access
+          "tasks.view",
+          "tasks.create",
+          "tasks.edit",
+          "tasks.delete",
+
+          // Clients - Full access
+          "clients.view",
+          "clients.create",
+          "clients.edit",
+          "clients.delete",
+
+          // Personnel - Full access
+          "personnel.view",
+          "personnel.create",
+          "personnel.edit",
+          "personnel.delete",
+
+          // Calendar - Full access
+          "calendar.view",
+          "calendar.edit",
+
+          // Reports - Full access
+          "reports.view",
+          "reports.export",
+
+          // System Management - Limited
+          "statuses.manage",
+          "settings.manage",
+        ],
       },
       {
-        name: "technician",
-        displayName: "Technician",
-        permissions: ["read", "update_own"],
+        name: "Technician",
+        slug: "technician",
+        description:
+          "Can view and edit own tasks and calendar - limited access to other resources",
+        color: "#ed6c02",
+        isDefault: true,
+        isActive: true,
+        tenantId: tenant._id,
+        permissions: [
+          // Work Orders - Own only
+          "work_orders.view_own",
+          "work_orders.edit_own",
+
+          // Tasks - Own only
+          "tasks.view_own",
+          "tasks.edit_own",
+
+          // Calendar - Own only
+          "calendar.view_own",
+          "calendar.edit_own",
+
+          // Clients - View only
+          "clients.view",
+
+          // Personnel - View only
+          "personnel.view",
+        ],
       },
     ];
 
     for (const roleData of roles) {
-      await Role.findOneAndUpdate({ name: roleData.name }, roleData, {
-        upsert: true,
-        new: true,
-      });
+      await Role.findOneAndUpdate(
+        { name: roleData.name, tenantId: tenant._id },
+        roleData,
+        { upsert: true, new: true }
+      );
     }
     console.log("✅ Default roles created/updated");
 

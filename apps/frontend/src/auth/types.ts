@@ -15,6 +15,12 @@ export type UserType = {
   tenantId: string;
   tenant?: TenantType;
   accessToken?: string;
+  permissions?: string[];
+  isTenantOwner?: boolean;
+  phone?: string;
+  avatar?: string;
+  isActive?: boolean;
+  lastLoginAt?: Date;
 } | null;
 
 export type AuthState = {

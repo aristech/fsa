@@ -15,18 +15,20 @@ import {
   FormControl,
 } from '@mui/material';
 
+import axiosInstance from 'src/lib/axios';
+
 // ----------------------------------------------------------------------
 
 interface Personnel {
   _id: string;
   employeeId: string;
-  userId: {
+  user?: {
     _id: string;
     name: string;
     email: string;
     phone?: string;
   };
-  roleId?: {
+  role?: {
     _id: string;
     name: string;
     color: string;
@@ -48,7 +50,7 @@ interface PersonnelQuickEditFormProps {
 // ----------------------------------------------------------------------
 
 export function PersonnelQuickEditForm({ open, onClose, personnel }: PersonnelQuickEditFormProps) {
-  const [roleId, setRoleId] = useState(personnel.roleId?._id || '');
+  const [roleId, setRoleId] = useState(personnel.role?._id || '');
   const [hourlyRate, setHourlyRate] = useState(personnel.hourlyRate);
   const [isActive, setIsActive] = useState(personnel.isActive);
   const [roles, setRoles] = useState<any[]>([]);
@@ -59,8 +61,8 @@ export function PersonnelQuickEditForm({ open, onClose, personnel }: PersonnelQu
     if (open) {
       const fetchRoles = async () => {
         try {
-          const response = await fetch('/api/v1/roles/');
-          const data = await response.json();
+          const response = await axiosInstance.get('/api/v1/roles/');
+          const data = response.data;
 
           if (data.success) {
             setRoles(data.data);
@@ -120,7 +122,7 @@ export function PersonnelQuickEditForm({ open, onClose, personnel }: PersonnelQu
         <Typography variant="h6">Quick Edit</Typography>
 
         <Typography variant="subtitle2" color="text.secondary">
-          {personnel.userId.name} ({personnel.employeeId})
+          {personnel.user?.name || 'Unknown'} ({personnel.employeeId})
         </Typography>
 
         <FormControl fullWidth>

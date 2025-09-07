@@ -19,6 +19,9 @@ import {
 
 import { useTenantAPI } from 'src/hooks/use-tenant';
 
+import axiosInstance from 'src/lib/axios';
+import { CONFIG } from 'src/global-config';
+
 import { Form, RHFTextField } from 'src/components/hook-form';
 
 // ----------------------------------------------------------------------
@@ -77,6 +80,8 @@ export function PersonnelCreateView({
   const [roles, setRoles] = useState<RoleOption[]>([]);
   const [users, setUsers] = useState<UserOption[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [skillOptions, setSkillOptions] = useState<string[]>([]);
+  const [certOptions, setCertOptions] = useState<string[]>([]);
 
   const methods = useForm<zod.input<typeof schema>>({
     resolver: zodResolver(schema),
@@ -113,13 +118,41 @@ export function PersonnelCreateView({
     const load = async () => {
       setLoading(true);
       try {
+        // Reset form to default values when opening dialog
+        reset({
+          userId: '',
+          employeeId: '',
+          name: '',
+          email: '',
+          phone: '',
+          roleId: undefined,
+          hourlyRate: 0,
+          notes: '',
+          skills: [],
+          certifications: [],
+          sendInvitation: false,
+          availability: {
+            monday: { start: '09:00', end: '17:00', available: true },
+            tuesday: { start: '09:00', end: '17:00', available: true },
+            wednesday: { start: '09:00', end: '17:00', available: true },
+            thursday: { start: '09:00', end: '17:00', available: true },
+            friday: { start: '09:00', end: '17:00', available: true },
+            saturday: { start: '09:00', end: '17:00', available: false },
+            sunday: { start: '09:00', end: '17:00', available: false },
+          },
+          location: { address: '' },
+        });
         // If editing, fetch the record first (independent of tenantId)
         let p: any = null;
         if (personnelId) {
-          const res = await fetch(getURL(`/api/v1/personnel/?id=${personnelId}`));
-          const json = await res.json();
-          if (json?.success && json.data) {
-            p = json.data;
+          try {
+            const res = await axiosInstance.get(`/api/v1/personnel/?id=${personnelId}`);
+            const json = res.data;
+            if (json?.success && json.data) {
+              p = json.data;
+            }
+          } catch (error) {
+            console.error('Error fetching personnel:', error);
           }
         }
 
@@ -127,39 +160,24 @@ export function PersonnelCreateView({
         const effectiveTenantId: string | null =
           tenantId || (p?.tenantId ? String(p.tenantId) : null);
 
-        // Fetch all tenant-scoped data in parallel using effective tenant id
-        const rolesUrl = effectiveTenantId
-          ? `/api/v1/roles/?tenantId=${effectiveTenantId}`
-          : getURL('/api/v1/roles/');
-        const usersUrl = effectiveTenantId
-          ? `/api/v1/users/?tenantId=${effectiveTenantId}`
-          : getURL('/api/v1/users/');
-        const skillsUrl = effectiveTenantId
-          ? `/api/v1/skills/?tenantId=${effectiveTenantId}`
-          : getURL('/api/v1/skills/');
-        const certsUrl = effectiveTenantId
-          ? `/api/v1/certifications/?tenantId=${effectiveTenantId}`
-          : getURL('/api/v1/certifications/');
+        // Fetch available data using correct endpoints
+        const rolesUrl = `/api/v1/roles/`;
 
-        const [rolesRes, usersRes, skillsRes, certsRes] = await Promise.all([
-          fetch(rolesUrl),
-          fetch(usersUrl),
-          fetch(skillsUrl),
-          fetch(certsUrl),
-        ]);
+        // Fetch roles and other data
+        const [rolesRes] = await Promise.all([axiosInstance.get(rolesUrl)]);
 
-        const [rolesJson, usersJson, skillsJson, certsJson] = await Promise.all([
-          rolesRes.json(),
-          usersRes.json(),
-          skillsRes.json(),
-          certsRes.json(),
-        ]);
+        const rolesJson = rolesRes.data;
+
+        // TODO: Implement users, skills, and certifications endpoints
+        const usersJson = { success: true, data: [] };
+        const skillsJson = { success: true, data: [] };
+        const certsJson = { success: true, data: [] };
 
         // Set roles
         let loadedRoles: RoleOption[] = Array.isArray(rolesJson?.data) ? rolesJson.data : [];
         // Ensure current role exists in options
-        if (p?.roleId?._id && !loadedRoles.some((r) => String(r._id) === String(p.roleId._id))) {
-          loadedRoles = [...loadedRoles, p.roleId];
+        if (p?.role?._id && !loadedRoles.some((r) => String(r._id) === String(p.role._id))) {
+          loadedRoles = [...loadedRoles, p.role];
         }
         setRoles(loadedRoles);
 
@@ -178,12 +196,12 @@ export function PersonnelCreateView({
         if (p) {
           console.log('Personnel data loaded:', p);
           const formData = {
-            userId: p.userId?._id || '',
+            userId: p.user?._id || '',
             employeeId: p.employeeId || '',
-            name: p.userId?.name || '',
-            email: p.userId?.email || '',
-            phone: p.userId?.phone || '',
-            roleId: p.roleId?._id || undefined,
+            name: p.user?.name || '',
+            email: p.user?.email || '',
+            phone: p.user?.phone || '',
+            roleId: p.role?._id || undefined,
             hourlyRate: p.hourlyRate || 0,
             notes: p.notes || '',
             skills: p.skills || [],
@@ -198,12 +216,13 @@ export function PersonnelCreateView({
               sunday: { start: '09:00', end: '17:00', available: false },
             },
             location: { address: p.location?.address || '' },
+            sendInvitation: false, // Always false for editing
           };
           console.log('Form data to reset:', formData);
 
           // Reset after a small delay to ensure form is ready
           setTimeout(() => {
-            methods.reset(formData);
+            reset(formData);
           }, 100);
         }
       } catch (error) {
@@ -219,8 +238,8 @@ export function PersonnelCreateView({
   const onSubmit = handleSubmit(async (data) => {
     const isEdit = !!personnelId;
     const endpoint = isEdit
-      ? getURL(`/api/v1/personnel/?id=${personnelId}`)
-      : getURL('/api/v1/personnel/');
+      ? `${CONFIG.serverUrl}/api/v1/personnel/${personnelId}`
+      : `${CONFIG.serverUrl}/api/v1/personnel/`;
     const method = isEdit ? 'PUT' : 'POST';
 
     const payload = {
@@ -242,13 +261,13 @@ export function PersonnelCreateView({
       payload.sendInvitation = true;
     }
 
-    const res = await fetch(endpoint, {
+    const res = await axiosInstance({
+      url: endpoint,
       method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      data: payload,
     });
 
-    if (res.ok) {
+    if (res.status >= 200 && res.status < 300) {
       reset();
       onClose();
       onCreated?.();
@@ -262,21 +281,14 @@ export function PersonnelCreateView({
     [users]
   );
 
-  const [skillOptions, setSkillOptions] = useState<string[]>([]);
-  const [certOptions, setCertOptions] = useState<string[]>([]);
-
   const handleAddRole = async (name: string) => {
-    const res = await fetch(getURL('/api/v1/roles/'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
-    });
-    const json = await res.json();
+    const res = await axiosInstance.post('/api/v1/roles/', { name });
+    const json = res.data;
     if (json?.data) setRoles((prev) => [...prev, json.data]);
   };
 
   const handleDeleteRole = async (id: string) => {
-    await fetch(getURL(`/api/v1/roles/?id=${id}`), { method: 'DELETE' });
+    await axiosInstance.delete(`/api/v1/roles/?id=${id}`);
     setRoles((prev) => prev.filter((r) => r._id !== id));
   };
 

@@ -8,6 +8,8 @@ import { emailRoutes } from "./email";
 import { personnelRoutes } from "./personnel";
 import { rolesRoutes } from "./roles";
 import { workOrderRoutes } from "./work-orders";
+import { tenantRoutes } from "./tenants";
+import { permissionRoutes } from "./permissions";
 
 export async function registerRoutes(fastify: FastifyInstance) {
   // Health check
@@ -18,8 +20,10 @@ export async function registerRoutes(fastify: FastifyInstance) {
   // API routes
   await fastify.register(authRoutes, { prefix: "/api/v1/auth" });
   await fastify.register(emailRoutes, { prefix: "/api/v1/email" });
+  await fastify.register(tenantRoutes, { prefix: "/api/v1/tenants" });
   await fastify.register(personnelRoutes, { prefix: "/api/v1/personnel" });
   await fastify.register(rolesRoutes, { prefix: "/api/v1/roles" });
+  await fastify.register(permissionRoutes, { prefix: "/api/v1/permissions" });
   await fastify.register(kanbanRoutes, { prefix: "/api/v1/kanban" });
   await fastify.register(clientRoutes, { prefix: "/api/v1/clients" });
   await fastify.register(calendarRoutes, { prefix: "/api/v1/calendar" });

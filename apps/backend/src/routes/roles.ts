@@ -1,6 +1,11 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import { Role, Tenant, Personnel } from "../models";
+import { slugify } from "../utils/slugify";
+import {
+  requirePermission,
+  requireAnyPermission,
+} from "../middleware/permission-guard";
 
 // Role creation schema
 const createRoleSchema = z.object({
@@ -33,6 +38,13 @@ const updateRoleSchema = z.object({
 
 // Roles routes
 export async function rolesRoutes(fastify: FastifyInstance) {
+  // Apply authentication middleware to all routes
+  fastify.addHook("preHandler", async (request, reply) => {
+    // Import authenticate function here to avoid circular dependency
+    const { authenticate } = await import("../middleware/auth");
+    return authenticate(request, reply);
+  });
+
   // GET /api/v1/roles - Get all roles
   fastify.get("/", async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -70,174 +82,205 @@ export async function rolesRoutes(fastify: FastifyInstance) {
   });
 
   // POST /api/v1/roles - Create new role
-  fastify.post("/", async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const validatedData = createRoleSchema.parse(request.body);
+  fastify.post(
+    "/",
+    {
+      preHandler: requirePermission("roles.create"),
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const validatedData = createRoleSchema.parse(request.body);
 
-      // Get tenant
-      const tenant = await Tenant.findOne({ isActive: true });
-      if (!tenant) {
-        return reply.status(404).send({
-          success: false,
-          message: "No active tenant found",
-        });
-      }
+        // Get tenant
+        const tenant = await Tenant.findOne({ isActive: true });
+        if (!tenant) {
+          return reply.status(404).send({
+            success: false,
+            message: "No active tenant found",
+          });
+        }
 
-      // Check if role name already exists for this tenant
-      const existingRole = await Role.findOne({
-        tenantId: tenant._id,
-        name: validatedData.name,
-      });
+        // Generate slug from name
+        const slug = slugify(validatedData.name, { strict: true });
 
-      if (existingRole) {
-        return reply.status(400).send({
-          success: false,
-          message: "Role with this name already exists",
-        });
-      }
-
-      const role = new Role({
-        ...validatedData,
-        tenantId: tenant._id,
-        isDefault: false,
-        isActive: true,
-      });
-
-      await role.save();
-
-      return reply.send({
-        success: true,
-        data: role,
-        message: "Role created successfully",
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return reply.status(400).send({
-          success: false,
-          message: "Validation error",
-          errors: error.errors,
-        });
-      }
-
-      fastify.log.error("Error creating role:", error);
-      return reply.status(500).send({
-        success: false,
-        message: "Failed to create role",
-      });
-    }
-  });
-
-  // GET /api/v1/roles/:id - Get role by ID
-  fastify.get("/:id", async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const { id } = request.params as { id: string };
-
-      // Get tenant
-      const tenant = await Tenant.findOne({ isActive: true });
-      if (!tenant) {
-        return reply.status(404).send({
-          success: false,
-          message: "No active tenant found",
-        });
-      }
-
-      const role = await Role.findOne({
-        _id: id,
-        tenantId: tenant._id,
-      });
-
-      if (!role) {
-        return reply.status(404).send({
-          success: false,
-          message: "Role not found",
-        });
-      }
-
-      return reply.send({
-        success: true,
-        data: role,
-      });
-    } catch (error) {
-      fastify.log.error("Error fetching role:", error);
-      return reply.status(500).send({
-        success: false,
-        message: "Failed to fetch role",
-      });
-    }
-  });
-
-  // PUT /api/v1/roles/:id - Update role
-  fastify.put("/:id", async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const { id } = request.params as { id: string };
-      const validatedData = updateRoleSchema.parse(request.body);
-
-      // Get tenant
-      const tenant = await Tenant.findOne({ isActive: true });
-      if (!tenant) {
-        return reply.status(404).send({
-          success: false,
-          message: "No active tenant found",
-        });
-      }
-
-      const role = await Role.findOne({
-        _id: id,
-        tenantId: tenant._id,
-      });
-
-      if (!role) {
-        return reply.status(404).send({
-          success: false,
-          message: "Role not found",
-        });
-      }
-
-      // Check if role name already exists for this tenant (if name is being updated)
-      if (validatedData.name && validatedData.name !== role.name) {
+        // Check if role name or slug already exists for this tenant
         const existingRole = await Role.findOne({
           tenantId: tenant._id,
-          name: validatedData.name,
-          _id: { $ne: id },
+          $or: [{ name: validatedData.name }, { slug: slug }],
         });
 
         if (existingRole) {
           return reply.status(400).send({
             success: false,
-            message: "Role with this name already exists",
+            message: "Role with this name or slug already exists",
           });
         }
-      }
 
-      // Update role
-      Object.assign(role, validatedData);
-      await role.save();
+        const role = new Role({
+          ...validatedData,
+          slug: slug,
+          tenantId: tenant._id,
+          isDefault: false,
+          isActive: true,
+        });
 
-      return reply.send({
-        success: true,
-        data: role,
-        message: "Role updated successfully",
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return reply.status(400).send({
+        await role.save();
+
+        return reply.send({
+          success: true,
+          data: role,
+          message: "Role created successfully",
+        });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({
+            success: false,
+            message: "Validation error",
+            errors: error.errors,
+          });
+        }
+
+        fastify.log.error("Error creating role:", error);
+        return reply.status(500).send({
           success: false,
-          message: "Validation error",
-          errors: error.errors,
+          message: "Failed to create role",
         });
       }
-
-      fastify.log.error("Error updating role:", error);
-      return reply.status(500).send({
-        success: false,
-        message: "Failed to update role",
-      });
     }
-  });
+  );
+
+  // GET /api/v1/roles/:id - Get role by ID
+  fastify.get(
+    "/:id",
+    {
+      preHandler: requirePermission("roles.view"),
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const { id } = request.params as { id: string };
+
+        // Get tenant
+        const tenant = await Tenant.findOne({ isActive: true });
+        if (!tenant) {
+          return reply.status(404).send({
+            success: false,
+            message: "No active tenant found",
+          });
+        }
+
+        const role = await Role.findOne({
+          _id: id,
+          tenantId: tenant._id,
+        });
+
+        if (!role) {
+          return reply.status(404).send({
+            success: false,
+            message: "Role not found",
+          });
+        }
+
+        return reply.send({
+          success: true,
+          data: role,
+        });
+      } catch (error) {
+        fastify.log.error("Error fetching role:", error);
+        return reply.status(500).send({
+          success: false,
+          message: "Failed to fetch role",
+        });
+      }
+    }
+  );
+
+  // PUT /api/v1/roles/:id - Update role
+  fastify.put(
+    "/:id",
+    {
+      preHandler: requirePermission("roles.edit"),
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const { id } = request.params as { id: string };
+        const validatedData = updateRoleSchema.parse(request.body);
+
+        // Get tenant
+        const tenant = await Tenant.findOne({ isActive: true });
+        if (!tenant) {
+          return reply.status(404).send({
+            success: false,
+            message: "No active tenant found",
+          });
+        }
+
+        const role = await Role.findOne({
+          _id: id,
+          tenantId: tenant._id,
+        });
+
+        if (!role) {
+          return reply.status(404).send({
+            success: false,
+            message: "Role not found",
+          });
+        }
+
+        // Check if role name already exists for this tenant (if name is being updated)
+        if (validatedData.name && validatedData.name !== role.name) {
+          // Generate new slug from updated name
+          const newSlug = slugify(validatedData.name, { strict: true });
+
+          const existingRole = await Role.findOne({
+            tenantId: tenant._id,
+            $or: [{ name: validatedData.name }, { slug: newSlug }],
+            _id: { $ne: id },
+          });
+
+          if (existingRole) {
+            return reply.status(400).send({
+              success: false,
+              message: "Role with this name or slug already exists",
+            });
+          }
+
+          // Update slug when name changes
+          validatedData.slug = newSlug;
+        }
+
+        // Update role
+        Object.assign(role, validatedData);
+        await role.save();
+
+        return reply.send({
+          success: true,
+          data: role,
+          message: "Role updated successfully",
+        });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({
+            success: false,
+            message: "Validation error",
+            errors: error.errors,
+          });
+        }
+
+        fastify.log.error("Error updating role:", error);
+        return reply.status(500).send({
+          success: false,
+          message: "Failed to update role",
+        });
+      }
+    }
+  );
 
   // DELETE /api/v1/roles/:id - Delete role
   fastify.delete(
     "/:id",
+    {
+      preHandler: requirePermission("roles.delete"),
+    },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { id } = request.params as { id: string };

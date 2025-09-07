@@ -193,31 +193,64 @@ export const navData: NavSectionProps['data'] = [
         title: 'Work Orders',
         path: paths.dashboard.fsa.workOrders.root,
         icon: ICONS.workOrder,
+        requiredPermissions: 'work_orders.view',
         children: [
-          { title: 'List', path: paths.dashboard.fsa.workOrders.root },
-          { title: 'Create', path: paths.dashboard.fsa.workOrders.new },
+          {
+            title: 'List',
+            path: paths.dashboard.fsa.workOrders.root,
+            requiredPermissions: 'work_orders.view',
+          },
+          {
+            title: 'Create',
+            path: paths.dashboard.fsa.workOrders.new,
+            requiredPermissions: 'work_orders.create',
+          },
         ],
       },
       {
         title: 'Clients',
         path: paths.dashboard.fsa.clients.root,
         icon: ICONS.customer,
+        requiredPermissions: 'clients.view',
         children: [
-          { title: 'List', path: paths.dashboard.fsa.clients.root },
-          { title: 'Create', path: paths.dashboard.fsa.clients.new },
+          {
+            title: 'List',
+            path: paths.dashboard.fsa.clients.root,
+            requiredPermissions: 'clients.view',
+          },
+          {
+            title: 'Create',
+            path: paths.dashboard.fsa.clients.new,
+            requiredPermissions: 'clients.create',
+          },
         ],
       },
       {
         title: 'Personnel',
         path: '/dashboard/personnel',
         icon: ICONS.technician,
+        requiredPermissions: 'personnel.view',
         children: [
-          { title: 'List', path: '/dashboard/personnel' },
-          { title: 'Create', path: '/dashboard/personnel/new' },
+          { title: 'List', path: '/dashboard/personnel', requiredPermissions: 'personnel.view' },
+          {
+            title: 'Roles',
+            path: '/dashboard/personnel/roles',
+            requiredPermissions: 'roles.manage',
+          },
         ],
       },
-      { title: 'Scheduling', path: paths.dashboard.calendar, icon: ICONS.scheduling },
-      { title: 'Reports', path: paths.dashboard.general.analytics, icon: ICONS.reports },
+      {
+        title: 'Scheduling',
+        path: paths.dashboard.calendar,
+        icon: ICONS.scheduling,
+        requiredPermissions: 'calendar.view',
+      },
+      {
+        title: 'Reports',
+        path: paths.dashboard.general.analytics,
+        icon: ICONS.reports,
+        requiredPermissions: 'reports.view',
+      },
     ],
   },
   /**

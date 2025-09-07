@@ -1,6 +1,23 @@
-import { Card, Grid, Chip, Stack, Button, Divider, Typography, CardContent } from '@mui/material';
+'use client';
+
+import useSWR from 'swr';
+
+import {
+  Card,
+  Grid,
+  Chip,
+  Stack,
+  Button,
+  Slider,
+  Divider,
+  Typography,
+  CardContent,
+  LinearProgress,
+} from '@mui/material';
 
 import { fDateTime } from 'src/utils/format-time';
+
+import axiosInstance, { endpoints } from 'src/lib/axios';
 
 import { Iconify } from 'src/components/iconify';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
@@ -11,66 +28,7 @@ type Props = {
   id: string;
 };
 
-// Mock data - in real app, this would come from API
-const WORK_ORDER = {
-  id: '1',
-  workOrderNumber: 'WO-000001',
-  title: 'HVAC System Maintenance',
-  description: 'Routine maintenance and inspection of HVAC system in main office building',
-  customer: {
-    id: '1',
-    name: 'TechCorp Solutions',
-    email: 'contact@techcorp.com',
-    phone: '+1-555-0456',
-    address: '123 Business Ave, New York, NY 10001',
-  },
-  technician: {
-    id: '1',
-    name: 'John Smith',
-    phone: '+1-555-0123',
-  },
-  status: 'in-progress',
-  priority: 'high',
-  category: 'HVAC Maintenance',
-  location: {
-    address: '123 Business Ave',
-    city: 'New York',
-    state: 'NY',
-    zipCode: '10001',
-  },
-  scheduledDate: new Date('2024-01-15T09:00:00'),
-  estimatedDuration: 120,
-  actualDuration: null,
-  cost: {
-    labor: 0,
-    materials: 0,
-    total: 0,
-  },
-  materials: [],
-  notes: 'Customer prefers morning appointments',
-  history: [
-    {
-      status: 'created',
-      timestamp: new Date('2024-01-14T10:00:00'),
-      user: 'Admin User',
-      notes: 'Work order created',
-    },
-    {
-      status: 'assigned',
-      timestamp: new Date('2024-01-14T14:30:00'),
-      user: 'Admin User',
-      notes: 'Assigned to John Smith',
-    },
-    {
-      status: 'in-progress',
-      timestamp: new Date('2024-01-15T09:00:00'),
-      user: 'John Smith',
-      notes: 'Started work on HVAC system',
-    },
-  ],
-  createdAt: new Date('2024-01-14T10:00:00'),
-  updatedAt: new Date('2024-01-15T09:00:00'),
-};
+// Server-driven UI
 
 // ----------------------------------------------------------------------
 
@@ -109,16 +67,43 @@ const getPriorityColor = (priority: string) => {
 // ----------------------------------------------------------------------
 
 export function WorkOrderDetails({ id }: Props) {
-  const workOrder = WORK_ORDER; // In real app, fetch by id
+  // Fetch work order data
+  const { data: detailsRes } = useSWR(
+    endpoints.fsa.workOrders.details(id),
+    (url: string) => axiosInstance.get(url).then((r) => r.data),
+    { revalidateOnFocus: true }
+  );
+
+  // Fetch progress summary from backend
+  const { data: summaryRes } = useSWR(
+    endpoints.fsa.workOrders.summary(id),
+    (url: string) => axiosInstance.get(url).then((r) => r.data),
+    { revalidateOnFocus: true }
+  );
+  const summary = summaryRes?.data as
+    | {
+        progressMode?: 'computed' | 'manual' | 'weighted';
+        progress?: number;
+        tasksTotal?: number;
+        tasksCompleted?: number;
+        tasksInProgress?: number;
+        tasksBlocked?: number;
+        startedAt?: string | null;
+        completedAt?: string | null;
+        status?: string;
+      }
+    | undefined;
+
+  const workOrder = detailsRes?.data;
 
   return (
     <>
       <CustomBreadcrumbs
-        heading={workOrder.workOrderNumber}
+        heading={workOrder?.workOrderNumber || 'Work Order'}
         links={[
           { name: 'Dashboard', href: '/dashboard' },
           { name: 'Work Orders', href: '/dashboard/work-orders' },
-          { name: workOrder.workOrderNumber },
+          ...(workOrder?.workOrderNumber ? [{ name: workOrder.workOrderNumber }] : []),
         ]}
         action={
           <Stack direction="row" spacing={1}>
@@ -134,27 +119,121 @@ export function WorkOrderDetails({ id }: Props) {
       />
 
       <Grid container spacing={3}>
+        {/* Header card with client and metadata */}
+        <Grid item xs={12}>
+          <Card>
+            <CardContent>
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={8}>
+                  <Stack spacing={1}>
+                    <Typography variant="h5">{workOrder?.title || '—'}</Typography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Chip label={workOrder?.status || 'created'} size="small" variant="soft" />
+                      <Chip
+                        label={workOrder?.priority || 'medium'}
+                        size="small"
+                        variant="outlined"
+                      />
+                      {workOrder?.workOrderNumber && (
+                        <Chip label={workOrder.workOrderNumber} size="small" variant="outlined" />
+                      )}
+                    </Stack>
+                  </Stack>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Stack spacing={1} alignItems={{ xs: 'flex-start', md: 'flex-end' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Client
+                    </Typography>
+                    <Typography variant="subtitle2">
+                      {typeof workOrder?.clientId === 'object' ? workOrder?.clientId?.name : '—'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {workOrder?.scheduledDate
+                        ? `Scheduled: ${fDateTime(workOrder.scheduledDate)}`
+                        : 'Not scheduled'}
+                    </Typography>
+                  </Stack>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+        {/* Progress Summary */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Stack spacing={1.5}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="h6">Progress</Typography>
+                  {summary?.progressMode && (
+                    <Chip label={summary.progressMode} size="small" variant="outlined" />
+                  )}
+                </Stack>
+                <LinearProgress
+                  variant="determinate"
+                  value={Math.max(0, Math.min(100, summary?.progress ?? 0))}
+                  sx={{ height: 8, borderRadius: 1 }}
+                />
+                <Typography variant="body2" color="text.secondary">
+                  {(summary?.progress ?? 0).toString()}% • {summary?.tasksCompleted ?? 0}/
+                  {summary?.tasksTotal ?? 0} completed
+                  {typeof summary?.tasksInProgress === 'number' ||
+                  typeof summary?.tasksBlocked === 'number'
+                    ? ` • ${summary?.tasksInProgress ?? 0} in progress • ${summary?.tasksBlocked ?? 0} blocked`
+                    : ''}
+                </Typography>
+
+                {/* Manual slider when mode is manual */}
+                {summary?.progressMode === 'manual' && (
+                  <Stack spacing={1}>
+                    <Typography variant="caption" color="text.secondary">
+                      Adjust progress
+                    </Typography>
+                    <Slider
+                      value={summary?.progress ?? 0}
+                      step={1}
+                      min={0}
+                      max={100}
+                      valueLabelDisplay="auto"
+                      onChangeCommitted={async (_e, value) => {
+                        try {
+                          // Persist manual progress on Work Order
+                          await axiosInstance.put(endpoints.fsa.workOrders.details(id), {
+                            progressManual: Array.isArray(value) ? value[0] : value,
+                          });
+                        } catch (err) {
+                          // noop; could add a toast
+                        }
+                      }}
+                    />
+                  </Stack>
+                )}
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
         {/* Main Information */}
         <Grid item xs={12} md={8}>
           <Card>
             <CardContent>
               <Stack spacing={3}>
                 <Stack direction="row" alignItems="center" spacing={2}>
-                  <Typography variant="h5">{workOrder.title}</Typography>
+                  <Typography variant="h5">{workOrder?.title || '—'}</Typography>
                   <Chip
-                    label={workOrder.status}
-                    color={getStatusColor(workOrder.status)}
+                    label={workOrder?.status || 'created'}
+                    color={getStatusColor(workOrder?.status || 'created')}
                     variant="soft"
                   />
                   <Chip
-                    label={workOrder.priority}
-                    color={getPriorityColor(workOrder.priority)}
+                    label={workOrder?.priority || 'medium'}
+                    color={getPriorityColor(workOrder?.priority || 'medium')}
                     variant="soft"
                   />
                 </Stack>
 
                 <Typography variant="body1" color="text.secondary">
-                  {workOrder.description}
+                  {workOrder?.details || 'No details provided'}
                 </Typography>
 
                 <Divider />
@@ -167,24 +246,17 @@ export function WorkOrderDetails({ id }: Props) {
                         <Typography variant="caption" color="text.secondary">
                           Work Order Number
                         </Typography>
-                        <Typography variant="body2">{workOrder.workOrderNumber}</Typography>
+                        <Typography variant="body2">{workOrder?.workOrderNumber || '—'}</Typography>
                       </Stack>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Stack spacing={0.5}>
-                        <Typography variant="caption" color="text.secondary">
-                          Category
-                        </Typography>
-                        <Typography variant="body2">{workOrder.category}</Typography>
-                      </Stack>
-                    </Grid>
+
                     <Grid item xs={12} sm={6}>
                       <Stack spacing={0.5}>
                         <Typography variant="caption" color="text.secondary">
                           Scheduled Date
                         </Typography>
                         <Typography variant="body2">
-                          {fDateTime(workOrder.scheduledDate)}
+                          {workOrder?.scheduledDate ? fDateTime(workOrder.scheduledDate) : '—'}
                         </Typography>
                       </Stack>
                     </Grid>
@@ -194,7 +266,14 @@ export function WorkOrderDetails({ id }: Props) {
                           Estimated Duration
                         </Typography>
                         <Typography variant="body2">
-                          {workOrder.estimatedDuration} minutes
+                          {(() => {
+                            const ed: any = (workOrder as any)?.estimatedDuration;
+                            if (!ed) return '—';
+                            if (typeof ed === 'number') return `${ed} min`;
+                            if (typeof ed?.value === 'number' && ed?.unit)
+                              return `${ed.value} ${ed.unit}`;
+                            return '—';
+                          })()}
                         </Typography>
                       </Stack>
                     </Grid>
@@ -203,22 +282,19 @@ export function WorkOrderDetails({ id }: Props) {
 
                 <Divider />
 
-                <Stack spacing={2}>
-                  <Typography variant="h6">Location</Typography>
-                  <Typography variant="body2">
-                    {workOrder.location.address}
-                    <br />
-                    {workOrder.location.city}, {workOrder.location.state}{' '}
-                    {workOrder.location.zipCode}
-                  </Typography>
-                </Stack>
+                {workOrder?.location?.address && (
+                  <Stack spacing={2}>
+                    <Typography variant="h6">Location</Typography>
+                    <Typography variant="body2">{workOrder.location.address}</Typography>
+                  </Stack>
+                )}
 
-                {workOrder.notes && (
+                {(workOrder as any)?.notes && (
                   <>
                     <Divider />
                     <Stack spacing={2}>
                       <Typography variant="h6">Notes</Typography>
-                      <Typography variant="body2">{workOrder.notes}</Typography>
+                      <Typography variant="body2">{(workOrder as any).notes}</Typography>
                     </Stack>
                   </>
                 )}
@@ -230,42 +306,38 @@ export function WorkOrderDetails({ id }: Props) {
         {/* Sidebar */}
         <Grid item xs={12} md={4}>
           <Stack spacing={3}>
-            {/* Customer Information */}
+            {/* Client Information */}
             <Card>
               <CardContent>
                 <Stack spacing={2}>
-                  <Typography variant="h6">Customer</Typography>
+                  <Typography variant="h6">Client</Typography>
                   <Stack spacing={1}>
-                    <Typography variant="subtitle2">{workOrder.customer.name}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {workOrder.customer.email}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {workOrder.customer.phone}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {workOrder.customer.address}
+                    <Typography variant="subtitle2">
+                      {typeof workOrder?.clientId === 'object' ? workOrder.clientId.name : '—'}
                     </Typography>
                   </Stack>
                 </Stack>
               </CardContent>
             </Card>
 
-            {/* Technician Information */}
+            {/* Assigned Personnel */}
             <Card>
               <CardContent>
                 <Stack spacing={2}>
-                  <Typography variant="h6">Assigned Technician</Typography>
-                  {workOrder.technician ? (
-                    <Stack spacing={1}>
-                      <Typography variant="subtitle2">{workOrder.technician.name}</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {workOrder.technician.phone}
-                      </Typography>
+                  <Typography variant="h6">Assigned Personnel</Typography>
+                  {Array.isArray(workOrder?.personnelIds) && workOrder.personnelIds.length > 0 ? (
+                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                      {workOrder.personnelIds.map((p: any) => (
+                        <Chip
+                          key={p._id}
+                          label={p?.user?.name || p?.employeeId || '—'}
+                          size="small"
+                        />
+                      ))}
                     </Stack>
                   ) : (
                     <Typography variant="body2" color="text.secondary">
-                      No technician assigned
+                      Unassigned
                     </Typography>
                   )}
                 </Stack>
@@ -278,29 +350,32 @@ export function WorkOrderDetails({ id }: Props) {
                 <Stack spacing={2}>
                   <Typography variant="h6">History</Typography>
                   <Stack spacing={2}>
-                    {workOrder.history.map((entry, index) => (
-                      <Stack key={index} spacing={0.5}>
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                          <Chip
-                            label={entry.status}
-                            color={getStatusColor(entry.status)}
-                            variant="soft"
-                            size="small"
-                          />
-                          <Typography variant="caption" color="text.secondary">
-                            {fDateTime(entry.timestamp)}
-                          </Typography>
+                    {Array.isArray(workOrder?.history) &&
+                      workOrder.history.map((entry: any, index: number) => (
+                        <Stack key={index} spacing={0.5}>
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <Chip
+                              label={entry.status}
+                              color={getStatusColor(entry.status)}
+                              variant="soft"
+                              size="small"
+                            />
+                            <Typography variant="caption" color="text.secondary">
+                              {entry.timestamp ? fDateTime(entry.timestamp) : ''}
+                            </Typography>
+                          </Stack>
+                          {entry.userId && (
+                            <Typography variant="body2" color="text.secondary">
+                              {entry.userId}
+                            </Typography>
+                          )}
+                          {entry.notes && (
+                            <Typography variant="caption" color="text.secondary">
+                              {entry.notes}
+                            </Typography>
+                          )}
                         </Stack>
-                        <Typography variant="body2" color="text.secondary">
-                          {entry.user}
-                        </Typography>
-                        {entry.notes && (
-                          <Typography variant="caption" color="text.secondary">
-                            {entry.notes}
-                          </Typography>
-                        )}
-                      </Stack>
-                    ))}
+                      ))}
                   </Stack>
                 </Stack>
               </CardContent>

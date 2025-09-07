@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { AuthenticatedRequest } from "../types";
 import { Task, Project } from "../models";
+import { WorkOrderProgressService } from "../services/work-order-progress-service";
 import {
   transformProjectToKanbanTask,
   transformTaskToKanbanTask,
@@ -175,6 +176,14 @@ async function handleCreateTask(
 
   await newTask.save();
 
+  // Recompute work order aggregates if linked
+  if (newTask.workOrderId) {
+    await WorkOrderProgressService.recomputeForWorkOrder(
+      tenant._id.toString(),
+      newTask.workOrderId.toString()
+    );
+  }
+
   return reply.send({
     success: true,
     message: "Task created successfully",
@@ -255,6 +264,13 @@ async function handleUpdateTask(
       success: false,
       error: "Task not found",
     });
+  }
+
+  if (updatedTask.workOrderId) {
+    await WorkOrderProgressService.recomputeForWorkOrder(
+      tenant._id.toString(),
+      updatedTask.workOrderId.toString()
+    );
   }
 
   return reply.send({

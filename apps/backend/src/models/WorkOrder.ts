@@ -7,9 +7,9 @@ export interface IWorkOrder {
   tenantId: string;
   workOrderNumber: string;
   clientId: string;
-  technicianId?: string;
+  personnelIds?: string[];
   title: string;
-  description: string;
+  details: string; // Rich text content from TipTap
   priority: "low" | "medium" | "high" | "urgent";
   status:
     | "created"
@@ -18,20 +18,29 @@ export interface IWorkOrder {
     | "completed"
     | "cancelled"
     | "on-hold";
-  category: string;
+  // Progress tracking
+  progressMode?: "computed" | "manual" | "weighted";
+  progress?: number; // 0..100 authoritative display value
+  progressManual?: number; // 0..100 when mode = manual
+  tasksTotal?: number;
+  tasksCompleted?: number;
+  tasksInProgress?: number;
+  tasksBlocked?: number;
+  startedAt?: Date;
+  completedAt?: Date;
   location: {
     address: string;
-    city: string;
-    state: string;
-    zipCode: string;
     coordinates?: {
       latitude: number;
       longitude: number;
     };
   };
   scheduledDate?: Date;
-  estimatedDuration: number; // in minutes
-  actualDuration?: number; // in minutes
+  estimatedDuration: {
+    value: number;
+    unit: "hours" | "days" | "weeks" | "months";
+  };
+  actualDuration?: number; // in minutes (for tracking actual time spent)
   cost: {
     labor: number;
     materials: number;
@@ -43,7 +52,6 @@ export interface IWorkOrder {
     unitPrice: number;
     total: number;
   }>;
-  notes: string;
   attachments: Array<{
     name: string;
     url: string;
@@ -79,18 +87,19 @@ const WorkOrderSchema = new Schema<IWorkOrder>(
       required: [true, "Client ID is required"],
       ref: "Client",
     },
-    technicianId: {
-      type: String,
-      ref: "Technician",
-    },
+    personnelIds: [
+      {
+        type: String,
+        ref: "Personnel",
+      },
+    ],
     title: {
       type: String,
       required: [true, "Title is required"],
       trim: true,
     },
-    description: {
+    details: {
       type: String,
-      required: [true, "Description is required"],
       trim: true,
     },
     priority: {
@@ -110,16 +119,23 @@ const WorkOrderSchema = new Schema<IWorkOrder>(
       ],
       default: "created",
     },
-    category: {
+    // Progress tracking fields
+    progressMode: {
       type: String,
-      required: [true, "Category is required"],
-      trim: true,
+      enum: ["computed", "manual", "weighted"],
+      default: "computed",
+      index: true,
     },
+    progress: { type: Number, min: 0, max: 100, default: 0 },
+    progressManual: { type: Number, min: 0, max: 100 },
+    tasksTotal: { type: Number, default: 0, min: 0 },
+    tasksCompleted: { type: Number, default: 0, min: 0 },
+    tasksInProgress: { type: Number, default: 0, min: 0 },
+    tasksBlocked: { type: Number, default: 0, min: 0 },
+    startedAt: { type: Date },
+    completedAt: { type: Date },
     location: {
-      address: { type: String, required: true, trim: true },
-      city: { type: String, required: true, trim: true },
-      state: { type: String, required: true, trim: true },
-      zipCode: { type: String, required: true, trim: true },
+      address: { type: String, trim: true },
       coordinates: {
         latitude: { type: Number },
         longitude: { type: Number },
@@ -129,9 +145,14 @@ const WorkOrderSchema = new Schema<IWorkOrder>(
       type: Date,
     },
     estimatedDuration: {
-      type: Number,
-      required: [true, "Estimated duration is required"],
-      min: 0,
+      value: {
+        type: Number,
+        min: 1,
+      },
+      unit: {
+        type: String,
+        enum: ["hours", "days", "weeks", "months"],
+      },
     },
     actualDuration: {
       type: Number,
@@ -150,10 +171,6 @@ const WorkOrderSchema = new Schema<IWorkOrder>(
         total: { type: Number, required: true, min: 0 },
       },
     ],
-    notes: {
-      type: String,
-      trim: true,
-    },
     attachments: [
       {
         name: { type: String, required: true, trim: true },
@@ -181,10 +198,11 @@ const WorkOrderSchema = new Schema<IWorkOrder>(
 // Indexes for better performance
 WorkOrderSchema.index({ tenantId: 1, workOrderNumber: 1 });
 WorkOrderSchema.index({ tenantId: 1, clientId: 1 });
-WorkOrderSchema.index({ tenantId: 1, technicianId: 1 });
+WorkOrderSchema.index({ tenantId: 1, personnelIds: 1 });
 WorkOrderSchema.index({ tenantId: 1, status: 1 });
 WorkOrderSchema.index({ tenantId: 1, priority: 1 });
 WorkOrderSchema.index({ tenantId: 1, scheduledDate: 1 });
+WorkOrderSchema.index({ tenantId: 1, progressMode: 1 });
 
 // ----------------------------------------------------------------------
 

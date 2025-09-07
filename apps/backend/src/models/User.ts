@@ -1,4 +1,4 @@
-import { model, Schema, models } from 'mongoose';
+import { model, Schema, models } from "mongoose";
 
 // ----------------------------------------------------------------------
 
@@ -11,9 +11,10 @@ export interface IUser {
   lastName: string;
   phone?: string;
   avatar?: string;
-  role: 'admin' | 'manager' | 'technician' | 'dispatcher' | 'customer';
+  role: string; // Role slug
   permissions: string[];
   isActive: boolean;
+  isTenantOwner: boolean;
   lastLoginAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -25,29 +26,29 @@ const UserSchema = new Schema<IUser>(
   {
     tenantId: {
       type: String,
-      required: [true, 'Tenant ID is required'],
+      required: [true, "Tenant ID is required"],
       index: true,
     },
     email: {
       type: String,
-      required: [true, 'Email is required'],
+      required: [true, "Email is required"],
       unique: true,
       lowercase: true,
       trim: true,
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
+      required: [true, "Password is required"],
       minlength: 6,
     },
     firstName: {
       type: String,
-      required: [true, 'First name is required'],
+      required: [true, "First name is required"],
       trim: true,
     },
     lastName: {
       type: String,
-      required: [true, 'Last name is required'],
+      required: [true, "Last name is required"],
       trim: true,
     },
     phone: {
@@ -59,8 +60,9 @@ const UserSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ['admin', 'manager', 'technician', 'dispatcher', 'customer'],
-      required: [true, 'Role is required'],
+      required: [true, "Role is required"],
+      trim: true,
+      lowercase: true,
     },
     permissions: {
       type: [String],
@@ -69,6 +71,10 @@ const UserSchema = new Schema<IUser>(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    isTenantOwner: {
+      type: Boolean,
+      default: false,
     },
     lastLoginAt: {
       type: Date,
@@ -88,4 +94,4 @@ UserSchema.index({ isActive: 1 });
 
 // ----------------------------------------------------------------------
 
-export const User = models.User || model<IUser>('User', UserSchema);
+export const User = models.User || model<IUser>("User", UserSchema);

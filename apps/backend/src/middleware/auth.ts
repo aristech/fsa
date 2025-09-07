@@ -1,40 +1,69 @@
 import { FastifyRequest, FastifyReply } from "fastify";
+import jwt from "jsonwebtoken";
 import { AuthenticatedRequest } from "../types";
-import { Tenant } from "../models";
+import { Tenant, User } from "../models";
 
 export async function authenticate(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
   try {
-    // For now, we'll skip authentication and use mock data
-    // Later this will be replaced with proper JWT verification
+    // Get token from Authorization header
+    const token = request.headers.authorization?.replace("Bearer ", "");
 
-    // Mock user data
-    const mockUser = {
-      _id: "507f1f77bcf86cd799439011",
-      email: "user@example.com",
-      name: "Test User",
-      role: "admin",
-    };
+    if (!token) {
+      return reply.code(401).send({
+        success: false,
+        message: "No token provided",
+      });
+    }
 
-    // Get actual tenant from database
+    // Verify JWT token
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "fallback-secret"
+    ) as any;
+
+    // Find user in database
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      return reply.code(401).send({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Get tenant from database
     const tenant = await Tenant.findOne({ isActive: true });
     if (!tenant) {
-      throw new Error("No active tenant found");
+      return reply.code(500).send({
+        success: false,
+        message: "No active tenant found",
+      });
     }
 
     // Attach to request
-    (request as AuthenticatedRequest).user = mockUser;
+    (request as AuthenticatedRequest).user = {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      tenantId: user.tenantId,
+    };
     (request as AuthenticatedRequest).tenant = tenant;
     (request as AuthenticatedRequest).context = {
-      user: mockUser,
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        tenantId: user.tenantId,
+      },
       tenant: tenant,
     };
   } catch (error) {
-    reply.code(401).send({
+    console.error("Authentication error:", error);
+    return reply.code(401).send({
       success: false,
-      error: "Authentication failed",
+      message: "Authentication failed",
     });
   }
 }
@@ -47,24 +76,49 @@ export async function optionalAuth(
     // Optional authentication - doesn't fail if no token
     // This can be used for endpoints that work with or without auth
 
-    // For now, we'll use mock data
-    const mockUser = {
-      _id: "507f1f77bcf86cd799439011",
-      email: "user@example.com",
-      name: "Test User",
-      role: "admin",
-    };
+    // Get token from Authorization header
+    const token = request.headers.authorization?.replace("Bearer ", "");
 
-    // Get actual tenant from database
-    const tenant = await Tenant.findOne({ isActive: true });
-    if (!tenant) {
-      throw new Error("No active tenant found");
+    if (!token) {
+      // No token provided - continue without user context
+      return;
     }
 
-    (request as AuthenticatedRequest).user = mockUser;
+    // Verify JWT token
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "fallback-secret"
+    ) as any;
+
+    // Find user in database
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      // User not found - continue without user context
+      return;
+    }
+
+    // Get tenant from database
+    const tenant = await Tenant.findOne({ isActive: true });
+    if (!tenant) {
+      // No tenant found - continue without user context
+      return;
+    }
+
+    // Attach to request
+    (request as AuthenticatedRequest).user = {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      tenantId: user.tenantId,
+    };
     (request as AuthenticatedRequest).tenant = tenant;
     (request as AuthenticatedRequest).context = {
-      user: mockUser,
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        tenantId: user.tenantId,
+      },
       tenant: tenant,
     };
   } catch (error) {
