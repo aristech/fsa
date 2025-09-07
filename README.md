@@ -1,81 +1,213 @@
-## Prerequisites
+# FSA - Field Service Application
 
-- Node.js >=20 (Recommended)
-- MongoDB running on localhost:27017
-- Yarn package manager
+A comprehensive field service management system built with modern web technologies.
 
-## Quick Setup
+## 🏗️ Architecture
 
-For a fresh installation, simply run:
+This is a monorepo containing:
+- **Frontend**: Next.js 15 with TypeScript, Material-UI, and SWR
+- **Backend**: Node.js with Fastify, TypeScript, and MongoDB
 
-```sh
-# 1. Install dependencies
-yarn install
+## 🚀 Quick Start
 
-# 2. Start the development server (in one terminal)
-yarn dev
+### Prerequisites
+- Node.js 18+
+- MongoDB (local or cloud)
+- npm or yarn
 
-# 3. Run the complete setup script (in another terminal)
-node setup-initial-data.js
-```
+### Installation & Setup
 
-That's it! The setup script will handle everything automatically.
+1. **Clone and install dependencies:**
+   ```bash
+   git clone <repository-url>
+   cd fsa
+   npm run setup
+   ```
 
-**Login Credentials:**
-- URL: http://localhost:8082
-- Email: admin@fsa-demo.com
-- Password: admin123
-- Tenant Slug: fsa-demo
+2. **Start development servers:**
+   ```bash
+   npm run dev
+   ```
 
-For detailed setup instructions, see [SETUP.md](./SETUP.md).
+   This will start:
+   - Frontend: http://localhost:3000
+   - Backend: http://localhost:3001
+   - API Documentation: http://localhost:3001/docs
 
-## Manual Installation
+### Alternative Manual Setup
 
-**Using Yarn (Recommended)**
+If you prefer to start servers individually:
 
-```sh
-yarn install
-yarn dev
-```
+```bash
+# Terminal 1 - Backend
+cd apps/backend
+npm run dev
 
-**Using Npm**
-
-```sh
-npm i
+# Terminal 2 - Frontend
+cd apps/frontend
 npm run dev
 ```
 
-## Build
+## 📁 Project Structure
 
-```sh
-yarn build
-# or
-npm run build
+```
+fsa/
+├── apps/
+│   ├── frontend/          # Next.js frontend application
+│   │   ├── src/
+│   │   │   ├── app/       # App router pages
+│   │   │   ├── sections/  # Feature components
+│   │   │   ├── contexts/  # React contexts
+│   │   │   └── lib/       # Utilities and configurations
+│   │   └── package.json
+│   └── backend/           # Fastify backend API
+│       ├── src/
+│       │   ├── models/    # MongoDB models
+│       │   ├── routes/    # API routes
+│       │   ├── controllers/ # Business logic
+│       │   └── middleware/ # Auth, CORS, etc.
+│       └── package.json
+├── start-dev.sh          # Development startup script
+└── package.json          # Root package configuration
 ```
 
-## Mock server
+## 🔧 Available Scripts
 
-By default we provide demo data from : `https://api-dev-minimal-[version].vercel.app`
+### Root Level
+- `npm run dev` - Start both frontend and backend
+- `npm run build` - Build both applications
+- `npm run lint` - Lint frontend code
+- `npm run lint:fix` - Fix linting issues
+- `npm run setup` - Install dependencies and setup backend
+- `npm run clean` - Clean all node_modules and build artifacts
 
-To set up your local server:
+### Frontend (apps/frontend)
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run lint` - Run ESLint
+- `npm run start` - Start production server
 
-- **Guide:** [https://docs.minimals.cc/mock-server](https://docs.minimals.cc/mock-server).
+### Backend (apps/backend)
+- `npm run dev` - Start development server with hot reload
+- `npm run build` - Compile TypeScript
+- `npm run start` - Start production server
+- `npm run setup` - Initialize database with seed data
 
-- **Resource:** [Download](https://www.dropbox.com/scl/fo/bopqsyaatc8fbquswxwww/AKgu6V6ZGmxtu22MuzsL5L4?rlkey=8s55vnilwz2d8nsrcmdo2a6ci&dl=0).
+## 🗄️ Database
 
-## Full version
+The application uses MongoDB with the following main collections:
+- **Clients** - Customer/client information
+- **Work Orders** - Field service requests
+- **Tasks** - Project management tasks (Kanban)
+- **Users** - System users and authentication
+- **Technicians** - Field service personnel
 
-- Create React App ([migrate to CRA](https://docs.minimals.cc/migrate-to-cra/)).
-- Next.js
-- Vite.js
+## 🔐 Authentication
 
-## Starter version
+- JWT-based authentication
+- Role-based access control (Admin, Manager, Technician, etc.)
+- Session management with secure token storage
 
-- To remove unnecessary components. This is a simplified version ([https://starter.minimals.cc/](https://starter.minimals.cc/))
-- Good to start a new project. You can copy components from the full version.
-- Make sure to install the dependencies exactly as compared to the full version.
+## 🎯 Key Features
+
+### Client Management
+- ✅ Create, edit, and manage clients
+- ✅ Client filtering across all views
+- ✅ VAT number and contact information
+
+### Work Orders
+- ✅ Create and manage field service requests
+- ✅ Client-specific work order filtering
+- ✅ Status tracking and priority management
+
+### Kanban Board
+- ✅ Task management with drag-and-drop
+- ✅ Client-specific task filtering
+- ✅ Work order integration
+
+### Real-time Updates
+- ✅ SWR for efficient data fetching
+- ✅ Automatic cache revalidation
+- ✅ Optimistic updates
+
+## 🔄 Data Flow
+
+1. **Client Selection**: Users select a client from the workspace popover
+2. **URL Updates**: Client selection updates URL parameters
+3. **API Filtering**: All API calls include client filter when applicable
+4. **Cache Management**: SWR handles data caching and revalidation
+5. **UI Updates**: Components automatically update based on filtered data
+
+## 🛠️ Development
+
+### Code Quality
+- TypeScript for type safety
+- ESLint for code quality
+- Prettier for code formatting
+- Import sorting and organization
+
+### API Design
+- RESTful API design
+- Consistent response formats
+- Comprehensive error handling
+- API documentation with Fastify Swagger
+
+### State Management
+- React Context for global state
+- SWR for server state management
+- URL parameters for filter persistence
+
+## 🚀 Deployment
+
+### Frontend
+```bash
+cd apps/frontend
+npm run build
+npm run start
+```
+
+### Backend
+```bash
+cd apps/backend
+npm run build
+npm run start
+```
+
+## 📝 Environment Variables
+
+### Backend (.env)
+```
+MONGODB_URI=mongodb://localhost:27017/fsa
+JWT_SECRET=your-jwt-secret
+CORS_ORIGIN=http://localhost:3000
+PORT=3001
+```
+
+### Frontend (.env.local)
+```
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run linting and tests
+5. Submit a pull request
+
+## 📄 License
+
+MIT License - see LICENSE file for details
+
+## 🆘 Support
+
+For issues and questions:
+1. Check the API documentation at http://localhost:3001/docs
+2. Review the terminal logs for error details
+3. Ensure MongoDB is running and accessible
+4. Verify all environment variables are set correctly
 
 ---
 
-**NOTE:**
-_When copying folders remember to also copy hidden files like .env. This is important because .env files often contain environment variables that are crucial for the application to run correctly._
+**Happy coding! 🎉**
