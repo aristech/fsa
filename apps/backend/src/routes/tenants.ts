@@ -3,8 +3,27 @@ import { z } from "zod";
 import { Tenant } from "../models";
 import { TenantSetupService } from "../services/tenant-setup";
 import { slugify } from "../utils/slugify";
+import { MagicLinkService } from "../services/magic-link-service";
+import { sendTenantActivationMagicLink } from "./email";
 
 // ----------------------------------------------------------------------
+
+// Tenant registration schema (for public registration with magic link)
+const registerTenantSchema = z.object({
+  companyName: z
+    .string()
+    .min(1, "Company name is required")
+    .max(100, "Company name must be less than 100 characters"),
+  adminEmail: z.string().email("Valid admin email is required"),
+  adminFirstName: z.string().min(1, "Admin first name is required"),
+  adminLastName: z.string().min(1, "Admin last name is required"),
+  adminPhone: z.string().optional(),
+  slug: z
+    .string()
+    .min(1, "Company slug is required")
+    .max(50, "Company slug must be less than 50 characters")
+    .optional(), // Make slug optional - will be auto-generated from company name
+});
 
 // Tenant creation schema
 const createTenantSchema = z.object({
@@ -82,6 +101,103 @@ const updateTenantSchema = z.object({
 // ----------------------------------------------------------------------
 
 export async function tenantRoutes(fastify: FastifyInstance) {
+  // POST /api/v1/tenants/register - Public tenant registration with magic link
+  fastify.post("/register", async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const validatedData = registerTenantSchema.parse(request.body);
+
+      // Generate slug from company name if not provided
+      const slug = validatedData.slug || slugify(validatedData.companyName, { strict: true });
+
+      // Check if tenant with same slug or admin email already exists
+      const existingTenant = await Tenant.findOne({
+        $or: [{ slug: slug }, { email: validatedData.adminEmail }],
+      });
+
+      if (existingTenant) {
+        return reply.status(400).send({
+          success: false,
+          message: "Company with this name or admin email already exists",
+        });
+      }
+
+      // Create tenant record (inactive until magic link is used)
+      const tenantData = {
+        name: validatedData.companyName,
+        slug: slug,
+        email: validatedData.adminEmail,
+        isActive: false, // Will be activated when magic link is used
+      };
+
+      const tenant = new Tenant(tenantData);
+      await tenant.save();
+
+      // Create magic link for tenant activation
+      const magicLinkResult = await MagicLinkService.createMagicLink({
+        email: validatedData.adminEmail,
+        tenantId: tenant._id.toString(),
+        type: 'tenant_activation',
+        metadata: {
+          firstName: validatedData.adminFirstName,
+          lastName: validatedData.adminLastName,
+          phone: validatedData.adminPhone,
+          companyName: validatedData.companyName,
+          tenantSlug: slug,
+        },
+        expirationHours: 48, // 48 hours for tenant activation
+      });
+
+      if (!magicLinkResult.success || !magicLinkResult.magicLink) {
+        // Clean up tenant if magic link creation fails
+        await Tenant.findByIdAndDelete(tenant._id);
+        
+        return reply.status(500).send({
+          success: false,
+          message: "Failed to create activation link",
+        });
+      }
+
+      // Send activation email
+      const emailResult = await sendTenantActivationMagicLink({
+        to: validatedData.adminEmail,
+        tenantName: `${validatedData.adminFirstName} ${validatedData.adminLastName}`,
+        companyName: validatedData.companyName,
+        magicLink: magicLinkResult.magicLink,
+        expirationHours: 48,
+      });
+
+      if (!emailResult.success) {
+        fastify.log.error(`Failed to send activation email: ${emailResult.error}`);
+        // Don't fail the registration if email fails, but log it
+      }
+
+      return reply.status(201).send({
+        success: true,
+        data: {
+          tenantId: tenant._id,
+          companyName: validatedData.companyName,
+          adminEmail: validatedData.adminEmail,
+          message: "Registration successful! Please check your email for the activation link.",
+        },
+        message: "Tenant registration initiated. Please check your email to complete activation.",
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({
+          success: false,
+          message: "Validation error",
+          errors: error.errors,
+        });
+      }
+
+      fastify.log.error("Error registering tenant:", error);
+      return reply.status(500).send({
+        success: false,
+        message: "Failed to register tenant",
+      });
+    }
+  });
+
   // GET /api/v1/tenants - Get all tenants
   fastify.get("/", async (request: FastifyRequest, reply: FastifyReply) => {
     try {

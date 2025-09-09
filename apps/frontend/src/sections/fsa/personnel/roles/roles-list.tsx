@@ -35,7 +35,6 @@ import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 import { EmptyContent } from 'src/components/empty-content';
 import { ConfirmDialog } from 'src/components/custom-dialog';
-import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 import { PermissionGuard } from 'src/components/auth-guard/permission-guard';
 
 import { RoleCreateEditForm } from './role-create-edit-form';
@@ -189,20 +188,11 @@ export function RolesList() {
 
   return (
     <>
-      <CustomBreadcrumbs
-        heading="Roles Management"
-        links={[
-          { name: 'Dashboard', href: '/dashboard' },
-          { name: 'Personnel', href: '/dashboard/personnel' },
-          { name: 'Roles' },
-        ]}
-        sx={{ mb: { xs: 3, md: 5 } }}
-      />
-
+     
       <Card>
         <Box sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6">Roles & Permissions</Typography>
-          <PermissionGuard permissions={PERMISSIONS.ROLES_MANAGE}>
+          <PermissionGuard permissions={[PERMISSIONS.ROLES_MANAGE, PERMISSIONS.ADMIN_ACCESS]}>
             <Button
               variant="contained"
               startIcon={<Iconify icon="solar:add-circle-bold" />}
@@ -227,7 +217,6 @@ export function RolesList() {
                   <TableRow>
                     <TableCell>Role Name</TableCell>
                     <TableCell>Description</TableCell>
-                    <TableCell>Color</TableCell>
                     <TableCell>Default</TableCell>
                     <TableCell>Permissions</TableCell>
                     <TableCell align="right">Actions</TableCell>
@@ -259,18 +248,6 @@ export function RolesList() {
                         <Typography variant="body2" color="text.secondary">
                           {role.description || 'No description'}
                         </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Box
-                          sx={{
-                            width: 24,
-                            height: 24,
-                            borderRadius: '50%',
-                            backgroundColor: role.color,
-                            border: '1px solid',
-                            borderColor: 'divider',
-                          }}
-                        />
                       </TableCell>
                       <TableCell>
                         {role.isDefault ? (

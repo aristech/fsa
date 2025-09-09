@@ -2,6 +2,8 @@
 
 import { useRef, useState, useEffect } from 'react';
 
+import { CONFIG } from 'src/global-config';
+
 // ----------------------------------------------------------------------
 
 export type UseFilePreviewReturn = {
@@ -25,7 +27,22 @@ export function useFilePreview(file?: File | string | null): UseFilePreviewRetur
       objectUrlRef.current = objectUrl;
       setPreviewUrl(objectUrl);
     } else if (typeof file === 'string') {
-      setPreviewUrl(file);
+      const isAbsolute = /^https?:\/\//i.test(file);
+      let url = isAbsolute ? file : `${CONFIG.serverUrl}${file}`;
+      // If it's an uploads route without token, append JWT token for image requests
+      try {
+        const isUploads = /\/api\/v1\/uploads\//.test(url);
+        const hasToken = /[?&]token=/.test(url);
+        if (isUploads && !hasToken && typeof window !== 'undefined') {
+          const token = window.sessionStorage.getItem('jwt_access_token');
+          if (token) {
+            url += (url.includes('?') ? '&' : '?') + `token=${token}`;
+          }
+        }
+      } catch {
+        // Ignore errors when creating preview URL
+      }
+      setPreviewUrl(url);
     } else {
       setPreviewUrl('');
     }
@@ -71,7 +88,11 @@ export function useFilesPreview(files: (File | string)[]): UseFilesPreviewReturn
 
     const previews: FilePreviewItem[] = files.map((file) => {
       const isFile = file instanceof File;
-      const previewUrl = isFile ? URL.createObjectURL(file) : file;
+      const previewUrl = isFile
+        ? URL.createObjectURL(file)
+        : /^https?:\/\//i.test(file as string)
+        ? (file as string)
+        : `${CONFIG.serverUrl}${file as string}`;
 
       if (isFile) objectUrlsRef.current.push(previewUrl);
 

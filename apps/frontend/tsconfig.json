@@ -6,6 +6,7 @@
     "jsx": "preserve",
     "allowJs": true,
     "resolveJsonModule": true,
+    "types": ["node"],
 
     /* Build */
     "target": "ES2017",

@@ -1,7 +1,10 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { AuthenticatedRequest } from "../types";
-import { Task, Project } from "../models";
+import { Task, Project, Status, Subtask, Comment, Personnel } from "../models";
+import { AssignmentPermissionService } from "../services/assignment-permission-service";
+import { getPriorityOptions } from "../constants/priorities";
 import { WorkOrderProgressService } from "../services/work-order-progress-service";
+import { EntityCleanupService } from "../services/entity-cleanup-service";
 import {
   transformProjectToKanbanTask,
   transformTaskToKanbanTask,
@@ -18,16 +21,58 @@ export async function getKanbanData(
 
     console.log("GET Kanban request received");
     console.log("Tenant:", tenant._id);
-    console.log("User:", user._id);
+    console.log("User:", user.id);
     console.log("Client ID:", clientId);
 
     // Get all projects and tasks for the tenant, sorted by order (for tasks) and created_at (latest first)
     const [projects, tasks] = await Promise.all([
-      Project.find({ tenantId: tenant._id, isActive: true }).sort({
-        createdAt: -1,
-      }),
+      Project.find({ tenantId: tenant._id, isActive: true }).sort({ createdAt: -1 }),
       Task.find({ tenantId: tenant._id }).sort({ order: 1, createdAt: -1 }),
     ]);
+
+    // Build lookup maps for reporter (users) and assignees (personnel)
+    const userIds = new Set<string>();
+    const personnelIds = new Set<string>();
+    tasks.forEach((t) => {
+      if (t.createdBy) userIds.add(t.createdBy.toString());
+      const a = (t as any).assignees as string[] | undefined;
+      a?.forEach((id) => personnelIds.add(id));
+    });
+
+    const [users, personnel] = await Promise.all([
+      // lightweight projections
+      (await import("../models")).User.find({ _id: { $in: Array.from(userIds) } }, {
+        firstName: 1,
+        lastName: 1,
+        email: 1,
+        avatar: 1,
+      }).lean(),
+      (await import("../models")).Personnel.find({ _id: { $in: Array.from(personnelIds) } }, {
+        employeeId: 1,
+        userId: 1,
+      })
+        .populate({ path: "userId", select: "firstName lastName email avatar" })
+        .lean(),
+    ]);
+
+    const userById: Record<string, { name?: string; email?: string; avatar?: string }> = {};
+    users.forEach((u: any) => {
+      userById[u._id.toString()] = {
+        name: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email,
+        email: u.email,
+        avatar: u.avatar,
+      };
+    });
+
+    const personnelById: Record<string, { name?: string; email?: string; avatar?: string }> = {};
+    personnel.forEach((p: any) => {
+      const fullName = [p.userId?.firstName, p.userId?.lastName].filter(Boolean).join(" ") || p.employeeId;
+      personnelById[p._id.toString()] = {
+        name: fullName,
+        email: p.userId?.email,
+        avatar: p.userId?.avatar,
+      };
+    });
 
     console.log(`Found ${projects.length} projects and ${tasks.length} tasks`);
 
@@ -51,13 +96,48 @@ export async function getKanbanData(
       );
     }
 
-    // Transform to kanban format
-    const statuses = ["todo", "in-progress", "done", "cancelled"];
+    // Load dynamic statuses for tenant (fallback to defaults)
+    const statusDocs = await Status.find({ tenantId: tenant._id, isActive: true })
+      .sort({ order: 1 })
+      .lean();
+    const statuses =
+      statusDocs.length > 0
+        ? statusDocs.map((s) => s.name.toLowerCase().replace(/\s+/g, "-"))
+        : ["todo", "in-progress", "review", "done"]; // default fallback
+
+    // Get subtasks count for each task
+    const taskIds = filteredTasks.map(task => task._id);
+    const subtasksCounts = await Subtask.aggregate([
+      { $match: { taskId: { $in: taskIds }, tenantId: req.user.tenantId } },
+      { $group: { _id: '$taskId', count: { $sum: 1 } } }
+    ]);
+    const subtasksCountById = subtasksCounts.reduce((acc, item) => {
+      acc[item._id.toString()] = item.count;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Get comments count for each task
+    const commentsCounts = await Comment.aggregate([
+      { $match: { taskId: { $in: taskIds }, tenantId: req.user.tenantId } },
+      { $group: { _id: '$taskId', count: { $sum: 1 } } }
+    ]);
+    const commentsCountById = commentsCounts.reduce((acc, item) => {
+      acc[item._id.toString()] = item.count;
+      return acc;
+    }, {} as Record<string, number>);
+
     const kanbanTasks = [
       ...filteredProjects.map((project) =>
         transformProjectToKanbanTask(project, statuses)
       ),
-      ...filteredTasks.map((task) => transformTaskToKanbanTask(task, statuses)),
+      ...filteredTasks.map((task) =>
+        transformTaskToKanbanTask(task, statuses, { 
+          userById, 
+          personnelById,
+          subtasksCount: subtasksCountById[task._id.toString()] || 0,
+          commentsCount: commentsCountById[task._id.toString()] || 0
+        })
+      ),
     ];
 
     // Group by status
@@ -125,6 +205,34 @@ export async function handleKanbanPost(
   }
 }
 
+export async function getKanbanMeta(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  try {
+    const req = request as AuthenticatedRequest;
+    const { tenant } = req.context!;
+
+    const statusDocs = await Status.find({ tenantId: tenant._id, isActive: true })
+      .sort({ order: 1 })
+      .lean();
+
+    const statuses = statusDocs.map((s: any) => ({
+      id: s._id.toString(),
+      name: s.name,
+      color: s.color,
+      order: s.order,
+    }));
+
+    const priorities = getPriorityOptions();
+
+    return reply.send({ success: true, data: { statuses, priorities } });
+  } catch (error) {
+    console.error("Error in Kanban META:", error);
+    return reply.code(500).send({ success: false, error: "Internal server error" });
+  }
+}
+
 async function handleCreateTask(
   req: AuthenticatedRequest,
   reply: FastifyReply,
@@ -138,12 +246,18 @@ async function handleCreateTask(
     priority,
     labels,
     assignee,
+    assignees,
     due,
+    startDate,
+    dueDate,
     clientId,
     clientName,
     clientCompany,
     workOrderId,
     workOrderNumber,
+    tags,
+    attachments,
+    estimatedHours,
   } = taskData;
 
   // If clientId is provided, validate it belongs to the tenant
@@ -153,14 +267,33 @@ async function handleCreateTask(
     validatedClientId = clientId;
   }
 
+  // Validate assignees eligibility (active personnel only)
+  let validatedAssignees: string[] = [];
+  if (Array.isArray(assignees) ? assignees.length > 0 : !!assignee) {
+    const list = Array.isArray(assignees) ? assignees : assignee ? [assignee] : [];
+    const personnelDocs = await Personnel.find({ _id: { $in: list }, tenantId: tenant._id }).select('_id isActive status');
+    const eligible = personnelDocs
+      .filter((p: any) => p.isActive && p.status === 'active')
+      .map((p: any) => p._id.toString());
+    validatedAssignees = eligible;
+  }
+
   const newTask = new Task({
     tenantId: tenant._id,
     title: name,
-    description: description || "No description",
+    description: description || "",
     priority: priority || "medium",
     status: "todo",
-    tags: labels || [],
-    createdBy: user._id,
+    tags: tags || labels || [],
+    assignees: validatedAssignees,
+    createdBy: user.id,
+    // Add date information if available
+    ...(startDate && { startDate: new Date(startDate) }),
+    ...(dueDate && { dueDate: new Date(dueDate) }),
+    // Add estimated hours if provided
+    ...(estimatedHours && { estimatedHours: Number(estimatedHours) }),
+    // Add attachments if provided
+    ...(attachments && { attachments: Array.isArray(attachments) ? attachments : [] }),
     // Add client information if available
     ...(validatedClientId && {
       clientId: validatedClientId,
@@ -181,6 +314,15 @@ async function handleCreateTask(
     await WorkOrderProgressService.recomputeForWorkOrder(
       tenant._id.toString(),
       newTask.workOrderId.toString()
+    );
+  }
+
+  // Handle assignment permissions for newly created task
+  if (newTask.assignees && newTask.assignees.length > 0) {
+    await AssignmentPermissionService.handleTaskAssignment(
+      newTask._id.toString(),
+      newTask.assignees,
+      tenant._id.toString()
     );
   }
 
@@ -206,22 +348,53 @@ async function handleDeleteTask(
     });
   }
 
-  const deletedTask = await Task.findOneAndDelete({
+  // Check if task exists before cleanup
+  const task = await Task.findOne({
     _id: taskId,
     tenantId: tenant._id,
   });
 
-  if (!deletedTask) {
+  if (!task) {
     return reply.code(404).send({
       success: false,
       error: "Task not found",
     });
   }
 
+  // Perform comprehensive cleanup
+  const cleanupResult = await EntityCleanupService.cleanupTask(
+    taskId,
+    tenant._id.toString(),
+    {
+      deleteFiles: true,
+      deleteComments: true,
+      deleteSubtasks: true,
+      deleteAssignments: true,
+    }
+  );
+
+  if (!cleanupResult.success) {
+    console.error(`Task cleanup failed: ${cleanupResult.message}`);
+    return reply.code(500).send({
+      success: false,
+      error: `Failed to cleanup task: ${cleanupResult.message}`,
+    });
+  }
+
+  // Log cleanup details
+  console.log(`🧹 Task cleanup completed:`, cleanupResult.details);
+
   return reply.send({
     success: true,
-    message: "Task deleted successfully",
-    data: deletedTask,
+    message: cleanupResult.message,
+    data: {
+      task: {
+        _id: task._id,
+        name: task.name,
+        description: task.description,
+      },
+      cleanupDetails: cleanupResult.details,
+    },
   });
 }
 
@@ -240,7 +413,7 @@ async function handleUpdateTask(
     });
   }
 
-  const { name, description, priority, labels, assignee, due, status } =
+  const { name, description, priority, labels, assignee, assignees, due, status, workOrderId, workOrderNumber, startDate, dueDate, attachments, clientId, clientName, clientCompany, completeStatus } =
     taskData;
 
   const updateData: any = {};
@@ -248,7 +421,42 @@ async function handleUpdateTask(
   if (description !== undefined) updateData.description = description;
   if (priority !== undefined) updateData.priority = priority;
   if (labels !== undefined) updateData.tags = labels;
+  if (startDate !== undefined) updateData.startDate = startDate;
+  if (dueDate !== undefined) updateData.dueDate = dueDate;
+  if (typeof completeStatus === 'boolean') updateData.completeStatus = completeStatus;
+  if (assignees !== undefined) {
+    const list = Array.isArray(assignees) ? assignees : assignee ? [assignee] : [];
+    if (list.length > 0) {
+      const personnelDocs = await Personnel.find({ _id: { $in: list }, tenantId: tenant._id }).select('_id isActive status');
+      const eligible = personnelDocs
+        .filter((p: any) => p.isActive && p.status === 'active')
+        .map((p: any) => p._id.toString());
+      updateData.assignees = eligible;
+    } else {
+      updateData.assignees = [];
+    }
+  }
   if (status !== undefined) updateData.status = status.toLowerCase();
+  if (workOrderId !== undefined) updateData.workOrderId = workOrderId;
+  if (workOrderNumber !== undefined) updateData.workOrderNumber = workOrderNumber;
+  if (clientId !== undefined) updateData.clientId = clientId;
+  if (clientName !== undefined) updateData.clientName = clientName;
+  if (clientCompany !== undefined) updateData.clientCompany = clientCompany;
+  if (attachments !== undefined) {
+    // Normalize attachments to string paths/URLs
+    try {
+      const normalized: string[] = (attachments as any[]).map((item: any) => {
+        if (typeof item === "string") return item;
+        if (item && typeof item === "object") {
+          return item.url || item.relativePath || item.path || JSON.stringify(item);
+        }
+        return String(item);
+      });
+      updateData.attachments = normalized;
+    } catch {
+      updateData.attachments = [];
+    }
+  }
 
   const updatedTask = await Task.findOneAndUpdate(
     {
@@ -270,6 +478,15 @@ async function handleUpdateTask(
     await WorkOrderProgressService.recomputeForWorkOrder(
       tenant._id.toString(),
       updatedTask.workOrderId.toString()
+    );
+  }
+
+  // Handle assignment permission changes
+  if (assignees !== undefined) {
+    await AssignmentPermissionService.handleTaskAssignment(
+      updatedTask._id.toString(),
+      updatedTask.assignees || [],
+      tenant._id.toString()
     );
   }
 

@@ -37,9 +37,11 @@ export const ThumbnailImage = styled('img', {
 
 export const RemoveButton = styled(IconButton)(({ theme }) => ({
   top: 4,
-  right: 4,
+  right: 28,
   position: 'absolute',
   padding: theme.spacing(0.5),
+  width: 20,
+  height: 20,
   color: theme.vars.palette.common.white,
   backgroundColor: varAlpha(theme.vars.palette.grey['900Channel'], 0.48),
   '&:hover': {
@@ -48,21 +50,18 @@ export const RemoveButton = styled(IconButton)(({ theme }) => ({
 }));
 
 export const DownloadButton = styled(ButtonBase)(({ theme }) => ({
-  top: 0,
-  right: 0,
-  zIndex: 9,
-  padding: 0,
-  opacity: 0,
-  width: '100%',
-  height: '100%',
+  top: 4,
+  right: 4,
+  zIndex: 8,
+  padding: theme.spacing(0.5),
+  width: 20,
+  height: 20,
+  opacity: 1,
   position: 'absolute',
-  borderRadius: 'inherit',
+  borderRadius: theme.shape.borderRadius,
   color: theme.vars.palette.common.white,
-  transition: theme.transitions.create(['opacity']),
+  backgroundColor: varAlpha(theme.vars.palette.grey['900Channel'], 0.48),
   '&:hover': {
-    ...theme.mixins.bgBlur({
-      color: varAlpha(theme.vars.palette.grey['900Channel'], 0.64),
-    }),
-    opacity: 1,
+    backgroundColor: varAlpha(theme.vars.palette.grey['900Channel'], 0.72),
   },
 }));

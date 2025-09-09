@@ -96,23 +96,31 @@ if ! kill -0 $FRONTEND_PID 2>/dev/null; then
     exit 1
 fi
 
-# Wait a bit more for the port to be available
-echo "⏳ Checking if frontend is listening on port 3000..."
-for i in {1..10}; do
-    if lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null; then
-        break
-    fi
-    if [ $i -eq 10 ]; then
-        echo "❌ Frontend is not listening on port 3000 after waiting!"
+# Wait for frontend to respond over HTTP (more reliable than port LISTEN check)
+echo "⏳ Checking frontend readiness at http://localhost:3000 ..."
+FRONTEND_READY=false
+for i in {1..30}; do
+    if ! kill -0 $FRONTEND_PID 2>/dev/null; then
+        echo "❌ Frontend process exited unexpectedly while starting"
         kill $BACKEND_PID 2>/dev/null
-        kill $FRONTEND_PID 2>/dev/null
         exit 1
     fi
-    echo "   Still waiting... ($i/10)"
+
+    if curl -sSf -o /dev/null http://localhost:3000 >/dev/null 2>&1; then
+        FRONTEND_READY=true
+        break
+    fi
+
+    echo "   Still waiting... ($i/30)"
     sleep 2
 done
 
-echo "✅ Frontend started successfully"
+if [ "$FRONTEND_READY" = true ]; then
+    echo "✅ Frontend responded successfully"
+else
+    echo "⚠️  Frontend did not respond to HTTP after waiting, but process is running."
+    echo "   Proceeding anyway. If the app isn't reachable, check Next.js logs."
+fi
 echo ""
 echo "✅ Development servers started!"
 echo ""

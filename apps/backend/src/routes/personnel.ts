@@ -2,7 +2,11 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { User, Role, Tenant, Personnel } from "../models";
-import { sendPersonnelInvitation } from "./email";
+import { sendPersonnelInvitation, sendPersonnelMagicLink } from "./email";
+import { authenticate } from "../middleware/auth";
+import { AuthenticatedRequest } from "../types";
+import { MagicLinkService } from "../services/magic-link-service";
+import { UserCleanupService } from "../services/user-cleanup-service";
 
 // Personnel creation schema
 const createPersonnelSchema = z.object({
@@ -71,9 +75,15 @@ const updatePersonnelSchema = createPersonnelSchema.partial();
 
 // Personnel routes
 export async function personnelRoutes(fastify: FastifyInstance) {
+  // Add authentication middleware to all routes
+  fastify.addHook("preHandler", authenticate);
+
   // GET /api/v1/personnel - Get all personnel
   fastify.get("/", async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const req = request as AuthenticatedRequest;
+      const { tenant } = req.context!;
+      
       const { id, tenantId } = request.query as {
         id?: string;
         tenantId?: string;
@@ -81,14 +91,14 @@ export async function personnelRoutes(fastify: FastifyInstance) {
 
       // If specific personnel ID is requested
       if (id) {
-        const personnel = await Personnel.findById(id)
+        const personnel = await Personnel.findOne({ _id: id, tenantId: tenant._id })
           .populate("userId", "firstName lastName email phone")
           .populate("roleId", "name color");
 
         if (!personnel) {
           return reply.status(404).send({
             success: false,
-            message: "Personnel not found",
+            message: "Personnel not found or access denied",
           });
         }
 
@@ -104,7 +114,11 @@ export async function personnelRoutes(fastify: FastifyInstance) {
             email: obj.userId.email,
             phone: obj.userId.phone,
           };
+          // Add name directly on personnel object for easier frontend access
+          obj.name = full || obj.userId.email || 'Unknown Personnel';
           delete obj.userId;
+        } else {
+          obj.name = 'Unknown Personnel';
         }
         if (obj.roleId && typeof obj.roleId === "object") {
           obj.role = {
@@ -122,15 +136,6 @@ export async function personnelRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // Get tenant
-      const tenant = await Tenant.findOne({ isActive: true });
-      if (!tenant) {
-        return reply.status(400).send({
-          success: false,
-          message: "No active tenant found",
-        });
-      }
-
       const personnel = await Personnel.find({ tenantId: tenant._id })
         .populate("userId", "firstName lastName email phone")
         .populate("roleId", "name color")
@@ -140,18 +145,24 @@ export async function personnelRoutes(fastify: FastifyInstance) {
       const transformedPersonnel = personnel.map((p) => {
         const obj: any = p.toObject();
 
-        // Transform userId to user
+        // Transform userId to user and add name field for easier access
         if (obj.userId && typeof obj.userId === "object") {
           const first = obj.userId.firstName || "";
           const last = obj.userId.lastName || "";
           const full = `${first} ${last}`.trim();
+          
           obj.user = {
             _id: obj.userId._id,
             name: full,
             email: obj.userId.email,
             phone: obj.userId.phone,
           };
+          // Add name directly on personnel object for easier frontend access
+          obj.name = full || obj.userId.email || 'Unknown Personnel';
           delete obj.userId;
+        } else {
+          // If userId is not populated or missing
+          obj.name = 'Unknown Personnel';
         }
 
         // Transform roleId to role
@@ -183,16 +194,9 @@ export async function personnelRoutes(fastify: FastifyInstance) {
   // POST /api/v1/personnel - Create new personnel
   fastify.post("/", async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const req = request as AuthenticatedRequest;
+      const { tenant } = req.context!;
       const validatedData = createPersonnelSchema.parse(request.body);
-
-      // Get tenant
-      const tenant = await Tenant.findOne({ isActive: true });
-      if (!tenant) {
-        return reply.status(400).send({
-          success: false,
-          message: "No active tenant found",
-        });
-      }
 
       // Resolve or create user
       let userId = validatedData.userId;
@@ -240,15 +244,15 @@ export async function personnelRoutes(fastify: FastifyInstance) {
           });
         }
         userId = user._id;
-      } else {
-        const user = await User.findById(userId);
-        if (!user) {
-          return reply.status(400).send({
-            success: false,
-            message: "User not found",
-          });
+        } else {
+          const user = await User.findOne({ _id: userId, tenantId: tenant._id });
+          if (!user) {
+            return reply.status(400).send({
+              success: false,
+              message: "User not found or access denied",
+            });
+          }
         }
-      }
 
       // Generate employeeId if missing
       let employeeId = validatedData.employeeId;
@@ -327,63 +331,63 @@ export async function personnelRoutes(fastify: FastifyInstance) {
 
       await personnel.save();
 
-      // Send invitation email if requested
+      // Send magic link invitation email if requested
       if (validatedData.sendInvitation && validatedData.email) {
         fastify.log.info(
-          `📧 Sending invitation email to: ${validatedData.email}`
+          `📧 Sending magic link invitation to: ${validatedData.email}`
         );
         try {
-          const user = await User.findById(userId);
+          const user = await User.findOne({ _id: userId, tenantId: tenant._id });
 
           if (user) {
-            // Generate a temporary password
-            const temporaryPassword = `TempPass${Math.floor(
-              Math.random() * 10000
-            )}`;
-            fastify.log.info(
-              `📧 Generated temporary password for user: ${user.email}`
-            );
-
-            // Update user with temporary password
-            await User.findByIdAndUpdate(userId, {
-              password: await bcrypt.hash(temporaryPassword, 12),
-            });
-            fastify.log.info(`📧 Updated user password in database`);
-
-            const loginUrl = `${
-              process.env.FRONTEND_URL || "http://localhost:3000"
-            }/auth/jwt/sign-in`;
-            fastify.log.info(`📧 Login URL: ${loginUrl}`);
-
-            const emailResult = await sendPersonnelInvitation({
-              to: validatedData.email,
-              personnelName: user.firstName + " " + user.lastName,
-              companyName: tenant.name,
-              loginUrl,
-              temporaryPassword,
+            // Create magic link for personnel invitation
+            const magicLinkResult = await MagicLinkService.createMagicLink({
+              email: validatedData.email,
+              tenantId: tenant._id.toString(),
+              userId: userId,
+              type: 'personnel_invitation',
+              metadata: {
+                firstName: user.firstName,
+                lastName: user.lastName,
+                phone: user.phone,
+                roleId: validatedData.roleId,
+              },
+              expirationHours: 24, // 24 hours to complete setup
             });
 
-            fastify.log.info(`📧 Email sending result:`, {
-              success: emailResult.success,
-              messageId: emailResult.messageId,
-              error: emailResult.error,
-              duration: emailResult.duration,
-            });
+            if (magicLinkResult.success && magicLinkResult.magicLink) {
+              fastify.log.info(`📧 Magic link generated: ${magicLinkResult.token}`);
 
-            if (emailResult.success) {
-              fastify.log.info(
-                `✅ Invitation email sent to ${validatedData.email}`
-              );
+              // Send magic link email
+              const emailResult = await sendPersonnelMagicLink({
+                to: validatedData.email,
+                name: `${user.firstName} ${user.lastName}`.trim() || validatedData.email,
+                companyName: tenant.name,
+                magicLink: magicLinkResult.magicLink,
+                expirationHours: 24,
+              });
+
+              fastify.log.info(`📧 Magic link email result: ${JSON.stringify(emailResult)}`);
+
+              if (emailResult.success) {
+                fastify.log.info(
+                  `✅ Magic link invitation sent to ${validatedData.email}`
+                );
+              } else {
+                fastify.log.error(`❌ Failed to send magic link email: ${emailResult.error}`);
+              }
+            } else {
+              fastify.log.error(`❌ Failed to create magic link: ${magicLinkResult.error}`);
             }
           }
         } catch (emailError) {
-          fastify.log.error("❌ Failed to send invitation email:", emailError);
+          fastify.log.error(`❌ Failed to send magic link invitation: ${String(emailError)}`);
           // Don't fail the entire request if email fails
         }
       }
 
       // Populate and normalize the response
-      const populatedPersonnel = await Personnel.findById(personnel._id)
+      const populatedPersonnel = await Personnel.findOne({ _id: personnel._id, tenantId: tenant._id })
         .populate("userId", "firstName lastName email phone")
         .populate("roleId", "name color");
 
@@ -418,7 +422,7 @@ export async function personnelRoutes(fastify: FastifyInstance) {
         });
       }
 
-      fastify.log.error("Error creating personnel:", error);
+      fastify.log.error(`Error creating personnel: ${String(error)}`);
       console.error("Detailed error:", error);
       return reply.status(500).send({
         success: false,
@@ -432,17 +436,10 @@ export async function personnelRoutes(fastify: FastifyInstance) {
   // PUT /api/v1/personnel/:id - Update personnel
   fastify.put("/:id", async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const req = request as AuthenticatedRequest;
+      const { tenant } = req.context!;
       const { id } = request.params as { id: string };
       const validatedData = updatePersonnelSchema.parse(request.body);
-
-      // Get tenant
-      const tenant = await Tenant.findOne({ isActive: true });
-      if (!tenant) {
-        return reply.status(400).send({
-          success: false,
-          message: "No active tenant found",
-        });
-      }
 
       const personnel = await Personnel.findOne({
         _id: id,
@@ -461,17 +458,20 @@ export async function personnelRoutes(fastify: FastifyInstance) {
 
       // If roleId was updated, also update the User's role and permissions
       if (validatedData.roleId) {
-        const role = await Role.findById(validatedData.roleId);
+        const role = await Role.findOne({ _id: validatedData.roleId, tenantId: tenant._id });
         if (role) {
-          await User.findByIdAndUpdate(personnel.userId, {
-            role: role.slug,
-            permissions: role.permissions,
-          });
+          await User.findOneAndUpdate(
+            { _id: personnel.userId, tenantId: tenant._id },
+            {
+              role: role.slug,
+              permissions: role.permissions,
+            }
+          );
         }
       }
 
       // Populate and normalize the response
-      const populatedPersonnel = await Personnel.findById(personnel._id)
+      const populatedPersonnel = await Personnel.findOne({ _id: personnel._id, tenantId: tenant._id })
         .populate("userId", "firstName lastName email phone")
         .populate("roleId", "name color");
 
@@ -506,7 +506,7 @@ export async function personnelRoutes(fastify: FastifyInstance) {
         });
       }
 
-      fastify.log.error("Error updating personnel:", error);
+      fastify.log.error(`Error updating personnel: ${String(error)}`);
       return reply.status(500).send({
         success: false,
         message: "Failed to update personnel",
@@ -519,16 +519,9 @@ export async function personnelRoutes(fastify: FastifyInstance) {
     "/:id",
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
+        const req = request as AuthenticatedRequest;
+        const { tenant } = req.context!;
         const { id } = request.params as { id: string };
-
-        // Get tenant
-        const tenant = await Tenant.findOne({ isActive: true });
-        if (!tenant) {
-          return reply.status(400).send({
-            success: false,
-            message: "No active tenant found",
-          });
-        }
 
         const personnel = await Personnel.findOne({
           _id: id,
@@ -541,17 +534,109 @@ export async function personnelRoutes(fastify: FastifyInstance) {
           });
         }
 
-        await Personnel.findByIdAndDelete(id);
+        // Get the associated user ID
+        const userId = personnel.userId;
+
+        if (!userId) {
+          // If no user associated, just delete personnel record
+          await Personnel.findOneAndDelete({ _id: id, tenantId: tenant._id });
+          return reply.send({
+            success: true,
+            message: "Personnel deleted successfully",
+          });
+        }
+
+        // Perform comprehensive cleanup using the UserCleanupService
+        const cleanupResult = await UserCleanupService.cleanupUserData(
+          userId.toString(),
+          tenant._id.toString(),
+          {
+            preserveHistory: true, // Keep comments, files, reports for audit
+            removeFromActiveAssignments: true, // Remove from tasks, work orders, projects
+            revokePermissions: true, // Clean up dynamic permissions
+            revokeMagicLinks: true, // Cancel unused magic links
+          }
+        );
+
+        if (!cleanupResult.success) {
+          fastify.log.error(`Cleanup failed: ${cleanupResult.message}`);
+          return reply.status(500).send({
+            success: false,
+            message: `Failed to cleanup user data: ${cleanupResult.message}`,
+          });
+        }
+
+        // Log cleanup details
+        fastify.log.info(`🧹 User cleanup completed:`, {
+          tasksUpdated: cleanupResult.details.tasksUpdated,
+          workOrdersUpdated: cleanupResult.details.workOrdersUpdated,
+          projectsUpdated: cleanupResult.details.projectsUpdated,
+          assignmentsRemoved: cleanupResult.details.assignmentsRemoved,
+          userDeleted: cleanupResult.details.userDeleted,
+          preservedComments: cleanupResult.preservedItems.comments,
+        });
 
         return reply.send({
           success: true,
-          message: "Personnel deleted successfully",
+          message: "Personnel deleted and assignments cleaned up successfully",
+          data: {
+            cleanupDetails: cleanupResult.details,
+            preservedItems: cleanupResult.preservedItems,
+          },
         });
       } catch (error) {
-        fastify.log.error("Error deleting personnel:", error);
+        fastify.log.error(`Error deleting personnel: ${String(error)}`);
         return reply.status(500).send({
           success: false,
           message: "Failed to delete personnel",
+        });
+      }
+    }
+  );
+
+  // POST /api/v1/personnel/:id/cleanup-assignments - Clean up user assignments (admin utility)
+  fastify.post(
+    "/:id/cleanup-assignments",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const req = request as AuthenticatedRequest;
+        const { tenant } = req.context!;
+        const { id } = request.params as { id: string };
+
+        const personnel = await Personnel.findOne({
+          _id: id,
+          tenantId: tenant._id,
+        });
+        if (!personnel) {
+          return reply.status(404).send({
+            success: false,
+            message: "Personnel not found",
+          });
+        }
+
+        if (!personnel.userId) {
+          return reply.status(400).send({
+            success: false,
+            message: "No user associated with this personnel",
+          });
+        }
+
+        // Remove from active work without deleting the user/personnel
+        const cleanupResult = await UserCleanupService.removeFromActiveWork(
+          personnel.userId.toString(),
+          tenant._id.toString()
+        );
+
+        return reply.send({
+          success: true,
+          message: "User removed from all active assignments",
+          data: cleanupResult,
+        });
+      } catch (error) {
+        fastify.log.error(`Error cleaning up assignments: ${String(error)}`);
+        return reply.status(500).send({
+          success: false,
+          message: "Failed to cleanup assignments",
         });
       }
     }
@@ -562,16 +647,9 @@ export async function personnelRoutes(fastify: FastifyInstance) {
     "/:id/toggle-active",
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
+        const req = request as AuthenticatedRequest;
+        const { tenant } = req.context!;
         const { id } = request.params as { id: string };
-
-        // Get tenant
-        const tenant = await Tenant.findOne({ isActive: true });
-        if (!tenant) {
-          return reply.status(400).send({
-            success: false,
-            message: "No active tenant found",
-          });
-        }
 
         const personnel = await Personnel.findOne({
           _id: id,
@@ -595,7 +673,7 @@ export async function personnelRoutes(fastify: FastifyInstance) {
           } successfully`,
         });
       } catch (error) {
-        fastify.log.error("Error toggling personnel status:", error);
+        fastify.log.error(`Error toggling personnel status: ${String(error)}`);
         return reply.status(500).send({
           success: false,
           message: "Failed to toggle personnel status",

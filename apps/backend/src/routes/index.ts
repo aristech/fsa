@@ -10,6 +10,9 @@ import { rolesRoutes } from "./roles";
 import { workOrderRoutes } from "./work-orders";
 import { tenantRoutes } from "./tenants";
 import { permissionRoutes } from "./permissions";
+import { uploadsRoutes } from "./uploads";
+import { subtasksRoutes } from "./subtasks";
+import { commentsRoutes } from "./comments";
 
 export async function registerRoutes(fastify: FastifyInstance) {
   // Health check
@@ -28,4 +31,7 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(clientRoutes, { prefix: "/api/v1/clients" });
   await fastify.register(calendarRoutes, { prefix: "/api/v1/calendar" });
   await fastify.register(workOrderRoutes, { prefix: "/api/v1/work-orders" });
+  await fastify.register(uploadsRoutes, { prefix: "/api/v1/uploads" });
+  await fastify.register(subtasksRoutes, { prefix: "/api/v1/subtasks" });
+  await fastify.register(commentsRoutes, { prefix: "/api/v1/comments" });
 }

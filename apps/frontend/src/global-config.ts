@@ -10,6 +10,10 @@ export type ConfigValue = {
   serverUrl: string;
   assetsDir: string;
   isStaticExport: boolean;
+  upload: {
+    maxFileSizeMB: number;
+    maxFilesPerRequest: number;
+  };
   auth: {
     method: 'jwt' | 'amplify' | 'firebase' | 'supabase' | 'auth0';
     skip: boolean;
@@ -37,6 +41,13 @@ export const CONFIG: ConfigValue = {
   serverUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001',
   assetsDir: process.env.NEXT_PUBLIC_ASSETS_DIR ?? '/assets',
   isStaticExport: JSON.parse(process.env.BUILD_STATIC_EXPORT ?? 'false'),
+  /**
+   * File Upload
+   */
+  upload: {
+    maxFileSizeMB: parseInt(process.env.NEXT_PUBLIC_MAX_FILE_SIZE_MB ?? '10', 10),
+    maxFilesPerRequest: parseInt(process.env.NEXT_PUBLIC_MAX_FILES_PER_REQUEST ?? '10', 10),
+  },
   /**
    * Auth
    * @method jwt | amplify | firebase | supabase | auth0

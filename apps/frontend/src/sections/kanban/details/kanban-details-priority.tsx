@@ -5,6 +5,8 @@ import { varAlpha } from 'minimal-shared/utils';
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
 
+import { PRIORITIES } from 'src/constants/priorities';
+
 import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
@@ -27,10 +29,10 @@ export function KanbanDetailsPriority({ priority, onChangePriority, sx, ...other
       ]}
       {...other}
     >
-      {['low', 'medium', 'high'].map((option) => (
+      {PRIORITIES.map((option) => (
         <ButtonBase
-          key={option}
-          onClick={() => onChangePriority(option)}
+          key={option.value}
+          onClick={() => onChangePriority(option.value)}
           sx={(theme) => ({
             py: 0.5,
             pl: 0.75,
@@ -41,26 +43,20 @@ export function KanbanDetailsPriority({ priority, onChangePriority, sx, ...other
             textTransform: 'capitalize',
             fontWeight: 'fontWeightBold',
             boxShadow: `inset 0 0 0 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.24)}`,
-            ...(option === priority && {
+            ...(option.value === priority && {
               boxShadow: `inset 0 0 0 2px ${theme.vars.palette.text.primary}`,
             }),
           })}
         >
           <Iconify
-            icon={
-              (option === 'low' && 'solar:double-alt-arrow-down-bold-duotone') ||
-              (option === 'medium' && 'solar:double-alt-arrow-right-bold-duotone') ||
-              'solar:double-alt-arrow-up-bold-duotone'
-            }
+            icon={option.icon}
             sx={{
               mr: 0.5,
-              color: 'error.main',
-              ...(option === 'low' && { color: 'info.main' }),
-              ...(option === 'medium' && { color: 'warning.main' }),
+              color: option.color,
             }}
           />
 
-          {option}
+          {option.label}
         </ButtonBase>
       ))}
     </Box>

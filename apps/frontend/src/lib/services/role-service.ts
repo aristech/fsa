@@ -8,7 +8,6 @@ export interface Role {
   name: string;
   slug: string;
   description?: string;
-  color: string;
   permissions: string[];
   isDefault: boolean;
   isActive: boolean;
@@ -29,14 +28,12 @@ export interface RoleResponse {
 export interface CreateRoleRequest {
   name: string;
   description?: string;
-  color: string;
   permissions: string[];
 }
 
 export interface UpdateRoleRequest {
   name?: string;
   description?: string;
-  color?: string;
   permissions?: string[];
   isActive?: boolean;
 }

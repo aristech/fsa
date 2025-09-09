@@ -8,6 +8,7 @@ import { useCallback } from 'react';
 
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
+import Typography from '@mui/material/Typography';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -86,8 +87,14 @@ export function CustomDateRangePicker({
       >
         {isCalendarView ? (
           <>
-            <DateCalendar value={startDate} onChange={onChangeStartDate} />
-            <DateCalendar value={endDate} onChange={onChangeEndDate} />
+            <div>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>Start day</Typography>
+              <DateCalendar value={startDate} onChange={onChangeStartDate} />
+            </div>
+            <div>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>End day</Typography>
+              <DateCalendar value={endDate} onChange={onChangeEndDate} />
+            </div>
           </>
         ) : (
           <>

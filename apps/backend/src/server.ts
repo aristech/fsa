@@ -6,6 +6,7 @@ import multipart from "@fastify/multipart";
 import { config } from "./config";
 import { connectDB } from "./utils/database";
 import { registerRoutes } from "./routes";
+import { realtimeService } from "./services/realtime-service";
 
 const fastify = Fastify({
   logger: {
@@ -55,8 +56,14 @@ async function registerPlugins() {
     secret: config.JWT_SECRET,
   });
 
-  // Multipart support
-  await fastify.register(multipart);
+  // Multipart support with configurable limits
+  await fastify.register(multipart, {
+    limits: {
+      fileSize: config.MAX_FILE_SIZE_MB * 1024 * 1024, // Convert MB to bytes
+      files: config.MAX_FILES_PER_REQUEST, // Max files per request
+      fieldSize: 1024 * 1024, // 1MB for form fields
+    },
+  });
 
   // Register routes
   await registerRoutes(fastify);
@@ -77,8 +84,12 @@ async function start() {
       host: "0.0.0.0",
     });
 
+    // Initialize real-time service with the HTTP server
+    realtimeService.initialize(fastify.server);
+
     console.log(`🚀 Server running on http://localhost:${config.PORT}`);
     console.log(`📚 API Documentation: http://localhost:${config.PORT}/docs`);
+    console.log(`🔌 WebSocket server ready for real-time communication`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
@@ -88,12 +99,14 @@ async function start() {
 // Graceful shutdown
 process.on("SIGINT", async () => {
   console.log("🛑 Shutting down server...");
+  realtimeService.shutdown();
   await fastify.close();
   process.exit(0);
 });
 
 process.on("SIGTERM", async () => {
   console.log("🛑 Shutting down server...");
+  realtimeService.shutdown();
   await fastify.close();
   process.exit(0);
 });

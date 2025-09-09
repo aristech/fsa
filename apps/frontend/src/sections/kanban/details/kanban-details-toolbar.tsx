@@ -1,6 +1,7 @@
 import type { BoxProps } from '@mui/material/Box';
 
-import { useState, useCallback } from 'react';
+import useSWR from 'swr';
+import { useState } from 'react';
 import { useBoolean, usePopover } from 'minimal-shared/hooks';
 
 import Box from '@mui/material/Box';
@@ -8,48 +9,76 @@ import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import MenuList from '@mui/material/MenuList';
 import MenuItem from '@mui/material/MenuItem';
+import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import useMediaQuery from '@mui/material/useMediaQuery';
+
+import axiosInstance, { endpoints } from 'src/lib/axios';
 
 import { Iconify } from 'src/components/iconify';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import { CustomPopover } from 'src/components/custom-popover';
+import { RealtimeIndicator } from 'src/components/realtime-indicator';
+// Status dropdown has been removed; statuses remain static and used elsewhere
 
 // ----------------------------------------------------------------------
 
 type Props = BoxProps & {
-  liked: boolean;
   taskName: string;
   taskStatus: string;
+  workOrderId?: string;
+  workOrderNumber?: string;
   onDelete: () => void;
-  onLikeToggle: () => void;
   onCloseDetails: () => void;
+  onChangeWorkOrder?: (workOrder: { id: string; number?: string; label: string }) => void;
+  // onChangeStatus removed from toolbar per latest requirements
+  completeStatus?: boolean;
+  onToggleComplete?: (newValue: boolean) => void;
 };
+
+
 
 export function KanbanDetailsToolbar({
   sx,
-  liked,
   taskName,
   onDelete,
   taskStatus,
-  onLikeToggle,
+  workOrderId,
+  workOrderNumber,
   onCloseDetails,
+  onChangeWorkOrder,
+  
+  completeStatus,
+  onToggleComplete,
   ...other
 }: Props) {
   const smUp = useMediaQuery((theme) => theme.breakpoints.up('sm'));
 
   const menuActions = usePopover();
+  
   const confirmDialog = useBoolean();
 
-  const [status, setStatus] = useState(taskStatus);
-
-  const handleChangeStatus = useCallback(
-    (newValue: string) => {
-      menuActions.onClose();
-      setStatus(newValue);
-    },
-    [menuActions]
+  const [completed, setCompleted] = useState<boolean>(!!completeStatus);
+  const [selectedWorkOrder, setSelectedWorkOrder] = useState<{ id: string; number?: string; label: string } | null>(
+    workOrderId ? { id: workOrderId, number: workOrderNumber, label: workOrderNumber || workOrderId } : null
   );
+
+  const axiosFetcher = (url: string) => axiosInstance.get(url).then((res) => res.data);
+  const { data: workOrdersResp } = useSWR(endpoints.fsa.workOrders.list, axiosFetcher);
+  const workOrders: Array<{ _id: string; number?: string; title?: string }> = workOrdersResp?.data?.workOrders || [];
+
+  // When work orders load, hydrate selected label with title if available
+  if (selectedWorkOrder && workOrders.length) {
+    const match = workOrders.find((wo) => wo._id === selectedWorkOrder.id);
+    if (match) {
+      const newLabel = match.title || match.number || match._id;
+      if (newLabel !== selectedWorkOrder.label) {
+        setSelectedWorkOrder({ id: match._id, number: match.number, label: newLabel });
+      }
+    }
+  }
+
+  // No status change via toolbar
 
   const renderMenuActions = () => (
     <CustomPopover
@@ -59,18 +88,28 @@ export function KanbanDetailsToolbar({
       slotProps={{ arrow: { placement: 'top-right' } }}
     >
       <MenuList>
-        {['To do', 'In progress', 'Ready to test', 'Done'].map((option) => (
-          <MenuItem
-            key={option}
-            selected={status === option}
-            onClick={() => handleChangeStatus(option)}
-          >
-            {option}
-          </MenuItem>
-        ))}
+        {workOrders.map((wo) => {
+          const label = wo.title || wo.number || wo._id;
+          return (
+            <MenuItem
+              key={wo._id}
+              selected={selectedWorkOrder?.id === wo._id}
+              onClick={() => {
+                const newSelection = { id: wo._id, number: wo.number, label };
+                setSelectedWorkOrder(newSelection);
+                menuActions.onClose();
+                onChangeWorkOrder?.(newSelection);
+              }}
+            >
+              {label}
+            </MenuItem>
+          );
+        })}
       </MenuList>
     </CustomPopover>
   );
+
+  // No status popover
 
   const renderConfirmDialog = () => (
     <ConfirmDialog
@@ -112,36 +151,64 @@ export function KanbanDetailsToolbar({
           </Tooltip>
         )}
 
-        <Button
-          size="small"
-          variant="soft"
-          endIcon={<Iconify icon="eva:arrow-ios-downward-fill" width={16} sx={{ ml: -0.5 }} />}
-          onClick={menuActions.onOpen}
-        >
-          {status}
-        </Button>
+        <RealtimeIndicator variant="icon" sx={{ mr: 1 }} />
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <Button
+              size="small"
+              variant="soft"
+              endIcon={<Iconify icon="eva:arrow-ios-downward-fill" width={16} sx={{ ml: -0.5 }} />}
+              onClick={menuActions.onOpen}
+            >
+              Work Order
+            </Button>
+           
+          </Box>
+      
+        </Box>
 
         <Box component="span" sx={{ flexGrow: 1 }} />
 
         <Box sx={{ display: 'flex' }}>
-          <Tooltip title="Like">
-            <IconButton color={liked ? 'default' : 'primary'} onClick={onLikeToggle}>
-              <Iconify icon="solar:like-bold" />
-            </IconButton>
-          </Tooltip>
-
+ <Button
+            size="small"
+            variant="soft"
+            color={completed ? 'success' : 'primary'}
+            startIcon={<Iconify icon={ completed ? 'eva:checkmark-fill' : 'eva:checkmark-circle-2-outline' } />}
+            onClick={() => {
+              const next = !completed;
+              setCompleted(next);
+              onToggleComplete?.(next);
+            }}
+          >
+            {completed ? 'Completed' : 'Mark complete'}
+          </Button>
           <Tooltip title="Delete task">
             <IconButton onClick={confirmDialog.onTrue}>
               <Iconify icon="solar:trash-bin-trash-bold" />
             </IconButton>
           </Tooltip>
 
-          <IconButton>
-            <Iconify icon="eva:more-vertical-fill" />
-          </IconButton>
+       
         </Box>
+       
       </Box>
-
+      <Box sx={{ display: 'flex' }}>
+            {selectedWorkOrder && (
+              <Tooltip title={selectedWorkOrder.label} placement="top">
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  noWrap
+                  sx={{ m: 0.8, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis' }}
+                >
+                  {selectedWorkOrder.label}
+                </Typography>
+              </Tooltip>
+            )}
+      </Box>
+ 
       {renderMenuActions()}
       {renderConfirmDialog()}
     </>

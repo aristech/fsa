@@ -1,10 +1,13 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { authenticate } from "../middleware/auth";
 import { requirePermission } from "../middleware/permission-guard";
+import { requireWorkOrderView, requireWorkOrderEdit } from "../middleware/resource-permission-guard";
 import { WorkOrder, Personnel } from "../models";
 import { AuthenticatedRequest } from "../types";
 import mongoose from "mongoose";
 import { WorkOrderProgressService } from "../services/work-order-progress-service";
+import { AssignmentPermissionService } from "../services/assignment-permission-service";
+import { EntityCleanupService } from "../services/entity-cleanup-service";
 
 export async function workOrderRoutes(fastify: FastifyInstance) {
   // Apply authentication middleware to all routes
@@ -13,11 +16,11 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
   // GET /api/v1/work-orders - Get work orders list
   fastify.get(
     "/",
-    { preHandler: requirePermission("workOrders.view") },
+    { preHandler: requireWorkOrderView() },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const req = request as AuthenticatedRequest;
-        const { tenant } = req.context!;
+        const { tenant, user } = req.context!;
         const {
           page = 1,
           limit = 10,
@@ -40,6 +43,35 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         if (priority) filter.priority = priority;
         if (personnelId) filter.personnelIds = personnelId;
         if (clientId) filter.clientId = clientId;
+
+        // Check if user only has "own" permissions and filter accordingly
+        const { PermissionService } = await import("../services/permission-service");
+        const { Personnel } = await import("../models");
+        
+        const hasFullPermission = await PermissionService.hasPermission(user.id, "workOrders.view");
+        const hasOwnPermission = await PermissionService.hasPermission(user.id, "workOrders.viewOwn");
+
+        if (!hasFullPermission.hasPermission && hasOwnPermission.hasPermission) {
+          // User only has "own" permission, filter to their assigned work orders
+          const personnel = await Personnel.findOne({ userId: user.id, tenantId: tenant._id });
+          if (personnel) {
+            filter.personnelIds = personnel._id.toString();
+          } else {
+            // User has no personnel record, they can't see any work orders
+            return reply.send({
+              success: true,
+              data: {
+                workOrders: [],
+                pagination: {
+                  page: Number(page),
+                  limit: Number(limit),
+                  total: 0,
+                  totalPages: 0,
+                },
+              },
+            });
+          }
+        }
 
         // Get work orders with pagination, sorted by created_at (latest first)
         const skip = (page - 1) * limit;
@@ -77,7 +109,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
   // GET /api/v1/work-orders/:id - Get work order by ID
   fastify.get(
     "/:id",
-    { preHandler: requirePermission("workOrders.view") },
+    { preHandler: requireWorkOrderView() },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const req = request as AuthenticatedRequest;
@@ -115,7 +147,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
   // GET /api/v1/work-orders/:id/summary - Aggregated progress and counters
   fastify.get(
     "/:id/summary",
-    { preHandler: requirePermission("workOrders.view") },
+    { preHandler: requireWorkOrderView() },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const req = request as AuthenticatedRequest;
@@ -132,18 +164,20 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
             .send({ success: false, error: "Work order not found" });
         }
 
+        // Return minimal safe summary due to types with lean()
+        const wo: any = workOrder as any;
         return reply.send({
           success: true,
           data: {
-            progressMode: workOrder.progressMode,
-            progress: workOrder.progress ?? 0,
-            tasksTotal: workOrder.tasksTotal ?? 0,
-            tasksCompleted: workOrder.tasksCompleted ?? 0,
-            tasksInProgress: workOrder.tasksInProgress ?? 0,
-            tasksBlocked: workOrder.tasksBlocked ?? 0,
-            startedAt: workOrder.startedAt ?? null,
-            completedAt: workOrder.completedAt ?? null,
-            status: workOrder.status,
+            progressMode: wo.progressMode,
+            progress: wo.progress ?? 0,
+            tasksTotal: wo.tasksTotal ?? 0,
+            tasksCompleted: wo.tasksCompleted ?? 0,
+            tasksInProgress: wo.tasksInProgress ?? 0,
+            tasksBlocked: wo.tasksBlocked ?? 0,
+            startedAt: wo.startedAt ?? null,
+            completedAt: wo.completedAt ?? null,
+            status: wo.status,
           },
         });
       } catch (error) {
@@ -177,17 +211,29 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
             }
           }
 
-          // Validate that all personnel exist and belong to the tenant
-          const personnelCount = await Personnel.countDocuments({
+          // Validate that all personnel exist, belong to tenant, and are eligible (active)
+          const personnelDocs = await Personnel.find({
             _id: { $in: body.personnelIds },
             tenantId: tenant._id,
-          });
+          }).select('_id isActive status');
 
-          if (personnelCount !== body.personnelIds.length) {
+          if (personnelDocs.length !== body.personnelIds.length) {
             return reply.code(400).send({
               success: false,
               error:
                 "One or more personnel not found or don't belong to this tenant",
+            });
+          }
+
+          const ineligible = personnelDocs
+            .filter((p: any) => !p.isActive || p.status !== 'active')
+            .map((p: any) => p._id.toString());
+
+          if (ineligible.length > 0) {
+            return reply.code(400).send({
+              success: false,
+              error: 'One or more personnel are not eligible for assignment (inactive or pending)',
+              data: { ineligible },
             });
           }
         }
@@ -237,7 +283,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
   // PUT /api/v1/work-orders/:id - Update work order
   fastify.put(
     "/:id",
-    { preHandler: requirePermission("workOrders.edit") },
+    { preHandler: requireWorkOrderEdit() },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const req = request as AuthenticatedRequest;
@@ -297,6 +343,15 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           workOrder._id.toString()
         );
 
+        // Handle assignment permissions if personnelIds were updated
+        if (body.personnelIds !== undefined) {
+          await AssignmentPermissionService.handleWorkOrderAssignment(
+            workOrder._id.toString(),
+            workOrder.personnelIds || [],
+            tenant._id.toString()
+          );
+        }
+
         return reply.send({
           success: true,
           message: "Work order updated successfully",
@@ -322,7 +377,8 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         const { tenant } = req.context!;
         const { id } = request.params as { id: string };
 
-        const workOrder = await WorkOrder.findOneAndDelete({
+        // Check if work order exists before cleanup
+        const workOrder = await WorkOrder.findOne({
           _id: id,
           tenantId: tenant._id,
         });
@@ -334,10 +390,40 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           });
         }
 
+        // Perform comprehensive cleanup
+        const cleanupResult = await EntityCleanupService.cleanupWorkOrder(
+          id,
+          tenant._id.toString(),
+          {
+            deleteFiles: true,
+            deleteComments: true,
+            deleteAssignments: true,
+            cascadeDelete: false, // Don't delete related tasks by default
+          }
+        );
+
+        if (!cleanupResult.success) {
+          fastify.log.error(`Work order cleanup failed: ${cleanupResult.message}`);
+          return reply.code(500).send({
+            success: false,
+            error: `Failed to cleanup work order: ${cleanupResult.message}`,
+          });
+        }
+
+        // Log cleanup details
+        fastify.log.info(`🧹 Work order cleanup completed: ${JSON.stringify(cleanupResult.details)}`);
+
         return reply.send({
           success: true,
-          message: "Work order deleted successfully",
-          data: workOrder,
+          message: cleanupResult.message,
+          data: {
+            workOrder: {
+              _id: workOrder._id,
+              title: workOrder.title,
+              clientName: workOrder.clientName,
+            },
+            cleanupDetails: cleanupResult.details,
+          },
         });
       } catch (error) {
         console.error("Error deleting work order:", error);

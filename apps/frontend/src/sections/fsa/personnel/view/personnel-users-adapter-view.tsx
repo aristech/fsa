@@ -63,6 +63,7 @@ type PersonnelApi = {
   user?: { _id: string; name: string; email: string; phone?: string };
   role?: { _id: string; name: string; color: string };
   isActive: boolean;
+  status: 'pending' | 'active' | 'banned';
 };
 
 type RoleApi = { _id: string; name: string };
@@ -71,7 +72,7 @@ function mapPersonnelToUserItem(person: PersonnelApi): { row: IUserItem; editHre
   const user = person.user;
   const role = person.role;
 
-  const status: IUserItem['status'] = person.isActive ? (role ? 'active' : 'pending') : 'banned';
+  const status: IUserItem['status'] = person.status;
 
   const row: IUserItem = {
     id: person._id,
@@ -208,12 +209,12 @@ export function PersonnelUsersAdapterView() {
   const handleDeleteRow = useCallback(
     async (id: string) => {
       try {
-        const res = await fetch(getURL(`/api/v1/personnel/?id=${id}`), { method: 'DELETE' });
-        if (!res.ok) throw new Error('Failed to delete');
+        await axios.delete(`/api/v1/personnel/${id}`);
         setTableData((prev) => prev.filter((row) => row.id !== id));
         table.onUpdatePageDeleteRow(dataInPage.length);
         toast.success('Delete success!');
       } catch (err) {
+        console.error('Delete error:', err);
         toast.error('Delete failed');
       }
     },

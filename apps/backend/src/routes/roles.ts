@@ -6,6 +6,7 @@ import {
   requirePermission,
   requireAnyPermission,
 } from "../middleware/permission-guard";
+import { PermissionService } from "../services/permission-service";
 
 // Role creation schema
 const createRoleSchema = z.object({
@@ -14,9 +15,6 @@ const createRoleSchema = z.object({
     .min(1, "Role name is required")
     .max(50, "Role name must be less than 50 characters"),
   description: z.string().optional(),
-  color: z
-    .string()
-    .regex(/^#[0-9A-F]{6}$/i, "Color must be a valid hex color code"),
   permissions: z.array(z.string()).optional(),
 });
 
@@ -28,16 +26,25 @@ const updateRoleSchema = z.object({
     .max(50, "Role name must be less than 50 characters")
     .optional(),
   description: z.string().optional(),
-  color: z
-    .string()
-    .regex(/^#[0-9A-F]{6}$/i, "Color must be a valid hex color code")
-    .optional(),
   permissions: z.array(z.string()).optional(),
   isActive: z.boolean().optional(),
 });
 
 // Roles routes
 export async function rolesRoutes(fastify: FastifyInstance) {
+  // Normalize permission slugs (e.g., work_orders.view -> workOrders.view)
+  const snakeToCamel = (input: string) => input.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+  const normalizePermission = (perm: string) => {
+    const [resource, action] = perm.split(".");
+    if (!action) return perm;
+    return `${snakeToCamel(resource)}.${snakeToCamel(action)}`;
+  };
+  const normalizePermissions = (perms?: string[]) => {
+    if (!Array.isArray(perms)) return [] as string[];
+    const allowed = new Set(PermissionService.getAllPermissions());
+    const normalized = perms.map((p) => normalizePermission(p));
+    return Array.from(new Set(normalized.filter((p) => allowed.has(p))));
+  };
   // Apply authentication middleware to all routes
   fastify.addHook("preHandler", async (request, reply) => {
     // Import authenticate function here to avoid circular dependency
@@ -85,7 +92,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/",
     {
-      preHandler: requirePermission("roles.create"),
+      preHandler: requireAnyPermission(["roles.create", "roles.manage", "admin.access"]),
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
@@ -122,9 +129,19 @@ export async function rolesRoutes(fastify: FastifyInstance) {
           tenantId: tenant._id,
           isDefault: false,
           isActive: true,
+          permissions: normalizePermissions(validatedData.permissions),
         });
 
-        await role.save();
+        try {
+          await role.save();
+        } catch (err: any) {
+          fastify.log.error(`Mongoose save error: ${err?.message}`);
+          return reply.status(400).send({
+            success: false,
+            message: 'Failed to create role. It may already exist.',
+            error: err?.message,
+          });
+        }
 
         return reply.send({
           success: true,
@@ -140,7 +157,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
           });
         }
 
-        fastify.log.error("Error creating role:", error);
+        fastify.log.error(`Error creating role: ${String(error)}`);
         return reply.status(500).send({
           success: false,
           message: "Failed to create role",
@@ -153,7 +170,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:id",
     {
-      preHandler: requirePermission("roles.view"),
+      preHandler: requireAnyPermission(["roles.view", "roles.manage", "admin.access"]),
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
@@ -198,7 +215,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
   fastify.put(
     "/:id",
     {
-      preHandler: requirePermission("roles.edit"),
+      preHandler: requireAnyPermission(["roles.edit", "roles.manage", "admin.access"]),
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
@@ -248,8 +265,12 @@ export async function rolesRoutes(fastify: FastifyInstance) {
           validatedData.slug = newSlug;
         }
 
-        // Update role
-        Object.assign(role, validatedData);
+        // Update role, normalizing permissions if provided
+        const updatePayload: any = { ...validatedData };
+        if (validatedData.permissions) {
+          updatePayload.permissions = normalizePermissions(validatedData.permissions);
+        }
+        Object.assign(role, updatePayload);
         await role.save();
 
         return reply.send({
@@ -279,7 +300,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
   fastify.delete(
     "/:id",
     {
-      preHandler: requirePermission("roles.delete"),
+      preHandler: requireAnyPermission(["roles.delete", "roles.manage", "admin.access"]),
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {

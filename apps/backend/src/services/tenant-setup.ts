@@ -61,6 +61,12 @@ export const DEFAULT_ROLES: DefaultRoleConfig[] = [
       "reports.view",
       "reports.export",
 
+      // Roles - Full access
+      "roles.view",
+      "roles.create",
+      "roles.edit",
+      "roles.delete",
+
       // System Management - Limited
       "statuses.manage",
       "settings.manage",

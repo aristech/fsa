@@ -1,6 +1,7 @@
 import type { IKanbanAssignee } from 'src/types/kanban';
 
-import { useState, useCallback } from 'react';
+import useSWR from 'swr';
+import { useMemo, useState, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -12,7 +13,7 @@ import ListItemText from '@mui/material/ListItemText';
 import DialogContent from '@mui/material/DialogContent';
 import InputAdornment from '@mui/material/InputAdornment';
 
-import { _contacts } from 'src/_mock';
+import axiosInstance, { endpoints } from 'src/lib/axios';
 
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
@@ -26,23 +27,37 @@ type Props = {
   open: boolean;
   onClose: () => void;
   assignee?: IKanbanAssignee[];
+  onAssign?: (assignees: IKanbanAssignee[]) => void;
 };
 
-export function KanbanContactsDialog({ assignee = [], open, onClose }: Props) {
+export function KanbanContactsDialog({ assignee = [], open, onClose, onAssign }: Props) {
   const [searchContact, setSearchContact] = useState('');
+
+  const axiosFetcher = (url: string) => axiosInstance.get(url).then((res) => res.data);
+  const { data: personnelResp } = useSWR(endpoints.fsa.personnel.list, axiosFetcher);
+  const contacts: IKanbanAssignee[] = useMemo(
+    () =>
+      (personnelResp?.data || []).map((p: any) => ({
+        id: p._id,
+        name: p.user?.name || p.employeeId || 'Unknown',
+        email: p.user?.email,
+        avatarUrl: p.user?.avatar,
+      })),
+    [personnelResp]
+  );
 
   const handleSearchContacts = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchContact(event.target.value);
   }, []);
 
-  const dataFiltered = applyFilter({ inputData: _contacts, query: searchContact });
+  const dataFiltered = applyFilter({ inputData: contacts, query: searchContact });
 
   const notFound = !dataFiltered.length && !!searchContact;
 
   return (
     <Dialog fullWidth maxWidth="xs" open={open} onClose={onClose}>
       <DialogTitle sx={{ pb: 0 }}>
-        Contacts <span>({_contacts.length})</span>
+        Contacts <span>({contacts.length})</span>
       </DialogTitle>
 
       <Box sx={{ px: 3, py: 2.5 }}>
@@ -83,7 +98,9 @@ export function KanbanContactsDialog({ assignee = [], open, onClose }: Props) {
                       alignItems: 'center',
                     }}
                   >
-                    <Avatar src={contact.avatarUrl} />
+                    <Avatar>
+                      {contact.name?.split(' ').map(n => n.charAt(0)).join('').toUpperCase() || 'C'}
+                    </Avatar>
 
                     <ListItemText primary={contact.name} secondary={contact.email} />
 
@@ -97,6 +114,15 @@ export function KanbanContactsDialog({ assignee = [], open, onClose }: Props) {
                           sx={{ mr: -0.5 }}
                         />
                       }
+                    onClick={() => {
+                      let next = assignee;
+                      if (checked) {
+                        next = assignee.filter((p) => p.id !== contact.id);
+                      } else {
+                        next = [...assignee, contact];
+                      }
+                      onAssign?.(next);
+                    }}
                     >
                       {checked ? 'Assigned' : 'Assign'}
                     </Button>

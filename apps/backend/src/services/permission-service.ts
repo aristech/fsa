@@ -1,4 +1,4 @@
-import { User, Role } from "../models";
+import { User, Role, Personnel, Task, WorkOrder } from "../models";
 
 // ----------------------------------------------------------------------
 
@@ -61,11 +61,21 @@ export class PermissionService {
         isActive: true,
       }).lean();
 
+      // Get dynamic permissions based on assignments
+      const assignmentPermissions = await this.getUserAssignmentPermissions(
+        user._id.toString(),
+        user.tenantId.toString()
+      );
+
+      // Combine role permissions and assignment permissions
+      const rolePermissions = role?.permissions || [];
+      const allPermissions = [...new Set([...rolePermissions, ...assignmentPermissions])];
+
       return {
         userId: user._id.toString(),
         tenantId: user.tenantId.toString(),
         role: user.role,
-        permissions: role?.permissions || [],
+        permissions: allPermissions,
         isTenantOwner: false,
       };
     } catch (error) {
@@ -280,6 +290,62 @@ export class PermissionService {
       "admin.manageUsers",
       "admin.manageTenants",
     ];
+  }
+
+  /**
+   * Get dynamic permissions for a user based on their assignments
+   */
+  static async getUserAssignmentPermissions(userId: string, tenantId: string): Promise<string[]> {
+    const dynamicPermissions = new Set<string>();
+
+    try {
+      // Get user's personnel record
+      const personnel = await Personnel.findOne({ userId, tenantId });
+      if (!personnel) {
+        return [];
+      }
+
+      const personnelId = personnel._id.toString();
+
+      // Check if user is assigned to any tasks
+      const assignedTasks = await Task.find({
+        tenantId,
+        assignees: personnelId,
+      }).select('workOrderId projectId');
+
+      // Grant task-related permissions for assigned tasks
+      if (assignedTasks.length > 0) {
+        dynamicPermissions.add('tasks.viewOwn');
+        dynamicPermissions.add('tasks.editOwn');
+      }
+
+      // Check for work order permissions needed for assigned tasks
+      const taskWorkOrderIds = assignedTasks
+        .filter(task => task.workOrderId)
+        .map(task => task.workOrderId);
+
+      if (taskWorkOrderIds.length > 0) {
+        // Grant work order view permission for tasks' work orders
+        dynamicPermissions.add('workOrders.viewOwn');
+      }
+
+      // Check if user is directly assigned to work orders
+      const assignedWorkOrders = await WorkOrder.find({
+        tenantId,
+        personnelIds: personnelId,
+      }).select('_id');
+
+      if (assignedWorkOrders.length > 0) {
+        // Grant work order permissions for directly assigned work orders
+        dynamicPermissions.add('workOrders.viewOwn');
+        dynamicPermissions.add('workOrders.editOwn');
+      }
+
+      return Array.from(dynamicPermissions);
+    } catch (error) {
+      console.error('Error getting user assignment permissions:', error);
+      return [];
+    }
   }
 
   /**

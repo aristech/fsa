@@ -13,3 +13,6 @@ export { WorkOrder, type IWorkOrder } from "./WorkOrder";
 export { Technician, type ITechnician } from "./Technician";
 export { Assignment, type IAssignment } from "./Assignment";
 export { Certification, type ICertification } from "./Certification";
+export { Subtask, type ISubtask } from "./Subtask";
+export { Comment, type IComment } from "./Comment";
+export { MagicLink, type IMagicLink } from "./MagicLink";

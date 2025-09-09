@@ -16,6 +16,7 @@ import { KanbanColumnToolBar } from './kanban-column-toolbar';
 import { KanbanTaskAdd } from '../components/kanban-task-add';
 import { getAttr, columnMotionOptions } from '../utils/helpers';
 import { ColumnRoot, ColumnList, ColumnWrapper } from './styles';
+import { KanbanTaskCreateDialog } from '../components/kanban-task-create-dialog';
 
 // ----------------------------------------------------------------------
 
@@ -34,6 +35,7 @@ export function KanbanColumn({ column, tasks, sx, ...other }: ColumnProps) {
   const { taskListRef, dragHandleRef, columnRef, columnWrapperRef, state } = useColumnDnd(column);
 
   const openAddTask = useBoolean();
+  const openCreateDialog = useBoolean();
 
   const handleUpdateColumn = useCallback(
     async (columnName: string) => {
@@ -81,6 +83,18 @@ export function KanbanColumn({ column, tasks, sx, ...other }: ColumnProps) {
     [column.id, openAddTask]
   );
 
+  const handleCreateTask = useCallback(
+    async (taskData: any) => {
+      try {
+        // The dialog handles the API call, we just need to refresh the board
+        window.location.reload(); // Simple refresh for now - you might want to implement better state management
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    []
+  );
+
   const renderHeader = () => (
     <KanbanColumnToolBar
       dragHandleRef={dragHandleRef}
@@ -89,7 +103,7 @@ export function KanbanColumn({ column, tasks, sx, ...other }: ColumnProps) {
       onUpdateColumn={handleUpdateColumn}
       onClearColumn={handleClearColumn}
       onDeleteColumn={handleDeleteColumn}
-      onToggleAddTask={openAddTask.onToggle}
+      onToggleAddTask={openCreateDialog.onToggle}
     />
   );
 
@@ -142,6 +156,14 @@ export function KanbanColumn({ column, tasks, sx, ...other }: ColumnProps) {
         {renderAddTaskBox()}
         {renderTaskList()}
       </ColumnRoot>
+
+      {/* Enhanced Task Creation Dialog */}
+      <KanbanTaskCreateDialog
+        open={openCreateDialog.value}
+        onClose={openCreateDialog.onFalse}
+        onSuccess={handleCreateTask}
+        status={column.id}
+      />
     </ColumnWrapper>
   );
 }

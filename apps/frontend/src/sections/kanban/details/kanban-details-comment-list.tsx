@@ -1,6 +1,8 @@
 import type { BoxProps } from '@mui/material/Box';
 import type { IKanbanComment } from 'src/types/kanban';
 
+import { useRef, useEffect } from 'react';
+
 import Box from '@mui/material/Box';
 import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
@@ -17,15 +19,30 @@ type Props = BoxProps & {
 };
 
 export function KanbanDetailsCommentList({ comments, sx, ...other }: Props) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  
   const slides = comments
     .filter((comment) => comment.messageType === 'image')
     .map((slide) => ({ src: slide.message }));
 
   const lightbox = useLightbox(slides);
 
+  // Auto-scroll to bottom when comments change
+  useEffect(() => {
+    if (scrollRef.current) {
+      // Use requestAnimationFrame to ensure DOM has updated
+      requestAnimationFrame(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      });
+    }
+  }, [comments]);
+
   return (
     <>
       <Box
+        ref={scrollRef}
         component="ul"
         sx={[
           {
@@ -39,7 +56,9 @@ export function KanbanDetailsCommentList({ comments, sx, ...other }: Props) {
       >
         {comments.map((comment) => (
           <Box component="li" key={comment.id} sx={{ gap: 2, display: 'flex' }}>
-            <Avatar src={comment.avatarUrl} />
+            <Avatar>
+              {comment.initials || comment.name?.charAt(0)?.toUpperCase() || 'U'}
+            </Avatar>
 
             <Box
               sx={{

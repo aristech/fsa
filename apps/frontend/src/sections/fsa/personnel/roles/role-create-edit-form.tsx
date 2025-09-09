@@ -41,7 +41,6 @@ const roleSchema = zod.object({
     .min(1, 'Role name is required')
     .max(50, 'Role name must be less than 50 characters'),
   description: zod.string().optional(),
-  color: zod.string().regex(/^#[0-9A-F]{6}$/i, 'Color must be a valid hex color code'),
   permissions: zod.array(zod.string()).min(1, 'At least one permission is required'),
 });
 
@@ -98,7 +97,6 @@ export function RoleCreateEditForm({ role, onSuccess, onCancel }: RoleCreateEdit
     defaultValues: {
       name: role?.name || '',
       description: role?.description || '',
-      color: role?.color || '#2196f3',
       permissions: role?.permissions || [],
     },
   });
@@ -120,7 +118,6 @@ export function RoleCreateEditForm({ role, onSuccess, onCancel }: RoleCreateEdit
         const updateData: UpdateRoleRequest = {
           name: data.name,
           description: data.description,
-          color: data.color,
           permissions: data.permissions,
         };
         await roleService.updateRole(role._id, updateData);
@@ -129,7 +126,6 @@ export function RoleCreateEditForm({ role, onSuccess, onCancel }: RoleCreateEdit
         const createData: CreateRoleRequest = {
           name: data.name,
           description: data.description,
-          color: data.color,
           permissions: data.permissions,
         };
         await roleService.createRole(createData);
@@ -210,19 +206,6 @@ export function RoleCreateEditForm({ role, onSuccess, onCancel }: RoleCreateEdit
             />
           </Grid>
 
-          <Grid item xs={12} md={6}>
-            <RHFTextField
-              name="color"
-              label="Role Color"
-              type="color"
-              disabled={isEdit && role?.isDefault}
-              slotProps={{
-                input: {
-                  sx: { height: 56 },
-                },
-              }}
-            />
-          </Grid>
 
           <Grid item xs={12}>
             <RHFTextField

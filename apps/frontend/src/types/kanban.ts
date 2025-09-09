@@ -6,7 +6,8 @@ export type IKanbanComment = {
   id: string;
   name: string;
   message: string;
-  avatarUrl: string;
+  avatarUrl: string | null;
+  initials?: string;
   createdAt: IDateValue;
   messageType: 'image' | 'text';
 };
@@ -18,7 +19,8 @@ export type IKanbanAssignee = {
   email: string;
   status: string;
   address: string;
-  avatarUrl: string;
+  avatarUrl: string | null;
+  initials?: string;
   phoneNumber: string;
   lastActivity: IDateValue;
 };
@@ -29,15 +31,20 @@ export type IKanbanTask = {
   status: string;
   priority: string;
   labels: string[];
+  tags?: string[];
   description?: string;
   attachments: string[];
   comments: IKanbanComment[];
   assignee: IKanbanAssignee[];
-  due: [IDateValue, IDateValue];
+  due: [IDateValue, IDateValue]; // [startDate, endDate]
+  startDate?: IDateValue;
+  endDate?: IDateValue;
+  completeStatus?: boolean;
   reporter: {
     id: string;
     name: string;
-    avatarUrl: string;
+    avatarUrl: string | null;
+    initials?: string;
   };
   // Client information (optional)
   clientId?: string;

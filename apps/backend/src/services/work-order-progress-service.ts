@@ -14,7 +14,9 @@ export class WorkOrderProgressService {
     };
 
     for (const t of tasks) {
-      if (t.status === "done") totals.done += 1;
+      // Completion based on completeStatus, fallback to status===done
+      const isComplete = (t as any).completeStatus === true || t.status === 'done';
+      if (isComplete) totals.done += 1;
       else if (t.status === "in-progress" || t.status === "review")
         totals.inProgress += 1;
       else if (t.status === "blocked") totals.blocked += 1;

@@ -11,7 +11,6 @@ export interface IRole extends Document {
   name: string;
   slug: string;
   description?: string;
-  color: string;
   permissions: string[];
   isDefault: boolean;
   isActive: boolean;
@@ -45,17 +44,7 @@ const RoleSchema: Schema = new Schema(
       type: String,
       trim: true,
     },
-    color: {
-      type: String,
-      required: [true, "Role color is required"],
-      default: "#2196f3",
-      validate: {
-        validator(v: string) {
-          return /^#[0-9A-F]{6}$/i.test(v);
-        },
-        message: "Color must be a valid hex color code",
-      },
-    },
+    
     permissions: [
       {
         type: String,
@@ -132,8 +121,8 @@ const RoleSchema: Schema = new Schema(
 
 // Ensure unique role names per tenant
 RoleSchema.index({ tenantId: 1, name: 1 }, { unique: true });
-// Ensure unique slugs globally
-RoleSchema.index({ slug: 1 }, { unique: true });
+// Ensure unique slugs per tenant (not globally)
+RoleSchema.index({ tenantId: 1, slug: 1 }, { unique: true });
 
 // Note: Slug generation is now handled in the API routes for better control
 

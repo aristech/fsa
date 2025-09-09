@@ -45,6 +45,10 @@ export const SignInSchema = z.object({
 
 // ----------------------------------------------------------------------
 
+// email: 'admin@fsa.com',
+//     password: 'admin123',
+//     tenantSlug: 'progressnet',
+
 export function JwtSignInView() {
   const router = useRouter();
 
@@ -55,9 +59,9 @@ export function JwtSignInView() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const defaultValues: SignInSchemaType = {
-    email: 'admin@fsa.com',
-    password: 'admin123',
-    tenantSlug: 'default-tenant',
+    email: '',
+    password: '',
+    tenantSlug: '',
   };
 
   const methods = useForm({
@@ -159,11 +163,7 @@ export function JwtSignInView() {
         sx={{ textAlign: { xs: 'center', md: 'left' } }}
       />
 
-      <Alert severity="info" sx={{ mb: 3 }}>
-        Use <strong>{defaultValues.tenantSlug}</strong> / <strong>{defaultValues.email}</strong>
-        {' with password '}
-        <strong>{defaultValues.password}</strong>
-      </Alert>
+   
 
       {!!errorMessage && (
         <Alert severity="error" sx={{ mb: 3 }}>

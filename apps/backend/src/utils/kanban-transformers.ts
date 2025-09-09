@@ -7,15 +7,18 @@ export interface IKanbanTask {
   status: string;
   priority: string;
   labels: string[];
+  tags?: string[];
   assignee: Array<{
     id: string;
     name: string;
+    email?: string;
     avatarUrl?: string;
   }>;
   due?: [string, string];
   reporter: {
     id: string;
     name: string;
+    email?: string;
     avatarUrl?: string;
   };
   clientId?: string;
@@ -23,6 +26,7 @@ export interface IKanbanTask {
   clientCompany?: string;
   workOrderId?: string;
   workOrderNumber?: string;
+  completeStatus?: boolean;
 }
 
 export function transformProjectToKanbanTask(
@@ -60,12 +64,19 @@ export function transformProjectToKanbanTask(
       clientName: "Client Name", // This would be populated from client data
       clientCompany: "Client Company", // This would be populated from client data
     }),
+    completeStatus: false, // Projects don't have completeStatus, default to false
   };
 }
 
 export function transformTaskToKanbanTask(
   task: ITask,
-  statuses: string[]
+  statuses: string[],
+  lookups?: {
+    userById?: Record<string, { name?: string; email?: string; avatar?: string }>;
+    personnelById?: Record<string, { name?: string; email?: string; avatar?: string }>;
+    subtasksCount?: number;
+    commentsCount?: number;
+  }
 ): IKanbanTask {
   return {
     id: task._id.toString(),
@@ -74,23 +85,38 @@ export function transformTaskToKanbanTask(
     status: task.status || "todo",
     priority: task.priority || "medium",
     labels: task.tags || [],
-    assignee: task.assignedTo
+    tags: task.tags || [],
+    assignee: Array.isArray((task as any).assignees)
+      ? (task as any).assignees.map((id: string) => {
+          const p = lookups?.personnelById?.[id];
+          const name = p?.name || "Assignee";
+          return {
+            id,
+            name,
+            email: p?.email,
+            avatarUrl: null,
+            initials: name.split(' ').map(n => n.charAt(0)).join('').toUpperCase() || 'A',
+          };
+        })
+      : [],
+    due: task.startDate || task.dueDate
       ? [
-          {
-            id: task.assignedTo.toString(),
-            name: "Assigned User", // This would be populated from user data
-            avatarUrl: undefined,
-          },
+          (task as any).startDate?.toISOString() || task.dueDate?.toISOString() || '',
+          task.dueDate?.toISOString() || (task as any).startDate?.toISOString() || ''
         ]
       : [],
-    due: task.dueDate
-      ? [task.dueDate.toISOString(), task.dueDate.toISOString()]
-      : [],
-    reporter: {
-      id: task.createdBy?.toString() || "unknown",
-      name: "Task Creator", // This would be populated from user data
-      avatarUrl: undefined,
-    },
+    reporter: (() => {
+      const id = task.createdBy?.toString() || "unknown";
+      const u = lookups?.userById?.[id];
+      const name = u?.name || "Reporter";
+      return {
+        id,
+        name,
+        email: u?.email,
+        avatarUrl: null,
+        initials: name.split(' ').map(n => n.charAt(0)).join('').toUpperCase() || 'R',
+      };
+    })(),
     attachments: task.attachments || [],
     comments: task.comments || [],
     ...(task.clientId && {
@@ -102,5 +128,6 @@ export function transformTaskToKanbanTask(
       workOrderId: task.workOrderId.toString(),
       workOrderNumber: task.workOrderNumber,
     }),
+    completeStatus: (task as any).completeStatus || false,
   };
 }

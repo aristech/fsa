@@ -1,4 +1,5 @@
 import { model, Schema, models } from "mongoose";
+import { PRIORITY_VALUES } from "../constants/priorities";
 
 // ----------------------------------------------------------------------
 
@@ -10,7 +11,7 @@ export interface IWorkOrder {
   personnelIds?: string[];
   title: string;
   details: string; // Rich text content from TipTap
-  priority: "low" | "medium" | "high" | "urgent";
+  priority: typeof PRIORITY_VALUES[number];
   status:
     | "created"
     | "assigned"
@@ -19,7 +20,7 @@ export interface IWorkOrder {
     | "cancelled"
     | "on-hold";
   // Progress tracking
-  progressMode?: "computed" | "manual" | "weighted";
+  progressMode?: "computed" | "manual";
   progress?: number; // 0..100 authoritative display value
   progressManual?: number; // 0..100 when mode = manual
   tasksTotal?: number;
@@ -104,7 +105,7 @@ const WorkOrderSchema = new Schema<IWorkOrder>(
     },
     priority: {
       type: String,
-      enum: ["low", "medium", "high", "urgent"],
+      enum: PRIORITY_VALUES,
       default: "medium",
     },
     status: {
@@ -122,7 +123,7 @@ const WorkOrderSchema = new Schema<IWorkOrder>(
     // Progress tracking fields
     progressMode: {
       type: String,
-      enum: ["computed", "manual", "weighted"],
+      enum: ["computed", "manual"],
       default: "computed",
       index: true,
     },

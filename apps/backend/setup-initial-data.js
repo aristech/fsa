@@ -2,12 +2,27 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 require("dotenv").config();
 
-// Import models
-const User = require("./dist/models/User").User;
-const Tenant = require("./dist/models/Tenant").Tenant;
-const Role = require("./dist/models/Role").Role;
-const Status = require("./dist/models/Status").Status;
-const Customer = require("./dist/models/Customer").Customer;
+// Import models (prefer src/ via tsx; fallback to dist/ if built)
+function loadModel(modelName) {
+  try {
+    return require(`./src/models/${modelName}`)[modelName];
+  } catch (e1) {
+    try {
+      return require(`./dist/models/${modelName}`)[modelName];
+    } catch (e2) {
+      throw new Error(
+        `Unable to load model ${modelName}. Run with tsx or build the backend.\n` +
+          `Tried: ./src/models/${modelName} and ./dist/models/${modelName}`
+      );
+    }
+  }
+}
+
+const User = loadModel("User");
+const Tenant = loadModel("Tenant");
+const Role = loadModel("Role");
+const Status = loadModel("Status");
+const Client = loadModel("Client");
 
 async function setupInitialData() {
   try {
@@ -18,19 +33,19 @@ async function setupInitialData() {
     // Create default tenant
     console.log("🏢 Creating default tenant...");
     const tenant = await Tenant.findOneAndUpdate(
-      { name: "Default Tenant" },
+      { name: "ProgressNet" },
       {
-        name: "Default Tenant",
+        name: "ProgressNet",
         isActive: true,
         settings: {
           timezone: "UTC",
-          currency: "USD",
-          dateFormat: "MM/DD/YYYY",
+          currency: "EUR",
+          dateFormat: "DD/MM/YYYY",
         },
       },
       { upsert: true, new: true }
     );
-    console.log("✅ Default tenant created/updated");
+    console.log("✅ ProgressNet tenant created/updated");
 
     // Create default roles using the new permission structure
     console.log("👥 Creating default roles...");
@@ -46,11 +61,13 @@ async function setupInitialData() {
         tenantId: tenant._id,
         permissions: [
           // Work Orders - Full access
-          "work_orders.view",
-          "work_orders.create",
-          "work_orders.edit",
-          "work_orders.delete",
-          "work_orders.assign",
+          "workOrders.view",
+          "workOrders.create",
+          "workOrders.edit",
+          "workOrders.delete",
+          "workOrders.assign",
+          "workOrders.viewOwn",
+          "workOrders.editOwn",
 
           // Projects - Full access
           "projects.view",
@@ -63,6 +80,8 @@ async function setupInitialData() {
           "tasks.create",
           "tasks.edit",
           "tasks.delete",
+          "tasks.viewOwn",
+          "tasks.editOwn",
 
           // Clients - Full access
           "clients.view",
@@ -75,18 +94,35 @@ async function setupInitialData() {
           "personnel.create",
           "personnel.edit",
           "personnel.delete",
+          "personnel.viewOwn",
+          "personnel.editOwn",
 
-          // Calendar - Full access
-          "calendar.view",
-          "calendar.edit",
+          // Roles - Full access
+          "roles.view",
+          "roles.create",
+          "roles.edit",
+          "roles.delete",
+
+          // Scheduling (Calendar) - Full access
+          "scheduling.view",
+          "scheduling.create",
+          "scheduling.edit",
+          "scheduling.delete",
 
           // Reports - Full access
           "reports.view",
-          "reports.export",
+          "reports.create",
+          "reports.edit",
+          "reports.delete",
 
-          // System Management - Limited
-          "statuses.manage",
-          "settings.manage",
+          // Settings - Full access
+          "settings.view",
+          "settings.edit",
+
+          // Admin - Full access
+          "admin.access",
+          "admin.manageUsers",
+          "admin.manageTenants",
         ],
       },
       {
@@ -100,16 +136,15 @@ async function setupInitialData() {
         tenantId: tenant._id,
         permissions: [
           // Work Orders - Own only
-          "work_orders.view_own",
-          "work_orders.edit_own",
+          "workOrders.viewOwn",
+          "workOrders.editOwn",
 
           // Tasks - Own only
-          "tasks.view_own",
-          "tasks.edit_own",
+          "tasks.viewOwn",
+          "tasks.editOwn",
 
-          // Calendar - Own only
-          "calendar.view_own",
-          "calendar.edit_own",
+          // Scheduling (Calendar) - View only
+          "scheduling.view",
 
           // Clients - View only
           "clients.view",
@@ -168,9 +203,9 @@ async function setupInitialData() {
     );
     console.log("✅ Default admin user created/updated");
 
-    // Create sample customer
-    console.log("🏢 Creating sample customer...");
-    const customer = await Customer.findOneAndUpdate(
+    // Create sample client
+    console.log("🏢 Creating sample client...");
+    const client = await Client.findOneAndUpdate(
       { email: "contact@acmecorp.com" },
       {
         tenantId: tenant._id.toString(),
@@ -188,7 +223,7 @@ async function setupInitialData() {
       },
       { upsert: true, new: true }
     );
-    console.log("✅ Sample customer created/updated");
+    console.log("✅ Sample client created/updated");
 
     console.log("\n🎉 Initial data setup completed successfully!");
     console.log("\n📋 Default credentials:");

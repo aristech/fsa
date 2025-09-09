@@ -3,15 +3,20 @@
 import useSWR from 'swr';
 import { z as zod } from 'zod';
 import { useForm } from 'react-hook-form';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { Box, Card, Grid, Stack, Button, MenuItem, Typography, CardContent } from '@mui/material';
 
+import { paths } from 'src/routes/paths';
+
 import axiosInstance, { endpoints } from 'src/lib/axios';
 import { type Client } from 'src/lib/services/client-service';
 import { type Personnel } from 'src/lib/services/personnel-service';
+import { getPriorityOptionsWithMetadata } from 'src/constants/priorities';
 
+import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { Form, RHFEditor, RHFSelect, RHFTextField, RHFMultiSelect } from 'src/components/hook-form';
 
@@ -40,6 +45,7 @@ type Props = { id?: string };
 
 export function WorkOrderCreateForm({ id }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
   // Custom fetcher using axiosInstance for authentication
   const axiosFetcher = (url: string) => axiosInstance.get(url).then((res) => res.data);
@@ -152,12 +158,14 @@ export function WorkOrderCreateForm({ id }: Props) {
       }
 
       if (response.data.success) {
-        console.log('Work order created successfully:', response.data);
-        // TODO: Redirect to work order details or show success message
+        toast.success(id ? 'Work order updated' : 'Work order created');
+        router.push(paths.dashboard.fsa.workOrders.root);
       } else {
         throw new Error(response.data.message || 'Failed to create work order');
       }
     } catch (error) {
+      const message = (error as any)?.response?.data?.message || (error as any)?.message || 'Something went wrong';
+      toast.error(message);
       console.error('Error creating work order:', error);
     } finally {
       setIsSubmitting(false);
@@ -211,48 +219,21 @@ export function WorkOrderCreateForm({ id }: Props) {
                     <Typography variant="subtitle2">Priority (Optional)</Typography>
 
                     <RHFSelect name="priority" label="Priority">
-                      <MenuItem value="low">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Box
-                            sx={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: '50%',
-                              bgcolor: 'success.main',
-                            }}
-                          />
-                          Low
-                        </Box>
-                      </MenuItem>
-                      <MenuItem value="medium">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Box
-                            sx={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: '50%',
-                              bgcolor: 'warning.main',
-                            }}
-                          />
-                          Medium
-                        </Box>
-                      </MenuItem>
-                      <MenuItem value="high">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Box
-                            sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'error.main' }}
-                          />
-                          High
-                        </Box>
-                      </MenuItem>
-                      <MenuItem value="urgent">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Box
-                            sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'error.dark' }}
-                          />
-                          Urgent
-                        </Box>
-                      </MenuItem>
+                      {getPriorityOptionsWithMetadata().map((priority) => (
+                        <MenuItem key={priority.value} value={priority.value}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box
+                              sx={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: '50%',
+                                bgcolor: priority.color,
+                              }}
+                            />
+                            {priority.label}
+                          </Box>
+                        </MenuItem>
+                      ))}
                     </RHFSelect>
                   </Stack>
                 </Grid>

@@ -3,6 +3,7 @@ import { authenticate } from "../middleware/auth";
 import { requirePermission } from "../middleware/permission-guard";
 import { Client } from "../models";
 import { AuthenticatedRequest } from "../types";
+import { EntityCleanupService } from "../services/entity-cleanup-service";
 
 export async function clientRoutes(fastify: FastifyInstance) {
   // Apply authentication middleware to all routes
@@ -206,6 +207,77 @@ export async function clientRoutes(fastify: FastifyInstance) {
         });
       } catch (error) {
         console.error("Error deleting client:", error);
+        return reply.code(500).send({
+          success: false,
+          error: "Internal server error",
+        });
+      }
+    }
+  );
+
+  // DELETE /api/v1/clients/:id/hard-delete - Permanently delete client with full cleanup
+  fastify.delete(
+    "/:id/hard-delete",
+    {
+      preHandler: requirePermission("clients.delete"),
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const req = request as AuthenticatedRequest;
+        const { tenant } = req.context!;
+        const { id } = request.params as { id: string };
+        const { cascadeDelete = false } = request.query as { cascadeDelete?: boolean };
+
+        // Check if client exists
+        const client = await Client.findOne({
+          _id: id,
+          tenantId: tenant._id,
+        });
+
+        if (!client) {
+          return reply.code(404).send({
+            success: false,
+            error: "Client not found",
+          });
+        }
+
+        // Perform comprehensive cleanup
+        const cleanupResult = await EntityCleanupService.cleanupClient(
+          id,
+          tenant._id.toString(),
+          {
+            deleteFiles: true,
+            deleteComments: true,
+            deleteAssignments: true,
+            cascadeDelete: cascadeDelete, // Optionally delete related work orders
+          }
+        );
+
+        if (!cleanupResult.success) {
+          fastify.log.error(`Client cleanup failed: ${cleanupResult.message}`);
+          return reply.code(500).send({
+            success: false,
+            error: `Failed to cleanup client: ${cleanupResult.message}`,
+          });
+        }
+
+        // Log cleanup details
+        fastify.log.info(`🧹 Client cleanup completed:`, cleanupResult.details);
+
+        return reply.send({
+          success: true,
+          message: cleanupResult.message,
+          data: {
+            client: {
+              _id: client._id,
+              name: client.name,
+              company: client.company,
+            },
+            cleanupDetails: cleanupResult.details,
+          },
+        });
+      } catch (error) {
+        console.error("Error permanently deleting client:", error);
         return reply.code(500).send({
           success: false,
           error: "Internal server error",

@@ -27,10 +27,12 @@ import {
 
 import { fDateTime } from 'src/utils/format-time';
 
-import { fetcher, endpoints } from 'src/lib/axios';
+import axiosInstance, { fetcher, endpoints } from 'src/lib/axios';
 
+import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
+import { ConfirmDialog } from 'src/components/custom-dialog';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 // ----------------------------------------------------------------------
@@ -112,6 +114,8 @@ export function WorkOrderList() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Get clientId from URL parameters
   const clientId = searchParams.get('clientId');
@@ -122,10 +126,10 @@ export function WorkOrderList() {
     : `${endpoints.fsa.workOrders.list}?page=${page + 1}&limit=${rowsPerPage}`;
 
   // Fetch work orders data
-  const { data, error, isLoading } = useSWR(apiUrl, fetcher, swrOptions);
+  const { data, error, isLoading, mutate } = useSWR<{ success: boolean; data: { workOrders: WorkOrder[]; pagination: { total: number; pages: number } } }>(apiUrl, fetcher, swrOptions);
 
-  const workOrders = data?.data?.workOrders || [];
-  const pagination = data?.data?.pagination || { total: 0, pages: 0 };
+  const workOrders = data?.data?.workOrders ?? [];
+  const pagination = data?.data?.pagination ?? { total: 0, pages: 0 };
 
   // Pagination handlers
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -195,11 +199,7 @@ export function WorkOrderList() {
                 <TableRow>
                   <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                     <Stack spacing={2} alignItems="center">
-                      <Iconify
-                        icon="solar:file-search-bold"
-                        width={48}
-                        sx={{ color: 'text.disabled' }}
-                      />
+                      <Iconify icon="solar:file-text-bold" width={48} sx={{ color: 'text.disabled' }} />
                       <Typography variant="h6" color="text.secondary">
                         {clientId ? 'No work orders found for this client' : 'No work orders found'}
                       </Typography>
@@ -363,19 +363,10 @@ export function WorkOrderList() {
         </MenuItem>
 
         <MenuItem
-          onClick={async () => {
+          onClick={() => {
             popover.onClose();
             if (!selectedId) return;
-            const ok = window.confirm('Delete this work order?');
-            if (!ok) return;
-            try {
-              const res = await fetch(`/api/v1/work-orders/${selectedId}`, { method: 'DELETE' });
-              if (!res.ok) throw new Error('Failed to delete');
-              // refresh
-              window.location.reload();
-            } catch (e) {
-              console.error('Failed to delete work order', e);
-            }
+            setDeleteOpen(true);
           }}
           sx={{ color: 'error.main' }}
         >
@@ -383,6 +374,45 @@ export function WorkOrderList() {
           Delete
         </MenuItem>
       </Popover>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        title="Delete Work Order"
+        content={
+          <>
+            Are you sure you want to delete this work order?
+            <br />
+            This will clean up related references.
+          </>
+        }
+        action={
+          <Button
+            variant="contained"
+            color="error"
+            disabled={deleting}
+            onClick={async () => {
+              if (!selectedId) return;
+              try {
+                setDeleting(true);
+                await axiosInstance.delete(endpoints.fsa.workOrders.details(selectedId));
+                toast.success('Work order deleted');
+                setDeleteOpen(false);
+                setSelectedId(null);
+                // Refresh list via SWR
+                await mutate();
+              } catch (e) {
+                console.error('Failed to delete work order', e);
+                toast.error('Failed to delete work order');
+              } finally {
+                setDeleting(false);
+              }
+            }}
+          >
+            {deleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        }
+      />
     </>
   );
 }

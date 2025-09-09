@@ -20,7 +20,6 @@ import {
   ItemRoot,
   ItemInfo,
   ItemName,
-  ItemImage,
   ItemStatus,
   ItemContent,
   ItemPreview,
@@ -111,7 +110,6 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
       onClick={taskDetailsDialog.onTrue}
       {...other}
     >
-      <ItemImage attachments={task.attachments} />
       <ItemContent>
         <ItemStatus status={task.priority} />
         <ItemName name={task.name} />
