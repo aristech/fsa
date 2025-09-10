@@ -36,7 +36,6 @@ export function PersonnelTableToolbar({
   filters,
   onFilters,
 }: PersonnelTableToolbarProps) {
-  const theme = useTheme();
   const [openPopover, setOpenPopover] = useState<HTMLElement | null>(null);
 
   const handleOpenPopover = (event: React.MouseEvent<HTMLElement>) => {

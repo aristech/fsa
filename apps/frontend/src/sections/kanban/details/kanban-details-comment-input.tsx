@@ -53,39 +53,45 @@ export function KanbanDetailsCommentInput({ taskId, onStartTyping, onStopTyping,
     }
   }, [taskId, message, isSubmitting]);
 
-  const handleKeyPress = useCallback((event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-      handleSubmitComment();
-    }
-  }, [handleSubmitComment]);
+  const handleKeyPress = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+        handleSubmitComment();
+      }
+    },
+    [handleSubmitComment]
+  );
 
-  const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const newMessage = event.target.value;
-    setMessage(newMessage);
+  const handleInputChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const newMessage = event.target.value;
+      setMessage(newMessage);
 
-    // Handle typing indicators
-    if (newMessage.length > 0 && !isTyping) {
-      setIsTyping(true);
-      onStartTyping?.();
-    }
+      // Handle typing indicators
+      if (newMessage.length > 0 && !isTyping) {
+        setIsTyping(true);
+        onStartTyping?.();
+      }
 
-    // Reset typing timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
+      // Reset typing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
 
-    // Stop typing indicator after 2 seconds of inactivity
-    typingTimeoutRef.current = setTimeout(() => {
-      setIsTyping(false);
-      onStopTyping?.();
-    }, 2000);
+      // Stop typing indicator after 2 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        setIsTyping(false);
+        onStopTyping?.();
+      }, 2000);
 
-    // Stop typing immediately if message is empty
-    if (newMessage.length === 0 && isTyping) {
-      setIsTyping(false);
-      onStopTyping?.();
-    }
-  }, [isTyping, onStartTyping, onStopTyping]);
+      // Stop typing immediately if message is empty
+      if (newMessage.length === 0 && isTyping) {
+        setIsTyping(false);
+        onStopTyping?.();
+      }
+    },
+    [isTyping, onStartTyping, onStopTyping]
+  );
 
   const handleBlur = useCallback(() => {
     // Stop typing when input loses focus

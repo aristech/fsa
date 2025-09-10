@@ -66,22 +66,8 @@ export function PersonnelList({ filters }: PersonnelListProps) {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(0);
 
-  const {
-    dense,
-    page,
-    order,
-    orderBy,
-    rowsPerPage,
-    setPage,
-    selected,
-    setSelected,
-    onSelectRow,
-    onSelectAllRows,
-    onSort,
-    onChangeDense,
-    onChangePage,
-    onChangeRowsPerPage,
-  } = useTable();
+  const { dense, page, order, orderBy, rowsPerPage, selected, onSelectRow, onSelectAllRows, onSort } =
+    useTable();
 
   // Fetch personnel data
   useEffect(() => {

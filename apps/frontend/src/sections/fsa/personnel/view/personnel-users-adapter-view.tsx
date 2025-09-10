@@ -101,7 +101,7 @@ function mapPersonnelToUserItem(person: PersonnelApi): { row: IUserItem; editHre
 
 export function PersonnelUsersAdapterView() {
   const table = useTable();
-  const { getURL, tenantId } = useTenantAPI();
+  const { getURL } = useTenantAPI();
 
   const confirmDialog = useBoolean();
   const createDialog = useBoolean();
@@ -181,13 +181,7 @@ export function PersonnelUsersAdapterView() {
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    table.page,
-    table.rowsPerPage,
-    currentFilters.status,
-    currentFilters.role,
-    currentFilters.name,
-  ]);
+  }, [table.page, table.rowsPerPage, currentFilters.status, currentFilters.role, currentFilters.name]);
 
   const dataFiltered = useMemo(
     () =>

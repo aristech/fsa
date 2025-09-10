@@ -14,7 +14,6 @@ import { PersonnelCreateView } from '../../create/personnel-create-view';
 // ----------------------------------------------------------------------
 
 export function PersonnelListView() {
-  const theme = useTheme();
   const openFilters = useBoolean();
   const openCreate = useBoolean();
 

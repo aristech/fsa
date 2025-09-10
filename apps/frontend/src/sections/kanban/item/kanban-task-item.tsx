@@ -70,7 +70,7 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
     } catch (error) {
       console.error(error);
     }
-  }, [columnId, task.id, task]);
+  }, [columnId, task]);
 
   const handleUpdateTask = useCallback(
     async (taskData: IKanbanTask) => {

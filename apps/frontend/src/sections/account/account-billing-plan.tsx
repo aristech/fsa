@@ -52,9 +52,7 @@ export function AccountBillingPlan({ cardList, addressBook, plans }: Props) {
     [plans]
   );
 
-  const handleSelectAddress = useCallback((newValue: IAddressItem | null) => {
-    setSelectedAddress(newValue);
-  }, []);
+  // Address selection handled by downstream UI; remove unused handler to satisfy lint
 
   const handleSelectCard = useCallback((newValue: IPaymentCard | null) => {
     setSelectedCard(newValue);

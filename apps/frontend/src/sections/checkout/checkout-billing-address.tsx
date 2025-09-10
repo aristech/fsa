@@ -14,7 +14,7 @@ import { CheckoutSummary } from './checkout-summary';
 // ----------------------------------------------------------------------
 
 export function CheckoutBillingAddress() {
-  const { onChangeStep, onCreateBillingAddress, state: checkoutState } = useCheckoutContext();
+  const { onChangeStep, state: checkoutState } = useCheckoutContext();
 
   const addressForm = useBoolean();
 

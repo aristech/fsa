@@ -76,7 +76,7 @@ export function PersonnelCreateView({
   onCreated,
   personnelId,
 }: PersonnelCreateViewProps) {
-  const { getURL, tenantId } = useTenantAPI();
+  const { tenantId } = useTenantAPI();
   const [roles, setRoles] = useState<RoleOption[]>([]);
   const [users, setUsers] = useState<UserOption[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -233,7 +233,7 @@ export function PersonnelCreateView({
     };
 
     load();
-  }, [open, personnelId, tenantId]); // Remove getURL and editingId from dependencies
+  }, [open, personnelId, tenantId]);
 
   const onSubmit = handleSubmit(async (data) => {
     const isEdit = !!personnelId;
