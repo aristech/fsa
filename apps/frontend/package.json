@@ -20,7 +20,8 @@
     "re:build-npm": "npm run clean && npm install && npm run build",
     "tsc:dev": "yarn dev & yarn tsc:watch",
     "tsc:watch": "tsc --noEmit --watch",
-    "tsc:print": "npx tsc --showConfig"
+    "tsc:print": "npx tsc --showConfig",
+    "unused:check": "npx next-unused"
   },
   "engines": {
     "node": ">=20"
@@ -136,8 +137,20 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-unused-imports": "^4.1.4",
     "globals": "^16.3.0",
+    "next-unused": "^0.0.6",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.39.0"
+  },
+  "next-unused": {
+    "include": [
+      "src/"
+    ],
+    "exclude": [
+      ".test."
+    ],
+    "entrypoints": [
+      "src/app"
+    ]
   }
 }
