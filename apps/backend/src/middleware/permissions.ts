@@ -1,19 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { Role, User } from "../models";
 import { PermissionService } from "../services/permission-service";
-
-// ----------------------------------------------------------------------
-
-export interface AuthenticatedRequest extends FastifyRequest {
-  user?: {
-    id: string;
-    email: string;
-    role: string;
-    tenantId: string;
-    permissions?: string[];
-    isTenantOwner?: boolean;
-  };
-}
+import { AuthenticatedRequest } from "../types";
 
 // ----------------------------------------------------------------------
 
@@ -25,7 +13,7 @@ export function requirePermissions(requiredPermissions: string | string[]) {
   return async (request: AuthenticatedRequest, reply: FastifyReply) => {
     try {
       const user = request.user;
-      if (!user) {
+      if (!user || !user.id) {
         return reply.status(401).send({
           success: false,
           message: "Authentication required",
@@ -79,7 +67,7 @@ export function requireOwnResource(
   return async (request: AuthenticatedRequest, reply: FastifyReply) => {
     try {
       const user = request.user;
-      if (!user) {
+      if (!user || !user.id || !user.tenantId) {
         return reply.status(401).send({
           success: false,
           message: "Authentication required",

@@ -137,29 +137,33 @@ export function ItemImage({ sx, attachments, ...other }: ItemImageProps) {
 
 export type ItemStatusProps = Omit<IconifyProps, 'icon'> & {
   status: IKanbanTask['priority'];
+  completed?: boolean;
 };
 
-export function ItemStatus({ sx, status, ...other }: ItemStatusProps) {
+export function ItemStatus({ sx, status, completed, ...other }: ItemStatusProps) {
+  const map: Record<string, { icon: IconifyName; color: string; title: string }> = {
+    low: { icon: 'solar:double-alt-arrow-down-bold-duotone', color: 'success.main', title: 'Low' },
+    medium: { icon: 'solar:double-alt-arrow-right-bold-duotone', color: 'warning.main', title: 'Medium' },
+    high: { icon: 'solar:double-alt-arrow-up-bold-duotone', color: 'error.main', title: 'High' },
+    urgent: { icon: 'solar:danger-triangle-bold-duotone', color: 'error.dark', title: 'Urgent' },
+  };
+  const conf = map[status] || map.medium;
+
   return (
-    <Iconify
-      icon={
-        (status === 'low' && 'solar:double-alt-arrow-down-bold-duotone') ||
-        (status === 'medium' && 'solar:double-alt-arrow-right-bold-duotone') ||
-        'solar:double-alt-arrow-up-bold-duotone'
-      }
-      sx={[
-        {
-          top: 4,
-          right: 4,
-          position: 'absolute',
-          color: 'error.main',
-          ...(status === 'low' && { color: 'info.main' }),
-          ...(status === 'medium' && { color: 'warning.main' }),
-        },
-        ...(Array.isArray(sx) ? sx : [sx]),
-      ]}
-      {...other}
-    />
+    <Box sx={{ position: 'absolute', top: 4, right: 4, display: 'inline-flex', gap: 0.5 }}>
+      {completed && (
+        <Box component="span" sx={{ display: 'inline-flex' }} title="Completed">
+          <Iconify icon="solar:check-circle-bold" sx={{ color: 'success.main' }} width={18} height={18} />
+        </Box>
+      )}
+      <Box component="span" sx={{ display: 'inline-flex' }} title={conf.title}>
+        <Iconify
+          icon={conf.icon}
+          sx={[{ color: conf.color }, ...(Array.isArray(sx) ? sx : [sx])]}
+          {...other}
+        />
+      </Box>
+    </Box>
   );
 }
 
@@ -221,7 +225,14 @@ export function ItemInfo({ sx, assignee, comments, attachments, ...other }: Item
             }}
           >
             {assignee.map((user) => (
-              <Avatar key={user.id} alt={user.name} src={user.avatarUrl || ''} />
+              <Avatar key={user.id} alt={user.name} src={''} sx={{ fontSize: 11 }}>
+                {(user as any).initials ||
+                  (user.name || '')
+                    .split(' ')
+                    .map((n) => n.charAt(0))
+                    .join('')
+                    .toUpperCase()}
+              </Avatar>
             ))}
           </AvatarGroup>
         </>

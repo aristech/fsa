@@ -114,7 +114,7 @@ export async function subtasksRoutes(fastify: FastifyInstance) {
       if (title !== undefined) subtask.title = title;
       if (description !== undefined) subtask.description = description;
       if (completed !== undefined) subtask.completed = completed;
-      if (assignedTo !== undefined) subtask.assignedTo = assignedTo || undefined;
+      if (assignedTo !== undefined) subtask.assignedTo = assignedTo || undefined as any;
 
       await subtask.save();
       await subtask.populate('createdBy', 'name email');

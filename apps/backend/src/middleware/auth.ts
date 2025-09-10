@@ -33,8 +33,29 @@ export async function authenticate(
       });
     }
 
-    // Get tenant from database
-    const tenant = await Tenant.findOne({ isActive: true });
+    // Superusers operate without a tenant context
+    if (user.role === 'superuser') {
+      (request as AuthenticatedRequest).user = {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        tenantId: user.tenantId,
+      };
+      (request as AuthenticatedRequest).tenant = undefined as any;
+      (request as AuthenticatedRequest).context = {
+        user: {
+          id: user._id,
+          email: user.email,
+          role: user.role,
+          tenantId: user.tenantId,
+        },
+        tenant: undefined as any,
+      };
+      return;
+    }
+
+    // Get tenant from database for non-superusers
+    const tenant = await Tenant.findOne({ _id: user.tenantId, isActive: true });
     if (!tenant) {
       return reply.code(500).send({
         success: false,

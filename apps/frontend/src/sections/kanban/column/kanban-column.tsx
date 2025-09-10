@@ -6,7 +6,7 @@ import { AnimatePresence } from 'framer-motion';
 import { useBoolean } from 'minimal-shared/hooks';
 import { mergeClasses } from 'minimal-shared/utils';
 
-import { createTask, clearColumn, updateColumn, deleteColumn } from 'src/actions/kanban';
+import { createTask, updateColumn, deleteColumn } from 'src/actions/kanban';
 
 import { kanbanClasses } from '../classes';
 import { DropIndicator } from '../item/styles';
@@ -52,13 +52,7 @@ export function KanbanColumn({ column, tasks, sx, ...other }: ColumnProps) {
     [column.id, column.name]
   );
 
-  const handleClearColumn = useCallback(async () => {
-    try {
-      clearColumn(column.id);
-    } catch (error) {
-      console.error(error);
-    }
-  }, [column.id]);
+
 
   const handleDeleteColumn = useCallback(async () => {
     try {
@@ -101,7 +95,6 @@ export function KanbanColumn({ column, tasks, sx, ...other }: ColumnProps) {
       totalTasks={tasks.length}
       columnName={column.name}
       onUpdateColumn={handleUpdateColumn}
-      onClearColumn={handleClearColumn}
       onDeleteColumn={handleDeleteColumn}
       onToggleAddTask={openCreateDialog.onToggle}
     />

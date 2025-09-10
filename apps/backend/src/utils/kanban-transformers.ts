@@ -26,6 +26,9 @@ export interface IKanbanTask {
   clientCompany?: string;
   workOrderId?: string;
   workOrderNumber?: string;
+  workOrderTitle?: string;
+  attachments?: any[];
+  comments?: any[];
   completeStatus?: boolean;
 }
 
@@ -51,7 +54,7 @@ export function transformProjectToKanbanTask(
       : [],
     due: project.endDate
       ? [project.endDate.toISOString(), project.endDate.toISOString()]
-      : [],
+      : undefined,
     reporter: {
       id: project.managerId?.toString() || "unknown",
       name: "Project Manager", // This would be populated from user data
@@ -76,8 +79,13 @@ export function transformTaskToKanbanTask(
     personnelById?: Record<string, { name?: string; email?: string; avatar?: string }>;
     subtasksCount?: number;
     commentsCount?: number;
+    workOrderById?: Record<string, { title?: string; workOrderNumber?: string }>;
   }
 ): IKanbanTask {
+  const workOrder = task.workOrderId && lookups?.workOrderById
+    ? lookups.workOrderById[task.workOrderId.toString()] || undefined
+    : undefined;
+
   return {
     id: task._id.toString(),
     name: task.title,
@@ -104,7 +112,7 @@ export function transformTaskToKanbanTask(
           (task as any).startDate?.toISOString() || task.dueDate?.toISOString() || '',
           task.dueDate?.toISOString() || (task as any).startDate?.toISOString() || ''
         ]
-      : [],
+      : undefined,
     reporter: (() => {
       const id = task.createdBy?.toString() || "unknown";
       const u = lookups?.userById?.[id];
@@ -113,12 +121,12 @@ export function transformTaskToKanbanTask(
         id,
         name,
         email: u?.email,
-        avatarUrl: null,
+        avatarUrl: undefined,
         initials: name.split(' ').map(n => n.charAt(0)).join('').toUpperCase() || 'R',
       };
     })(),
     attachments: task.attachments || [],
-    comments: task.comments || [],
+    comments: [], // Comments not available in current Task model
     ...(task.clientId && {
       clientId: task.clientId.toString(),
       clientName: task.clientName,
@@ -126,7 +134,8 @@ export function transformTaskToKanbanTask(
     }),
     ...(task.workOrderId && {
       workOrderId: task.workOrderId.toString(),
-      workOrderNumber: task.workOrderNumber,
+      workOrderNumber: task.workOrderNumber || workOrder?.workOrderNumber,
+      workOrderTitle: (task as any).workOrderTitle || workOrder?.title,
     }),
     completeStatus: (task as any).completeStatus || false,
   };

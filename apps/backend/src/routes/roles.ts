@@ -80,7 +80,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
         data: roles,
       });
     } catch (error) {
-      fastify.log.error("Error fetching roles:", error);
+      fastify.log.error(error as Error, "Error fetching roles");
       return reply.status(500).send({
         success: false,
         message: "Failed to fetch roles",
@@ -153,11 +153,11 @@ export async function rolesRoutes(fastify: FastifyInstance) {
           return reply.status(400).send({
             success: false,
             message: "Validation error",
-            errors: error.errors,
+            errors: error.issues,
           });
         }
 
-        fastify.log.error(`Error creating role: ${String(error)}`);
+        fastify.log.error(error as Error, "Error creating role");
         return reply.status(500).send({
           success: false,
           message: "Failed to create role",
@@ -202,7 +202,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
           data: role,
         });
       } catch (error) {
-        fastify.log.error("Error fetching role:", error);
+        fastify.log.error(error as Error, "Error fetching role");
         return reply.status(500).send({
           success: false,
           message: "Failed to fetch role",
@@ -262,7 +262,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
           }
 
           // Update slug when name changes
-          validatedData.slug = newSlug;
+          (validatedData as any).slug = newSlug;
         }
 
         // Update role, normalizing permissions if provided
@@ -283,11 +283,11 @@ export async function rolesRoutes(fastify: FastifyInstance) {
           return reply.status(400).send({
             success: false,
             message: "Validation error",
-            errors: error.errors,
+            errors: error.issues,
           });
         }
 
-        fastify.log.error("Error updating role:", error);
+        fastify.log.error(error as Error, "Error updating role");
         return reply.status(500).send({
           success: false,
           message: "Failed to update role",
@@ -351,7 +351,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
           message: "Role deleted successfully",
         });
       } catch (error) {
-        fastify.log.error("Error deleting role:", error);
+        fastify.log.error(error as Error, "Error deleting role");
         return reply.status(500).send({
           success: false,
           message: "Failed to delete role",

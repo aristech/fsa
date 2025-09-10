@@ -6,6 +6,13 @@ export interface RequestContext {
   tenant?: any;
   client?: any;
   filters?: any;
+  safeQueries?: {
+    findById: <T>(Model: any, id: string, populate?: string | string[]) => Promise<T | null>;
+    find: <T>(Model: any, filter: any, options?: any) => Promise<T[]>;
+    findByIdAndUpdate: <T>(Model: any, id: string, update: any, options?: any) => Promise<T | null>;
+    findByIdAndDelete: <T>(Model: any, id: string) => Promise<T | null>;
+    count: (Model: any, filter: any) => Promise<number>;
+  };
 }
 
 // Extended Fastify request with context

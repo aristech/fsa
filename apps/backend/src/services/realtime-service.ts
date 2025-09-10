@@ -150,7 +150,7 @@ class RealtimeService {
       });
 
       // Handle disconnection
-      socket.on('disconnect', (reason) => {
+      socket.on('disconnect', (reason: string) => {
         console.log(`👤 User disconnected: ${socket.userEmail} (${reason})`);
         
         // Remove from connected users
@@ -164,7 +164,7 @@ class RealtimeService {
       });
 
       // Handle connection errors
-      socket.on('error', (error: Error) => {
+      socket.on('error', (error: any) => {
         console.error(`Socket error for user ${socket.userEmail}:`, error);
       });
     });
@@ -187,7 +187,7 @@ class RealtimeService {
     if (!this.io) return;
     
     // Find all connections for this user
-    for (const [socketId, userData] of this.connectedUsers.entries()) {
+    for (const [socketId, userData] of this.connectedUsers.entries() as any) {
       if (userData.userId === userId) {
         this.io.to(socketId).emit(event, data);
       }

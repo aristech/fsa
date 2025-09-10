@@ -28,27 +28,30 @@ export class PermissionService {
   ): Promise<UserPermissionContext | null> {
     try {
       const user = await User.findById(userId).lean();
-      if (!user) {
+      if (!user || Array.isArray(user)) {
         return null;
       }
 
+      // Type assertion for user object
+      const userObj = user as any;
+
       // If user is tenant owner, they have all permissions
-      if (user.isTenantOwner) {
+      if (userObj.isTenantOwner) {
         return {
-          userId: user._id.toString(),
-          tenantId: user.tenantId.toString(),
-          role: user.role,
+          userId: userObj._id.toString(),
+          tenantId: userObj.tenantId.toString(),
+          role: userObj.role,
           permissions: this.getAllPermissions(),
           isTenantOwner: true,
         };
       }
 
       // Handle special case for "admin" role (legacy support)
-      if (user.role === "admin") {
+      if (userObj.role === "admin") {
         return {
-          userId: user._id.toString(),
-          tenantId: user.tenantId.toString(),
-          role: user.role,
+          userId: userObj._id.toString(),
+          tenantId: userObj.tenantId.toString(),
+          role: userObj.role,
           permissions: this.getAllPermissions(),
           isTenantOwner: false,
         };
@@ -56,25 +59,25 @@ export class PermissionService {
 
       // Get permissions from role
       const role = await Role.findOne({
-        tenantId: user.tenantId,
-        slug: user.role,
+        tenantId: userObj.tenantId,
+        slug: userObj.role,
         isActive: true,
       }).lean();
 
       // Get dynamic permissions based on assignments
       const assignmentPermissions = await this.getUserAssignmentPermissions(
-        user._id.toString(),
-        user.tenantId.toString()
+        userObj._id.toString(),
+        userObj.tenantId.toString()
       );
 
       // Combine role permissions and assignment permissions
-      const rolePermissions = role?.permissions || [];
+      const rolePermissions = (role as any)?.permissions || [];
       const allPermissions = [...new Set([...rolePermissions, ...assignmentPermissions])];
 
       return {
-        userId: user._id.toString(),
-        tenantId: user.tenantId.toString(),
-        role: user.role,
+        userId: userObj._id.toString(),
+        tenantId: userObj.tenantId.toString(),
+        role: userObj.role,
         permissions: allPermissions,
         isTenantOwner: false,
       };

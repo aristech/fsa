@@ -47,7 +47,7 @@ export function useGetBoard() {
     // Transform backend data to frontend format
     const tasks: Record<string, any[]> = {};
     const columns = rawColumns.map((column: any) => ({
-      id: column.id,
+      id: column.id, // now backend returns Mongo _id
       name: column.title,
     }));
 
@@ -82,7 +82,7 @@ export async function createColumn(columnData: IKanbanColumn) {
    * Work on server
    */
   if (enableServer) {
-    const data = { columnData };
+    const data = { name: columnData.name };
     await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'create-column' } });
   }
 
@@ -114,8 +114,8 @@ export async function updateColumn(columnId: IKanbanColumn['id'], columnName: st
    * Work on server
    */
   if (enableServer) {
-    const data = { columnId, columnName };
-    await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'update-column' } });
+    const data = { columnId, name: columnName };
+    await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'rename-column' } });
   }
 
   /**
@@ -168,41 +168,14 @@ export async function moveColumn(updateColumns: IKanbanColumn[]) {
    * Work on server
    */
   if (enableServer) {
-    const data = { updateColumns };
-    await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'move-column' } });
+    const data = { order: updateColumns.map((c, idx) => ({ id: c.id, order: idx })) };
+    await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'reorder-columns' } });
   }
 }
 
 // ----------------------------------------------------------------------
 
-export async function clearColumn(columnId: IKanbanColumn['id']) {
-  /**
-   * Work on server
-   */
-  if (enableServer) {
-    const data = { columnId };
-    await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'clear-column' } });
-  }
-
-  /**
-   * Work in local
-   */
-  startTransition(() => {
-    mutate(
-      KANBAN_ENDPOINT,
-      (currentData) => {
-        const { data } = currentData as BoardData;
-        const { board } = data;
-
-        // remove all tasks in column
-        const tasks = { ...board.tasks, [columnId]: [] };
-
-        return { ...currentData, data: { ...data, board: { ...board, tasks } } };
-      },
-      false
-    );
-  });
-}
+// clearColumn removed (no longer supported server-side)
 
 // ----------------------------------------------------------------------
 

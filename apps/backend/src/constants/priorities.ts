@@ -49,7 +49,7 @@ export const PRIORITIES: PriorityOption[] = [
 /**
  * Priority values as a typed array for validation
  */
-export const PRIORITY_VALUES = PRIORITIES.map(p => p.value) as const;
+export const PRIORITY_VALUES = ['low', 'medium', 'high', 'urgent'] as const;
 
 /**
  * Priority type for TypeScript

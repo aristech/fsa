@@ -8,7 +8,7 @@ export interface ITenant {
   slug: string;
   email: string;
   phone?: string;
-  ownerId: string;
+  ownerId?: string;
   address?: {
     street: string;
     city: string;
@@ -66,7 +66,7 @@ const TenantSchema = new Schema<ITenant>(
     },
     ownerId: {
       type: String,
-      required: [true, "Owner ID is required"],
+      required: false,
       index: true,
     },
     address: {

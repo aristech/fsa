@@ -262,9 +262,7 @@ export function WorkOrderList() {
                         />
                         <Typography variant="caption" color="text.secondary">
                           {`${row.tasksCompleted ?? 0}/${row.tasksTotal ?? 0} completed`}
-                          {typeof row.tasksInProgress === 'number' ||
-                          typeof row.tasksBlocked === 'number'
-                            ? ` • ${row.tasksInProgress ?? 0} in progress • ${row.tasksBlocked ?? 0} blocked`
+                          {typeof row.tasksInProgress === 'number' ? ` • ${row.tasksInProgress ?? 0} in progress`
                             : ''}
                         </Typography>
                       </Stack>

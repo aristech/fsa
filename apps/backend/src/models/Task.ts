@@ -15,6 +15,7 @@ export interface ITask extends Document {
   projectId?: string;
   workOrderId?: string;
   workOrderNumber?: string; // Human-readable work order reference
+  workOrderTitle?: string; // Cached work order title for display
   assignees?: string[]; // Technician IDs
   createdBy: string; // User ID
   dueDate?: Date;
@@ -71,6 +72,10 @@ const TaskSchema = new Schema<ITask>(
       ref: "WorkOrder",
     },
     workOrderNumber: {
+      type: String,
+      trim: true,
+    },
+    workOrderTitle: {
       type: String,
       trim: true,
     },

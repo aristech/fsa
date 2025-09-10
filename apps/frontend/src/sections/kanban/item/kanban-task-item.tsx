@@ -92,7 +92,6 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
       onDeleteTask={handleDeleteTask}
     />
   );
-
   const renderTaskDisplay = () => (
     <ItemRoot
       ref={taskRef}
@@ -111,24 +110,54 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
       {...other}
     >
       <ItemContent>
-        <ItemStatus status={task.priority} />
+        <ItemStatus status={task.priority} completed={!!task.completeStatus} />
         <ItemName name={task.name} />
-        {/* Client indicator */}
-        {task.clientName && (
-          <Box sx={{ mt: 0.5, mb: 0.5 }}>
-            <Chip
-              size="small"
-              label={task.clientName}
-              color="info"
-              variant="outlined"
-              sx={{
-                fontSize: '0.7rem',
-                height: 20,
-                '& .MuiChip-label': {
-                  px: 1,
-                },
-              }}
-            />
+        {/* Client / Work order indicators */}
+        {(task.clientName || (task as any).workOrderTitle || (task as any).workOrderNumber) && (
+          <Box sx={{ mt: 0.5, mb: 0.5, display: 'flex', gap: 0.5, alignItems: 'flex-start' }}>
+            
+            {task.clientName && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                <Chip
+                  size="small"
+                  color="default"
+                  variant="outlined"
+                  label={task.clientName}
+                  sx={{
+                    maxWidth: 140,
+                    fontSize: '0.7rem',
+                    height: 20,
+                    '& .MuiChip-label': {
+                      px: 1,
+                      display: 'block',
+                      overflow: 'hidden',
+                      whiteSpace: 'nowrap',
+                      textOverflow: 'ellipsis',
+                    },
+                  }}
+                />
+                {((task as any).workOrderTitle) && (
+              <Chip
+                size="small"
+                color="info"
+                variant="soft"
+                label={(task as any).workOrderTitle}
+                sx={{
+                  maxWidth: 150,
+                  fontSize: '0.7rem',
+                  height: 20,
+                  '& .MuiChip-label': {
+                    px: 1,
+                    display: 'block',
+                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
+                    textOverflow: 'ellipsis',
+                  },
+                }}
+              />
+            )}
+              </Box>
+            )}
           </Box>
         )}
         <ItemInfo
@@ -147,7 +176,7 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
       {renderDropIndicator(state, 'bottom')}
       {renderTaskPreview(state, task)}
 
-      {renderTaskDetailsDialog()}
+      {taskDetailsDialog.value && renderTaskDetailsDialog()}
     </>
   );
 }

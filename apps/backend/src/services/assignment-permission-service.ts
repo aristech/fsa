@@ -188,7 +188,7 @@ export class AssignmentPermissionService {
       ];
 
       // Only remove assignment-related permissions that are no longer needed
-      const updatedPermissions = currentPermissions.filter(permission => {
+      const updatedPermissions = currentPermissions.filter((permission: string) => {
         if (!assignmentRelatedPermissions.includes(permission)) {
           return true; // Keep non-assignment permissions
         }
@@ -202,7 +202,7 @@ export class AssignmentPermissionService {
           { permissions: updatedPermissions }
         );
 
-        const removedPermissions = currentPermissions.filter(p => !updatedPermissions.includes(p));
+        const removedPermissions = currentPermissions.filter((p: string) => !updatedPermissions.includes(p));
         console.log(`Removed permissions [${removedPermissions.join(', ')}] from user ${user.email}`);
       }
     } catch (error) {

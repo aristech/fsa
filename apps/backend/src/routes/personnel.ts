@@ -422,7 +422,7 @@ export async function personnelRoutes(fastify: FastifyInstance) {
         });
       }
 
-      fastify.log.error(`Error creating personnel: ${String(error)}`);
+      fastify.log.error(error as Error, "Error creating personnel");
       console.error("Detailed error:", error);
       return reply.status(500).send({
         success: false,
@@ -506,7 +506,7 @@ export async function personnelRoutes(fastify: FastifyInstance) {
         });
       }
 
-      fastify.log.error(`Error updating personnel: ${String(error)}`);
+      fastify.log.error(error as Error, "Error updating personnel");
       return reply.status(500).send({
         success: false,
         message: "Failed to update personnel",
@@ -559,7 +559,7 @@ export async function personnelRoutes(fastify: FastifyInstance) {
         );
 
         if (!cleanupResult.success) {
-          fastify.log.error(`Cleanup failed: ${cleanupResult.message}`);
+          fastify.log.info(cleanupResult.message);
           return reply.status(500).send({
             success: false,
             message: `Failed to cleanup user data: ${cleanupResult.message}`,
@@ -567,14 +567,7 @@ export async function personnelRoutes(fastify: FastifyInstance) {
         }
 
         // Log cleanup details
-        fastify.log.info(`🧹 User cleanup completed:`, {
-          tasksUpdated: cleanupResult.details.tasksUpdated,
-          workOrdersUpdated: cleanupResult.details.workOrdersUpdated,
-          projectsUpdated: cleanupResult.details.projectsUpdated,
-          assignmentsRemoved: cleanupResult.details.assignmentsRemoved,
-          userDeleted: cleanupResult.details.userDeleted,
-          preservedComments: cleanupResult.preservedItems.comments,
-        });
+        fastify.log.info(cleanupResult.details, `🧹 User cleanup completed`);
 
         return reply.send({
           success: true,
@@ -585,7 +578,7 @@ export async function personnelRoutes(fastify: FastifyInstance) {
           },
         });
       } catch (error) {
-        fastify.log.error(`Error deleting personnel: ${String(error)}`);
+        fastify.log.error(error as Error, "Error deleting personnel");
         return reply.status(500).send({
           success: false,
           message: "Failed to delete personnel",
@@ -633,7 +626,7 @@ export async function personnelRoutes(fastify: FastifyInstance) {
           data: cleanupResult,
         });
       } catch (error) {
-        fastify.log.error(`Error cleaning up assignments: ${String(error)}`);
+        fastify.log.error(error as Error, "Error cleaning up assignments");
         return reply.status(500).send({
           success: false,
           message: "Failed to cleanup assignments",
@@ -673,7 +666,7 @@ export async function personnelRoutes(fastify: FastifyInstance) {
           } successfully`,
         });
       } catch (error) {
-        fastify.log.error(`Error toggling personnel status: ${String(error)}`);
+        fastify.log.error(error as Error, "Error toggling personnel status");
         return reply.status(500).send({
           success: false,
           message: "Failed to toggle personnel status",

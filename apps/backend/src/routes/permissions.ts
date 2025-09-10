@@ -37,7 +37,7 @@ export async function permissionRoutes(fastify: FastifyInstance) {
         message: "Permissions retrieved successfully",
       });
     } catch (error) {
-      fastify.log.error("Error fetching permissions:", error);
+      fastify.log.error(error as Error, "Error fetching permissions");
       return reply.status(500).send({
         success: false,
         message: "Failed to fetch permissions",
@@ -95,7 +95,7 @@ export async function permissionRoutes(fastify: FastifyInstance) {
           message: "User permissions retrieved successfully",
         });
       } catch (error) {
-        fastify.log.error("Error fetching user permissions:", error);
+        fastify.log.error(error as Error, "Error fetching user permissions");
         return reply.status(500).send({
           success: false,
           message: "Failed to fetch user permissions",
@@ -162,11 +162,11 @@ export async function permissionRoutes(fastify: FastifyInstance) {
           return reply.status(400).send({
             success: false,
             message: "Validation error",
-            errors: error.errors,
+            errors: error.issues,
           });
         }
 
-        fastify.log.error("Error checking permissions:", error);
+        fastify.log.error(error as Error, "Error checking permissions");
         return reply.status(500).send({
           success: false,
           message: "Failed to check permissions",
@@ -207,7 +207,7 @@ export async function permissionRoutes(fastify: FastifyInstance) {
         message: "User permissions retrieved successfully",
       });
     } catch (error) {
-      fastify.log.error("Error fetching current user permissions:", error);
+      fastify.log.error(error as Error, "Error fetching current user permissions");
       return reply.status(500).send({
         success: false,
         message: "Failed to fetch user permissions",
@@ -242,7 +242,7 @@ export async function permissionRoutes(fastify: FastifyInstance) {
             : "Permission format is invalid",
         });
       } catch (error) {
-        fastify.log.error("Error validating permission:", error);
+        fastify.log.error(error as Error, "Error validating permission");
         return reply.status(500).send({
           success: false,
           message: "Failed to validate permission",

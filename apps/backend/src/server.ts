@@ -7,6 +7,7 @@ import { config } from "./config";
 import { connectDB } from "./utils/database";
 import { registerRoutes } from "./routes";
 import { realtimeService } from "./services/realtime-service";
+import { ensureSuperUsers } from "./services/superuser-bootstrap";
 
 const fastify = Fastify({
   logger: {
@@ -77,6 +78,9 @@ async function start() {
 
     // Register plugins and routes
     await registerPlugins();
+
+    // Ensure superusers exist (from env)
+    await ensureSuperUsers();
 
     // Start server
     await fastify.listen({

@@ -26,7 +26,7 @@ const UserSchema = new Schema<IUser>(
   {
     tenantId: {
       type: String,
-      required: [true, "Tenant ID is required"],
+      required: [function (this: any) { return this.role !== 'superuser'; }, "Tenant ID is required"],
       index: true,
     },
     email: {

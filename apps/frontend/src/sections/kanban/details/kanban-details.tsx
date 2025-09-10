@@ -491,6 +491,8 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         </FormControl>
       </Box>
 
+      
+
       {/* Tags display row is merged with Labels above */}
       {/* Start / Due date */}
       <Box sx={{ display: 'flex', alignItems: 'center' }}>

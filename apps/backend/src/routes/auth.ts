@@ -226,7 +226,9 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       // Get user's role and permissions
       let permissions: string[] = [];
-      if (user.isTenantOwner) {
+      if (user.role === 'superuser') {
+        permissions = [];
+      } else if (user.isTenantOwner) {
         // Tenant owner has all permissions
         permissions = [
           "workOrders.view",
@@ -334,7 +336,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         message: "Magic link is valid",
       });
     } catch (error) {
-      fastify.log.error("Error validating magic link:", error);
+      fastify.log.error(error as Error, "Error validating magic link");
       return reply.status(400).send({
         success: false,
         message: "Invalid magic link format",
@@ -455,7 +457,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       }
 
       // Generate JWT token
-      const jwtSecret = process.env.JWT_SECRET || "your-secret-key";
+      const jwtSecret = process.env.JWT_SECRET || "fallback-secret";
       const jwtToken = jwt.sign(
         { 
           userId: user._id,
@@ -507,11 +509,11 @@ export async function authRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({
           success: false,
           message: "Validation error",
-          errors: error.errors,
+          errors: error.issues,
         });
       }
 
-      fastify.log.error("Error setting up account:", error);
+      fastify.log.error(error as Error, "Error setting up account");
       return reply.status(500).send({
         success: false,
         message: "Internal server error",

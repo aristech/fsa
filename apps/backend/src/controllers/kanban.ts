@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { AuthenticatedRequest } from "../types";
-import { Task, Project, Status, Subtask, Comment, Personnel } from "../models";
+import { Task, Project, Status, Subtask, Comment, Personnel, WorkOrder } from "../models";
 import { AssignmentPermissionService } from "../services/assignment-permission-service";
 import { getPriorityOptions } from "../constants/priorities";
 import { WorkOrderProgressService } from "../services/work-order-progress-service";
@@ -39,7 +39,10 @@ export async function getKanbanData(
       a?.forEach((id) => personnelIds.add(id));
     });
 
-    const [users, personnel] = await Promise.all([
+    // Collect work order ids to enrich tasks with work order title/number if missing
+    const workOrderIds = Array.from(new Set(tasks.map((t: any) => t.workOrderId).filter(Boolean))).map((id) => id.toString());
+
+    const [users, personnel, workOrders] = await Promise.all([
       // lightweight projections
       (await import("../models")).User.find({ _id: { $in: Array.from(userIds) } }, {
         firstName: 1,
@@ -53,6 +56,12 @@ export async function getKanbanData(
       })
         .populate({ path: "userId", select: "firstName lastName email avatar" })
         .lean(),
+      workOrderIds.length
+        ? (await import("../models")).WorkOrder.find({ _id: { $in: workOrderIds } }, {
+            title: 1,
+            workOrderNumber: 1,
+          }).lean()
+        : [],
     ]);
 
     const userById: Record<string, { name?: string; email?: string; avatar?: string }> = {};
@@ -126,6 +135,14 @@ export async function getKanbanData(
       return acc;
     }, {} as Record<string, number>);
 
+    const workOrderById: Record<string, { title?: string; workOrderNumber?: string }> = {};
+    (workOrders as any[]).forEach((wo: any) => {
+      workOrderById[wo._id.toString()] = {
+        title: wo.title,
+        workOrderNumber: (wo as any).workOrderNumber || (wo as any).number,
+      };
+    });
+
     const kanbanTasks = [
       ...filteredProjects.map((project) =>
         transformProjectToKanbanTask(project, statuses)
@@ -135,19 +152,32 @@ export async function getKanbanData(
           userById, 
           personnelById,
           subtasksCount: subtasksCountById[task._id.toString()] || 0,
-          commentsCount: commentsCountById[task._id.toString()] || 0
+          commentsCount: commentsCountById[task._id.toString()] || 0,
+          workOrderById,
         })
       ),
     ];
 
-    // Group by status
-    const columns = statuses.map((status) => ({
-      id: `column-${status}`,
-      title: status.charAt(0).toUpperCase() + status.slice(1).replace("-", " "),
-      taskIds: kanbanTasks
-        .filter((task) => task.status === status)
-        .map((task) => task.id),
-    }));
+    // Group by status documents, return Mongo _id; fallback to default slugs when no docs
+    const columns =
+      statusDocs.length > 0
+        ? statusDocs.map((s: any) => {
+            const slug = toSlug(s.name);
+            return {
+              id: s._id.toString(),
+              title: s.name,
+              taskIds: kanbanTasks
+                .filter((task) => task.status === slug)
+                .map((task) => task.id),
+            };
+          })
+        : statuses.map((status) => ({
+            id: `column-${status}`,
+            title: status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' '),
+            taskIds: kanbanTasks
+              .filter((task) => task.status === status)
+              .map((task) => task.id),
+          }));
 
     const board = {
       tasks: kanbanTasks,
@@ -190,6 +220,15 @@ export async function handleKanbanPost(
         return await handleUpdateTask(req, reply, body);
       case "move-task":
         return await handleMoveTask(req, reply, body);
+      // Column (Status) endpoints
+      case "rename-column":
+        return await handleRenameColumn(req, reply, body);
+      case "reorder-columns":
+        return await handleReorderColumns(req, reply, body);
+      case "create-column":
+        return await handleCreateColumn(req, reply, body);
+      case "delete-column":
+        return await handleDeleteColumn(req, reply, body);
       default:
         return reply.code(400).send({
           success: false,
@@ -255,6 +294,7 @@ async function handleCreateTask(
     clientCompany,
     workOrderId,
     workOrderNumber,
+    workOrderTitle,
     tags,
     attachments,
     estimatedHours,
@@ -276,6 +316,19 @@ async function handleCreateTask(
       .filter((p: any) => p.isActive && p.status === 'active')
       .map((p: any) => p._id.toString());
     validatedAssignees = eligible;
+  }
+
+  // If linking a work order, fetch its title/number if not provided
+  let resolvedWorkOrderNumber = workOrderNumber;
+  let resolvedWorkOrderTitle = workOrderTitle as string | undefined;
+  if (workOrderId && (!resolvedWorkOrderNumber || !resolvedWorkOrderTitle)) {
+    try {
+      const wo = await WorkOrder.findById(workOrderId).select('title workOrderNumber');
+      if (wo) {
+        resolvedWorkOrderNumber = resolvedWorkOrderNumber || (wo as any).workOrderNumber || (wo as any).number || undefined;
+        resolvedWorkOrderTitle = resolvedWorkOrderTitle || (wo as any).title || undefined;
+      }
+    } catch {}
   }
 
   const newTask = new Task({
@@ -303,7 +356,8 @@ async function handleCreateTask(
     // Add work order information if available
     ...(workOrderId && {
       workOrderId: workOrderId,
-      workOrderNumber: workOrderNumber,
+      workOrderNumber: resolvedWorkOrderNumber,
+      workOrderTitle: resolvedWorkOrderTitle,
     }),
   });
 
@@ -413,7 +467,7 @@ async function handleUpdateTask(
     });
   }
 
-  const { name, description, priority, labels, assignee, assignees, due, status, workOrderId, workOrderNumber, startDate, dueDate, attachments, clientId, clientName, clientCompany, completeStatus } =
+  const { name, description, priority, labels, assignee, assignees, due, status, workOrderId, workOrderNumber, startDate, dueDate, attachments, clientId, clientName, clientCompany, completeStatus, workOrderTitle } =
     taskData;
 
   const updateData: any = {};
@@ -439,6 +493,7 @@ async function handleUpdateTask(
   if (status !== undefined) updateData.status = status.toLowerCase();
   if (workOrderId !== undefined) updateData.workOrderId = workOrderId;
   if (workOrderNumber !== undefined) updateData.workOrderNumber = workOrderNumber;
+  if (workOrderTitle !== undefined) updateData.workOrderTitle = workOrderTitle;
   if (clientId !== undefined) updateData.clientId = clientId;
   if (clientName !== undefined) updateData.clientName = clientName;
   if (clientCompany !== undefined) updateData.clientCompany = clientCompany;
@@ -570,4 +625,136 @@ async function handleMoveTask(
       error: "Failed to move tasks",
     });
   }
+}
+
+// ----------------------------------------------------------------------
+// Columns (Statuses)
+
+function toSlug(name: string) {
+  return name.toLowerCase().trim().replace(/\s+/g, '-');
+}
+
+async function resolveStatusByIdOrSlug(tenantId: string, idOrSlug: string) {
+  const isObjectId = /^[a-fA-F0-9]{24}$/.test(idOrSlug);
+  if (isObjectId) {
+    return await Status.findOne({ _id: idOrSlug, tenantId });
+  }
+  const slug = idOrSlug.startsWith('column-') ? idOrSlug.replace(/^column-/, '') : idOrSlug;
+  const statuses = await Status.find({ tenantId }).lean();
+  const matched = statuses.find((s: any) => toSlug(s.name) === slug);
+  if (!matched) return null;
+  return await Status.findOne({ _id: matched._id, tenantId });
+}
+
+async function handleRenameColumn(
+  req: AuthenticatedRequest,
+  reply: FastifyReply,
+  body: any
+) {
+  const { tenant } = req.context!;
+  const { columnId, name } = body || {};
+  if (!columnId || !name) {
+    return reply.code(400).send({ success: false, error: 'columnId and name are required' });
+  }
+
+  const status = await resolveStatusByIdOrSlug(tenant._id.toString(), columnId);
+  if (!status) {
+    return reply.code(404).send({ success: false, error: 'Column not found' });
+  }
+
+  const oldSlug = toSlug(status.name);
+  status.name = name;
+  await status.save();
+
+  // Update tasks to new slug
+  const newSlug = toSlug(name);
+  if (newSlug !== oldSlug) {
+    await Task.updateMany({ tenantId: tenant._id, status: oldSlug }, { $set: { status: newSlug } });
+  }
+
+  return reply.send({ success: true, message: 'Column renamed', data: { id: status._id, name } });
+}
+
+async function handleReorderColumns(
+  req: AuthenticatedRequest,
+  reply: FastifyReply,
+  body: any
+) {
+  const { tenant } = req.context!;
+  const { order } = body || {};
+  // order: array of { id, order } or array of ids in desired order
+  if (!order || !Array.isArray(order)) {
+    return reply.code(400).send({ success: false, error: 'order array is required' });
+  }
+
+  let updates: Array<{ id: string; order: number }> = [];
+  if (order.length && typeof order[0] === 'string') {
+    updates = (order as string[]).map((id, idx) => ({ id, order: idx }));
+  } else {
+    updates = order as Array<{ id: string; order: number }>;
+  }
+
+  // Resolve potential slug-based ids to real ObjectIds
+  const resolved = await Promise.all(
+    updates.map(async (u) => {
+      const s = await resolveStatusByIdOrSlug(tenant._id.toString(), u.id);
+      return s ? { id: s._id, order: u.order } : null;
+    })
+  );
+  const filtered = resolved.filter(Boolean) as Array<{ id: any; order: number }>;
+  await Promise.all(
+    filtered.map((u) => Status.updateOne({ _id: u.id, tenantId: tenant._id }, { $set: { order: u.order } }))
+  );
+
+  return reply.send({ success: true, message: 'Columns reordered' });
+}
+
+async function handleCreateColumn(
+  req: AuthenticatedRequest,
+  reply: FastifyReply,
+  body: any
+) {
+  const { tenant } = req.context!;
+  const { name, color } = body || {};
+  if (!name) {
+    return reply.code(400).send({ success: false, error: 'name is required' });
+  }
+
+  const slug = toSlug(name);
+  const exists = await Status.findOne({ tenantId: tenant._id, name: new RegExp(`^${name}$`, 'i') });
+  if (exists) {
+    return reply.code(409).send({ success: false, error: 'A column with this name already exists' });
+  }
+
+  const max = await Status.find({ tenantId: tenant._id }).sort({ order: -1 }).limit(1);
+  const nextOrder = max[0]?.order != null ? max[0].order + 1 : 0;
+
+  const created = await Status.create({ tenantId: tenant._id, name, color: color || '#888888', order: nextOrder });
+  return reply.send({ success: true, message: 'Column created', data: { id: created._id, name, order: nextOrder } });
+}
+
+async function handleDeleteColumn(
+  req: AuthenticatedRequest,
+  reply: FastifyReply,
+  body: any
+) {
+  const { tenant } = req.context!;
+  const { columnId } = body || {};
+  if (!columnId) {
+    return reply.code(400).send({ success: false, error: 'columnId is required' });
+  }
+
+  const status = await resolveStatusByIdOrSlug(tenant._id.toString(), columnId);
+  if (!status) {
+    return reply.code(404).send({ success: false, error: 'Column not found' });
+  }
+
+  const slug = toSlug(status.name);
+  const taskCount = await Task.countDocuments({ tenantId: tenant._id, status: slug });
+  if (taskCount > 0) {
+    return reply.code(409).send({ success: false, error: 'Cannot delete a column with tasks' });
+  }
+
+  await Status.deleteOne({ _id: columnId, tenantId: tenant._id });
+  return reply.send({ success: true, message: 'Column deleted' });
 }

@@ -38,7 +38,6 @@ const RoleSchema: Schema = new Schema(
       required: [true, "Role slug is required"],
       trim: true,
       lowercase: true,
-      unique: true,
     },
     description: {
       type: String,
@@ -121,7 +120,7 @@ const RoleSchema: Schema = new Schema(
 
 // Ensure unique role names per tenant
 RoleSchema.index({ tenantId: 1, name: 1 }, { unique: true });
-// Ensure unique slugs per tenant (not globally)
+// Ensure unique slugs per tenant (tenant-specific slugs: supervisor_68bebb8ca7618fa2fe1c7b12)
 RoleSchema.index({ tenantId: 1, slug: 1 }, { unique: true });
 
 // Note: Slug generation is now handled in the API routes for better control

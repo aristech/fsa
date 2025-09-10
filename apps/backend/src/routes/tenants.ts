@@ -1,6 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
-import { Tenant } from "../models";
+import { authenticate } from '../middleware/auth';
+import { Tenant, Role } from "../models";
+import { User } from "../models/User";
 import { TenantSetupService } from "../services/tenant-setup";
 import { slugify } from "../utils/slugify";
 import { MagicLinkService } from "../services/magic-link-service";
@@ -72,6 +74,7 @@ const updateTenantSchema = z.object({
     .optional(),
   email: z.string().email("Valid email is required").optional(),
   phone: z.string().optional(),
+  slug: z.string().optional(),
   address: z
     .object({
       street: z.string().optional(),
@@ -101,6 +104,8 @@ const updateTenantSchema = z.object({
 // ----------------------------------------------------------------------
 
 export async function tenantRoutes(fastify: FastifyInstance) {
+  // Require authentication for all tenant routes
+  fastify.addHook("preHandler", authenticate);
   // POST /api/v1/tenants/register - Public tenant registration with magic link
   fastify.post("/register", async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -186,11 +191,11 @@ export async function tenantRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({
           success: false,
           message: "Validation error",
-          errors: error.errors,
+          errors: error.issues,
         });
       }
 
-      fastify.log.error("Error registering tenant:", error);
+      fastify.log.error(error as Error, "Error registering tenant");
       return reply.status(500).send({
         success: false,
         message: "Failed to register tenant",
@@ -211,7 +216,7 @@ export async function tenantRoutes(fastify: FastifyInstance) {
         message: "Tenants fetched successfully",
       });
     } catch (error) {
-      fastify.log.error("Error fetching tenants:", error);
+      fastify.log.error(error as Error, "Error fetching tenants");
       return reply.status(500).send({
         success: false,
         message: "Failed to fetch tenants",
@@ -238,7 +243,7 @@ export async function tenantRoutes(fastify: FastifyInstance) {
         message: "Tenant fetched successfully",
       });
     } catch (error) {
-      fastify.log.error("Error fetching tenant:", error);
+      fastify.log.error(error as Error, "Error fetching tenant");
       return reply.status(500).send({
         success: false,
         message: "Failed to fetch tenant",
@@ -246,7 +251,7 @@ export async function tenantRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // POST /api/v1/tenants - Create new tenant
+  // POST /api/v1/tenants - Create new tenant (superusers only)
   fastify.post("/", async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const validatedData = createTenantSchema.parse(request.body);
@@ -268,7 +273,7 @@ export async function tenantRoutes(fastify: FastifyInstance) {
       }
 
       // Get the current user ID from the request (assuming it's set by auth middleware)
-      const userId = (request as any).user?.userId;
+      const userId = (request as any).user?.id;
       if (!userId) {
         return reply.status(401).send({
           success: false,
@@ -276,36 +281,104 @@ export async function tenantRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // Add the generated slug and owner ID to the data
+      // Ensure caller is superuser
+      const caller = await User.findById(userId).select('role');
+      if (!caller || caller.role !== 'superuser') {
+        return reply.status(403).send({
+          success: false,
+          message: "Only superusers can create tenants",
+        });
+      }
+
+      // Add the generated slug to the data (no ownerId needed - will create new user)
       const tenantData = {
         ...validatedData,
         slug: slug,
-        ownerId: userId,
       };
 
-      // Setup new tenant with default roles
-      const { tenant, roles } = await TenantSetupService.setupNewTenant(
+      // Setup new tenant with default roles and create tenant owner
+      const { tenant, roles, owner } = await TenantSetupService.setupNewTenant(
         tenantData
       );
+
+      // Send magic link invitation to tenant owner
+      try {
+        fastify.log.info(
+          `📧 Sending tenant activation magic link to: ${validatedData.email}`
+        );
+
+        // Create magic link for tenant activation
+        const magicLinkResult = await MagicLinkService.createMagicLink({
+          email: validatedData.email,
+          tenantId: tenant._id.toString(),
+          userId: owner._id.toString(),
+          type: 'tenant_activation',
+          metadata: {
+            tenantName: validatedData.name,
+            companyName: validatedData.name,
+            tenantSlug: tenant.slug,
+          },
+          expirationHours: 72, // 72 hours for tenant activation (more time than personnel)
+        });
+
+        if (magicLinkResult.success && magicLinkResult.magicLink) {
+          // Send the magic link email
+          const emailResult = await sendTenantActivationMagicLink({
+            to: validatedData.email,
+            tenantName: validatedData.name,
+            companyName: validatedData.name,
+            magicLink: magicLinkResult.magicLink,
+            expirationHours: 72,
+          });
+
+          if (emailResult.success) {
+            fastify.log.info(
+              `✅ Tenant activation email sent successfully to: ${validatedData.email}`
+            );
+          } else {
+            fastify.log.error(
+              `❌ Failed to send tenant activation email: ${emailResult.error}`
+            );
+          }
+        } else {
+          fastify.log.error(
+            `❌ Failed to create magic link for tenant activation: ${magicLinkResult.error}`
+          );
+        }
+      } catch (emailError) {
+        fastify.log.error(
+          `❌ Error sending tenant activation email: ${emailError}`
+        );
+        // Don't fail the tenant creation if email fails
+      }
 
       return reply.status(201).send({
         success: true,
         data: {
           tenant,
           roles,
+          owner: {
+            id: owner._id,
+            email: owner.email,
+            firstName: owner.firstName,
+            lastName: owner.lastName,
+            role: owner.role,
+            isTenantOwner: owner.isTenantOwner,
+            isActive: owner.isActive,
+          },
         },
-        message: "Tenant created successfully with default roles",
+        message: "Tenant created successfully with default roles. Activation email sent to tenant owner.",
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return reply.status(400).send({
           success: false,
           message: "Validation error",
-          errors: error.errors,
+          errors: error.issues,
         });
       }
 
-      fastify.log.error("Error creating tenant:", error);
+      fastify.log.error(error as Error, "Error creating tenant");
       return reply.status(500).send({
         success: false,
         message: "Failed to create tenant",
@@ -362,11 +435,11 @@ export async function tenantRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({
           success: false,
           message: "Validation error",
-          errors: error.errors,
+          errors: error.issues,
         });
       }
 
-      fastify.log.error("Error updating tenant:", error);
+      fastify.log.error(error as Error, "Error updating tenant");
       return reply.status(500).send({
         success: false,
         message: "Failed to update tenant",
@@ -399,7 +472,7 @@ export async function tenantRoutes(fastify: FastifyInstance) {
           message: "Tenant deleted successfully",
         });
       } catch (error) {
-        fastify.log.error("Error deleting tenant:", error);
+        fastify.log.error(error as Error, "Error deleting tenant");
         return reply.status(500).send({
           success: false,
           message: "Failed to delete tenant",
@@ -438,7 +511,7 @@ export async function tenantRoutes(fastify: FastifyInstance) {
           message: "Default roles created successfully",
         });
       } catch (error) {
-        fastify.log.error("Error setting up tenant:", error);
+        fastify.log.error(error as Error, "Error setting up tenant");
         return reply.status(500).send({
           success: false,
           message: "Failed to setup tenant",

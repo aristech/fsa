@@ -30,8 +30,8 @@ export async function clientRoutes(fastify: FastifyInstance) {
         })
           .select("_id name company email phone vatNumber address createdAt")
           .sort({ createdAt: -1 }) // Sort by created_at descending (latest first)
-          .limit(parseInt(limit, 10))
-          .skip(parseInt(offset, 10));
+          .limit(parseInt(String(limit), 10))
+          .skip(parseInt(String(offset), 10));
 
         return reply.send({
           success: true,
@@ -41,8 +41,8 @@ export async function clientRoutes(fastify: FastifyInstance) {
               tenantId: tenant._id,
               isActive: true,
             }),
-            limit: parseInt(limit, 10),
-            offset: parseInt(offset, 10),
+            limit: parseInt(String(limit), 10),
+            offset: parseInt(String(offset), 10),
           },
         });
       } catch (error) {
@@ -262,7 +262,7 @@ export async function clientRoutes(fastify: FastifyInstance) {
         }
 
         // Log cleanup details
-        fastify.log.info(`🧹 Client cleanup completed:`, cleanupResult.details);
+        fastify.log.info(cleanupResult.details, `🧹 Client cleanup completed`);
 
         return reply.send({
           success: true,

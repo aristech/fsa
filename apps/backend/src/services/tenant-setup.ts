@@ -1,4 +1,4 @@
-import { Role, Tenant, User } from "../models";
+import { Role, Tenant, User, Status } from "../models";
 
 // ----------------------------------------------------------------------
 
@@ -62,14 +62,13 @@ export const DEFAULT_ROLES: DefaultRoleConfig[] = [
       "reports.export",
 
       // Roles - Full access
-      "roles.view",
-      "roles.create",
-      "roles.edit",
-      "roles.delete",
+      "roles.manage",
 
-      // System Management - Limited
+      // System Management - Full access
       "statuses.manage",
       "settings.manage",
+      "tenant.manage",
+      "admin.access",
     ],
   },
   {
@@ -105,6 +104,46 @@ export const DEFAULT_ROLES: DefaultRoleConfig[] = [
 
 export class TenantSetupService {
   /**
+   * Create default statuses for a tenant
+   */
+  static async createDefaultStatuses(tenantId: string): Promise<void> {
+    try {
+      // Check if default statuses already exist for this tenant
+      const existingStatuses = await Status.find({
+        tenantId,
+        isDefault: true,
+      });
+
+      if (existingStatuses.length > 0) {
+        console.log(`Default statuses already exist for tenant ${tenantId}`);
+        return;
+      }
+
+      // Create default statuses
+      const defaultStatuses = [
+        { name: "Todo", order: 1, isDefault: true },
+        { name: "In Progress", order: 2, isDefault: true },
+        { name: "Review", order: 3, isDefault: true },
+        { name: "Done", order: 4, isDefault: true },
+      ];
+
+      const statusesToCreate = defaultStatuses.map((status) => ({
+        ...status,
+        tenantId,
+        isActive: true,
+      }));
+
+      await Status.insertMany(statusesToCreate);
+      console.log(
+        `✅ Created ${statusesToCreate.length} default statuses for tenant ${tenantId}`
+      );
+    } catch (error) {
+      console.error("Error creating default statuses:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Create default roles for a tenant
    */
   static async createDefaultRoles(tenantId: string): Promise<void> {
@@ -120,17 +159,35 @@ export class TenantSetupService {
         return;
       }
 
-      // Create default roles
-      const rolesToCreate = DEFAULT_ROLES.map((roleConfig) => ({
-        ...roleConfig,
-        tenantId,
-        isActive: true,
-      }));
+      // Create default roles with tenant-specific slugs
+      const rolesToCreate = [];
+      for (const roleConfig of DEFAULT_ROLES) {
+        // Create tenant-specific slug: supervisor_68bebb8ca7618fa2fe1c7b12
+        const tenantSpecificSlug = `${roleConfig.slug}_${tenantId}`;
+        
+        const existingRole = await Role.findOne({
+          tenantId,
+          slug: tenantSpecificSlug,
+        });
+        
+        if (!existingRole) {
+          rolesToCreate.push({
+            ...roleConfig,
+            slug: tenantSpecificSlug, // Use tenant-specific slug
+            tenantId,
+            isActive: true,
+          });
+        }
+      }
 
-      await Role.insertMany(rolesToCreate);
-      console.log(
-        `✅ Created ${rolesToCreate.length} default roles for tenant ${tenantId}`
-      );
+      if (rolesToCreate.length > 0) {
+        await Role.insertMany(rolesToCreate);
+        console.log(
+          `✅ Created ${rolesToCreate.length} default roles for tenant ${tenantId}`
+        );
+      } else {
+        console.log(`✅ All default roles already exist for tenant ${tenantId}`);
+      }
     } catch (error) {
       console.error("Error creating default roles:", error);
       throw error;
@@ -147,7 +204,6 @@ export class TenantSetupService {
     phone?: string;
     address?: any;
     settings?: any;
-    ownerId: string;
   }): Promise<{ tenant: any; roles: any[]; owner: any }> {
     try {
       // Create tenant
@@ -167,23 +223,34 @@ export class TenantSetupService {
       // Create default roles
       await this.createDefaultRoles(tenant._id.toString());
 
-      // Set the owner as tenant owner with admin privileges
-      const owner = await User.findByIdAndUpdate(
-        tenantData.ownerId,
-        {
-          tenantId: tenant._id.toString(),
-          isTenantOwner: true,
-          role: "admin",
-          permissions: this.getAllPermissions(), // Grant all permissions to owner
-        },
-        { new: true }
-      );
+      // Create default statuses
+      await this.createDefaultStatuses(tenant._id.toString());
 
-      if (!owner) {
-        throw new Error("Owner user not found");
-      }
+      // Generate a secure temporary password (will be changed during activation)
+      const crypto = require('crypto');
+      const tempPassword = crypto.randomBytes(16).toString('hex');
 
-      console.log(`✅ Set user ${owner.email} as tenant owner`);
+      // Create tenant owner user with admin privileges (inactive until activation)
+      const owner = new User({
+        email: tenantData.email,
+        firstName: tenantData.name.split(' ')[0] || tenantData.name,
+        lastName: tenantData.name.split(' ').slice(1).join(' ') || '',
+        phone: tenantData.phone,
+        tenantId: tenant._id.toString(),
+        isTenantOwner: true,
+        role: "admin",
+        permissions: this.getAllPermissions(), // Grant all permissions to owner
+        isActive: false, // Inactive until magic link activation
+        password: tempPassword, // Temporary password - will be changed during activation
+      });
+
+      await owner.save();
+      console.log(`✅ Created tenant owner user: ${owner.email} (inactive until activation)`);
+
+      // Update tenant with owner ID
+      tenant.ownerId = owner._id.toString();
+      await tenant.save();
+      console.log(`✅ Updated tenant with owner ID: ${owner._id}`);
 
       // Fetch created roles
       const roles = await Role.find({

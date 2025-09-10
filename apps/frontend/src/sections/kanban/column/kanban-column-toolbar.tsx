@@ -24,7 +24,6 @@ type Props = BoxProps & {
   totalTasks?: number;
   columnName: string;
   dragHandleRef?: UseColumnDndReturn['dragHandleRef'];
-  onClearColumn?: () => void;
   onDeleteColumn?: () => void;
   onToggleAddTask?: () => void;
   onUpdateColumn?: (inputName: string) => void;
@@ -35,7 +34,6 @@ export function KanbanColumnToolBar({
   dragHandleRef,
   columnName,
   totalTasks,
-  onClearColumn,
   onDeleteColumn,
   onUpdateColumn,
   onToggleAddTask,
@@ -76,11 +74,6 @@ export function KanbanColumnToolBar({
     menuActions.onClose();
   }, [menuActions]);
 
-  const handleClear = useCallback(() => {
-    onClearColumn?.();
-    menuActions.onClose();
-  }, [menuActions, onClearColumn]);
-
   const handleDelete = useCallback(() => {
     confirmDialog.onTrue();
     menuActions.onClose();
@@ -96,11 +89,6 @@ export function KanbanColumnToolBar({
         <MenuItem onClick={handleRename}>
           <Iconify icon="solar:pen-bold" />
           Rename
-        </MenuItem>
-
-        <MenuItem onClick={handleClear}>
-          <Iconify icon="solar:eraser-bold" />
-          Clear
         </MenuItem>
 
         <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>

@@ -178,9 +178,7 @@ export function WorkOrderDetails({ id }: Props) {
                 <Typography variant="body2" color="text.secondary">
                   {(summary?.progress ?? 0).toString()}% • {summary?.tasksCompleted ?? 0}/
                   {summary?.tasksTotal ?? 0} completed
-                  {typeof summary?.tasksInProgress === 'number' ||
-                  typeof summary?.tasksBlocked === 'number'
-                    ? ` • ${summary?.tasksInProgress ?? 0} in progress • ${summary?.tasksBlocked ?? 0} blocked`
+                  {typeof summary?.tasksInProgress === 'number' ? ` • ${summary?.tasksInProgress ?? 0} in progress`
                     : ''}
                 </Typography>
 
