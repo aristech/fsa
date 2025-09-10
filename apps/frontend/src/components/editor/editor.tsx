@@ -66,7 +66,7 @@ export function Editor({
       const html = ctx.editor.getHTML();
       debouncedOnChange(html);
     },
-    extensions: [
+    extensions: ([
       StarterKitExtension.configure({
         codeBlock: false,
         code: { HTMLAttributes: { class: editorClasses.content.codeInline } },
@@ -93,7 +93,7 @@ export function Editor({
       // Custom extensions
       TextTransformExtension,
       ClearFormatExtension,
-    ],
+    ] as any),
     ...other,
   });
 

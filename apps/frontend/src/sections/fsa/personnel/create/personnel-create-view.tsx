@@ -66,7 +66,6 @@ const schema = zod.object({
     .optional(),
 });
 
-type FormValues = zod.output<typeof schema>;
 
 // ----------------------------------------------------------------------
 
@@ -156,9 +155,7 @@ export function PersonnelCreateView({
           }
         }
 
-        // Determine effective tenant id: prefer context tenantId, fallback to personnel.tenantId
-        const effectiveTenantId: string | null =
-          tenantId || (p?.tenantId ? String(p.tenantId) : null);
+      
 
         // Fetch available data using correct endpoints
         const rolesUrl = `/api/v1/roles/`;
@@ -254,12 +251,8 @@ export function PersonnelCreateView({
       email: data.email,
       phone: data.phone,
       userId: data.userId || undefined,
+      ...( !isEdit && data.sendInvitation ? { sendInvitation: true } : {} ),
     };
-
-    // Add invitation flag for new personnel
-    if (!isEdit && data.sendInvitation) {
-      payload.sendInvitation = true;
-    }
 
     const res = await axiosInstance({
       url: endpoint,

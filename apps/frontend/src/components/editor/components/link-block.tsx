@@ -37,7 +37,7 @@ export function LinkBlock({ editor, linkIcon, unlinkIcon, active }: LinkBlockPro
   );
 
   const handleApply = useCallback(() => {
-    const chainCommands = () => editor.chain().focus().extendMarkRange('link');
+    const chainCommands = () => (editor as any).chain().focus().extendMarkRange('link');
 
     onClose();
 
@@ -65,7 +65,7 @@ export function LinkBlock({ editor, linkIcon, unlinkIcon, active }: LinkBlockPro
         aria-label="Remove link"
         disabled={!active}
         className={editorClasses.toolbar.unlink}
-        onClick={() => editor.chain().focus().unsetLink().run()}
+        onClick={() => (editor as any).chain().focus().unsetLink().run()}
         icon={unlinkIcon}
       />
 

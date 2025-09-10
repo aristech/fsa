@@ -39,7 +39,7 @@ export function ChatNavItem({ selected, collapse, conversation, onCloseMobile }:
   const mdUp = useMediaQuery((theme) => theme.breakpoints.up('md'));
 
   const { group, displayName, displayText, participants, lastActivity, hasOnlineInGroup } =
-    getNavItem({ conversation, currentUserId: `${user?.id}` });
+    getNavItem({ conversation, currentUserId: `${user?._id}` });
 
   const singleParticipant = participants[0];
 

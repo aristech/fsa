@@ -72,14 +72,14 @@ export function ChatNav({
 
   const myContact: IChatParticipant = useMemo(
     () => ({
-      id: `${user?.id}`,
+      id: `${user?._id}`,
       role: `${user?.role}`,
       email: `${user?.email}`,
-      address: `${user?.address}`,
-      name: `${user?.displayName}`,
+      address: `${''}`,
+      name: `${user?.firstName}`,
       lastActivity: today(),
-      avatarUrl: `${user?.photoURL}`,
-      phoneNumber: `${user?.phoneNumber}`,
+      avatarUrl: `${user?.avatar}`,
+      phoneNumber: `${user?.phone || ''}`,
       status: 'online',
     }),
     [user]

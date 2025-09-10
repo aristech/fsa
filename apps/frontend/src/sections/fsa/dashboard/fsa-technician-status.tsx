@@ -93,7 +93,7 @@ export function FsaTechnicianStatus() {
               }}
             >
               <Avatar
-                src={technician.avatar}
+                src={technician.avatar || ''}
                 alt={technician.name}
                 sx={{
                   width: 40,

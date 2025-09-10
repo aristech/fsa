@@ -20,7 +20,7 @@ type BubbleToolbarProps = React.ComponentProps<typeof ToolbarRoot> & {
 export function BubbleToolbar({ editor, sx, ...other }: BubbleToolbarProps) {
   const toolbarState = useToolbarState(editor);
 
-  const chainCommands = () => editor.chain().focus();
+  const chainCommands = () => (editor as any).chain().focus();
 
   return (
     <BubbleMenu editor={editor}>

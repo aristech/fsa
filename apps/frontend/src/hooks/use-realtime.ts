@@ -59,7 +59,7 @@ export function useRealtimeEvent<K extends keyof RealtimeEvents>(
   callback: RealtimeEvents[K],
   deps: React.DependencyList = []
 ) {
-  const callbackRef = useRef(callback);
+  const callbackRef = useRef<RealtimeEvents[K]>(callback);
 
   // Update the ref when callback changes
   useEffect(() => {
@@ -67,7 +67,8 @@ export function useRealtimeEvent<K extends keyof RealtimeEvents>(
   });
 
   useEffect(() => {
-    const wrappedCallback = ((...args: any[]) => {
+    const wrappedCallback = ((...args: Parameters<RealtimeEvents[K]>) => {
+      // @ts-expect-error Generic callback variance
       callbackRef.current(...args);
     }) as RealtimeEvents[K];
 
@@ -77,7 +78,7 @@ export function useRealtimeEvent<K extends keyof RealtimeEvents>(
       unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [event, ...deps]);
+  }, [event].concat(deps as any[]));
 }
 
 // Hook for task-specific real-time features

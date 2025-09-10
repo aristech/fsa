@@ -27,7 +27,7 @@ export function Toolbar({
 }: StackProps & EditorToolbarProps) {
   const toolbarState = useToolbarState(editor);
 
-  const chainCommands = () => editor.chain().focus();
+  const chainCommands = () => (editor as any).chain().focus();
 
   return (
     <ToolbarRoot

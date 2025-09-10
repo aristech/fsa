@@ -1,7 +1,8 @@
 'use client';
 
+import Grid from '@mui/material/Grid';
 import { alpha, useTheme } from '@mui/material/styles';
-import { Card, Grid, Stack, Typography, CardContent } from '@mui/material';
+import { Card, Stack, Typography, CardContent } from '@mui/material';
 
 import { fNumber } from 'src/utils/format-number';
 
@@ -44,7 +45,7 @@ export function FsaStatsCards() {
   return (
     <Grid container spacing={3}>
       {STATS.map((stat) => (
-        <Grid item xs={12} sm={6} md={3} key={stat.title}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }} key={stat.title}>
           <Card>
             <CardContent>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -61,19 +62,10 @@ export function FsaStatsCards() {
                     width: 64,
                     height: 64,
                     borderRadius: '50%',
-                    bgcolor: alpha(
-                      theme.palette[stat.color as keyof typeof theme.palette].main,
-                      0.08
-                    ),
+                    bgcolor: alpha((theme.palette as any)[stat.color].main, 0.08),
                   }}
                 >
-                  <Iconify
-                    icon={stat.icon}
-                    width={32}
-                    sx={{
-                      color: theme.palette[stat.color as keyof typeof theme.palette].main,
-                    }}
-                  />
+                  <Iconify icon={stat.icon as any} width={32} sx={{ color: (theme.palette as any)[stat.color].main }} />
                 </Stack>
               </Stack>
             </CardContent>

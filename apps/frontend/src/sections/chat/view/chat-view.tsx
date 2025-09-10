@@ -61,7 +61,7 @@ export function ChatView() {
 
   const filteredParticipants: IChatParticipant[] = conversation
     ? conversation.participants.filter(
-        (participant: IChatParticipant) => participant.id !== `${user?.id}`
+        (participant: IChatParticipant) => participant.id !== `${user?._id}`
       )
     : [];
 

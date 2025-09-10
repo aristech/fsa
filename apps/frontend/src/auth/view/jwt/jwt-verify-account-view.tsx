@@ -141,13 +141,13 @@ export function JwtVerifyAccountView() {
         });
 
         if (response.data.success) {
-          const { user, tenant, role, token: jwtToken } = response.data.data;
+          const { token: jwtToken } = response.data.data;
 
           // Set the session with the JWT token
           await setSession(jwtToken);
 
           // Update the auth context by checking user session
-          await checkUserSession();
+          await checkUserSession?.();
 
           // Redirect to dashboard
           router.push(paths.dashboard.root);

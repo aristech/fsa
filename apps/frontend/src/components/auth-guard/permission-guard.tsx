@@ -19,7 +19,7 @@ export function PermissionGuard({
   permissions,
   requireAll = false,
 }: PermissionGuardProps) {
-  const { canAccess, hasAllPermissions, hasAnyPermission } = usePermissions();
+  const { canAccess, hasAllPermissions } = usePermissions();
 
   const hasAccess = requireAll
     ? hasAllPermissions(Array.isArray(permissions) ? permissions : [permissions])

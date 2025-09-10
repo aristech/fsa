@@ -48,7 +48,7 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
     >
       <Box sx={{ p: 2, pb: 1.5 }}>
         <Typography variant="subtitle2" noWrap>
-          {user?.displayName}
+          {user?.firstName} {user?.lastName}
         </Typography>
 
         <Typography variant="body2" sx={{ color: 'text.secondary' }} noWrap>
@@ -117,8 +117,8 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
     <>
       <AccountButton
         onClick={onOpen}
-        photoURL={user?.photoURL}
-        displayName={user?.displayName}
+        photoURL={user?.avatar || ''}
+        displayName={user?.firstName || ''}
         sx={sx}
         {...other}
       />

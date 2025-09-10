@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { useTable, getComparator } from 'minimal-shared/hooks';
 
 import { useTheme } from '@mui/material/styles';
 import {
@@ -19,6 +18,8 @@ import {
 } from '@mui/material';
 
 import axiosInstance from 'src/lib/axios';
+
+import { useTable, getComparator } from 'src/components/table';
 
 import { PersonnelTableRow } from './personnel-table-row';
 import { PersonnelTableHead } from './personnel-table-head';
@@ -65,9 +66,10 @@ export function PersonnelList({ filters }: PersonnelListProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(0);
+  const table = useTable();
 
   const { dense, page, order, orderBy, rowsPerPage, selected, onSelectRow, onSelectAllRows, onSort } =
-    useTable();
+    table;
 
   // Fetch personnel data
   useEffect(() => {

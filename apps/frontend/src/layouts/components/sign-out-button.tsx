@@ -41,17 +41,6 @@ export function SignOutButton({ onClose, sx, ...other }: Props) {
     }
   }, [checkUserSession, onClose, router]);
 
-  const handleLogoutAuth0 = useCallback(async () => {
-    try {
-      await signOutAuth0();
-
-      onClose?.();
-      router.refresh();
-    } catch (error) {
-      console.error(error);
-      toast.error('Unable to logout!');
-    }
-  }, [onClose, router, signOutAuth0]);
 
   return (
     <Button

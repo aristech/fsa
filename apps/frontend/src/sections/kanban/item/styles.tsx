@@ -221,7 +221,7 @@ export function ItemInfo({ sx, assignee, comments, attachments, ...other }: Item
             }}
           >
             {assignee.map((user) => (
-              <Avatar key={user.id} alt={user.name} src={user.avatarUrl} />
+              <Avatar key={user.id} alt={user.name} src={user.avatarUrl || ''} />
             ))}
           </AvatarGroup>
         </>

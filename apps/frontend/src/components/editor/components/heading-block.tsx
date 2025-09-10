@@ -43,9 +43,9 @@ export function HeadingBlock({ editor, isActive }: HeadingBlock) {
     (value: TextHeadingLevel) => {
       onClose();
       if (value) {
-        editor.chain().focus().toggleHeading({ level: value }).run();
+        (editor as any).chain().focus().toggleHeading({ level: value }).run();
       } else {
-        editor.chain().focus().setParagraph().run();
+        (editor as any).chain().focus().setParagraph().run();
       }
     },
     [editor, onClose]

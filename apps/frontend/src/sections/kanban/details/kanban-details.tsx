@@ -337,8 +337,8 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       taskName={task.name}
       onDelete={onDeleteTask}
       taskStatus={task.status}
-      workOrderId={task.workOrderId}
-      workOrderNumber={task.workOrderNumber}
+      workOrderId={(task as any)?.workOrderId}
+      workOrderNumber={(task as any)?.workOrderNumber}
       completeStatus={task.completeStatus}
       onToggleComplete={async (next) => {
         try {
@@ -357,7 +357,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, {
             taskData: { id: task.id, workOrderId: wo.id, workOrderNumber: wo.number },
           });
-          onUpdateTask({ ...task, workOrderId: wo.id, workOrderNumber: wo.number });
+          onUpdateTask({ ...(task as any), workOrderId: wo.id, workOrderNumber: wo.number } as any);
         } catch (e) {
           console.error('Failed to update work order on task', e);
         }
@@ -399,7 +399,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       {/* Reporter */}
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <BlockLabel>Reporter</BlockLabel>
-        <Tooltip title={`${task.reporter.name}${task.reporter.email ? ` • ${task.reporter.email}` : ''}`}>
+        <Tooltip title={task.reporter.name}>
           <Avatar>
             {task.reporter.initials || task.reporter.name?.split(' ').map(n => n.charAt(0)).join('').toUpperCase() || 'R'}
           </Avatar>
@@ -554,12 +554,12 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         <BlockLabel>Attachments</BlockLabel>
         <KanbanDetailsAttachments
           attachments={task.attachments}
-          onChange={async (files) => {
+          onChange={async (files: any[]) => {
             try {
               await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, {
                 taskData: { id: task.id, attachments: files },
               });
-              onUpdateTask({ ...task, attachments: files });
+              onUpdateTask({ ...(task as any), attachments: files } as any);
             } catch (e) {
               console.error('Failed to update attachments', e);
             }

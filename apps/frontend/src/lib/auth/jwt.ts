@@ -20,8 +20,8 @@ export interface JWTPayload {
 // ----------------------------------------------------------------------
 
 export const generateToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): string =>
-  jwt.sign(payload, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
+  jwt.sign(payload, JWT_SECRET as any, {
+    expiresIn: JWT_EXPIRES_IN as any,
   });
 
 // ----------------------------------------------------------------------

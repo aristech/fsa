@@ -78,11 +78,11 @@ export function EnhancedAccountDrawer({ data = [], sx, ...other }: EnhancedAccou
   const displayName =
     user?.firstName && user?.lastName
       ? `${user.firstName} ${user.lastName}`
-      : user?.displayName || 'User';
+      : user?.firstName || 'User';
 
-  const avatar = user?.avatar || user?.photoURL;
-  const firstName = user?.firstName || user?.displayName?.split(' ')[0] || 'User';
-  const lastName = user?.lastName || user?.displayName?.split(' ')[1] || '';
+  const avatar = user?.avatar || user?.avatar;
+  const firstName = user?.firstName || user?.firstName?.split(' ')[0] || 'User';
+  const lastName = user?.lastName || user?.firstName?.split(' ')[1] || '';
 
   const renderUserInfo = () => (
     <Card sx={{ m: 2, mb: 1 }}>
@@ -247,7 +247,7 @@ export function EnhancedAccountDrawer({ data = [], sx, ...other }: EnhancedAccou
                 bgcolor: varAlpha(theme.vars.palette.grey['500Channel'], 0.12),
               },
             }),
-            sx,
+            ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
           ]}
           {...other}
         >

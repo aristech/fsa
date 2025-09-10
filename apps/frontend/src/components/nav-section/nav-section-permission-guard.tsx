@@ -19,7 +19,7 @@ export function NavSectionPermissionGuard({
   requiredPermissions,
   allowedRoles,
 }: NavSectionPermissionGuardProps) {
-  const { hasPermission, canAccess } = usePermissions();
+  const { canAccess } = usePermissions();
 
   const canShow = useMemo(() => {
     // If no restrictions, show the item
@@ -43,7 +43,7 @@ export function NavSectionPermissionGuard({
     }
 
     return true;
-  }, [requiredPermissions, allowedRoles, hasPermission, canAccess]);
+  }, [requiredPermissions, allowedRoles, canAccess]);
 
   if (!canShow) {
     return null;
@@ -60,7 +60,7 @@ interface NavItemPermissionGuardProps {
 }
 
 export function NavItemPermissionGuard({ item, children }: NavItemPermissionGuardProps) {
-  const { hasPermission, canAccess } = usePermissions();
+  const { canAccess } = usePermissions();
 
   const canShow = useMemo(() => {
     // If no restrictions, show the item
@@ -84,7 +84,7 @@ export function NavItemPermissionGuard({ item, children }: NavItemPermissionGuar
     }
 
     return true;
-  }, [item.requiredPermissions, item.allowedRoles, hasPermission, canAccess]);
+  }, [item.requiredPermissions, item.allowedRoles, canAccess]);
 
   if (!canShow) {
     return null;

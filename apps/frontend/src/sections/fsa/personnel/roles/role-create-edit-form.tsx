@@ -5,22 +5,7 @@ import { useForm } from 'react-hook-form';
 import { useState, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-import {
-  Box,
-  Card,
-  Grid,
-  Stack,
-  Alert,
-  Button,
-  Divider,
-  Checkbox,
-  FormLabel,
-  FormGroup,
-  Typography,
-  CardContent,
-  FormControl,
-  FormControlLabel,
-} from '@mui/material';
+import { Box,Grid, Card, Stack, Alert, Button, Divider, Checkbox, FormLabel, FormGroup, Typography, CardContent, FormControl, FormControlLabel } from '@mui/material';
 
 import {
   type Role,
@@ -196,7 +181,7 @@ export function RoleCreateEditForm({ role, onSuccess, onCancel }: RoleCreateEdit
         )}
 
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <RHFTextField
               name="name"
               label="Role Name"
@@ -207,7 +192,7 @@ export function RoleCreateEditForm({ role, onSuccess, onCancel }: RoleCreateEdit
           </Grid>
 
 
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <RHFTextField
               name="description"
               label="Description"
@@ -228,7 +213,7 @@ export function RoleCreateEditForm({ role, onSuccess, onCancel }: RoleCreateEdit
 
           <Grid container spacing={3}>
             {Object.entries(PERMISSION_CATEGORIES).map(([category, permissions]) => (
-              <Grid item xs={12} md={6} key={category}>
+              <Grid size={{ xs: 12, md: 6 }} key={category}>
                 <Card variant="outlined">
                   <CardContent>
                     <FormControl component="fieldset" fullWidth>

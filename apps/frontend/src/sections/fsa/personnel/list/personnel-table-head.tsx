@@ -16,15 +16,15 @@ interface PersonnelTableHeadProps {
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
-  { id: 'name', label: 'Personnel', align: 'left' },
-  { id: 'role', label: 'Role', align: 'left' },
-  { id: 'status', label: 'Status', align: 'left' },
-  { id: 'skills', label: 'Skills', align: 'left' },
-  { id: 'hourlyRate', label: 'Rate', align: 'center' },
-  { id: 'assignments', label: 'Assignments', align: 'center' },
-  { id: 'total', label: 'Total', align: 'center' },
-  { id: '', label: '', align: 'right' },
-];
+  { id: 'name', label: 'Personnel', align: 'left' as const },
+  { id: 'role', label: 'Role', align: 'left' as const },
+  { id: 'status', label: 'Status', align: 'left' as const },
+  { id: 'skills', label: 'Skills', align: 'left' as const },
+  { id: 'hourlyRate', label: 'Rate', align: 'center' as const },
+  { id: 'assignments', label: 'Assignments', align: 'center' as const },
+  { id: 'total', label: 'Total', align: 'center' as const },
+  { id: '', label: '', align: 'right' as const },
+] as const;
 
 export function PersonnelTableHead({
   order,
@@ -50,7 +50,7 @@ export function PersonnelTableHead({
             key={headCell.id}
             align={headCell.align}
             sortDirection={orderBy === headCell.id ? order : false}
-            sx={{ width: headCell.width, minWidth: headCell.minWidth }}
+            sx={{ width: (headCell as any).width, minWidth: (headCell as any).minWidth }}
           >
             {headCell.id ? (
               <TableSortLabel

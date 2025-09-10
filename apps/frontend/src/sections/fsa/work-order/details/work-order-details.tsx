@@ -120,11 +120,11 @@ export function WorkOrderDetails({ id }: Props) {
 
       <Grid container spacing={3}>
         {/* Header card with client and metadata */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Card>
             <CardContent>
               <Grid container spacing={2}>
-                <Grid item xs={12} md={8}>
+                <Grid size={{ xs: 12, md: 8 }}>
                   <Stack spacing={1}>
                     <Typography variant="h5">{workOrder?.title || '—'}</Typography>
                     <Stack direction="row" spacing={1} alignItems="center">
@@ -140,7 +140,7 @@ export function WorkOrderDetails({ id }: Props) {
                     </Stack>
                   </Stack>
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <Stack spacing={1} alignItems={{ xs: 'flex-start', md: 'flex-end' }}>
                     <Typography variant="body2" color="text.secondary">
                       Client
@@ -160,7 +160,7 @@ export function WorkOrderDetails({ id }: Props) {
           </Card>
         </Grid>
         {/* Progress Summary */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
               <Stack spacing={1.5}>
@@ -214,7 +214,7 @@ export function WorkOrderDetails({ id }: Props) {
           </Card>
         </Grid>
         {/* Main Information */}
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <Card>
             <CardContent>
               <Stack spacing={3}>
@@ -241,7 +241,7 @@ export function WorkOrderDetails({ id }: Props) {
                 <Stack spacing={2}>
                   <Typography variant="h6">Work Order Information</Typography>
                   <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <Stack spacing={0.5}>
                         <Typography variant="caption" color="text.secondary">
                           Work Order Number
@@ -250,7 +250,7 @@ export function WorkOrderDetails({ id }: Props) {
                       </Stack>
                     </Grid>
 
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <Stack spacing={0.5}>
                         <Typography variant="caption" color="text.secondary">
                           Scheduled Date
@@ -260,7 +260,7 @@ export function WorkOrderDetails({ id }: Props) {
                         </Typography>
                       </Stack>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <Stack spacing={0.5}>
                         <Typography variant="caption" color="text.secondary">
                           Estimated Duration
@@ -304,7 +304,7 @@ export function WorkOrderDetails({ id }: Props) {
         </Grid>
 
         {/* Sidebar */}
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Stack spacing={3}>
             {/* Client Information */}
             <Card>

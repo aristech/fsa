@@ -213,7 +213,7 @@ export function EnhancedAccountPopover({ data = [], sx, ...other }: EnhancedAcco
     <>
       <AccountButton
         onClick={onOpen}
-        photoURL={user?.avatar}
+        photoURL={user?.avatar || ''}
         displayName={`${user?.firstName} ${user?.lastName}`}
         sx={sx}
         {...other}

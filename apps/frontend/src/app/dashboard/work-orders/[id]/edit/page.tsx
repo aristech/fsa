@@ -7,11 +7,12 @@ import { WorkOrderCreateForm } from 'src/sections/fsa/work-order/create/work-ord
 // ----------------------------------------------------------------------
 
 type Props = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 export const metadata: Metadata = { title: `Edit Work Order - ${CONFIG.appName}` };
 
-export default function Page({ params }: Props) {
-  return <WorkOrderCreateForm id={params.id} />;
+export default async function Page({ params }: Props) {
+  const { id } = await params;
+  return <WorkOrderCreateForm id={id} />;
 }
