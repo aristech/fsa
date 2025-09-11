@@ -1,8 +1,12 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { authenticate } from "../middleware/auth";
 import { requirePermission } from "../middleware/permission-guard";
-import { requireWorkOrderView, requireWorkOrderEdit } from "../middleware/resource-permission-guard";
+import {
+  requireWorkOrderView,
+  requireWorkOrderEdit,
+} from "../middleware/resource-permission-guard";
 import { WorkOrder, Personnel } from "../models";
+import { getNextSequence } from "../models/counter";
 import { AuthenticatedRequest } from "../types";
 import mongoose from "mongoose";
 import { WorkOrderProgressService } from "../services/work-order-progress-service";
@@ -45,15 +49,29 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         if (clientId) filter.clientId = clientId;
 
         // Check if user only has "own" permissions and filter accordingly
-        const { PermissionService } = await import("../services/permission-service");
+        const { PermissionService } = await import(
+          "../services/permission-service"
+        );
         const { Personnel } = await import("../models");
-        
-        const hasFullPermission = await PermissionService.hasPermission(user.id, "workOrders.view");
-        const hasOwnPermission = await PermissionService.hasPermission(user.id, "workOrders.viewOwn");
 
-        if (!hasFullPermission.hasPermission && hasOwnPermission.hasPermission) {
+        const hasFullPermission = await PermissionService.hasPermission(
+          user.id,
+          "workOrders.view",
+        );
+        const hasOwnPermission = await PermissionService.hasPermission(
+          user.id,
+          "workOrders.viewOwn",
+        );
+
+        if (
+          !hasFullPermission.hasPermission &&
+          hasOwnPermission.hasPermission
+        ) {
           // User only has "own" permission, filter to their assigned work orders
-          const personnel = await Personnel.findOne({ userId: user.id, tenantId: tenant._id });
+          const personnel = await Personnel.findOne({
+            userId: user.id,
+            tenantId: tenant._id,
+          });
           if (personnel) {
             filter.personnelIds = personnel._id.toString();
           } else {
@@ -103,7 +121,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           error: "Internal server error",
         });
       }
-    }
+    },
   );
 
   // GET /api/v1/work-orders/:id - Get work order by ID
@@ -141,7 +159,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           error: "Internal server error",
         });
       }
-    }
+    },
   );
 
   // GET /api/v1/work-orders/:id/summary - Aggregated progress and counters
@@ -186,7 +204,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           .code(500)
           .send({ success: false, error: "Internal server error" });
       }
-    }
+    },
   );
 
   // POST /api/v1/work-orders - Create work order
@@ -215,7 +233,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           const personnelDocs = await Personnel.find({
             _id: { $in: body.personnelIds },
             tenantId: tenant._id,
-          }).select('_id isActive status');
+          }).select("_id isActive status");
 
           if (personnelDocs.length !== body.personnelIds.length) {
             return reply.code(400).send({
@@ -226,21 +244,22 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           }
 
           const ineligible = personnelDocs
-            .filter((p: any) => !p.isActive || p.status !== 'active')
+            .filter((p: any) => !p.isActive || p.status !== "active")
             .map((p: any) => p._id.toString());
 
           if (ineligible.length > 0) {
             return reply.code(400).send({
               success: false,
-              error: 'One or more personnel are not eligible for assignment (inactive or pending)',
+              error:
+                "One or more personnel are not eligible for assignment (inactive or pending)",
               data: { ineligible },
             });
           }
         }
 
-        // Generate work order number
-        const count = await WorkOrder.countDocuments({ tenantId: tenant._id });
-        const workOrderNumber = `WO-${String(count + 1).padStart(6, "0")}`;
+        // Generate per-tenant sequential work order number using atomic counter
+        const seq = await getNextSequence(tenant._id.toString(), "workOrder");
+        const workOrderNumber = `WO-${String(seq).padStart(6, "0")}`;
 
         const workOrder = new WorkOrder({
           ...body,
@@ -262,7 +281,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         // Recompute aggregates after creation
         await WorkOrderProgressService.recomputeForWorkOrder(
           tenant._id.toString(),
-          workOrder._id.toString()
+          workOrder._id.toString(),
         );
 
         return reply.code(201).send({
@@ -277,7 +296,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           error: "Internal server error",
         });
       }
-    }
+    },
   );
 
   // PUT /api/v1/work-orders/:id - Update work order
@@ -327,7 +346,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
             ...body,
             updatedAt: new Date(),
           },
-          { new: true }
+          { new: true },
         );
 
         if (!workOrder) {
@@ -340,7 +359,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         // Recompute aggregates after update
         await WorkOrderProgressService.recomputeForWorkOrder(
           tenant._id.toString(),
-          workOrder._id.toString()
+          workOrder._id.toString(),
         );
 
         // Handle assignment permissions if personnelIds were updated
@@ -348,7 +367,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           await AssignmentPermissionService.handleWorkOrderAssignment(
             workOrder._id.toString(),
             workOrder.personnelIds || [],
-            tenant._id.toString()
+            tenant._id.toString(),
           );
         }
 
@@ -364,7 +383,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           error: "Internal server error",
         });
       }
-    }
+    },
   );
 
   // DELETE /api/v1/work-orders/:id - Delete work order
@@ -399,11 +418,13 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
             deleteComments: true,
             deleteAssignments: true,
             cascadeDelete: false, // Don't delete related tasks by default
-          }
+          },
         );
 
         if (!cleanupResult.success) {
-          fastify.log.error(`Work order cleanup failed: ${cleanupResult.message}`);
+          fastify.log.error(
+            `Work order cleanup failed: ${cleanupResult.message}`,
+          );
           return reply.code(500).send({
             success: false,
             error: `Failed to cleanup work order: ${cleanupResult.message}`,
@@ -411,7 +432,9 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         }
 
         // Log cleanup details
-        fastify.log.info(`🧹 Work order cleanup completed: ${JSON.stringify(cleanupResult.details)}`);
+        fastify.log.info(
+          `🧹 Work order cleanup completed: ${JSON.stringify(cleanupResult.details)}`,
+        );
 
         return reply.send({
           success: true,
@@ -432,6 +455,6 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           error: "Internal server error",
         });
       }
-    }
+    },
   );
 }

@@ -1,6 +1,14 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { AuthenticatedRequest } from "../types";
-import { Task, Project, Status, Subtask, Comment, Personnel, WorkOrder } from "../models";
+import {
+  Task,
+  Project,
+  Status,
+  Subtask,
+  Comment,
+  Personnel,
+  WorkOrder,
+} from "../models";
 import { AssignmentPermissionService } from "../services/assignment-permission-service";
 import { getPriorityOptions } from "../constants/priorities";
 import { WorkOrderProgressService } from "../services/work-order-progress-service";
@@ -12,7 +20,7 @@ import {
 
 export async function getKanbanData(
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const req = request as AuthenticatedRequest;
@@ -24,9 +32,14 @@ export async function getKanbanData(
     console.log("User:", user.id);
     console.log("Client ID:", clientId);
 
+    // Ensure at least one active column exists; create default 'Todo' if none
+    await ensureAtLeastOneColumn(tenant._id.toString());
+
     // Get all projects and tasks for the tenant, sorted by order (for tasks) and created_at (latest first)
     const [projects, tasks] = await Promise.all([
-      Project.find({ tenantId: tenant._id, isActive: true }).sort({ createdAt: -1 }),
+      Project.find({ tenantId: tenant._id, isActive: true }).sort({
+        createdAt: -1,
+      }),
       Task.find({ tenantId: tenant._id }).sort({ order: 1, createdAt: -1 }),
     ]);
 
@@ -40,31 +53,45 @@ export async function getKanbanData(
     });
 
     // Collect work order ids to enrich tasks with work order title/number if missing
-    const workOrderIds = Array.from(new Set(tasks.map((t: any) => t.workOrderId).filter(Boolean))).map((id) => id.toString());
+    const workOrderIds = Array.from(
+      new Set(tasks.map((t: any) => t.workOrderId).filter(Boolean)),
+    ).map((id) => id.toString());
 
     const [users, personnel, workOrders] = await Promise.all([
       // lightweight projections
-      (await import("../models")).User.find({ _id: { $in: Array.from(userIds) } }, {
-        firstName: 1,
-        lastName: 1,
-        email: 1,
-        avatar: 1,
-      }).lean(),
-      (await import("../models")).Personnel.find({ _id: { $in: Array.from(personnelIds) } }, {
-        employeeId: 1,
-        userId: 1,
-      })
+      (await import("../models")).User.find(
+        { _id: { $in: Array.from(userIds) } },
+        {
+          firstName: 1,
+          lastName: 1,
+          email: 1,
+          avatar: 1,
+        },
+      ).lean(),
+      (await import("../models")).Personnel.find(
+        { _id: { $in: Array.from(personnelIds) } },
+        {
+          employeeId: 1,
+          userId: 1,
+        },
+      )
         .populate({ path: "userId", select: "firstName lastName email avatar" })
         .lean(),
       workOrderIds.length
-        ? (await import("../models")).WorkOrder.find({ _id: { $in: workOrderIds } }, {
-            title: 1,
-            workOrderNumber: 1,
-          }).lean()
+        ? (await import("../models")).WorkOrder.find(
+            { _id: { $in: workOrderIds } },
+            {
+              title: 1,
+              workOrderNumber: 1,
+            },
+          ).lean()
         : [],
     ]);
 
-    const userById: Record<string, { name?: string; email?: string; avatar?: string }> = {};
+    const userById: Record<
+      string,
+      { name?: string; email?: string; avatar?: string }
+    > = {};
     users.forEach((u: any) => {
       userById[u._id.toString()] = {
         name: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email,
@@ -73,9 +100,14 @@ export async function getKanbanData(
       };
     });
 
-    const personnelById: Record<string, { name?: string; email?: string; avatar?: string }> = {};
+    const personnelById: Record<
+      string,
+      { name?: string; email?: string; avatar?: string }
+    > = {};
     personnel.forEach((p: any) => {
-      const fullName = [p.userId?.firstName, p.userId?.lastName].filter(Boolean).join(" ") || p.employeeId;
+      const fullName =
+        [p.userId?.firstName, p.userId?.lastName].filter(Boolean).join(" ") ||
+        p.employeeId;
       personnelById[p._id.toString()] = {
         name: fullName,
         email: p.userId?.email,
@@ -92,21 +124,36 @@ export async function getKanbanData(
     if (clientId) {
       // Filter projects by client
       filteredProjects = projects.filter(
-        (project) => project.clientId?.toString() === clientId
+        (project) => project.clientId?.toString() === clientId,
       );
 
-      // Filter tasks by client
-      filteredTasks = tasks.filter(
-        (task) => task.clientId?.toString() === clientId
+      // Filter tasks by client OR tasks linked to a work order whose client matches
+      const workOrdersForClient = await WorkOrder.find(
+        { tenantId: tenant._id, clientId: clientId },
+        { _id: 1 },
+      ).lean();
+      const workOrderIdsForClient = new Set(
+        workOrdersForClient.map((wo: any) => wo._id.toString()),
       );
+
+      filteredTasks = tasks.filter((task: any) => {
+        const matchesByClient = task.clientId?.toString() === clientId;
+        const matchesByWO =
+          task.workOrderId &&
+          workOrderIdsForClient.has(task.workOrderId.toString());
+        return matchesByClient || matchesByWO;
+      });
 
       console.log(
-        `After client filter: ${filteredProjects.length} projects, ${filteredTasks.length} tasks`
+        `After client filter: ${filteredProjects.length} projects, ${filteredTasks.length} tasks`,
       );
     }
 
     // Load dynamic statuses for tenant (fallback to defaults)
-    const statusDocs = await Status.find({ tenantId: tenant._id, isActive: true })
+    const statusDocs = await Status.find({
+      tenantId: tenant._id,
+      isActive: true,
+    })
       .sort({ order: 1 })
       .lean();
     const statuses =
@@ -115,27 +162,36 @@ export async function getKanbanData(
         : ["todo", "in-progress", "review", "done"]; // default fallback
 
     // Get subtasks count for each task
-    const taskIds = filteredTasks.map(task => task._id);
+    const taskIds = filteredTasks.map((task) => task._id);
     const subtasksCounts = await Subtask.aggregate([
       { $match: { taskId: { $in: taskIds }, tenantId: req.user.tenantId } },
-      { $group: { _id: '$taskId', count: { $sum: 1 } } }
+      { $group: { _id: "$taskId", count: { $sum: 1 } } },
     ]);
-    const subtasksCountById = subtasksCounts.reduce((acc, item) => {
-      acc[item._id.toString()] = item.count;
-      return acc;
-    }, {} as Record<string, number>);
+    const subtasksCountById = subtasksCounts.reduce(
+      (acc, item) => {
+        acc[item._id.toString()] = item.count;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     // Get comments count for each task
     const commentsCounts = await Comment.aggregate([
       { $match: { taskId: { $in: taskIds }, tenantId: req.user.tenantId } },
-      { $group: { _id: '$taskId', count: { $sum: 1 } } }
+      { $group: { _id: "$taskId", count: { $sum: 1 } } },
     ]);
-    const commentsCountById = commentsCounts.reduce((acc, item) => {
-      acc[item._id.toString()] = item.count;
-      return acc;
-    }, {} as Record<string, number>);
+    const commentsCountById = commentsCounts.reduce(
+      (acc, item) => {
+        acc[item._id.toString()] = item.count;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
-    const workOrderById: Record<string, { title?: string; workOrderNumber?: string }> = {};
+    const workOrderById: Record<
+      string,
+      { title?: string; workOrderNumber?: string }
+    > = {};
     (workOrders as any[]).forEach((wo: any) => {
       workOrderById[wo._id.toString()] = {
         title: wo.title,
@@ -143,41 +199,41 @@ export async function getKanbanData(
       };
     });
 
+    // Build column lookup for transformers
+    const columnById: Record<string, { name: string; slug: string }> = {};
+    statusDocs.forEach((s: any) => {
+      columnById[s._id.toString()] = {
+        name: s.name,
+        slug: s.name.toLowerCase().trim().replace(/\s+/g, "-"),
+      };
+    });
+
     const kanbanTasks = [
       ...filteredProjects.map((project) =>
-        transformProjectToKanbanTask(project, statuses)
+        transformProjectToKanbanTask(project, statuses),
       ),
       ...filteredTasks.map((task) =>
-        transformTaskToKanbanTask(task, statuses, { 
-          userById, 
+        transformTaskToKanbanTask(task, statuses, {
+          userById,
           personnelById,
           subtasksCount: subtasksCountById[task._id.toString()] || 0,
           commentsCount: commentsCountById[task._id.toString()] || 0,
           workOrderById,
-        })
+          columnById,
+        }),
       ),
     ];
 
     // Group by status documents, return Mongo _id; fallback to default slugs when no docs
-    const columns =
-      statusDocs.length > 0
-        ? statusDocs.map((s: any) => {
-            const slug = toSlug(s.name);
-            return {
-              id: s._id.toString(),
-              title: s.name,
-              taskIds: kanbanTasks
-                .filter((task) => task.status === slug)
-                .map((task) => task.id),
-            };
-          })
-        : statuses.map((status) => ({
-            id: `column-${status}`,
-            title: status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' '),
-            taskIds: kanbanTasks
-              .filter((task) => task.status === status)
-              .map((task) => task.id),
-          }));
+    const columns = statusDocs.map((s: any) => {
+      return {
+        id: s._id.toString(),
+        title: s.name,
+        taskIds: kanbanTasks
+          .filter((task) => task.columnId === s._id.toString())
+          .map((task) => task.id),
+      };
+    });
 
     const board = {
       tasks: kanbanTasks,
@@ -199,7 +255,7 @@ export async function getKanbanData(
 
 export async function handleKanbanPost(
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const req = request as AuthenticatedRequest;
@@ -246,13 +302,16 @@ export async function handleKanbanPost(
 
 export async function getKanbanMeta(
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const req = request as AuthenticatedRequest;
     const { tenant } = req.context!;
 
-    const statusDocs = await Status.find({ tenantId: tenant._id, isActive: true })
+    const statusDocs = await Status.find({
+      tenantId: tenant._id,
+      isActive: true,
+    })
       .sort({ order: 1 })
       .lean();
 
@@ -268,17 +327,19 @@ export async function getKanbanMeta(
     return reply.send({ success: true, data: { statuses, priorities } });
   } catch (error) {
     console.error("Error in Kanban META:", error);
-    return reply.code(500).send({ success: false, error: "Internal server error" });
+    return reply
+      .code(500)
+      .send({ success: false, error: "Internal server error" });
   }
 }
 
 async function handleCreateTask(
   req: AuthenticatedRequest,
   reply: FastifyReply,
-  body: any
+  body: any,
 ) {
   const { tenant, user } = req.context!;
-  const { taskData } = body;
+  const { taskData, columnId } = body;
   const {
     name,
     description,
@@ -310,10 +371,17 @@ async function handleCreateTask(
   // Validate assignees eligibility (active personnel only)
   let validatedAssignees: string[] = [];
   if (Array.isArray(assignees) ? assignees.length > 0 : !!assignee) {
-    const list = Array.isArray(assignees) ? assignees : assignee ? [assignee] : [];
-    const personnelDocs = await Personnel.find({ _id: { $in: list }, tenantId: tenant._id }).select('_id isActive status');
+    const list = Array.isArray(assignees)
+      ? assignees
+      : assignee
+        ? [assignee]
+        : [];
+    const personnelDocs = await Personnel.find({
+      _id: { $in: list },
+      tenantId: tenant._id,
+    }).select("_id isActive status");
     const eligible = personnelDocs
-      .filter((p: any) => p.isActive && p.status === 'active')
+      .filter((p: any) => p.isActive && p.status === "active")
       .map((p: any) => p._id.toString());
     validatedAssignees = eligible;
   }
@@ -323,12 +391,52 @@ async function handleCreateTask(
   let resolvedWorkOrderTitle = workOrderTitle as string | undefined;
   if (workOrderId && (!resolvedWorkOrderNumber || !resolvedWorkOrderTitle)) {
     try {
-      const wo = await WorkOrder.findById(workOrderId).select('title workOrderNumber');
+      const wo = await WorkOrder.findById(workOrderId).select(
+        "title workOrderNumber",
+      );
       if (wo) {
-        resolvedWorkOrderNumber = resolvedWorkOrderNumber || (wo as any).workOrderNumber || (wo as any).number || undefined;
-        resolvedWorkOrderTitle = resolvedWorkOrderTitle || (wo as any).title || undefined;
+        resolvedWorkOrderNumber =
+          resolvedWorkOrderNumber ||
+          (wo as any).workOrderNumber ||
+          (wo as any).number ||
+          undefined;
+        resolvedWorkOrderTitle =
+          resolvedWorkOrderTitle || (wo as any).title || undefined;
       }
     } catch {}
+  }
+
+  // Resolve initial columnId from provided columnId or first available column
+  let targetColumnId: string | null = null;
+  try {
+    let targetColumn: any = null;
+    if (columnId) {
+      // Strictly resolve by _id; do not fallback to name/slug
+      targetColumn = await resolveStatusByIdOrSlug(
+        tenant._id.toString(),
+        String(columnId),
+      );
+    }
+    if (!targetColumn) {
+      targetColumn = await Status.findOne({
+        tenantId: tenant._id,
+        isActive: true,
+      })
+        .sort({ order: 1 })
+        .lean();
+    }
+    if (targetColumn) {
+      targetColumnId = targetColumn._id.toString();
+    }
+  } catch (error) {
+    console.error("Error resolving column:", error);
+  }
+
+  if (!targetColumnId) {
+    return reply.code(400).send({
+      success: false,
+      error: "No valid column found for task creation",
+    });
   }
 
   const newTask = new Task({
@@ -336,7 +444,7 @@ async function handleCreateTask(
     title: name,
     description: description || "",
     priority: priority || "medium",
-    status: "todo",
+    columnId: targetColumnId,
     tags: tags || labels || [],
     assignees: validatedAssignees,
     createdBy: user.id,
@@ -346,7 +454,9 @@ async function handleCreateTask(
     // Add estimated hours if provided
     ...(estimatedHours && { estimatedHours: Number(estimatedHours) }),
     // Add attachments if provided
-    ...(attachments && { attachments: Array.isArray(attachments) ? attachments : [] }),
+    ...(attachments && {
+      attachments: Array.isArray(attachments) ? attachments : [],
+    }),
     // Add client information if available
     ...(validatedClientId && {
       clientId: validatedClientId,
@@ -367,7 +477,7 @@ async function handleCreateTask(
   if (newTask.workOrderId) {
     await WorkOrderProgressService.recomputeForWorkOrder(
       tenant._id.toString(),
-      newTask.workOrderId.toString()
+      newTask.workOrderId.toString(),
     );
   }
 
@@ -376,7 +486,7 @@ async function handleCreateTask(
     await AssignmentPermissionService.handleTaskAssignment(
       newTask._id.toString(),
       newTask.assignees,
-      tenant._id.toString()
+      tenant._id.toString(),
     );
   }
 
@@ -390,7 +500,7 @@ async function handleCreateTask(
 async function handleDeleteTask(
   req: AuthenticatedRequest,
   reply: FastifyReply,
-  body: any
+  body: any,
 ) {
   const { tenant, user } = req.context!;
   const { taskId } = body;
@@ -424,7 +534,7 @@ async function handleDeleteTask(
       deleteComments: true,
       deleteSubtasks: true,
       deleteAssignments: true,
-    }
+    },
   );
 
   if (!cleanupResult.success) {
@@ -455,7 +565,7 @@ async function handleDeleteTask(
 async function handleUpdateTask(
   req: AuthenticatedRequest,
   reply: FastifyReply,
-  body: any
+  body: any,
 ) {
   const { tenant, user } = req.context!;
   const { taskData } = body;
@@ -467,8 +577,26 @@ async function handleUpdateTask(
     });
   }
 
-  const { name, description, priority, labels, assignee, assignees, due, status, workOrderId, workOrderNumber, startDate, dueDate, attachments, clientId, clientName, clientCompany, completeStatus, workOrderTitle } =
-    taskData;
+  const {
+    name,
+    description,
+    priority,
+    labels,
+    assignee,
+    assignees,
+    due,
+    status,
+    workOrderId,
+    workOrderNumber,
+    startDate,
+    dueDate,
+    attachments,
+    clientId,
+    clientName,
+    clientCompany,
+    completeStatus,
+    workOrderTitle,
+  } = taskData;
 
   const updateData: any = {};
   if (name !== undefined) updateData.title = name;
@@ -477,13 +605,21 @@ async function handleUpdateTask(
   if (labels !== undefined) updateData.tags = labels;
   if (startDate !== undefined) updateData.startDate = startDate;
   if (dueDate !== undefined) updateData.dueDate = dueDate;
-  if (typeof completeStatus === 'boolean') updateData.completeStatus = completeStatus;
+  if (typeof completeStatus === "boolean")
+    updateData.completeStatus = completeStatus;
   if (assignees !== undefined) {
-    const list = Array.isArray(assignees) ? assignees : assignee ? [assignee] : [];
+    const list = Array.isArray(assignees)
+      ? assignees
+      : assignee
+        ? [assignee]
+        : [];
     if (list.length > 0) {
-      const personnelDocs = await Personnel.find({ _id: { $in: list }, tenantId: tenant._id }).select('_id isActive status');
+      const personnelDocs = await Personnel.find({
+        _id: { $in: list },
+        tenantId: tenant._id,
+      }).select("_id isActive status");
       const eligible = personnelDocs
-        .filter((p: any) => p.isActive && p.status === 'active')
+        .filter((p: any) => p.isActive && p.status === "active")
         .map((p: any) => p._id.toString());
       updateData.assignees = eligible;
     } else {
@@ -492,7 +628,8 @@ async function handleUpdateTask(
   }
   if (status !== undefined) updateData.status = status.toLowerCase();
   if (workOrderId !== undefined) updateData.workOrderId = workOrderId;
-  if (workOrderNumber !== undefined) updateData.workOrderNumber = workOrderNumber;
+  if (workOrderNumber !== undefined)
+    updateData.workOrderNumber = workOrderNumber;
   if (workOrderTitle !== undefined) updateData.workOrderTitle = workOrderTitle;
   if (clientId !== undefined) updateData.clientId = clientId;
   if (clientName !== undefined) updateData.clientName = clientName;
@@ -503,7 +640,9 @@ async function handleUpdateTask(
       const normalized: string[] = (attachments as any[]).map((item: any) => {
         if (typeof item === "string") return item;
         if (item && typeof item === "object") {
-          return item.url || item.relativePath || item.path || JSON.stringify(item);
+          return (
+            item.url || item.relativePath || item.path || JSON.stringify(item)
+          );
         }
         return String(item);
       });
@@ -519,7 +658,7 @@ async function handleUpdateTask(
       tenantId: tenant._id,
     },
     updateData,
-    { new: true }
+    { new: true },
   );
 
   if (!updatedTask) {
@@ -532,7 +671,7 @@ async function handleUpdateTask(
   if (updatedTask.workOrderId) {
     await WorkOrderProgressService.recomputeForWorkOrder(
       tenant._id.toString(),
-      updatedTask.workOrderId.toString()
+      updatedTask.workOrderId.toString(),
     );
   }
 
@@ -541,7 +680,7 @@ async function handleUpdateTask(
     await AssignmentPermissionService.handleTaskAssignment(
       updatedTask._id.toString(),
       updatedTask.assignees || [],
-      tenant._id.toString()
+      tenant._id.toString(),
     );
   }
 
@@ -555,7 +694,7 @@ async function handleUpdateTask(
 async function handleMoveTask(
   req: AuthenticatedRequest,
   reply: FastifyReply,
-  body: any
+  body: any,
 ) {
   const { tenant, user } = req.context!;
   const { updateTasks } = body;
@@ -580,20 +719,21 @@ async function handleMoveTask(
       }
     });
 
-    // Update task statuses and order based on their new column positions
-    const columnStatusMap: Record<string, string> = {
-      "column-todo": "todo",
-      "column-in-progress": "in-progress",
-      "column-done": "done",
-      "column-cancelled": "cancelled",
-    };
-
-    // Update each task's status and order based on its new column and position
+    // Update each task's columnId and order based on its new column and position
     for (const [columnId, tasks] of Object.entries(updateTasks)) {
       if (Array.isArray(tasks)) {
-        const newStatus = columnStatusMap[columnId] || "todo";
+        // Resolve column by _id only (strict validation)
+        const targetStatusDoc = await resolveStatusByIdOrSlug(
+          tenant._id.toString(),
+          columnId,
+        );
 
-        // Update each task with its new status and order
+        if (!targetStatusDoc) {
+          console.warn(`Column not found for ID: ${columnId}`);
+          continue; // Skip invalid columns
+        }
+
+        // Update each task with its new columnId and order
         for (let index = 0; index < tasks.length; index++) {
           const task = tasks[index];
           if (task.id) {
@@ -603,10 +743,10 @@ async function handleMoveTask(
                 tenantId: tenant._id,
               },
               {
-                status: newStatus,
+                columnId: targetStatusDoc._id.toString(),
                 order: index, // Add order field to maintain task order within columns
               },
-              { new: true }
+              { new: true },
             );
           }
         }
@@ -631,64 +771,101 @@ async function handleMoveTask(
 // Columns (Statuses)
 
 function toSlug(name: string) {
-  return name.toLowerCase().trim().replace(/\s+/g, '-');
+  return name.toLowerCase().trim().replace(/\s+/g, "-");
+}
+
+function mapColumnNameToTaskStatus(
+  name: string,
+): "todo" | "in-progress" | "review" | "done" | "cancel" {
+  const slug = toSlug(name);
+  if (slug.includes("in-progress") || slug.includes("progress"))
+    return "in-progress";
+  if (slug.includes("review")) return "review";
+  if (
+    slug.includes("done") ||
+    slug.includes("complete") ||
+    slug.includes("completed")
+  )
+    return "done";
+  if (slug.includes("cancel")) return "cancel";
+  return "todo";
+}
+
+async function ensureAtLeastOneColumn(tenantId: string) {
+  const existing = await Status.find({ tenantId, isActive: true }).limit(1);
+  if (existing.length === 0) {
+    const defaults = [
+      { name: "Todo", color: "#2196f3" },
+      { name: "In Progress", color: "#ff9800" },
+      { name: "Review", color: "#9c27b0" },
+      { name: "Done", color: "#4caf50" },
+    ];
+    await Status.insertMany(
+      defaults.map((d, idx) => ({
+        tenantId,
+        name: d.name,
+        color: d.color,
+        order: idx,
+        isDefault: idx === 0,
+        isActive: true,
+      })),
+    );
+  }
 }
 
 async function resolveStatusByIdOrSlug(tenantId: string, idOrSlug: string) {
+  // ID-only resolution; do not fallback to name/slug to avoid coupling to editable attributes
   const isObjectId = /^[a-fA-F0-9]{24}$/.test(idOrSlug);
-  if (isObjectId) {
-    return await Status.findOne({ _id: idOrSlug, tenantId });
-  }
-  const slug = idOrSlug.startsWith('column-') ? idOrSlug.replace(/^column-/, '') : idOrSlug;
-  const statuses = await Status.find({ tenantId }).lean();
-  const matched = statuses.find((s: any) => toSlug(s.name) === slug);
-  if (!matched) return null;
-  return await Status.findOne({ _id: matched._id, tenantId });
+  if (!isObjectId) return null;
+  return await Status.findOne({ _id: idOrSlug, tenantId });
 }
 
 async function handleRenameColumn(
   req: AuthenticatedRequest,
   reply: FastifyReply,
-  body: any
+  body: any,
 ) {
   const { tenant } = req.context!;
   const { columnId, name } = body || {};
   if (!columnId || !name) {
-    return reply.code(400).send({ success: false, error: 'columnId and name are required' });
+    return reply
+      .code(400)
+      .send({ success: false, error: "columnId and name are required" });
   }
 
   const status = await resolveStatusByIdOrSlug(tenant._id.toString(), columnId);
   if (!status) {
-    return reply.code(404).send({ success: false, error: 'Column not found' });
+    return reply.code(404).send({ success: false, error: "Column not found" });
   }
 
-  const oldSlug = toSlug(status.name);
   status.name = name;
   await status.save();
 
-  // Update tasks to new slug
-  const newSlug = toSlug(name);
-  if (newSlug !== oldSlug) {
-    await Task.updateMany({ tenantId: tenant._id, status: oldSlug }, { $set: { status: newSlug } });
-  }
+  // No need to update tasks since they reference columnId, not status names
 
-  return reply.send({ success: true, message: 'Column renamed', data: { id: status._id, name } });
+  return reply.send({
+    success: true,
+    message: "Column renamed",
+    data: { id: status._id, name },
+  });
 }
 
 async function handleReorderColumns(
   req: AuthenticatedRequest,
   reply: FastifyReply,
-  body: any
+  body: any,
 ) {
   const { tenant } = req.context!;
   const { order } = body || {};
   // order: array of { id, order } or array of ids in desired order
   if (!order || !Array.isArray(order)) {
-    return reply.code(400).send({ success: false, error: 'order array is required' });
+    return reply
+      .code(400)
+      .send({ success: false, error: "order array is required" });
   }
 
   let updates: Array<{ id: string; order: number }> = [];
-  if (order.length && typeof order[0] === 'string') {
+  if (order.length && typeof order[0] === "string") {
     updates = (order as string[]).map((id, idx) => ({ id, order: idx }));
   } else {
     updates = order as Array<{ id: string; order: number }>;
@@ -699,62 +876,94 @@ async function handleReorderColumns(
     updates.map(async (u) => {
       const s = await resolveStatusByIdOrSlug(tenant._id.toString(), u.id);
       return s ? { id: s._id, order: u.order } : null;
-    })
+    }),
   );
-  const filtered = resolved.filter(Boolean) as Array<{ id: any; order: number }>;
+  const filtered = resolved.filter(Boolean) as Array<{
+    id: any;
+    order: number;
+  }>;
   await Promise.all(
-    filtered.map((u) => Status.updateOne({ _id: u.id, tenantId: tenant._id }, { $set: { order: u.order } }))
+    filtered.map((u) =>
+      Status.updateOne(
+        { _id: u.id, tenantId: tenant._id },
+        { $set: { order: u.order } },
+      ),
+    ),
   );
 
-  return reply.send({ success: true, message: 'Columns reordered' });
+  return reply.send({ success: true, message: "Columns reordered" });
 }
 
 async function handleCreateColumn(
   req: AuthenticatedRequest,
   reply: FastifyReply,
-  body: any
+  body: any,
 ) {
   const { tenant } = req.context!;
   const { name, color } = body || {};
   if (!name) {
-    return reply.code(400).send({ success: false, error: 'name is required' });
+    return reply.code(400).send({ success: false, error: "name is required" });
   }
 
   const slug = toSlug(name);
-  const exists = await Status.findOne({ tenantId: tenant._id, name: new RegExp(`^${name}$`, 'i') });
+  const exists = await Status.findOne({
+    tenantId: tenant._id,
+    name: new RegExp(`^${name}$`, "i"),
+  });
   if (exists) {
-    return reply.code(409).send({ success: false, error: 'A column with this name already exists' });
+    return reply.code(409).send({
+      success: false,
+      error: "A column with this name already exists",
+    });
   }
 
-  const max = await Status.find({ tenantId: tenant._id }).sort({ order: -1 }).limit(1);
+  const max = await Status.find({ tenantId: tenant._id })
+    .sort({ order: -1 })
+    .limit(1);
   const nextOrder = max[0]?.order != null ? max[0].order + 1 : 0;
 
-  const created = await Status.create({ tenantId: tenant._id, name, color: color || '#888888', order: nextOrder });
-  return reply.send({ success: true, message: 'Column created', data: { id: created._id, name, order: nextOrder } });
+  const created = await Status.create({
+    tenantId: tenant._id,
+    name,
+    color: color || "#888888",
+    order: nextOrder,
+    isDefault: nextOrder === 0,
+  });
+  return reply.send({
+    success: true,
+    message: "Column created",
+    data: { id: created._id, name, order: nextOrder },
+  });
 }
 
 async function handleDeleteColumn(
   req: AuthenticatedRequest,
   reply: FastifyReply,
-  body: any
+  body: any,
 ) {
   const { tenant } = req.context!;
   const { columnId } = body || {};
   if (!columnId) {
-    return reply.code(400).send({ success: false, error: 'columnId is required' });
+    return reply
+      .code(400)
+      .send({ success: false, error: "columnId is required" });
   }
 
   const status = await resolveStatusByIdOrSlug(tenant._id.toString(), columnId);
   if (!status) {
-    return reply.code(404).send({ success: false, error: 'Column not found' });
+    return reply.code(404).send({ success: false, error: "Column not found" });
   }
 
-  const slug = toSlug(status.name);
-  const taskCount = await Task.countDocuments({ tenantId: tenant._id, status: slug });
+  const taskCount = await Task.countDocuments({
+    tenantId: tenant._id,
+    columnId: status._id.toString(),
+  });
   if (taskCount > 0) {
-    return reply.code(409).send({ success: false, error: 'Cannot delete a column with tasks' });
+    return reply
+      .code(409)
+      .send({ success: false, error: "Cannot delete a column with tasks" });
   }
 
   await Status.deleteOne({ _id: columnId, tenantId: tenant._id });
-  return reply.send({ success: true, message: 'Column deleted' });
+  return reply.send({ success: true, message: "Column deleted" });
 }

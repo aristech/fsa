@@ -21,6 +21,8 @@ import axiosInstance from 'src/lib/axios';
 
 import { useTable, getComparator } from 'src/components/table';
 
+import { View403 } from 'src/sections/error';
+
 import { PersonnelTableRow } from './personnel-table-row';
 import { PersonnelTableHead } from './personnel-table-head';
 import { PersonnelTableToolbar } from './personnel-table-toolbar';
@@ -68,8 +70,17 @@ export function PersonnelList({ filters }: PersonnelListProps) {
   const [activeTab, setActiveTab] = useState(0);
   const table = useTable();
 
-  const { dense, page, order, orderBy, rowsPerPage, selected, onSelectRow, onSelectAllRows, onSort } =
-    table;
+  const {
+    dense,
+    page,
+    order,
+    orderBy,
+    rowsPerPage,
+    selected,
+    onSelectRow,
+    onSelectAllRows,
+    onSort,
+  } = table;
 
   // Fetch personnel data
   useEffect(() => {
@@ -239,11 +250,7 @@ export function PersonnelList({ filters }: PersonnelListProps) {
   }
 
   if (error) {
-    return (
-      <Alert severity="error" sx={{ m: 3 }}>
-        {error}
-      </Alert>
-    );
+    return <View403 />;
   }
 
   return (

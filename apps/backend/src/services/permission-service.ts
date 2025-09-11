@@ -24,7 +24,7 @@ export class PermissionService {
    * Get user's permission context from database
    */
   static async getUserPermissionContext(
-    userId: string
+    userId: string,
   ): Promise<UserPermissionContext | null> {
     try {
       const user = await User.findById(userId).lean();
@@ -67,12 +67,14 @@ export class PermissionService {
       // Get dynamic permissions based on assignments
       const assignmentPermissions = await this.getUserAssignmentPermissions(
         userObj._id.toString(),
-        userObj.tenantId.toString()
+        userObj.tenantId.toString(),
       );
 
       // Combine role permissions and assignment permissions
       const rolePermissions = (role as any)?.permissions || [];
-      const allPermissions = [...new Set([...rolePermissions, ...assignmentPermissions])];
+      const allPermissions = [
+        ...new Set([...rolePermissions, ...assignmentPermissions]),
+      ];
 
       return {
         userId: userObj._id.toString(),
@@ -92,7 +94,7 @@ export class PermissionService {
    */
   static async hasPermission(
     userId: string,
-    permission: string
+    permission: string,
   ): Promise<PermissionCheckResult> {
     const context = await this.getUserPermissionContext(userId);
 
@@ -126,7 +128,7 @@ export class PermissionService {
    */
   static async hasAnyPermission(
     userId: string,
-    permissions: string[]
+    permissions: string[],
   ): Promise<PermissionCheckResult> {
     const context = await this.getUserPermissionContext(userId);
 
@@ -146,7 +148,7 @@ export class PermissionService {
     }
 
     const hasAnyPermission = permissions.some((permission) =>
-      context.permissions.includes(permission)
+      context.permissions.includes(permission),
     );
 
     return {
@@ -164,7 +166,7 @@ export class PermissionService {
    */
   static async hasAllPermissions(
     userId: string,
-    permissions: string[]
+    permissions: string[],
   ): Promise<PermissionCheckResult> {
     const context = await this.getUserPermissionContext(userId);
 
@@ -184,7 +186,7 @@ export class PermissionService {
     }
 
     const hasAllPermissions = permissions.every((permission) =>
-      context.permissions.includes(permission)
+      context.permissions.includes(permission),
     );
 
     return {
@@ -203,7 +205,7 @@ export class PermissionService {
   static async canAccessResource(
     userId: string,
     resource: string,
-    action: string
+    action: string,
   ): Promise<PermissionCheckResult> {
     const permission = `${resource}.${action}`;
     return this.hasPermission(userId, permission);
@@ -214,7 +216,7 @@ export class PermissionService {
    */
   static async canManageResource(
     userId: string,
-    resource: string
+    resource: string,
   ): Promise<PermissionCheckResult> {
     const permissions = [
       `${resource}.create`,
@@ -292,13 +294,25 @@ export class PermissionService {
       "admin.access",
       "admin.manageUsers",
       "admin.manageTenants",
+
+      // Time Entries
+      "timeEntries.view",
+      "timeEntries.create",
+      "timeEntries.edit",
+      "timeEntries.delete",
+      "timeEntries.viewOwn",
+      "timeEntries.editOwn",
+      "timeEntries.deleteOwn",
     ];
   }
 
   /**
    * Get dynamic permissions for a user based on their assignments
    */
-  static async getUserAssignmentPermissions(userId: string, tenantId: string): Promise<string[]> {
+  static async getUserAssignmentPermissions(
+    userId: string,
+    tenantId: string,
+  ): Promise<string[]> {
     const dynamicPermissions = new Set<string>();
 
     try {
@@ -310,43 +324,49 @@ export class PermissionService {
 
       const personnelId = personnel._id.toString();
 
+      // Baseline: any personnel can log their own time
+      dynamicPermissions.add("timeEntries.viewOwn");
+      dynamicPermissions.add("timeEntries.create");
+      dynamicPermissions.add("timeEntries.editOwn");
+      dynamicPermissions.add("timeEntries.deleteOwn");
+
       // Check if user is assigned to any tasks
       const assignedTasks = await Task.find({
         tenantId,
         assignees: personnelId,
-      }).select('workOrderId projectId');
+      }).select("workOrderId projectId");
 
       // Grant task-related permissions for assigned tasks
       if (assignedTasks.length > 0) {
-        dynamicPermissions.add('tasks.viewOwn');
-        dynamicPermissions.add('tasks.editOwn');
+        dynamicPermissions.add("tasks.viewOwn");
+        dynamicPermissions.add("tasks.editOwn");
       }
 
       // Check for work order permissions needed for assigned tasks
       const taskWorkOrderIds = assignedTasks
-        .filter(task => task.workOrderId)
-        .map(task => task.workOrderId);
+        .filter((task) => task.workOrderId)
+        .map((task) => task.workOrderId);
 
       if (taskWorkOrderIds.length > 0) {
         // Grant work order view permission for tasks' work orders
-        dynamicPermissions.add('workOrders.viewOwn');
+        dynamicPermissions.add("workOrders.viewOwn");
       }
 
       // Check if user is directly assigned to work orders
       const assignedWorkOrders = await WorkOrder.find({
         tenantId,
         personnelIds: personnelId,
-      }).select('_id');
+      }).select("_id");
 
       if (assignedWorkOrders.length > 0) {
         // Grant work order permissions for directly assigned work orders
-        dynamicPermissions.add('workOrders.viewOwn');
-        dynamicPermissions.add('workOrders.editOwn');
+        dynamicPermissions.add("workOrders.viewOwn");
+        dynamicPermissions.add("workOrders.editOwn");
       }
 
       return Array.from(dynamicPermissions);
     } catch (error) {
-      console.error('Error getting user assignment permissions:', error);
+      console.error("Error getting user assignment permissions:", error);
       return [];
     }
   }
@@ -408,6 +428,15 @@ export class PermissionService {
       ],
       Settings: ["settings.view", "settings.edit"],
       Admin: ["admin.access", "admin.manageUsers", "admin.manageTenants"],
+      "Time Entries": [
+        "timeEntries.view",
+        "timeEntries.create",
+        "timeEntries.edit",
+        "timeEntries.delete",
+        "timeEntries.viewOwn",
+        "timeEntries.editOwn",
+        "timeEntries.deleteOwn",
+      ],
     };
   }
 
@@ -434,7 +463,7 @@ export class PermissionService {
     userId: string,
     resource: string,
     action: string,
-    resourceOwnerId?: string
+    resourceOwnerId?: string,
   ): Promise<PermissionCheckResult> {
     // Check general permission first
     const generalCheck = await this.canAccessResource(userId, resource, action);

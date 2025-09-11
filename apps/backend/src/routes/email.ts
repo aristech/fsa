@@ -59,7 +59,7 @@ export async function createEmailTransporter() {
     await transporter.verify();
     const duration = Date.now() - startTime;
     console.log(
-      `✅ [${requestId}] Email server connection verified in ${duration}ms`
+      `✅ [${requestId}] Email server connection verified in ${duration}ms`,
     );
   } catch (error: any) {
     console.error(`❌ [${requestId}] Email server connection failed:`, {
@@ -82,6 +82,7 @@ interface PersonnelInvitationEmailData {
   companyName: string;
   loginUrl: string;
   temporaryPassword: string;
+  tenantSlug?: string;
 }
 
 // Magic link email data interfaces
@@ -91,6 +92,7 @@ interface MagicLinkEmailData {
   companyName: string;
   magicLink: string;
   expirationHours?: number;
+  tenantSlug?: string;
 }
 
 interface TenantActivationEmailData {
@@ -99,11 +101,12 @@ interface TenantActivationEmailData {
   companyName: string;
   magicLink: string;
   expirationHours?: number;
+  tenantSlug?: string;
 }
 
 // Send personnel invitation email
 export async function sendPersonnelInvitation(
-  data: PersonnelInvitationEmailData
+  data: PersonnelInvitationEmailData,
 ) {
   const startTime = Date.now();
   const requestId = Math.random().toString(36).substr(2, 9);
@@ -185,6 +188,18 @@ export async function sendPersonnelInvitation(
 
               <a href="${data.loginUrl}" class="button">Login to Platform</a>
 
+              ${
+                data.tenantSlug
+                  ? `
+              <div class="credentials" style="background-color: #fff9c4;">
+                <h3>About your Tenant Slug</h3>
+                <p>Your tenant slug is <strong>${data.tenantSlug}</strong>.</p>
+                <p>On the sign-in page, enter this value in the <em>Tenant Slug</em> field along with your email and password.</p>
+              </div>
+              `
+                  : ""
+              }
+
               <h3>What you can do:</h3>
               <ul>
                 <li>View and manage your assigned tasks</li>
@@ -220,6 +235,16 @@ export async function sendPersonnelInvitation(
 
       Login URL: ${data.loginUrl}
 
+      ${
+        data.tenantSlug
+          ? `
+      Tenant slug: ${data.tenantSlug}
+
+      Use this in the "Tenant Slug" field on the sign-in page.
+      `
+          : ""
+      }
+
       What you can do:
       - View and manage your assigned tasks
       - Track project progress
@@ -250,7 +275,7 @@ export async function sendPersonnelInvitation(
     const duration = Date.now() - startTime;
 
     console.log(
-      `✅ [${requestId}] Personnel invitation email sent successfully in ${duration}ms`
+      `✅ [${requestId}] Personnel invitation email sent successfully in ${duration}ms`,
     );
     console.log(`📧 [${requestId}] Message ID: ${result.messageId}`);
     console.log(`📧 [${requestId}] Response: ${result.response}`);
@@ -271,7 +296,7 @@ export async function sendPersonnelInvitation(
         command: error.command,
         response: error.response,
         responseCode: error.responseCode,
-      }
+      },
     );
 
     // Enhanced error handling
@@ -297,9 +322,7 @@ export async function sendPersonnelInvitation(
 }
 
 // Send personnel invitation with magic link
-export async function sendPersonnelMagicLink(
-  data: MagicLinkEmailData
-) {
+export async function sendPersonnelMagicLink(data: MagicLinkEmailData) {
   const startTime = Date.now();
   const requestId = Math.random().toString(36).substr(2, 9);
 
@@ -355,6 +378,7 @@ export async function sendPersonnelMagicLink(
           .button { display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: bold; }
           .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
           .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+          .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
         </style>
       </head>
       <body>
@@ -366,13 +390,13 @@ export async function sendPersonnelMagicLink(
           <div class="content">
             <h2>Hello ${data.name},</h2>
             <p>You've been invited to join <strong>${data.companyName}</strong> as a team member. We're excited to have you aboard!</p>
-            
+
             <p>To complete your account setup and create your secure password, please click the button below:</p>
-            
+
             <div style="text-align: center;">
               <a href="${data.magicLink}" class="button">Complete Account Setup</a>
             </div>
-            
+
             <div class="warning">
               <strong>⚠️ Important Security Information:</strong>
               <ul>
@@ -382,21 +406,32 @@ export async function sendPersonnelMagicLink(
                 <li>If you didn't expect this invitation, please ignore this email</li>
               </ul>
             </div>
-            
+
+            ${
+              data.tenantSlug
+                ? `
+            <div class="info">
+              <strong>ℹ️ Your Tenant Slug</strong>
+              <p>Your tenant slug is <strong>${data.tenantSlug}</strong>. You will need this on the sign-in page. Enter it in the <em>Tenant Slug</em> field together with your email.</p>
+            </div>
+            `
+                : ""
+            }
+
             <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
             <p style="background: #f1f1f1; padding: 10px; border-radius: 5px; word-break: break-all; font-family: monospace;">
               ${data.magicLink}
             </p>
-            
+
             <p>After clicking the link, you'll be able to:</p>
             <ul>
               <li>Create your secure password</li>
               <li>Access your account</li>
               <li>Start collaborating with your team</li>
             </ul>
-            
+
             <p>If you have any questions, please contact your administrator.</p>
-            
+
             <p>Welcome to the team!</p>
           </div>
           <div class="footer">
@@ -419,7 +454,7 @@ export async function sendPersonnelMagicLink(
     const duration = Date.now() - startTime;
 
     console.log(
-      `✅ [${requestId}] Personnel magic link email sent successfully in ${duration}ms`
+      `✅ [${requestId}] Personnel magic link email sent successfully in ${duration}ms`,
     );
     console.log(`📧 [${requestId}] Message ID: ${result.messageId}`);
 
@@ -436,16 +471,19 @@ export async function sendPersonnelMagicLink(
       {
         error: error.message,
         code: error.code,
-      }
+      },
     );
 
     let errorMessage = error.message;
     if (error.code === "EAUTH") {
-      errorMessage = "SMTP authentication failed. Please check your credentials.";
+      errorMessage =
+        "SMTP authentication failed. Please check your credentials.";
     } else if (error.code === "ECONNECTION") {
-      errorMessage = "SMTP connection failed. Please check your host and port settings.";
+      errorMessage =
+        "SMTP connection failed. Please check your host and port settings.";
     } else if (error.code === "ETIMEDOUT") {
-      errorMessage = "SMTP connection timed out. Please check your network connection.";
+      errorMessage =
+        "SMTP connection timed out. Please check your network connection.";
     }
 
     return {
@@ -459,12 +497,14 @@ export async function sendPersonnelMagicLink(
 
 // Send tenant activation magic link
 export async function sendTenantActivationMagicLink(
-  data: TenantActivationEmailData
+  data: TenantActivationEmailData,
 ) {
   const startTime = Date.now();
   const requestId = Math.random().toString(36).substr(2, 9);
 
-  console.log(`📧 [${requestId}] Starting tenant activation magic link email process`);
+  console.log(
+    `📧 [${requestId}] Starting tenant activation magic link email process`,
+  );
   console.log(`📧 [${requestId}] Recipient: ${data.to}`);
   console.log(`📧 [${requestId}] Tenant: ${data.tenantName}`);
 
@@ -515,6 +555,7 @@ export async function sendTenantActivationMagicLink(
           .button { display: inline-block; background: #4f46e5; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: bold; }
           .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
           .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+          .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
         </style>
       </head>
       <body>
@@ -526,13 +567,13 @@ export async function sendTenantActivationMagicLink(
           <div class="content">
             <h2>Hello ${data.tenantName},</h2>
             <p>Your tenant account for <strong>${data.companyName}</strong> has been created and is ready for activation!</p>
-            
+
             <p>To activate your account and set up your secure password, please click the button below:</p>
-            
+
             <div style="text-align: center;">
               <a href="${data.magicLink}" class="button">Activate Account</a>
             </div>
-            
+
             <div class="warning">
               <strong>⚠️ Important Security Information:</strong>
               <ul>
@@ -542,12 +583,23 @@ export async function sendTenantActivationMagicLink(
                 <li>If you didn't create this account, please ignore this email</li>
               </ul>
             </div>
-            
+            ${
+              data.tenantSlug
+                ? `
+            <div class="info">
+              <strong>ℹ️ Your Tenant Slug</strong>
+              <p>Your tenant slug is <strong>${data.tenantSlug}</strong>. You will use this on the sign-in page in the <em>Tenant Slug</em> field to access your workspace.</p>
+            </div>
+            `
+                : ""
+            }
+
+
             <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
             <p style="background: #f1f1f1; padding: 10px; border-radius: 5px; word-break: break-all; font-family: monospace;">
               ${data.magicLink}
             </p>
-            
+
             <p>After activation, you'll be able to:</p>
             <ul>
               <li>Set up your secure password</li>
@@ -555,9 +607,9 @@ export async function sendTenantActivationMagicLink(
               <li>Manage your organization</li>
               <li>Invite team members</li>
             </ul>
-            
+
             <p>If you have any questions, please contact our support team.</p>
-            
+
             <p>Welcome aboard!</p>
           </div>
           <div class="footer">
@@ -580,7 +632,7 @@ export async function sendTenantActivationMagicLink(
     const duration = Date.now() - startTime;
 
     console.log(
-      `✅ [${requestId}] Tenant activation magic link email sent successfully in ${duration}ms`
+      `✅ [${requestId}] Tenant activation magic link email sent successfully in ${duration}ms`,
     );
     console.log(`📧 [${requestId}] Message ID: ${result.messageId}`);
 
@@ -597,16 +649,19 @@ export async function sendTenantActivationMagicLink(
       {
         error: error.message,
         code: error.code,
-      }
+      },
     );
 
     let errorMessage = error.message;
     if (error.code === "EAUTH") {
-      errorMessage = "SMTP authentication failed. Please check your credentials.";
+      errorMessage =
+        "SMTP authentication failed. Please check your credentials.";
     } else if (error.code === "ECONNECTION") {
-      errorMessage = "SMTP connection failed. Please check your host and port settings.";
+      errorMessage =
+        "SMTP connection failed. Please check your host and port settings.";
     } else if (error.code === "ETIMEDOUT") {
-      errorMessage = "SMTP connection timed out. Please check your network connection.";
+      errorMessage =
+        "SMTP connection timed out. Please check your network connection.";
     }
 
     return {
@@ -726,7 +781,7 @@ export async function emailRoutes(fastify: FastifyInstance) {
           error: "Internal server error",
         });
       }
-    }
+    },
   );
 
   // POST /api/v1/email/personnel-invitation - Send personnel invitation
@@ -734,8 +789,14 @@ export async function emailRoutes(fastify: FastifyInstance) {
     "/personnel-invitation",
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { to, personnelName, companyName, loginUrl, temporaryPassword } =
-          request.body as PersonnelInvitationEmailData;
+        const {
+          to,
+          personnelName,
+          companyName,
+          loginUrl,
+          temporaryPassword,
+          tenantSlug,
+        } = request.body as PersonnelInvitationEmailData;
 
         if (
           !to ||
@@ -756,6 +817,7 @@ export async function emailRoutes(fastify: FastifyInstance) {
           companyName,
           loginUrl,
           temporaryPassword,
+          tenantSlug,
         });
 
         return reply.send(result);
@@ -766,6 +828,6 @@ export async function emailRoutes(fastify: FastifyInstance) {
           error: "Internal server error",
         });
       }
-    }
+    },
   );
 }

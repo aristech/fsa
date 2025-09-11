@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
-import { authenticate } from '../middleware/auth';
+import { authenticate } from "../middleware/auth";
 import { Tenant, Role } from "../models";
 import { User } from "../models/User";
 import { TenantSetupService } from "../services/tenant-setup";
@@ -107,101 +107,111 @@ export async function tenantRoutes(fastify: FastifyInstance) {
   // Require authentication for all tenant routes
   fastify.addHook("preHandler", authenticate);
   // POST /api/v1/tenants/register - Public tenant registration with magic link
-  fastify.post("/register", async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const validatedData = registerTenantSchema.parse(request.body);
+  fastify.post(
+    "/register",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const validatedData = registerTenantSchema.parse(request.body);
 
-      // Generate slug from company name if not provided
-      const slug = validatedData.slug || slugify(validatedData.companyName, { strict: true });
+        // Generate slug from company name if not provided
+        const slug =
+          validatedData.slug ||
+          slugify(validatedData.companyName, { strict: true });
 
-      // Check if tenant with same slug or admin email already exists
-      const existingTenant = await Tenant.findOne({
-        $or: [{ slug: slug }, { email: validatedData.adminEmail }],
-      });
-
-      if (existingTenant) {
-        return reply.status(400).send({
-          success: false,
-          message: "Company with this name or admin email already exists",
+        // Check if tenant with same slug or admin email already exists
+        const existingTenant = await Tenant.findOne({
+          $or: [{ slug: slug }, { email: validatedData.adminEmail }],
         });
-      }
 
-      // Create tenant record (inactive until magic link is used)
-      const tenantData = {
-        name: validatedData.companyName,
-        slug: slug,
-        email: validatedData.adminEmail,
-        isActive: false, // Will be activated when magic link is used
-      };
+        if (existingTenant) {
+          return reply.status(400).send({
+            success: false,
+            message: "Company with this name or admin email already exists",
+          });
+        }
 
-      const tenant = new Tenant(tenantData);
-      await tenant.save();
+        // Create tenant record (inactive until magic link is used)
+        const tenantData = {
+          name: validatedData.companyName,
+          slug: slug,
+          email: validatedData.adminEmail,
+          isActive: false, // Will be activated when magic link is used
+        };
 
-      // Create magic link for tenant activation
-      const magicLinkResult = await MagicLinkService.createMagicLink({
-        email: validatedData.adminEmail,
-        tenantId: tenant._id.toString(),
-        type: 'tenant_activation',
-        metadata: {
-          firstName: validatedData.adminFirstName,
-          lastName: validatedData.adminLastName,
-          phone: validatedData.adminPhone,
+        const tenant = new Tenant(tenantData);
+        await tenant.save();
+
+        // Create magic link for tenant activation
+        const magicLinkResult = await MagicLinkService.createMagicLink({
+          email: validatedData.adminEmail,
+          tenantId: tenant._id.toString(),
+          type: "tenant_activation",
+          metadata: {
+            firstName: validatedData.adminFirstName,
+            lastName: validatedData.adminLastName,
+            phone: validatedData.adminPhone,
+            companyName: validatedData.companyName,
+            tenantSlug: slug,
+          },
+          expirationHours: 48, // 48 hours for tenant activation
+        });
+
+        if (!magicLinkResult.success || !magicLinkResult.magicLink) {
+          // Clean up tenant if magic link creation fails
+          await Tenant.findByIdAndDelete(tenant._id);
+
+          return reply.status(500).send({
+            success: false,
+            message: "Failed to create activation link",
+          });
+        }
+
+        // Send activation email
+        const emailResult = await sendTenantActivationMagicLink({
+          to: validatedData.adminEmail,
+          tenantName: `${validatedData.adminFirstName} ${validatedData.adminLastName}`,
           companyName: validatedData.companyName,
+          magicLink: magicLinkResult.magicLink,
+          expirationHours: 48,
           tenantSlug: slug,
-        },
-        expirationHours: 48, // 48 hours for tenant activation
-      });
+        });
 
-      if (!magicLinkResult.success || !magicLinkResult.magicLink) {
-        // Clean up tenant if magic link creation fails
-        await Tenant.findByIdAndDelete(tenant._id);
-        
+        if (!emailResult.success) {
+          fastify.log.error(
+            `Failed to send activation email: ${emailResult.error}`,
+          );
+          // Don't fail the registration if email fails, but log it
+        }
+
+        return reply.status(201).send({
+          success: true,
+          data: {
+            tenantId: tenant._id,
+            companyName: validatedData.companyName,
+            adminEmail: validatedData.adminEmail,
+            message:
+              "Registration successful! Please check your email for the activation link.",
+          },
+          message:
+            "Tenant registration initiated. Please check your email to complete activation.",
+        });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({
+            success: false,
+            message: "Validation error",
+            errors: error.issues,
+          });
+        }
+
+        fastify.log.error(error as Error, "Error registering tenant");
         return reply.status(500).send({
           success: false,
-          message: "Failed to create activation link",
+          message: "Failed to register tenant",
         });
       }
-
-      // Send activation email
-      const emailResult = await sendTenantActivationMagicLink({
-        to: validatedData.adminEmail,
-        tenantName: `${validatedData.adminFirstName} ${validatedData.adminLastName}`,
-        companyName: validatedData.companyName,
-        magicLink: magicLinkResult.magicLink,
-        expirationHours: 48,
-      });
-
-      if (!emailResult.success) {
-        fastify.log.error(`Failed to send activation email: ${emailResult.error}`);
-        // Don't fail the registration if email fails, but log it
-      }
-
-      return reply.status(201).send({
-        success: true,
-        data: {
-          tenantId: tenant._id,
-          companyName: validatedData.companyName,
-          adminEmail: validatedData.adminEmail,
-          message: "Registration successful! Please check your email for the activation link.",
-        },
-        message: "Tenant registration initiated. Please check your email to complete activation.",
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return reply.status(400).send({
-          success: false,
-          message: "Validation error",
-          errors: error.issues,
-        });
-      }
-
-      fastify.log.error(error as Error, "Error registering tenant");
-      return reply.status(500).send({
-        success: false,
-        message: "Failed to register tenant",
-      });
-    }
-  });
+    },
+  );
 
   // GET /api/v1/tenants - Get all tenants
   fastify.get("/", async (request: FastifyRequest, reply: FastifyReply) => {
@@ -282,8 +292,8 @@ export async function tenantRoutes(fastify: FastifyInstance) {
       }
 
       // Ensure caller is superuser
-      const caller = await User.findById(userId).select('role');
-      if (!caller || caller.role !== 'superuser') {
+      const caller = await User.findById(userId).select("role");
+      if (!caller || caller.role !== "superuser") {
         return reply.status(403).send({
           success: false,
           message: "Only superusers can create tenants",
@@ -297,14 +307,13 @@ export async function tenantRoutes(fastify: FastifyInstance) {
       };
 
       // Setup new tenant with default roles and create tenant owner
-      const { tenant, roles, owner } = await TenantSetupService.setupNewTenant(
-        tenantData
-      );
+      const { tenant, roles, owner } =
+        await TenantSetupService.setupNewTenant(tenantData);
 
       // Send magic link invitation to tenant owner
       try {
         fastify.log.info(
-          `📧 Sending tenant activation magic link to: ${validatedData.email}`
+          `📧 Sending tenant activation magic link to: ${validatedData.email}`,
         );
 
         // Create magic link for tenant activation
@@ -312,7 +321,7 @@ export async function tenantRoutes(fastify: FastifyInstance) {
           email: validatedData.email,
           tenantId: tenant._id.toString(),
           userId: owner._id.toString(),
-          type: 'tenant_activation',
+          type: "tenant_activation",
           metadata: {
             tenantName: validatedData.name,
             companyName: validatedData.name,
@@ -329,25 +338,26 @@ export async function tenantRoutes(fastify: FastifyInstance) {
             companyName: validatedData.name,
             magicLink: magicLinkResult.magicLink,
             expirationHours: 72,
+            tenantSlug: tenant.slug,
           });
 
           if (emailResult.success) {
             fastify.log.info(
-              `✅ Tenant activation email sent successfully to: ${validatedData.email}`
+              `✅ Tenant activation email sent successfully to: ${validatedData.email}`,
             );
           } else {
             fastify.log.error(
-              `❌ Failed to send tenant activation email: ${emailResult.error}`
+              `❌ Failed to send tenant activation email: ${emailResult.error}`,
             );
           }
         } else {
           fastify.log.error(
-            `❌ Failed to create magic link for tenant activation: ${magicLinkResult.error}`
+            `❌ Failed to create magic link for tenant activation: ${magicLinkResult.error}`,
           );
         }
       } catch (emailError) {
         fastify.log.error(
-          `❌ Error sending tenant activation email: ${emailError}`
+          `❌ Error sending tenant activation email: ${emailError}`,
         );
         // Don't fail the tenant creation if email fails
       }
@@ -367,7 +377,8 @@ export async function tenantRoutes(fastify: FastifyInstance) {
             isActive: owner.isActive,
           },
         },
-        message: "Tenant created successfully with default roles. Activation email sent to tenant owner.",
+        message:
+          "Tenant created successfully with default roles. Activation email sent to tenant owner.",
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -415,7 +426,7 @@ export async function tenantRoutes(fastify: FastifyInstance) {
       const tenant = await Tenant.findByIdAndUpdate(
         id,
         { ...validatedData, updatedAt: new Date() },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       );
 
       if (!tenant) {
@@ -457,7 +468,7 @@ export async function tenantRoutes(fastify: FastifyInstance) {
         const tenant = await Tenant.findByIdAndUpdate(
           id,
           { isActive: false, updatedAt: new Date() },
-          { new: true }
+          { new: true },
         );
 
         if (!tenant) {
@@ -478,7 +489,7 @@ export async function tenantRoutes(fastify: FastifyInstance) {
           message: "Failed to delete tenant",
         });
       }
-    }
+    },
   );
 
   // POST /api/v1/tenants/:id/setup - Setup default roles for existing tenant
@@ -517,6 +528,6 @@ export async function tenantRoutes(fastify: FastifyInstance) {
           message: "Failed to setup tenant",
         });
       }
-    }
+    },
   );
 }

@@ -11,6 +11,7 @@ export type SignInParams = {
   email: string;
   password: string;
   tenantSlug?: string;
+  rememberMe?: boolean;
 };
 
 export type SignUpParams = {
@@ -28,6 +29,7 @@ export const signInWithPassword = async ({
   email,
   password,
   tenantSlug,
+  rememberMe,
 }: SignInParams): Promise<void> => {
   try {
     const params = {
@@ -45,7 +47,7 @@ export const signInWithPassword = async ({
       throw new Error('Access token not found in response');
     }
 
-    setSession(accessToken);
+    setSession(accessToken, { remember: !!rememberMe });
   } catch (error) {
     console.error('Error during sign in:', error);
     throw error;

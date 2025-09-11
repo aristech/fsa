@@ -74,12 +74,12 @@ const TenantSchema = new Schema<ITenant>(
       city: { type: String, trim: true },
       state: { type: String, trim: true },
       zipCode: { type: String, trim: true },
-      country: { type: String, trim: true, default: "US" },
+      country: { type: String, trim: true, default: "GR" },
     },
     settings: {
-      timezone: { type: String, default: "America/New_York" },
-      currency: { type: String, default: "USD" },
-      dateFormat: { type: String, default: "MM/DD/YYYY" },
+      timezone: { type: String, default: "Europe/Athens" },
+      currency: { type: String, default: "EUR" },
+      dateFormat: { type: String, default: "DD/MM/YYYY" },
       workingHours: {
         start: { type: String, default: "09:00" },
         end: { type: String, default: "17:00" },
@@ -107,7 +107,7 @@ const TenantSchema = new Schema<ITenant>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // ----------------------------------------------------------------------

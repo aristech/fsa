@@ -69,10 +69,17 @@ export function tokenExpired(exp: number) {
 
 // ----------------------------------------------------------------------
 
-export async function setSession(accessToken: string | null) {
+export async function setSession(accessToken: string | null, opts?: { remember?: boolean }) {
   try {
     if (accessToken) {
-      sessionStorage.setItem(JWT_STORAGE_KEY, accessToken);
+      const useLocal = opts?.remember === true;
+      if (useLocal) {
+        localStorage.setItem(JWT_STORAGE_KEY, accessToken);
+        sessionStorage.removeItem(JWT_STORAGE_KEY);
+      } else {
+        sessionStorage.setItem(JWT_STORAGE_KEY, accessToken);
+        localStorage.removeItem(JWT_STORAGE_KEY);
+      }
 
       axios.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
 
@@ -85,6 +92,7 @@ export async function setSession(accessToken: string | null) {
       }
     } else {
       sessionStorage.removeItem(JWT_STORAGE_KEY);
+      localStorage.removeItem(JWT_STORAGE_KEY);
       delete axios.defaults.headers.common.Authorization;
     }
   } catch (error) {

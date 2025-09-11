@@ -130,6 +130,45 @@ The application uses MongoDB with the following main collections:
 - ✅ Automatic cache revalidation
 - ✅ Optimistic updates
 
+## 🕒 Time Entry System (Design & Tasks)
+
+### Objectives
+- **Enable personnel to log time** on task details (hours or days) with effortless UX.
+- **Convert days↔hours** using a working-day baseline (default 8 hours; configurable later).
+- **Snapshot hourly rate** at entry time to compute precise labor cost.
+- **Roll up totals** to `Task.actualHours` and `WorkOrder.actualDuration`/`cost.labor`.
+- **Respect tenant isolation and permissions** across Personnel, Tasks, and Work Orders.
+- **Provide reports** by personnel/work order/date range with CSV export.
+
+### Backend Scope
+- **API design**: REST endpoints for create/list/update/delete time entries; summaries and reports.
+- **Validation**: Tenant checks; personnel assignment checks; date/hours/days normalization.
+- **Conversion & Cost**: `hours = days * workingDayHours`; `days = hours / workingDayHours`; `cost = hours * hourlyRate`.
+- **Aggregations**: Recompute task and work order totals on write operations.
+- **Realtime**: Emit `time:created|updated|deleted` to task rooms.
+
+### Frontend Scope
+- **API client/actions** for time entries.
+- **Task details – Time tab**: entry form, list, totals, and cost per personnel and overall.
+- **Work order rollups**: display actual duration and labor cost.
+- **Reports UI**: filters by personnel/work order/date range; CSV export.
+
+### Task Breakdown
+1. Design backend time entry API (endpoints, payloads, validation, responses)
+2. Implement time conversion and cost helpers (hours↔days, workingDayHours)
+3. Create CRUD routes in `apps/backend/src/routes/time-entries.ts` with tenant isolation
+4. Enforce permissions: only assigned personnel can create/update; admins manage all
+5. Compute and persist cost snapshot from `Personnel.hourlyRate` on create/update
+6. Aggregate and update `Task.actualHours` and `WorkOrder.actualDuration`/`cost.labor`
+7. Emit realtime events for time entries (`time:created|updated|deleted`) to task rooms
+8. Add frontend API client/actions and types for time entries
+9. Add Time tab in task details with entry form, list, totals, and cost
+10. Show work order time/cost rollups in work order list/details
+11. Add reporting endpoints (by work order, by personnel, by date range) and CSV export
+12. Write migrations/backfill to initialize aggregates from existing entries
+13. Add unit/integration/e2e tests (backend routes, permissions, aggregates, UI flows)
+14. Document API, UI usage, and operational notes (working day hours config)
+
 ## 🔄 Data Flow
 
 1. **Client Selection**: Users select a client from the workspace popover

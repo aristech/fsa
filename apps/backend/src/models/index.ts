@@ -16,3 +16,5 @@ export { Certification, type ICertification } from "./Certification";
 export { Subtask, type ISubtask } from "./Subtask";
 export { Comment, type IComment } from "./Comment";
 export { MagicLink, type IMagicLink } from "./MagicLink";
+export { Counter, type ICounter } from "./counter";
+export { TimeEntry, type ITimeEntry } from "./TimeEntry";

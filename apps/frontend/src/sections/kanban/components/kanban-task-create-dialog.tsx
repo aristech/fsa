@@ -72,41 +72,41 @@ export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Pro
   );
 
   // Fetch priorities from kanban meta
-  const { data: kanbanMeta } = useSWR(
-    open ? '/api/v1/kanban/meta' : null,
-    async (url) => {
-      const response = await axiosInstance.get(url);
-      return response.data;
-    }
-  );
+  const { data: kanbanMeta } = useSWR(open ? '/api/v1/kanban/meta' : null, async (url) => {
+    const response = await axiosInstance.get(url);
+    return response.data;
+  });
 
   // Fetch clients for selection
-  const { data: clientsData } = useSWR(
-    open ? '/api/v1/clients?limit=100' : null,
-    async (url) => {
-      try {
-        const response = await axiosInstance.get(url);
-        return response.data;
-      } catch (error) {
-        console.error('Error fetching clients in Create Task:', error);
-        throw error;
-      }
+  const { data: clientsData } = useSWR(open ? '/api/v1/clients?limit=100' : null, async (url) => {
+    try {
+      const response = await axiosInstance.get(url);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching clients in Create Task:', error);
+      throw error;
     }
-  );
+  });
 
-  const workOrders = useMemo(() => 
-    Array.isArray(workOrdersData?.data?.workOrders) ? workOrdersData.data.workOrders : [], 
+  const workOrders = useMemo(
+    () => (Array.isArray(workOrdersData?.data?.workOrders) ? workOrdersData.data.workOrders : []),
     [workOrdersData?.data?.workOrders]
   );
   const personnel = Array.isArray(personnelData?.data) ? personnelData.data : [];
   const priorities = Array.isArray(kanbanMeta?.data?.priorities) ? kanbanMeta.data.priorities : [];
   const clients = Array.isArray(clientsData?.data?.clients) ? clientsData.data.clients : [];
 
-
   // Date range picker for start and due dates
   const rangePicker = useDateRangePicker(null, null);
 
-  const { control, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<TaskFormData>({
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    watch,
+    setValue,
+  } = useForm<TaskFormData>({
     resolver: zodResolver(TaskSchema),
     defaultValues: {
       name: '',
@@ -120,6 +120,7 @@ export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Pro
   });
 
   const watchedWorkOrderId = watch('workOrderId');
+  const watchedClientId = watch('clientId');
 
   // Auto-populate assignees when work order is selected
   useEffect(() => {
@@ -128,8 +129,14 @@ export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Pro
       if (selectedWorkOrder?.personnelIds) {
         setValue('assignees', selectedWorkOrder.personnelIds);
       }
+      // Also auto-select client from the selected work order
+      const woClient = selectedWorkOrder?.clientId;
+      const derivedClientId = woClient && typeof woClient === 'object' ? woClient._id : woClient;
+      if (derivedClientId && derivedClientId !== watchedClientId) {
+        setValue('clientId', derivedClientId, { shouldDirty: true, shouldValidate: true });
+      }
     }
-  }, [watchedWorkOrderId, workOrders, setValue]);
+  }, [watchedWorkOrderId, watchedClientId, workOrders, setValue]);
 
   const onSubmit = handleSubmit(async (data) => {
     setIsSubmitting(true);
@@ -155,16 +162,26 @@ export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Pro
           clientCompany: selectedClientFromForm.company,
         }),
         // Fallback to context client if no form selection
-        ...(!selectedClientFromForm && selectedClient && {
-          clientId: selectedClient._id,
-          clientName: selectedClient.name,
-          clientCompany: selectedClient.company,
-        }),
+        ...(!selectedClientFromForm &&
+          selectedClient && {
+            clientId: selectedClient._id,
+            clientName: selectedClient.name,
+            clientCompany: selectedClient.company,
+          }),
+        // Final fallback: derive client from selected work order if available
+        ...(!selectedClientFromForm &&
+          !selectedClient &&
+          selectedWorkOrder?.clientId && {
+            clientId: (selectedWorkOrder.clientId as any)?._id || selectedWorkOrder.clientId,
+            clientName: (selectedWorkOrder.clientId as any)?.name,
+            clientCompany: (selectedWorkOrder.clientId as any)?.company,
+          }),
       };
 
       const response = await axiosInstance.post('/api/v1/kanban', {
         endpoint: 'create-task',
         taskData,
+        columnId: status, // pass the selected column id; backend will map to status
       });
 
       if (response.data.success) {
@@ -185,7 +202,6 @@ export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Pro
     rangePicker.onReset?.();
     onClose();
   }, [reset, rangePicker, onClose]);
-
 
   return (
     <Drawer
@@ -230,7 +246,7 @@ export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Pro
               )}
             />
 
-           {/* Client Information */}
+            {/* Client Information */}
             {selectedClient && (
               <Box>
                 <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary' }}>
@@ -243,8 +259,6 @@ export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Pro
                 />
               </Box>
             )}
-
-            
 
             {/* Work Order */}
             <Controller
@@ -329,7 +343,11 @@ export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Pro
                         label={option.name || 'Unknown'}
                         avatar={
                           <Avatar>
-                            {option.name?.split(' ').map((n: string) => n.charAt(0)).join('').toUpperCase() || 'P'}
+                            {option.name
+                              ?.split(' ')
+                              .map((n: string) => n.charAt(0))
+                              .join('')
+                              .toUpperCase() || 'P'}
                           </Avatar>
                         }
                         size="small"
@@ -343,14 +361,12 @@ export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Pro
               )}
             />
 
-            
-
             {/* Date Range */}
             <Box>
               <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary' }}>
                 Task Schedule (Optional)
               </Typography>
-              
+
               <Button
                 variant="outlined"
                 startIcon={<Iconify icon="solar:calendar-date-bold" />}
@@ -364,8 +380,7 @@ export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Pro
               >
                 {rangePicker.startDate || rangePicker.endDate
                   ? `${rangePicker.startDate?.format('MMM DD, YYYY') || 'Start date'} - ${rangePicker.endDate?.format('MMM DD, YYYY') || 'Due date'}`
-                  : 'Choose task dates'
-                }
+                  : 'Choose task dates'}
               </Button>
 
               <CustomDateRangePicker
@@ -380,9 +395,7 @@ export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Pro
               />
             </Box>
 
-            
-
-             {/* Description */}
+            {/* Description */}
             <Controller
               name="description"
               control={control}

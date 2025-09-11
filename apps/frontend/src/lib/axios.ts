@@ -17,7 +17,8 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use((config) => {
   // Check if we're in browser environment
   if (typeof window !== 'undefined') {
-    const token = sessionStorage.getItem('jwt_access_token');
+    const token =
+      sessionStorage.getItem('jwt_access_token') || localStorage.getItem('jwt_access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -87,6 +88,12 @@ export const endpoints = {
   },
   // Field Service Automation API endpoints
   fsa: {
+    timeEntries: {
+      list: '/api/v1/time-entries',
+      create: '/api/v1/time-entries',
+      update: (id: string) => `/api/v1/time-entries/${id}`,
+      delete: (id: string) => `/api/v1/time-entries/${id}`,
+    },
     workOrders: {
       list: '/api/v1/work-orders',
       create: '/api/v1/work-orders',

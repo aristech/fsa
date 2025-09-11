@@ -33,7 +33,8 @@ const updateRoleSchema = z.object({
 // Roles routes
 export async function rolesRoutes(fastify: FastifyInstance) {
   // Normalize permission slugs (e.g., work_orders.view -> workOrders.view)
-  const snakeToCamel = (input: string) => input.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+  const snakeToCamel = (input: string) =>
+    input.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
   const normalizePermission = (perm: string) => {
     const [resource, action] = perm.split(".");
     if (!action) return perm;
@@ -52,18 +53,16 @@ export async function rolesRoutes(fastify: FastifyInstance) {
     return authenticate(request, reply);
   });
 
-  // GET /api/v1/roles - Get all roles
+  // GET /api/v1/roles - Get all roles (scoped to authenticated tenant)
   fastify.get("/", async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { includeInactive } = request.query as { includeInactive?: string };
-
-      // Get tenant
-      const tenant = await Tenant.findOne({ isActive: true });
+      const req = request as any;
+      const tenant = req.context?.tenant;
       if (!tenant) {
-        return reply.status(404).send({
-          success: false,
-          message: "No active tenant found",
-        });
+        return reply
+          .status(401)
+          .send({ success: false, message: "Unauthorized" });
       }
 
       const query: any = { tenantId: tenant._id };
@@ -88,23 +87,25 @@ export async function rolesRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // POST /api/v1/roles - Create new role
+  // POST /api/v1/roles - Create new role (scoped to authenticated tenant)
   fastify.post(
     "/",
     {
-      preHandler: requireAnyPermission(["roles.create", "roles.manage", "admin.access"]),
+      preHandler: requireAnyPermission([
+        "roles.create",
+        "roles.manage",
+        "admin.access",
+      ]),
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const validatedData = createRoleSchema.parse(request.body);
-
-        // Get tenant
-        const tenant = await Tenant.findOne({ isActive: true });
+        const req = request as any;
+        const tenant = req.context?.tenant;
         if (!tenant) {
-          return reply.status(404).send({
-            success: false,
-            message: "No active tenant found",
-          });
+          return reply
+            .status(401)
+            .send({ success: false, message: "Unauthorized" });
         }
 
         // Generate slug from name
@@ -138,7 +139,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
           fastify.log.error(`Mongoose save error: ${err?.message}`);
           return reply.status(400).send({
             success: false,
-            message: 'Failed to create role. It may already exist.',
+            message: "Failed to create role. It may already exist.",
             error: err?.message,
           });
         }
@@ -163,26 +164,28 @@ export async function rolesRoutes(fastify: FastifyInstance) {
           message: "Failed to create role",
         });
       }
-    }
+    },
   );
 
-  // GET /api/v1/roles/:id - Get role by ID
+  // GET /api/v1/roles/:id - Get role by ID (tenant-scoped)
   fastify.get(
     "/:id",
     {
-      preHandler: requireAnyPermission(["roles.view", "roles.manage", "admin.access"]),
+      preHandler: requireAnyPermission([
+        "roles.view",
+        "roles.manage",
+        "admin.access",
+      ]),
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { id } = request.params as { id: string };
-
-        // Get tenant
-        const tenant = await Tenant.findOne({ isActive: true });
+        const req = request as any;
+        const tenant = req.context?.tenant;
         if (!tenant) {
-          return reply.status(404).send({
-            success: false,
-            message: "No active tenant found",
-          });
+          return reply
+            .status(401)
+            .send({ success: false, message: "Unauthorized" });
         }
 
         const role = await Role.findOne({
@@ -208,27 +211,29 @@ export async function rolesRoutes(fastify: FastifyInstance) {
           message: "Failed to fetch role",
         });
       }
-    }
+    },
   );
 
-  // PUT /api/v1/roles/:id - Update role
+  // PUT /api/v1/roles/:id - Update role (tenant-scoped)
   fastify.put(
     "/:id",
     {
-      preHandler: requireAnyPermission(["roles.edit", "roles.manage", "admin.access"]),
+      preHandler: requireAnyPermission([
+        "roles.edit",
+        "roles.manage",
+        "admin.access",
+      ]),
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { id } = request.params as { id: string };
         const validatedData = updateRoleSchema.parse(request.body);
-
-        // Get tenant
-        const tenant = await Tenant.findOne({ isActive: true });
+        const req = request as any;
+        const tenant = req.context?.tenant;
         if (!tenant) {
-          return reply.status(404).send({
-            success: false,
-            message: "No active tenant found",
-          });
+          return reply
+            .status(401)
+            .send({ success: false, message: "Unauthorized" });
         }
 
         const role = await Role.findOne({
@@ -268,7 +273,9 @@ export async function rolesRoutes(fastify: FastifyInstance) {
         // Update role, normalizing permissions if provided
         const updatePayload: any = { ...validatedData };
         if (validatedData.permissions) {
-          updatePayload.permissions = normalizePermissions(validatedData.permissions);
+          updatePayload.permissions = normalizePermissions(
+            validatedData.permissions,
+          );
         }
         Object.assign(role, updatePayload);
         await role.save();
@@ -293,26 +300,28 @@ export async function rolesRoutes(fastify: FastifyInstance) {
           message: "Failed to update role",
         });
       }
-    }
+    },
   );
 
-  // DELETE /api/v1/roles/:id - Delete role
+  // DELETE /api/v1/roles/:id - Delete role (tenant-scoped)
   fastify.delete(
     "/:id",
     {
-      preHandler: requireAnyPermission(["roles.delete", "roles.manage", "admin.access"]),
+      preHandler: requireAnyPermission([
+        "roles.delete",
+        "roles.manage",
+        "admin.access",
+      ]),
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { id } = request.params as { id: string };
-
-        // Get tenant
-        const tenant = await Tenant.findOne({ isActive: true });
+        const req = request as any;
+        const tenant = req.context?.tenant;
         if (!tenant) {
-          return reply.status(404).send({
-            success: false,
-            message: "No active tenant found",
-          });
+          return reply
+            .status(401)
+            .send({ success: false, message: "Unauthorized" });
         }
 
         const role = await Role.findOne({
@@ -335,8 +344,11 @@ export async function rolesRoutes(fastify: FastifyInstance) {
           });
         }
 
-        // Check if role is being used by any personnel
-        const personnelCount = await Personnel.countDocuments({ roleId: id });
+        // Check if role is being used by any personnel in this tenant
+        const personnelCount = await Personnel.countDocuments({
+          roleId: id,
+          tenantId: tenant._id,
+        });
         if (personnelCount > 0) {
           return reply.status(400).send({
             success: false,
@@ -357,6 +369,6 @@ export async function rolesRoutes(fastify: FastifyInstance) {
           message: "Failed to delete role",
         });
       }
-    }
+    },
   );
 }

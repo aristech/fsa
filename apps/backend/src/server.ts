@@ -8,6 +8,8 @@ import { connectDB } from "./utils/database";
 import { registerRoutes } from "./routes";
 import { realtimeService } from "./services/realtime-service";
 import { ensureSuperUsers } from "./services/superuser-bootstrap";
+import { fixWorkOrderIndexes } from "./services/index-maintenance";
+import { TaskMigrationService } from "./services/task-migration";
 
 const fastify = Fastify({
   logger: {
@@ -81,6 +83,18 @@ async function start() {
 
     // Ensure superusers exist (from env)
     await ensureSuperUsers();
+
+    // Ensure indexes and drop legacy ones
+    await fixWorkOrderIndexes();
+
+    // Migrate tasks to use columnId architecture
+    await TaskMigrationService.migrateTasksToColumnIds();
+    const migrationValid = await TaskMigrationService.verifyMigration();
+    if (!migrationValid) {
+      console.warn(
+        "⚠️  Task migration verification failed - some tasks may not display correctly",
+      );
+    }
 
     // Start server
     await fastify.listen({

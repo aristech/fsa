@@ -28,10 +28,15 @@ export function AuthProvider({ children }: Props) {
 
   const checkUserSession = useCallback(async () => {
     try {
-      const accessToken = sessionStorage.getItem(JWT_STORAGE_KEY);
+      // Prefer sessionStorage, fall back to localStorage (for remember me)
+      const accessToken =
+        sessionStorage.getItem(JWT_STORAGE_KEY) || localStorage.getItem(JWT_STORAGE_KEY);
 
       if (accessToken && isValidToken(accessToken)) {
-        setSession(accessToken);
+        setSession(accessToken, {
+          // keep it where it was found to avoid bouncing between storages
+          remember: !!localStorage.getItem(JWT_STORAGE_KEY),
+        });
 
         const res = await axios.get(endpoints.auth.me);
 

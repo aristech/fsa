@@ -35,6 +35,8 @@ import { Scrollbar } from 'src/components/scrollbar';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
+import { View403 } from 'src/sections/error';
+
 // ----------------------------------------------------------------------
 
 const swrOptions: SWRConfiguration = {
@@ -126,7 +128,10 @@ export function WorkOrderList() {
     : `${endpoints.fsa.workOrders.list}?page=${page + 1}&limit=${rowsPerPage}`;
 
   // Fetch work orders data
-  const { data, error, isLoading, mutate } = useSWR<{ success: boolean; data: { workOrders: WorkOrder[]; pagination: { total: number; pages: number } } }>(apiUrl, fetcher, swrOptions);
+  const { data, error, isLoading, mutate } = useSWR<{
+    success: boolean;
+    data: { workOrders: WorkOrder[]; pagination: { total: number; pages: number } };
+  }>(apiUrl, fetcher, swrOptions);
 
   const workOrders = data?.data?.workOrders ?? [];
   const pagination = data?.data?.pagination ?? { total: 0, pages: 0 };
@@ -150,11 +155,7 @@ export function WorkOrderList() {
   }
 
   if (error) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <Typography color="error">Failed to load work orders</Typography>
-      </Box>
-    );
+    return <View403 />;
   }
 
   return (
@@ -199,7 +200,11 @@ export function WorkOrderList() {
                 <TableRow>
                   <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                     <Stack spacing={2} alignItems="center">
-                      <Iconify icon="solar:file-text-bold" width={48} sx={{ color: 'text.disabled' }} />
+                      <Iconify
+                        icon="solar:file-text-bold"
+                        width={48}
+                        sx={{ color: 'text.disabled' }}
+                      />
                       <Typography variant="h6" color="text.secondary">
                         {clientId ? 'No work orders found for this client' : 'No work orders found'}
                       </Typography>
@@ -262,7 +267,8 @@ export function WorkOrderList() {
                         />
                         <Typography variant="caption" color="text.secondary">
                           {`${row.tasksCompleted ?? 0}/${row.tasksTotal ?? 0} completed`}
-                          {typeof row.tasksInProgress === 'number' ? ` • ${row.tasksInProgress ?? 0} in progress`
+                          {typeof row.tasksInProgress === 'number'
+                            ? ` • ${row.tasksInProgress ?? 0} in progress`
                             : ''}
                         </Typography>
                       </Stack>

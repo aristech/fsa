@@ -10,8 +10,9 @@ export interface ITask extends Document {
   tenantId: string;
   title: string;
   description?: string;
-  status: "todo" | "in-progress" | "review" | "done" | "cancel";
-  priority: typeof PRIORITY_VALUES[number];
+  columnId: string; // Reference to Status (column) _id
+  status?: "todo" | "in-progress" | "review" | "done" | "cancel"; // Legacy field, keep for migration
+  priority: (typeof PRIORITY_VALUES)[number];
   projectId?: string;
   workOrderId?: string;
   workOrderNumber?: string; // Human-readable work order reference
@@ -53,10 +54,16 @@ const TaskSchema = new Schema<ITask>(
       type: String,
       trim: true,
     },
+    columnId: {
+      type: String,
+      required: true,
+      ref: "Status",
+      index: true,
+    },
     status: {
       type: String,
       enum: ["todo", "in-progress", "review", "done", "cancel"],
-      default: "todo",
+      // Remove default - this becomes a legacy field
     },
     priority: {
       type: String,
@@ -145,14 +152,15 @@ const TaskSchema = new Schema<ITask>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Indexes
 TaskSchema.index({ tenantId: 1, projectId: 1 });
 TaskSchema.index({ tenantId: 1, workOrderId: 1 });
 TaskSchema.index({ tenantId: 1, assignees: 1 });
-TaskSchema.index({ tenantId: 1, status: 1 });
+TaskSchema.index({ tenantId: 1, columnId: 1 }); // Primary index for column-based queries
+TaskSchema.index({ tenantId: 1, status: 1 }); // Keep for migration compatibility
 TaskSchema.index({ tenantId: 1, priority: 1 });
 TaskSchema.index({ tenantId: 1, clientId: 1 });
 

@@ -22,6 +22,7 @@ import { useTenantAPI } from 'src/hooks/use-tenant';
 import axiosInstance from 'src/lib/axios';
 import { CONFIG } from 'src/global-config';
 
+import { toast } from 'src/components/snackbar';
 import { Form, RHFTextField } from 'src/components/hook-form';
 
 // ----------------------------------------------------------------------
@@ -65,7 +66,6 @@ const schema = zod.object({
     })
     .optional(),
 });
-
 
 // ----------------------------------------------------------------------
 
@@ -154,8 +154,6 @@ export function PersonnelCreateView({
             console.error('Error fetching personnel:', error);
           }
         }
-
-      
 
         // Fetch available data using correct endpoints
         const rolesUrl = `/api/v1/roles/`;
@@ -251,39 +249,36 @@ export function PersonnelCreateView({
       email: data.email,
       phone: data.phone,
       userId: data.userId || undefined,
-      ...( !isEdit && data.sendInvitation ? { sendInvitation: true } : {} ),
+      ...(!isEdit && data.sendInvitation ? { sendInvitation: true } : {}),
     };
 
-    const res = await axiosInstance({
-      url: endpoint,
-      method,
-      data: payload,
-    });
-
-    if (res.status >= 200 && res.status < 300) {
-      reset();
-      onClose();
-      onCreated?.();
-      // Optionally refresh list view
+    try {
+      const res = await axiosInstance({ url: endpoint, method, data: payload });
+      if (res.status >= 200 && res.status < 300) {
+        reset();
+        onClose();
+        onCreated?.();
+        toast.success(isEdit ? 'Personnel updated' : 'Personnel created');
+      }
+    } catch (error: any) {
+      const message = String(error?.message || 'Failed to save personnel');
+      const lower = message.toLowerCase();
+      // Friendly message for existing email/user in tenant
+      if (
+        lower.includes('already exists') ||
+        lower.includes('personnel record') ||
+        lower.includes('user email exists')
+      ) {
+        toast.warning('User email already exists in the database.');
+      } else if (lower.includes('validation')) {
+        toast.error('Please check the form fields and try again.');
+      } else {
+        toast.error(message);
+      }
     }
   });
 
   const roleOptions = useMemo(() => roles.map((r) => ({ label: r.name, id: r._id })), [roles]);
-  const userOptions = useMemo(
-    () => users.map((u) => ({ label: `${u.name} (${u.email})`, id: u._id })),
-    [users]
-  );
-
-  const handleAddRole = async (name: string) => {
-    const res = await axiosInstance.post('/api/v1/roles/', { name });
-    const json = res.data;
-    if (json?.data) setRoles((prev) => [...prev, json.data]);
-  };
-
-  const handleDeleteRole = async (id: string) => {
-    await axiosInstance.delete(`/api/v1/roles/?id=${id}`);
-    setRoles((prev) => prev.filter((r) => r._id !== id));
-  };
 
   return (
     <Drawer

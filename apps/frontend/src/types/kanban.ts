@@ -29,6 +29,7 @@ export type IKanbanTask = {
   id: string;
   name: string;
   status: string;
+  columnId?: string; // Reference to column _id
   priority: string;
   labels: string[];
   tags?: string[];
@@ -60,4 +61,38 @@ export type IKanbanColumn = {
 export type IKanban = {
   columns: IKanbanColumn[];
   tasks: Record<IKanbanColumn['id'], IKanbanTask[]>;
+};
+
+// ----------------------------------------------------------------------
+
+export type ITimeEntry = {
+  _id: string;
+  tenantId: string;
+  taskId: string;
+  workOrderId?: string;
+  personnelId: string;
+  date: string; // ISO
+  hours: number;
+  days?: number;
+  notes?: string;
+  cost?: number;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreateTimeEntryPayload = {
+  taskId: string;
+  workOrderId?: string;
+  personnelId: string;
+  date: string;
+  hours?: number;
+  days?: number;
+  notes?: string;
+};
+
+export type UpdateTimeEntryPayload = {
+  hours?: number;
+  days?: number;
+  notes?: string;
 };

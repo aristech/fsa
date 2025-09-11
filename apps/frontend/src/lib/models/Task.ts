@@ -9,7 +9,8 @@ export interface ITask extends Document {
   tenantId: string;
   title: string;
   description?: string;
-  status: 'todo' | 'in-progress' | 'review' | 'done';
+  columnId?: string; // Reference to Status (column) _id
+  status?: 'todo' | 'in-progress' | 'review' | 'done'; // Legacy field
   priority: 'low' | 'medium' | 'high' | 'urgent';
   projectId?: string;
   workOrderId?: string;

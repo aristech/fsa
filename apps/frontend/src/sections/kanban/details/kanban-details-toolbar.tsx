@@ -30,13 +30,11 @@ type Props = BoxProps & {
   workOrderNumber?: string;
   onDelete: () => void;
   onCloseDetails: () => void;
-  onChangeWorkOrder?: (workOrder: { id: string; number?: string; label: string }) => void;
+  onChangeWorkOrder?: (workOrder: { id: string; number?: string; label: string } | null) => void;
   // onChangeStatus removed from toolbar per latest requirements
   completeStatus?: boolean;
   onToggleComplete?: (newValue: boolean) => void;
 };
-
-
 
 export function KanbanDetailsToolbar({
   sx,
@@ -47,7 +45,7 @@ export function KanbanDetailsToolbar({
   workOrderNumber,
   onCloseDetails,
   onChangeWorkOrder,
-  
+
   completeStatus,
   onToggleComplete,
   ...other
@@ -55,17 +53,24 @@ export function KanbanDetailsToolbar({
   const smUp = useMediaQuery((theme) => theme.breakpoints.up('sm'));
 
   const menuActions = usePopover();
-  
+
   const confirmDialog = useBoolean();
 
   const [completed, setCompleted] = useState<boolean>(!!completeStatus);
-  const [selectedWorkOrder, setSelectedWorkOrder] = useState<{ id: string; number?: string; label: string } | null>(
-    workOrderId ? { id: workOrderId, number: workOrderNumber, label: workOrderNumber || workOrderId } : null
+  const [selectedWorkOrder, setSelectedWorkOrder] = useState<{
+    id: string;
+    number?: string;
+    label: string;
+  } | null>(
+    workOrderId
+      ? { id: workOrderId, number: workOrderNumber, label: workOrderNumber || workOrderId }
+      : null
   );
 
   const axiosFetcher = (url: string) => axiosInstance.get(url).then((res) => res.data);
   const { data: workOrdersResp } = useSWR(endpoints.fsa.workOrders.list, axiosFetcher);
-  const workOrders: Array<{ _id: string; number?: string; title?: string }> = workOrdersResp?.data?.workOrders || [];
+  const workOrders: Array<{ _id: string; number?: string; title?: string }> =
+    workOrdersResp?.data?.workOrders || [];
 
   // When work orders load, hydrate selected label with title if available
   if (selectedWorkOrder && workOrders.length) {
@@ -88,6 +93,20 @@ export function KanbanDetailsToolbar({
       slotProps={{ arrow: { placement: 'top-right' } }}
     >
       <MenuList>
+        <MenuItem
+          selected={!selectedWorkOrder}
+          onClick={() => {
+            setSelectedWorkOrder(null);
+            menuActions.onClose();
+            onChangeWorkOrder?.(null);
+          }}
+        >
+          No Work Order
+        </MenuItem>
+        <Box
+          component="div"
+          sx={{ my: 0.5, borderTop: (theme) => `1px dashed ${theme.vars.palette.divider}` }}
+        />
         {workOrders.map((wo) => {
           const label = wo.title || wo.number || wo._id;
           return (
@@ -163,19 +182,19 @@ export function KanbanDetailsToolbar({
             >
               Work Order
             </Button>
-           
           </Box>
-      
         </Box>
 
         <Box component="span" sx={{ flexGrow: 1 }} />
 
         <Box sx={{ display: 'flex' }}>
- <Button
+          <Button
             size="small"
             variant="soft"
             color={completed ? 'success' : 'primary'}
-            startIcon={<Iconify icon={ completed ? 'eva:checkmark-fill' : 'eva:checkmark-circle-2-outline' } />}
+            startIcon={
+              <Iconify icon={completed ? 'eva:checkmark-fill' : 'eva:checkmark-circle-2-outline'} />
+            }
             onClick={() => {
               const next = !completed;
               setCompleted(next);
@@ -189,26 +208,23 @@ export function KanbanDetailsToolbar({
               <Iconify icon="solar:trash-bin-trash-bold" />
             </IconButton>
           </Tooltip>
-
-       
         </Box>
-       
       </Box>
       <Box sx={{ display: 'flex' }}>
-            {selectedWorkOrder && (
-              <Tooltip title={selectedWorkOrder.label} placement="top">
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  noWrap
-                  sx={{ m: 0.8, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis' }}
-                >
-                  {selectedWorkOrder.label}
-                </Typography>
-              </Tooltip>
-            )}
+        {selectedWorkOrder && (
+          <Tooltip title={selectedWorkOrder.label} placement="top">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              noWrap
+              sx={{ m: 0.8, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis' }}
+            >
+              {selectedWorkOrder.label}
+            </Typography>
+          </Tooltip>
+        )}
       </Box>
- 
+
       {renderMenuActions()}
       {renderConfirmDialog()}
     </>

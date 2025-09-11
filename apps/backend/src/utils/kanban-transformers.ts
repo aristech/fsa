@@ -5,6 +5,7 @@ export interface IKanbanTask {
   name: string;
   description?: string;
   status: string;
+  columnId?: string; // Add columnId for new architecture
   priority: string;
   labels: string[];
   tags?: string[];
@@ -34,7 +35,7 @@ export interface IKanbanTask {
 
 export function transformProjectToKanbanTask(
   project: IProject,
-  statuses: string[]
+  statuses: string[],
 ): IKanbanTask {
   return {
     id: project._id.toString(),
@@ -75,22 +76,41 @@ export function transformTaskToKanbanTask(
   task: ITask,
   statuses: string[],
   lookups?: {
-    userById?: Record<string, { name?: string; email?: string; avatar?: string }>;
-    personnelById?: Record<string, { name?: string; email?: string; avatar?: string }>;
+    userById?: Record<
+      string,
+      { name?: string; email?: string; avatar?: string }
+    >;
+    personnelById?: Record<
+      string,
+      { name?: string; email?: string; avatar?: string }
+    >;
     subtasksCount?: number;
     commentsCount?: number;
-    workOrderById?: Record<string, { title?: string; workOrderNumber?: string }>;
-  }
+    workOrderById?: Record<
+      string,
+      { title?: string; workOrderNumber?: string }
+    >;
+    columnById?: Record<string, { name: string; slug: string }>;
+  },
 ): IKanbanTask {
-  const workOrder = task.workOrderId && lookups?.workOrderById
-    ? lookups.workOrderById[task.workOrderId.toString()] || undefined
-    : undefined;
+  const workOrder =
+    task.workOrderId && lookups?.workOrderById
+      ? lookups.workOrderById[task.workOrderId.toString()] || undefined
+      : undefined;
+
+  // Determine status/column information
+  const column =
+    task.columnId && lookups?.columnById
+      ? lookups.columnById[task.columnId]
+      : null;
+  const statusFromColumn = column ? column.slug : task.status || "todo";
 
   return {
     id: task._id.toString(),
     name: task.title,
     description: task.description,
-    status: task.status || "todo",
+    status: statusFromColumn,
+    columnId: task.columnId,
     priority: task.priority || "medium",
     labels: task.tags || [],
     tags: task.tags || [],
@@ -103,16 +123,26 @@ export function transformTaskToKanbanTask(
             name,
             email: p?.email,
             avatarUrl: null,
-            initials: name.split(' ').map(n => n.charAt(0)).join('').toUpperCase() || 'A',
+            initials:
+              name
+                .split(" ")
+                .map((n) => n.charAt(0))
+                .join("")
+                .toUpperCase() || "A",
           };
         })
       : [],
-    due: task.startDate || task.dueDate
-      ? [
-          (task as any).startDate?.toISOString() || task.dueDate?.toISOString() || '',
-          task.dueDate?.toISOString() || (task as any).startDate?.toISOString() || ''
-        ]
-      : undefined,
+    due:
+      task.startDate || task.dueDate
+        ? [
+            (task as any).startDate?.toISOString() ||
+              task.dueDate?.toISOString() ||
+              "",
+            task.dueDate?.toISOString() ||
+              (task as any).startDate?.toISOString() ||
+              "",
+          ]
+        : undefined,
     reporter: (() => {
       const id = task.createdBy?.toString() || "unknown";
       const u = lookups?.userById?.[id];
@@ -122,7 +152,12 @@ export function transformTaskToKanbanTask(
         name,
         email: u?.email,
         avatarUrl: undefined,
-        initials: name.split(' ').map(n => n.charAt(0)).join('').toUpperCase() || 'R',
+        initials:
+          name
+            .split(" ")
+            .map((n) => n.charAt(0))
+            .join("")
+            .toUpperCase() || "R",
       };
     })(),
     attachments: task.attachments || [],

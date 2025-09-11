@@ -35,6 +35,8 @@ import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 
+import { View403 } from 'src/sections/error';
+
 // ----------------------------------------------------------------------
 
 type Client = {
@@ -147,13 +149,7 @@ export function ClientList() {
 
   // Error state
   if (error) {
-    return (
-      <Card>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
-          <Typography color="error">Failed to load clients. Please try again.</Typography>
-        </Box>
-      </Card>
-    );
+    return <View403 />;
   }
 
   return (

@@ -1,5 +1,12 @@
 import type { SWRConfiguration } from 'swr';
-import type { IKanban, IKanbanTask, IKanbanColumn } from 'src/types/kanban';
+import type {
+  IKanban,
+  ITimeEntry,
+  IKanbanTask,
+  IKanbanColumn,
+  CreateTimeEntryPayload,
+  UpdateTimeEntryPayload,
+} from 'src/types/kanban';
 
 import useSWR, { mutate } from 'swr';
 import { useMemo, startTransition } from 'react';
@@ -399,4 +406,40 @@ export async function deleteTask(
       false
     );
   }
+}
+
+// ----------------------------------------------------------------------
+// Time entries actions
+
+export async function listTimeEntries(params: {
+  taskId?: string;
+  workOrderId?: string;
+  personnelId?: string;
+  from?: string;
+  to?: string;
+  limit?: number;
+  skip?: number;
+}): Promise<{ success: boolean; data: ITimeEntry[] }> {
+  const response = await axios.get(endpoints.fsa.timeEntries.list, { params });
+  return response.data;
+}
+
+export async function createTimeEntry(
+  payload: CreateTimeEntryPayload
+): Promise<{ success: boolean; data: ITimeEntry }> {
+  const response = await axios.post(endpoints.fsa.timeEntries.create, payload);
+  return response.data;
+}
+
+export async function updateTimeEntry(
+  id: string,
+  payload: UpdateTimeEntryPayload
+): Promise<{ success: boolean; data: ITimeEntry }> {
+  const response = await axios.put(endpoints.fsa.timeEntries.update(id), payload);
+  return response.data;
+}
+
+export async function deleteTimeEntry(id: string): Promise<{ success: boolean }> {
+  const response = await axios.delete(endpoints.fsa.timeEntries.delete(id));
+  return response.data;
 }

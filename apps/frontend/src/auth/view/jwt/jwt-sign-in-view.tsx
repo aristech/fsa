@@ -9,7 +9,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Alert from '@mui/material/Alert';
+import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
+import Tooltip from '@mui/material/Tooltip';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 
@@ -38,9 +40,10 @@ export const SignInSchema = z.object({
   tenantSlug: z
     .string()
     .min(1, { error: 'Tenant slug is required!' })
-    .regex(/^[a-z0-9-]+$/, {
-      error: 'Tenant slug must contain only lowercase letters, numbers, and hyphens!',
+    .regex(/^[a-z0-9_]+$/, {
+      error: 'Tenant slug must contain only lowercase letters, numbers, and underscores!',
     }),
+  rememberMe: z.boolean().optional().default(false),
 });
 
 // ----------------------------------------------------------------------
@@ -62,6 +65,7 @@ export function JwtSignInView() {
     email: '',
     password: '',
     tenantSlug: '',
+    rememberMe: false,
   };
 
   const methods = useForm({
@@ -71,8 +75,20 @@ export function JwtSignInView() {
 
   const {
     handleSubmit,
+    watch,
+    setValue,
     formState: { isSubmitting },
   } = methods;
+
+  // Prefill from localStorage if available
+  const savedEmail = typeof window !== 'undefined' ? localStorage.getItem('auth_email') : null;
+  const savedTenant =
+    typeof window !== 'undefined' ? localStorage.getItem('auth_tenantSlug') : null;
+  if (savedEmail && savedTenant && !watch('email') && !watch('tenantSlug')) {
+    setValue('email', savedEmail);
+    setValue('tenantSlug', savedTenant);
+    setValue('rememberMe', true);
+  }
 
   const onSubmit = handleSubmit(async (data) => {
     try {
@@ -80,10 +96,23 @@ export function JwtSignInView() {
         email: data.email,
         password: data.password,
         tenantSlug: data.tenantSlug,
+        rememberMe: !!data.rememberMe,
       });
+
+      // Persist based on rememberMe
+      if (data.rememberMe) {
+        localStorage.setItem('auth_email', data.email);
+        localStorage.setItem('auth_tenantSlug', data.tenantSlug);
+      } else {
+        localStorage.removeItem('auth_email');
+        localStorage.removeItem('auth_tenantSlug');
+      }
       await checkUserSession?.();
 
-      router.refresh();
+      // Redirect after sign-in
+      const url = new URL(window.location.href);
+      const returnTo = url.searchParams.get('returnTo');
+      router.replace(returnTo || '/dashboard');
     } catch (error) {
       console.error(error);
       const feedbackMessage = getErrorMessage(error);
@@ -93,11 +122,23 @@ export function JwtSignInView() {
 
   const renderForm = () => (
     <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
-      <Field.Text
-        name="tenantSlug"
-        label="Tenant Slug"
-        slotProps={{ inputLabel: { shrink: true } }}
-      />
+      <Stack direction="row" spacing={1} alignItems="center">
+        <Box sx={{ flex: 1 }}>
+          <Field.Text
+            name="tenantSlug"
+            label="Tenant Slug"
+            slotProps={{ inputLabel: { shrink: true } }}
+          />
+        </Box>
+        <Tooltip
+          title="Your organization identifier. Find it in your invitation email, labeled as Tenant Slug."
+          placement="top"
+        >
+          <IconButton edge="end">
+            <Iconify icon="solar:info-circle-bold" />
+          </IconButton>
+        </Tooltip>
+      </Stack>
 
       <Field.Text name="email" label="Email address" slotProps={{ inputLabel: { shrink: true } }} />
 
@@ -115,7 +156,7 @@ export function JwtSignInView() {
         <Field.Text
           name="password"
           label="Password"
-          placeholder="6+ characters"
+          placeholder="8+ characters"
           type={showPassword.value ? 'text' : 'password'}
           slotProps={{
             inputLabel: { shrink: true },
@@ -133,6 +174,8 @@ export function JwtSignInView() {
           }}
         />
       </Box>
+
+      <Field.Checkbox name="rememberMe" label="Remember me on this device" />
 
       <Button
         fullWidth
@@ -162,8 +205,6 @@ export function JwtSignInView() {
         }
         sx={{ textAlign: { xs: 'center', md: 'left' } }}
       />
-
-   
 
       {!!errorMessage && (
         <Alert severity="error" sx={{ mb: 3 }}>

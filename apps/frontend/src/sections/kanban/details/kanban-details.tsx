@@ -43,6 +43,7 @@ import { KanbanDetailsAttachments } from './kanban-details-attachments';
 import { KanbanDetailsCommentList } from './kanban-details-comment-list';
 import { KanbanDetailsCommentInput } from './kanban-details-comment-input';
 import { KanbanContactsDialog } from '../components/kanban-contacts-dialog';
+import { KanbanDetailsTime } from './kanban-details-time';
 
 // ----------------------------------------------------------------------
 
@@ -93,48 +94,38 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
   const [taskDescription, setTaskDescription] = useState(task.description);
   const [tags, setTags] = useState<string[]>(task.tags || task.labels || []);
   // Fetch subtasks from backend
-  const { data: subtasksData } = useSWR(
-    `/api/v1/subtasks/${task.id}`,
-    async (url) => {
-      const response = await axiosInstance.get(url);
-      return response.data;
-    }
-  );
+  const { data: subtasksData } = useSWR(`/api/v1/subtasks/${task.id}`, async (url) => {
+    const response = await axiosInstance.get(url);
+    return response.data;
+  });
   const subtasks: ISubtask[] = subtasksData?.data || [];
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
 
   // Fetch comments from backend
-  const { data: commentsData } = useSWR(
-    `/api/v1/comments/${task.id}`,
-    async (url) => {
-      const response = await axiosInstance.get(url);
-      return response.data;
-    }
-  );
+  const { data: commentsData } = useSWR(`/api/v1/comments/${task.id}`, async (url) => {
+    const response = await axiosInstance.get(url);
+    return response.data;
+  });
   const comments = commentsData?.data || [];
 
   // Fetch clients data for client selection
-  const { data: clientsData } = useSWR(
-    '/api/v1/clients?limit=100',
-    async (url) => {
-      try {
-        const response = await axiosInstance.get(url);
-        return response.data;
-      } catch (error) {
-        console.error('Error fetching clients:', error);
-        throw error;
-      }
+  const { data: clientsData } = useSWR('/api/v1/clients?limit=100', async (url) => {
+    try {
+      const response = await axiosInstance.get(url);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+      throw error;
     }
-  );
+  });
   const clients = Array.isArray(clientsData?.data?.clients) ? clientsData.data.clients : [];
-
 
   // Real-time functionality for tasks and comments
   const { typingUsers, startTyping, stopTyping } = useTaskRealtime(task.id);
-  
+
   // Ref for comments container to enable scrolling
   const commentsContainerRef = useRef<HTMLDivElement>(null);
-  
+
   // Function to scroll comments to bottom
   const scrollCommentsToBottom = useCallback(() => {
     if (commentsContainerRef.current) {
@@ -152,7 +143,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       setTimeout(scrollCommentsToBottom, 100);
     }
   }, [tabs.value, comments.length, scrollCommentsToBottom]);
-  
+
   // Handle real-time comment events
   useRealtimeComments(task.id, {
     onCreated: (comment) => {
@@ -174,8 +165,8 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
 
   // Start/Due date range
   const rangePicker = useDateRangePicker(
-    task.due[0] ? dayjs(task.due[0]) : null,
-    task.due[1] ? dayjs(task.due[1]) : null
+    task.due?.[0] ? dayjs(task.due[0]) : null,
+    task.due?.[1] ? dayjs(task.due[1]) : null
   );
 
   const handleChangeTaskName = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -254,15 +245,15 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         clientName: selectedClient?.name || undefined,
         clientCompany: selectedClient?.company || undefined,
       };
-      
+
       await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, {
         taskData,
       });
-      
+
       // Update the task in the parent state
-      onUpdateTask({ 
-        ...task, 
-        clientId, 
+      onUpdateTask({
+        ...task,
+        clientId,
         clientName: selectedClient?.name || undefined,
         clientCompany: selectedClient?.company || undefined,
       });
@@ -273,14 +264,18 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     }
   };
 
-
-  const handleChangePriority = useCallback((newValue: string) => {
-    setPriority(newValue);
-    // Persist priority immediately
-    axiosInstance
-      .post(`${endpoints.kanban}?endpoint=update-task`, { taskData: { id: task.id, priority: newValue } })
-      .catch((e) => console.error('Failed to update priority', e));
-  }, [task.id]);
+  const handleChangePriority = useCallback(
+    (newValue: string) => {
+      setPriority(newValue);
+      // Persist priority immediately
+      axiosInstance
+        .post(`${endpoints.kanban}?endpoint=update-task`, {
+          taskData: { id: task.id, priority: newValue },
+        })
+        .catch((e) => console.error('Failed to update priority', e));
+    },
+    [task.id]
+  );
   // Persist date changes (start/end)
   useEffect(() => {
     if (!rangePicker.startDate || !rangePicker.endDate) return;
@@ -294,22 +289,24 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rangePicker.startDate, rangePicker.endDate]);
 
-
   // Subtask handlers
-  const handleToggleSubtask = useCallback(async (subtaskId: string, completed: boolean) => {
-    try {
-      await axiosInstance.put(`/api/v1/subtasks/${task.id}/${subtaskId}`, { completed });
-      mutate(`/api/v1/subtasks/${task.id}`);
-      toast.success(completed ? 'Subtask completed' : 'Subtask reopened');
-    } catch (error) {
-      console.error('Failed to update subtask:', error);
-      toast.error('Failed to update subtask');
-    }
-  }, [task.id]);
+  const handleToggleSubtask = useCallback(
+    async (subtaskId: string, completed: boolean) => {
+      try {
+        await axiosInstance.put(`/api/v1/subtasks/${task.id}/${subtaskId}`, { completed });
+        mutate(`/api/v1/subtasks/${task.id}`);
+        toast.success(completed ? 'Subtask completed' : 'Subtask reopened');
+      } catch (error) {
+        console.error('Failed to update subtask:', error);
+        toast.error('Failed to update subtask');
+      }
+    },
+    [task.id]
+  );
 
   const handleCreateSubtask = useCallback(async () => {
     if (!newSubtaskTitle.trim()) return;
-    
+
     try {
       await axiosInstance.post(`/api/v1/subtasks/${task.id}`, { title: newSubtaskTitle.trim() });
       setNewSubtaskTitle('');
@@ -321,16 +318,19 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     }
   }, [task.id, newSubtaskTitle]);
 
-  const handleDeleteSubtask = useCallback(async (subtaskId: string) => {
-    try {
-      await axiosInstance.delete(`/api/v1/subtasks/${task.id}/${subtaskId}`);
-      mutate(`/api/v1/subtasks/${task.id}`);
-      toast.success('Subtask deleted');
-    } catch (error) {
-      console.error('Failed to delete subtask:', error);
-      toast.error('Failed to delete subtask');
-    }
-  }, [task.id]);
+  const handleDeleteSubtask = useCallback(
+    async (subtaskId: string) => {
+      try {
+        await axiosInstance.delete(`/api/v1/subtasks/${task.id}/${subtaskId}`);
+        mutate(`/api/v1/subtasks/${task.id}`);
+        toast.success('Subtask deleted');
+      } catch (error) {
+        console.error('Failed to delete subtask:', error);
+        toast.error('Failed to delete subtask');
+      }
+    },
+    [task.id]
+  );
 
   const renderToolbar = () => (
     <KanbanDetailsToolbar
@@ -354,9 +354,55 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       }}
       onChangeWorkOrder={async (wo) => {
         try {
+          if (!wo) {
+            await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, {
+              taskData: {
+                id: task.id,
+                workOrderId: undefined,
+                workOrderNumber: undefined,
+                workOrderTitle: undefined,
+              },
+            });
+            onUpdateTask({
+              ...(task as any),
+              workOrderId: undefined,
+              workOrderNumber: undefined,
+              workOrderTitle: undefined,
+            } as any);
+            return;
+          }
+
+          // Persist WO selection
           await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, {
             taskData: { id: task.id, workOrderId: wo.id, workOrderNumber: wo.number },
           });
+
+          // Prefill client from WO
+          try {
+            const woResp = await axiosInstance.get(endpoints.fsa.workOrders.details(wo.id));
+            const clientId = woResp?.data?.data?.clientId || woResp?.data?.data?.client?._id;
+            const clientName = woResp?.data?.data?.clientName || woResp?.data?.data?.client?.name;
+            const clientCompany =
+              woResp?.data?.data?.clientCompany || woResp?.data?.data?.client?.company;
+            if (clientId) {
+              await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, {
+                taskData: { id: task.id, clientId, clientName, clientCompany },
+              });
+              onUpdateTask({
+                ...(task as any),
+                workOrderId: wo.id,
+                workOrderNumber: wo.number,
+                clientId,
+                clientName,
+                clientCompany,
+              } as any);
+              return;
+            }
+          } catch (err) {
+            console.warn('Failed to prefill client from work order', err);
+          }
+
+          // Update local task without client if none found
           onUpdateTask({ ...(task as any), workOrderId: wo.id, workOrderNumber: wo.number } as any);
         } catch (e) {
           console.error('Failed to update work order on task', e);
@@ -376,6 +422,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     >
       {[
         { value: 'overview', label: 'Overview' },
+        { value: 'time', label: 'Time' },
         { value: 'subTasks', label: `Subtasks (${subtasks.length})` },
         { value: 'comments', label: `Comments (${comments.length})` },
       ].map((tab) => (
@@ -401,7 +448,13 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         <BlockLabel>Reporter</BlockLabel>
         <Tooltip title={task.reporter.name}>
           <Avatar>
-            {task.reporter.initials || task.reporter.name?.split(' ').map(n => n.charAt(0)).join('').toUpperCase() || 'R'}
+            {task.reporter.initials ||
+              task.reporter.name
+                ?.split(' ')
+                .map((n) => n.charAt(0))
+                .join('')
+                .toUpperCase() ||
+              'R'}
           </Avatar>
         </Tooltip>
       </Box>
@@ -411,9 +464,18 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
 
         <Box sx={{ gap: 1, display: 'flex', flexWrap: 'wrap' }}>
           {task.assignee.map((user) => (
-            <Tooltip key={user.id} title={`${user.name}${(user as any).email ? ` • ${(user as any).email}` : ''}`}>
+            <Tooltip
+              key={user.id}
+              title={`${user.name}${(user as any).email ? ` • ${(user as any).email}` : ''}`}
+            >
               <Avatar>
-                {user.initials || user.name?.split(' ').map(n => n.charAt(0)).join('').toUpperCase() || 'A'}
+                {user.initials ||
+                  user.name
+                    ?.split(' ')
+                    .map((n) => n.charAt(0))
+                    .join('')
+                    .toUpperCase() ||
+                  'A'}
               </Avatar>
             </Tooltip>
           ))}
@@ -460,7 +522,12 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           onChange={handleChangeTags}
           renderTags={(value: readonly string[], getTagProps) =>
             value.map((option: string, index: number) => (
-              <Chip {...getTagProps({ index })} key={`${option}-${index}`} label={option} size="small" />
+              <Chip
+                {...getTagProps({ index })}
+                key={`${option}-${index}`}
+                label={option}
+                size="small"
+              />
             ))
           }
           renderInput={(params) => <TextField {...params} size="small" placeholder="Add label" />}
@@ -490,8 +557,6 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           </Select>
         </FormControl>
       </Box>
-
-      
 
       {/* Tags display row is merged with Labels above */}
       {/* Start / Due date */}
@@ -572,7 +637,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
   );
 
   const renderTabSubtasks = () => {
-    const completedCount = subtasks.filter(s => s.completed).length;
+    const completedCount = subtasks.filter((s) => s.completed).length;
     const totalCount = subtasks.length;
 
     return (
@@ -643,26 +708,33 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
   };
 
   const renderTabComments = () => (
-    <Box 
+    <Box
       ref={commentsContainerRef}
-      sx={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
         height: '100%',
         maxHeight: '400px',
         overflowY: 'auto',
-        scrollBehavior: 'smooth'
+        scrollBehavior: 'smooth',
       }}
     >
       <KanbanDetailsCommentList comments={comments} />
-      
+
       {/* Typing indicator */}
       {typingUsers.length > 0 && (
-        <Box sx={{ px: 2.5, py: 1, fontSize: '0.875rem', color: 'text.secondary', fontStyle: 'italic' }}>
-          {typingUsers.length === 1 
+        <Box
+          sx={{
+            px: 2.5,
+            py: 1,
+            fontSize: '0.875rem',
+            color: 'text.secondary',
+            fontStyle: 'italic',
+          }}
+        >
+          {typingUsers.length === 1
             ? `${typingUsers[0].userEmail} is typing...`
-            : `${typingUsers.map(u => u.userEmail).join(', ')} are typing...`
-          }
+            : `${typingUsers.map((u) => u.userEmail).join(', ')} are typing...`}
         </Box>
       )}
     </Box>
@@ -684,13 +756,16 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
 
       <Scrollbar fillContent sx={{ py: 3, px: 2.5 }}>
         {tabs.value === 'overview' && renderTabOverview()}
+        {tabs.value === 'time' && (
+          <KanbanDetailsTime taskId={task.id} workOrderId={(task as any)?.workOrderId} />
+        )}
         {tabs.value === 'subTasks' && renderTabSubtasks()}
         {tabs.value === 'comments' && renderTabComments()}
       </Scrollbar>
 
       {tabs.value === 'comments' && (
-        <KanbanDetailsCommentInput 
-          taskId={task.id} 
+        <KanbanDetailsCommentInput
+          taskId={task.id}
           onStartTyping={startTyping}
           onStopTyping={stopTyping}
           onCommentSent={scrollCommentsToBottom}

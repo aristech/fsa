@@ -11,7 +11,7 @@ export interface IWorkOrder {
   personnelIds?: string[];
   title: string;
   details: string; // Rich text content from TipTap
-  priority: typeof PRIORITY_VALUES[number];
+  priority: (typeof PRIORITY_VALUES)[number];
   status:
     | "created"
     | "assigned"
@@ -80,7 +80,6 @@ const WorkOrderSchema = new Schema<IWorkOrder>(
     },
     workOrderNumber: {
       type: String,
-      unique: true,
       trim: true,
     },
     clientId: {
@@ -191,13 +190,14 @@ const WorkOrderSchema = new Schema<IWorkOrder>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // ----------------------------------------------------------------------
 
 // Indexes for better performance
-WorkOrderSchema.index({ tenantId: 1, workOrderNumber: 1 });
+// Ensure workOrderNumber uniqueness per tenant
+WorkOrderSchema.index({ tenantId: 1, workOrderNumber: 1 }, { unique: true });
 WorkOrderSchema.index({ tenantId: 1, clientId: 1 });
 WorkOrderSchema.index({ tenantId: 1, personnelIds: 1 });
 WorkOrderSchema.index({ tenantId: 1, status: 1 });
