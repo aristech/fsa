@@ -14,6 +14,7 @@ import { uploadsRoutes } from "./uploads";
 import { subtasksRoutes } from "./subtasks";
 import { commentsRoutes } from "./comments";
 import { timeEntryRoutes } from "./time-entries";
+import { notificationRoutes } from "./notifications";
 
 export async function registerRoutes(fastify: FastifyInstance) {
   // Health check
@@ -36,4 +37,5 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(subtasksRoutes, { prefix: "/api/v1/subtasks" });
   await fastify.register(commentsRoutes, { prefix: "/api/v1/comments" });
   await fastify.register(timeEntryRoutes, { prefix: "/api/v1/time-entries" });
+  await fastify.register(notificationRoutes, { prefix: "/api/v1/notifications" });
 }

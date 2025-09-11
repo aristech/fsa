@@ -8,6 +8,8 @@ import ListItemButton from '@mui/material/ListItemButton';
 
 import { fToNow } from 'src/utils/format-time';
 
+import { markNotificationsAsRead } from 'src/actions/notifications';
+
 import { Label } from 'src/components/label';
 import { FileThumbnail } from 'src/components/file-thumbnail';
 
@@ -24,29 +26,99 @@ export type NotificationItemProps = {
     isUnRead: boolean;
     avatarUrl: string | null;
     createdAt: string | number | null;
+    message?: string;
+    relatedEntity?: {
+      entityType: 'task' | 'workorder' | 'project';
+      entityId: string;
+      entityTitle?: string;
+    };
+    metadata?: {
+      taskId?: string;
+      workOrderId?: string;
+      projectId?: string;
+      changes?: string[];
+      assignerId?: string;
+      reporterId?: string;
+    };
   };
 };
 
-const readerContent = (data: string) => (
-  <Box
-    dangerouslySetInnerHTML={{ __html: data }}
-    sx={{
-      '& p': { m: 0, typography: 'body2' },
-      '& a': { color: 'inherit', textDecoration: 'none' },
-      '& strong': { typography: 'subtitle2' },
-    }}
-  />
-);
+const readerContent = (data: string) => {
+  if (!data) {
+    return <span>No title</span>;
+  }
+  
+  // Check if data contains HTML tags, if not, render as plain text
+  const hasHtmlTags = /<[^>]*>/.test(data);
+  
+  if (hasHtmlTags) {
+    return (
+      <Box
+        dangerouslySetInnerHTML={{ __html: data }}
+        sx={{
+          '& p': { m: 0, typography: 'body2' },
+          '& a': { color: 'inherit', textDecoration: 'none' },
+          '& strong': { typography: 'subtitle2' },
+        }}
+      />
+    );
+  }
+  
+  return <span>{data}</span>;
+};
 
 const renderIcon = (type: string) =>
   ({
+    task_created: notificationIcons.delivery,
+    task_updated: notificationIcons.order,
+    task_assigned: notificationIcons.order,
+    task_completed: notificationIcons.delivery,
+    task_deleted: notificationIcons.mail,
+    time_logged: notificationIcons.chat,
+    time_updated: notificationIcons.chat,
     order: notificationIcons.order,
     chat: notificationIcons.chat,
     mail: notificationIcons.mail,
     delivery: notificationIcons.delivery,
-  })[type];
+  })[type] || notificationIcons.order;
+
+const getCategoryLabel = (category: string, type: string) => {
+  if (type.startsWith('task_')) {
+    switch (type) {
+      case 'task_created': return 'Task Created';
+      case 'task_updated': return 'Task Updated';
+      case 'task_assigned': return 'Task Assigned';
+      case 'task_completed': return 'Task Completed';
+      case 'task_deleted': return 'Task Deleted';
+      default: return 'Task';
+    }
+  }
+  if (type.startsWith('time_')) {
+    switch (type) {
+      case 'time_logged': return 'Time Logged';
+      case 'time_updated': return 'Time Updated';
+      default: return 'Time Entry';
+    }
+  }
+  return category.charAt(0).toUpperCase() + category.slice(1);
+};
 
 export function NotificationItem({ notification }: NotificationItemProps) {
+
+  const handleNotificationClick = async () => {
+    try {
+      // Mark this notification as read if it's unread
+      if (notification.isUnRead) {
+        await markNotificationsAsRead([notification.id]);
+      }
+      
+      // TODO: Add navigation to the related entity (task, work order, etc.)
+      // For now, we'll just mark it as read
+      console.log('Notification clicked:', notification);
+    } catch (error) {
+      console.error('Error handling notification click:', error);
+    }
+  };
   const renderAvatar = () => (
     <ListItemAvatar>
       {notification.avatarUrl ? (
@@ -71,15 +143,31 @@ export function NotificationItem({ notification }: NotificationItemProps) {
 
   const renderText = () => (
     <ListItemText
-      primary={readerContent(notification.title)}
+      primary={readerContent(notification.title || 'Notification')}
       secondary={
         <>
-          {fToNow(notification.createdAt)}
-          <Box
-            component="span"
-            sx={{ width: 2, height: 2, borderRadius: '50%', bgcolor: 'currentColor' }}
-          />
-          {notification.category}
+          {notification.message && (
+            <Box component="p" sx={{ mt: 0.5, mb: 1, typography: 'body2', color: 'text.secondary' }}>
+              {notification.message}
+            </Box>
+          )}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, typography: 'caption', color: 'text.disabled' }}>
+            {notification.createdAt ? fToNow(notification.createdAt) : 'Unknown time'}
+            <Box
+              component="span"
+              sx={{ width: 2, height: 2, borderRadius: '50%', bgcolor: 'currentColor' }}
+            />
+            {getCategoryLabel(notification.category || 'system', notification.type || 'unknown')}
+            {notification.relatedEntity?.entityTitle && (
+              <>
+                <Box
+                  component="span"
+                  sx={{ width: 2, height: 2, borderRadius: '50%', bgcolor: 'currentColor' }}
+                />
+                {notification.relatedEntity.entityTitle}
+              </>
+            )}
+          </Box>
         </>
       }
       slotProps={{
@@ -88,11 +176,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
         },
         secondary: {
           sx: {
-            gap: 0.5,
-            display: 'flex',
-            alignItems: 'center',
-            typography: 'caption',
-            color: 'text.disabled',
+            '& p': { m: 0 },
           },
         },
       }}
@@ -220,11 +304,15 @@ export function NotificationItem({ notification }: NotificationItemProps) {
   return (
     <ListItemButton
       disableRipple
+      onClick={handleNotificationClick}
       sx={[
         (theme) => ({
           p: 2.5,
           alignItems: 'flex-start',
           borderBottom: `dashed 1px ${theme.vars.palette.divider}`,
+          ...(notification.isUnRead && {
+            bgcolor: 'action.selected',
+          }),
         }),
       ]}
     >
@@ -233,6 +321,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
 
       <Box sx={{ minWidth: 0, flex: '1 1 auto' }}>
         {renderText()}
+        {/* Task-related notifications don't need special actions - clicking navigates to the task */}
         {notification.type === 'friend' && renderFriendAction()}
         {notification.type === 'project' && renderProjectAction()}
         {notification.type === 'file' && renderFileAction()}

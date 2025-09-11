@@ -16,6 +16,11 @@ import {
 } from '@mui/material';
 
 import { fDateTime } from 'src/utils/format-time';
+import {
+  calculateTimeProgress,
+  formatEstimatedDuration,
+  formatMinutesToDuration,
+} from 'src/utils/format-duration';
 
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
@@ -258,20 +263,46 @@ export function WorkOrderDetails({ id }: Props) {
                         </Typography>
                       </Stack>
                     </Grid>
+
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <Stack spacing={0.5}>
                         <Typography variant="caption" color="text.secondary">
-                          Estimated Duration
+                          Duration
+                        </Typography>
+                        <Stack spacing={0.5}>
+                          <Typography variant="body2">
+                            <strong>Estimated:</strong>{' '}
+                            {formatEstimatedDuration((workOrder as any)?.estimatedDuration)}
+                          </Typography>
+                          <Typography variant="body2">
+                            <strong>Actual:</strong>{' '}
+                            {(workOrder as any)?.actualDuration
+                              ? formatMinutesToDuration((workOrder as any).actualDuration)
+                              : '0 min'}
+                          </Typography>
+                          {(workOrder as any)?.actualDuration &&
+                            (workOrder as any)?.estimatedDuration && (
+                              <Typography variant="caption" color="text.secondary">
+                                {calculateTimeProgress(
+                                  (workOrder as any).actualDuration,
+                                  (workOrder as any).estimatedDuration
+                                )}
+                                % of estimated time
+                              </Typography>
+                            )}
+                        </Stack>
+                      </Stack>
+                    </Grid>
+
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Stack spacing={0.5}>
+                        <Typography variant="caption" color="text.secondary">
+                          Labor Cost
                         </Typography>
                         <Typography variant="body2">
-                          {(() => {
-                            const ed: any = (workOrder as any)?.estimatedDuration;
-                            if (!ed) return '—';
-                            if (typeof ed === 'number') return `${ed} min`;
-                            if (typeof ed?.value === 'number' && ed?.unit)
-                              return `${ed.value} ${ed.unit}`;
-                            return '—';
-                          })()}
+                          {(workOrder as any)?.cost?.labor
+                            ? `$${((workOrder as any).cost.labor).toFixed(2)}`
+                            : '$0.00'}
                         </Typography>
                       </Stack>
                     </Grid>

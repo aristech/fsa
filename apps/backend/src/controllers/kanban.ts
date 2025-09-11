@@ -13,6 +13,7 @@ import { AssignmentPermissionService } from "../services/assignment-permission-s
 import { getPriorityOptions } from "../constants/priorities";
 import { WorkOrderProgressService } from "../services/work-order-progress-service";
 import { EntityCleanupService } from "../services/entity-cleanup-service";
+import { NotificationService } from "../services/notification-service";
 import {
   transformProjectToKanbanTask,
   transformTaskToKanbanTask,
@@ -384,6 +385,13 @@ async function handleCreateTask(
       .filter((p: any) => p.isActive && p.status === "active")
       .map((p: any) => p._id.toString());
     validatedAssignees = eligible;
+    
+    console.log('👥 Personnel validation results:', {
+      inputAssignees: list,
+      foundPersonnel: personnelDocs.length,
+      eligiblePersonnel: eligible.length,
+      validatedAssignees: eligible
+    });
   }
 
   // If linking a work order, fetch its title/number if not provided
@@ -471,7 +479,43 @@ async function handleCreateTask(
     }),
   });
 
+  console.log('💾 Saving task with final data:', {
+    taskId: newTask._id,
+    title: newTask.title,
+    assignees: newTask.assignees,
+    createdBy: newTask.createdBy,
+    tenantId: newTask.tenantId
+  });
+
   await newTask.save();
+
+  // Send notifications for task creation
+  try {
+    await NotificationService.notifyTaskCreated(newTask, user.id);
+  } catch (error) {
+    console.error("Error sending task creation notifications:", error);
+    // Don't fail the task creation if notifications fail
+  }
+
+  // Send notifications for task assignment
+  if (validatedAssignees.length > 0) {
+    console.log('📋 Sending task assignment notifications:', {
+      taskId: newTask._id,
+      taskTitle: newTask.title,
+      validatedAssignees,
+      assignedBy: user.id
+    });
+    try {
+      await NotificationService.notifyTaskAssigned(
+        newTask,
+        validatedAssignees,
+        [],
+        user.id
+      );
+    } catch (error) {
+      console.error("Error sending task assignment notifications:", error);
+    }
+  }
 
   // Recompute work order aggregates if linked
   if (newTask.workOrderId) {
@@ -523,6 +567,47 @@ async function handleDeleteTask(
       success: false,
       error: "Task not found",
     });
+  }
+
+  // Send notifications before deletion
+  try {
+    // Create a deletion notification for task reporter and assignees
+    const recipients = new Set<string>();
+    if (task.createdBy && task.createdBy !== user.id) {
+      recipients.add(task.createdBy);
+    }
+    if (task.assignees) {
+      task.assignees.forEach((assigneeId: string) => {
+        if (assigneeId !== user.id) {
+          recipients.add(assigneeId);
+        }
+      });
+    }
+
+    const notificationPromises = Array.from(recipients).map(userId =>
+      NotificationService.createNotification({
+        tenantId: tenant._id.toString(),
+        userId,
+        type: 'task_deleted',
+        title: `Task deleted: ${task.title}`,
+        message: `The task "${task.title}" has been deleted.`,
+        relatedEntity: {
+          entityType: 'task',
+          entityId: task._id.toString(),
+          entityTitle: task.title,
+        },
+        metadata: {
+          taskId: task._id.toString(),
+          workOrderId: task.workOrderId,
+          reporterId: task.createdBy,
+        },
+        createdBy: user.id,
+      })
+    );
+
+    await Promise.all(notificationPromises);
+  } catch (error) {
+    console.error("Error sending task deletion notifications:", error);
   }
 
   // Perform comprehensive cleanup
@@ -577,6 +662,19 @@ async function handleUpdateTask(
     });
   }
 
+  // Get the existing task to compare changes
+  const existingTask = await Task.findOne({
+    _id: taskData.id,
+    tenantId: tenant._id,
+  });
+
+  if (!existingTask) {
+    return reply.code(404).send({
+      success: false,
+      error: "Task not found",
+    });
+  }
+
   const {
     name,
     description,
@@ -598,16 +696,41 @@ async function handleUpdateTask(
     workOrderTitle,
   } = taskData;
 
+  // Track what fields are being changed for notifications
+  const changes: string[] = [];
+  
   const updateData: any = {};
-  if (name !== undefined) updateData.title = name;
-  if (description !== undefined) updateData.description = description;
-  if (priority !== undefined) updateData.priority = priority;
-  if (labels !== undefined) updateData.tags = labels;
-  if (startDate !== undefined) updateData.startDate = startDate;
-  if (dueDate !== undefined) updateData.dueDate = dueDate;
-  if (typeof completeStatus === "boolean")
+  if (name !== undefined && name !== existingTask.title) {
+    updateData.title = name;
+    changes.push('title');
+  }
+  if (description !== undefined && description !== existingTask.description) {
+    updateData.description = description;
+    changes.push('description');
+  }
+  if (priority !== undefined && priority !== existingTask.priority) {
+    updateData.priority = priority;
+    changes.push('priority');
+  }
+  if (labels !== undefined && JSON.stringify(labels) !== JSON.stringify(existingTask.tags)) {
+    updateData.tags = labels;
+    changes.push('tags');
+  }
+  if (startDate !== undefined && new Date(startDate).getTime() !== existingTask.startDate?.getTime()) {
+    updateData.startDate = startDate;
+    changes.push('startDate');
+  }
+  if (dueDate !== undefined && new Date(dueDate).getTime() !== existingTask.dueDate?.getTime()) {
+    updateData.dueDate = dueDate;
+    changes.push('dueDate');
+  }
+  if (typeof completeStatus === "boolean" && completeStatus !== existingTask.completeStatus) {
     updateData.completeStatus = completeStatus;
+    changes.push('completeStatus');
+  }
+  let previousAssignees: string[] = [];
   if (assignees !== undefined) {
+    previousAssignees = (existingTask.assignees || []).map((id: any) => id.toString());
     const list = Array.isArray(assignees)
       ? assignees
       : assignee
@@ -622,8 +745,16 @@ async function handleUpdateTask(
         .filter((p: any) => p.isActive && p.status === "active")
         .map((p: any) => p._id.toString());
       updateData.assignees = eligible;
+      
+      // Check if assignees actually changed
+      if (JSON.stringify(eligible.sort()) !== JSON.stringify(previousAssignees.sort())) {
+        changes.push('assignees');
+      }
     } else {
       updateData.assignees = [];
+      if (previousAssignees.length > 0) {
+        changes.push('assignees');
+      }
     }
   }
   if (status !== undefined) updateData.status = status.toLowerCase();
@@ -666,6 +797,59 @@ async function handleUpdateTask(
       success: false,
       error: "Task not found",
     });
+  }
+
+  // Send notifications for task updates
+  if (changes.length > 0) {
+    try {
+      // Handle assignment notifications separately
+      if (changes.includes('assignees') && assignees !== undefined) {
+        console.log('📋 Sending task assignment update notifications:', {
+          taskId: updatedTask._id,
+          taskTitle: updatedTask.title,
+          newAssignees: updateData.assignees || [],
+          previousAssignees,
+          assignedBy: user.id
+        });
+        await NotificationService.notifyTaskAssigned(
+          updatedTask,
+          updateData.assignees || [],
+          previousAssignees,
+          user.id
+        );
+      }
+
+      // Handle completion notification
+      if (changes.includes('completeStatus')) {
+        if (updateData.completeStatus === true) {
+          await NotificationService.notifyTaskCompleted(updatedTask, user.id);
+        } else if (updateData.completeStatus === false) {
+          // Task was marked as incomplete - notify reporter and assignees
+          await NotificationService.notifyTaskUpdated({
+            task: updatedTask,
+            previousTask: existingTask,
+            updatedBy: user.id,
+            changes: ['completeStatus'],
+          });
+        }
+      }
+
+      // Send general update notification for other changes
+      const nonAssignmentChanges = changes.filter(change => 
+        !['assignees', 'completeStatus'].includes(change)
+      );
+      
+      if (nonAssignmentChanges.length > 0) {
+        await NotificationService.notifyTaskUpdated({
+          task: updatedTask,
+          previousTask: existingTask,
+          updatedBy: user.id,
+          changes: nonAssignmentChanges,
+        });
+      }
+    } catch (error) {
+      console.error("Error sending task update notifications:", error);
+    }
   }
 
   if (updatedTask.workOrderId) {
@@ -737,7 +921,8 @@ async function handleMoveTask(
         for (let index = 0; index < tasks.length; index++) {
           const task = tasks[index];
           if (task.id) {
-            await Task.findOneAndUpdate(
+            const existingTask = await Task.findById(task.id);
+            const updatedTask = await Task.findOneAndUpdate(
               {
                 _id: task.id,
                 tenantId: tenant._id,
@@ -748,6 +933,21 @@ async function handleMoveTask(
               },
               { new: true },
             );
+
+            // Send notification if column changed (status change)
+            if (existingTask && updatedTask && 
+                existingTask.columnId?.toString() !== updatedTask.columnId?.toString()) {
+              try {
+                await NotificationService.notifyTaskUpdated({
+                  task: updatedTask,
+                  previousTask: existingTask,
+                  updatedBy: user.id,
+                  changes: ['columnId'],
+                });
+              } catch (error) {
+                console.error("Error sending task move notifications:", error);
+              }
+            }
           }
         }
       }

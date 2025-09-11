@@ -26,6 +26,7 @@ import {
 } from '@mui/material';
 
 import { fDateTime } from 'src/utils/format-time';
+import { formatEstimatedDuration, formatMinutesToDuration } from 'src/utils/format-duration';
 
 import axiosInstance, { fetcher, endpoints } from 'src/lib/axios';
 
@@ -62,6 +63,7 @@ interface WorkOrder {
     role?: { name: string };
   }>;
   estimatedDuration?: { value?: number; unit?: 'hours' | 'days' | 'weeks' | 'months' } | number;
+  actualDuration?: number; // in minutes
   // Progress fields
   progress?: number;
   progressMode?: 'computed' | 'manual' | 'weighted';
@@ -198,7 +200,7 @@ export function WorkOrderList() {
             <TableBody>
               {workOrders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                     <Stack spacing={2} alignItems="center">
                       <Iconify
                         icon="solar:file-text-bold"
@@ -297,14 +299,16 @@ export function WorkOrderList() {
                     </TableCell>
 
                     <TableCell>
-                      {(() => {
-                        const ed = row.estimatedDuration as any;
-                        if (!ed) return '—';
-                        if (typeof ed === 'number') return `${ed} min`;
-                        if (typeof ed?.value === 'number' && ed?.unit)
-                          return `${ed.value} ${ed.unit}`;
-                        return '—';
-                      })()}
+                      <Stack spacing={0.5}>
+                        <Typography variant="caption" color="text.secondary">
+                          Est: {formatEstimatedDuration(row.estimatedDuration as any)}
+                        </Typography>
+                        <Typography variant="body2">
+                          {row.actualDuration
+                            ? formatMinutesToDuration(row.actualDuration)
+                            : '0 min'}
+                        </Typography>
+                      </Stack>
                     </TableCell>
 
                     <TableCell align="right">

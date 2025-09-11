@@ -13,6 +13,7 @@ import IconButton from '@mui/material/IconButton';
 
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
+import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 
 type Props = {
@@ -47,26 +48,38 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
   const canSubmit = !!date && (!!hours || !!days);
 
   const handleCreate = async () => {
-    const payload: any = {
-      taskId,
-      date,
-      notes: notes || undefined,
-    };
-    if (workOrderId) payload.workOrderId = workOrderId;
-    if (hours) payload.hours = parseFloat(hours);
-    if (days) payload.days = parseFloat(days);
+    try {
+      const payload: any = {
+        taskId,
+        date,
+        notes: notes || undefined,
+      };
+      if (workOrderId) payload.workOrderId = workOrderId;
+      if (hours) payload.hours = parseFloat(hours);
+      if (days) payload.days = parseFloat(days);
 
-    await axiosInstance.post(endpoints.fsa.timeEntries.create, payload);
-    setHours('');
-    setDays('');
-    setDate('');
-    setNotes('');
-    mutate(listKey);
+      await axiosInstance.post(endpoints.fsa.timeEntries.create, payload);
+      setHours('');
+      setDays('');
+      setDate('');
+      setNotes('');
+      mutate(listKey);
+      toast.success('Time entry added successfully');
+    } catch (error: any) {
+      const message = error?.response?.data?.message || 'Failed to add time entry';
+      toast.error(message);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await axiosInstance.delete(endpoints.fsa.timeEntries.delete(id));
-    mutate(listKey);
+    try {
+      await axiosInstance.delete(endpoints.fsa.timeEntries.delete(id));
+      mutate(listKey);
+      toast.success('Time entry deleted successfully');
+    } catch (error: any) {
+      const message = error?.response?.data?.message || 'Failed to delete time entry';
+      toast.error(message);
+    }
   };
 
   return (

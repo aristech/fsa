@@ -138,4 +138,10 @@ export const endpoints = {
       setup: '/api/v1/tenants/setup/',
     },
   },
+  notifications: {
+    list: '/api/v1/notifications',
+    counts: '/api/v1/notifications/counts',
+    markRead: '/api/v1/notifications/mark-read',
+    archive: '/api/v1/notifications/archive',
+  },
 } as const;

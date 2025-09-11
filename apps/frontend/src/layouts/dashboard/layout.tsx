@@ -138,10 +138,10 @@ export function DashboardLayout({
           <LanguagePopover data={allLangs} />
 
           {/** @slot Notifications popover */}
-          <NotificationsDrawer data={[]} />
+          <NotificationsDrawer />
 
           {/** @slot Contacts popover */}
-          <ContactsPopover data={[]} />
+          {/* <ContactsPopover data={[]} /> */}
 
           {/** @slot Settings button */}
           <SettingsButton />
