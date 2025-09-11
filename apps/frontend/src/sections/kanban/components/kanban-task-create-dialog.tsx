@@ -21,8 +21,8 @@ import FormControl from '@mui/material/FormControl';
 import Autocomplete from '@mui/material/Autocomplete';
 
 import axiosInstance from 'src/lib/axios';
-import { useClient } from 'src/contexts/client-context';
 import { createTask } from 'src/actions/kanban';
+import { useClient } from 'src/contexts/client-context';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
@@ -48,9 +48,18 @@ type Props = {
   onClose: () => void;
   onSuccess: (task: any) => void;
   status: string;
+  initialStartDate?: string;
+  initialEndDate?: string;
 };
 
-export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Props) {
+export function KanbanTaskCreateDialog({
+  open,
+  onClose,
+  onSuccess,
+  status,
+  initialStartDate,
+  initialEndDate,
+}: Props) {
   const { selectedClient } = useClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -130,12 +139,12 @@ export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Pro
       if (selectedWorkOrder?.personnelIds && Array.isArray(selectedWorkOrder.personnelIds)) {
         // Extract just the _id values from personnel objects
         const personnelIds = selectedWorkOrder.personnelIds
-          .map((person: any) => 
+          .map((person: any) =>
             // Handle both object format {_id: "...", employeeId: "..."} and string format
             typeof person === 'object' ? person._id : person
           )
           .filter(Boolean); // Remove any null/undefined values
-        
+
         console.log('Auto-populating assignees from work order:', personnelIds.length, 'personnel');
         setValue('assignees', personnelIds);
       }
@@ -161,15 +170,16 @@ export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Pro
           description: data.description,
           priority: data.priority,
           labels: data.labels,
-          assignee: data.assignees?.map((id: string) => {
-            const person = personnel.find((p: any) => p._id === id);
-            return {
-              id,
-              name: person?.name || 'Unknown',
-              email: person?.email,
-              avatarUrl: person?.avatarUrl,
-            };
-          }) || [],
+          assignee:
+            data.assignees?.map((id: string) => {
+              const person = personnel.find((p: any) => p._id === id);
+              return {
+                id,
+                name: person?.name || 'Unknown',
+                email: person?.email,
+                avatarUrl: person?.avatarUrl,
+              };
+            }) || [],
           reporter: {
             id: 'current-user', // You might want to get this from auth context
             name: 'Current User',
@@ -178,10 +188,10 @@ export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Pro
           workOrderId: data.workOrderId || undefined,
           workOrderNumber: selectedWorkOrder?.workOrderNumber || undefined,
           workOrderTitle: selectedWorkOrder?.title || undefined,
-          due: rangePicker.startDate && rangePicker.endDate ? [
-            rangePicker.startDate.toISOString(),
-            rangePicker.endDate.toISOString()
-          ] : undefined,
+          due:
+            rangePicker.startDate && rangePicker.endDate
+              ? [rangePicker.startDate.toISOString(), rangePicker.endDate.toISOString()]
+              : undefined,
           createdAt: new Date().toISOString(),
           status: 'Todo', // Default status
           columnId: status,
@@ -210,7 +220,7 @@ export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Pro
 
         // Use the optimistic createTask function
         await createTask(status, taskData as any);
-        
+
         toast.success('Task created successfully!');
         onSuccess(taskData);
         handleClose();

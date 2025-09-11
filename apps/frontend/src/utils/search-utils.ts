@@ -45,9 +45,7 @@ export function searchTasks(
     const taskMatches = config.searchableFields.task.some((field) => {
       const value = task[field];
       if (Array.isArray(value)) {
-        return value.some((item) =>
-          String(item).toLowerCase().includes(lowerSearchTerm)
-        );
+        return value.some((item) => String(item).toLowerCase().includes(lowerSearchTerm));
       }
       return value && String(value).toLowerCase().includes(lowerSearchTerm);
     });
@@ -65,14 +63,13 @@ export function searchTasks(
     });
 
     // Search in personnel fields (assignees and reporter)
-    const assigneeMatches = task.assignee?.some((assignee) =>
-      assignee.name?.toLowerCase().includes(lowerSearchTerm) ||
-      assignee.email?.toLowerCase().includes(lowerSearchTerm)
+    const assigneeMatches = task.assignee?.some(
+      (assignee) =>
+        assignee.name?.toLowerCase().includes(lowerSearchTerm) ||
+        assignee.email?.toLowerCase().includes(lowerSearchTerm)
     );
 
-    const reporterMatches = 
-      task.reporter?.name?.toLowerCase().includes(lowerSearchTerm) ||
-      task.reporter?.email?.toLowerCase().includes(lowerSearchTerm);
+    const reporterMatches = task.reporter?.name?.toLowerCase().includes(lowerSearchTerm);
 
     const personnelMatches = assigneeMatches || reporterMatches;
 

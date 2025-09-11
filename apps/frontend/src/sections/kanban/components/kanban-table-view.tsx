@@ -1,11 +1,9 @@
 'use client';
 
-import type { IKanbanTask, IKanbanColumn } from 'src/types/kanban';
+import type { IKanbanTask } from 'src/types/kanban';
 
 import { useBoolean } from 'minimal-shared/hooks';
 import { useMemo, useState, useCallback } from 'react';
-
-import { useGetBoard } from 'src/actions/kanban';
 
 import {
   Box,
@@ -30,7 +28,7 @@ import {
 import { fDate } from 'src/utils/format-time';
 import { sortTasks, searchTasks } from 'src/utils/search-utils';
 
-import { updateTask, deleteTask } from 'src/actions/kanban';
+import { updateTask, deleteTask, useGetBoard } from 'src/actions/kanban';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
@@ -41,10 +39,6 @@ import { KanbanDetails } from '../details/kanban-details';
 import { KanbanTaskCreateDialog } from './kanban-task-create-dialog';
 
 // ----------------------------------------------------------------------
-
-type Props = {
-  // Remove props - we'll get data from SWR hook
-};
 
 type OrderBy =
   | 'name'
@@ -105,31 +99,15 @@ const getStatusColor = (status: string) => {
 
 // ----------------------------------------------------------------------
 
-export function KanbanTableView({}: Props) {
+export function KanbanTableView() {
   // Get data from SWR hook for automatic updates
   const { board, boardLoading, boardError } = useGetBoard();
-  
+
   // Extract tasks and columns from board data
   const tasks = useMemo(() => Object.values(board?.tasks || {}).flat(), [board?.tasks]);
   const columns = board?.columns || [];
 
-  // Show loading state
-  if (boardLoading) {
-    return (
-      <Card sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Typography>Loading tasks...</Typography>
-      </Card>
-    );
-  }
-
-  // Show error state
-  if (boardError) {
-    return (
-      <Card sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Typography color="error">Error loading tasks: {boardError.message}</Typography>
-      </Card>
-    );
-  }
+  // All hooks must be called before any early returns
   const table = useTable({
     defaultOrderBy: 'created',
     defaultOrder: 'desc',
@@ -210,6 +188,28 @@ export function KanbanTableView({}: Props) {
       toast.error('Failed to delete task');
     }
   }, [selectedTask, taskDetailsDialog]);
+
+  // Show loading state
+  if (boardLoading) {
+    return (
+      <Card
+        sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <Typography>Loading tasks...</Typography>
+      </Card>
+    );
+  }
+
+  // Show error state
+  if (boardError) {
+    return (
+      <Card
+        sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <Typography color="error">Error loading tasks: {boardError.message}</Typography>
+      </Card>
+    );
+  }
 
   return (
     <Card

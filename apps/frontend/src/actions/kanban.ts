@@ -31,7 +31,10 @@ const swrOptions: SWRConfiguration = {
 type BoardData = {
   success: boolean;
   data: {
-    board: IKanban;
+    board: {
+      tasks: any[];
+      columns: any[];
+    };
   };
 };
 
@@ -211,7 +214,7 @@ export async function deleteColumn(columnId: IKanbanColumn['id']) {
       const tasks = Object.keys(board.tasks)
         .filter((key) => key !== columnId)
         .reduce((obj: IKanban['tasks'], key) => {
-          obj[key] = board.tasks[key];
+          obj[key] = board.tasks[key as keyof typeof board.tasks];
           return obj;
         }, {});
 
@@ -233,27 +236,27 @@ export async function createTask(columnId: IKanbanColumn['id'], taskData: IKanba
     const optimisticTask = { ...taskData, id: tempId };
 
     // Build URLs to update
-    const urlsToUpdate = [KANBAN_ENDPOINT];
+    const urlsToUpdate: string[] = [KANBAN_ENDPOINT];
     if (taskData.clientId) {
       urlsToUpdate.push(`${KANBAN_ENDPOINT}?clientId=${taskData.clientId}`);
     }
 
     // Optimistically add the task immediately
-    urlsToUpdate.forEach(url => {
+    urlsToUpdate.forEach((url) => {
       mutate(
-        url,
+        url as any,
         (currentData) => {
           if (!currentData) return currentData;
           const { data } = currentData as BoardData;
-          
+
           // We need to update the raw data structure that comes from the server
           // The useGetBoard hook rebuilds tasks based on column.taskIds
-          const rawTasks = [...(data.data?.board?.tasks || []), optimisticTask];
-          const rawColumns = (data.data?.board?.columns || []).map((col: any) => {
+          const rawTasks = [...(data.board?.tasks || []), optimisticTask];
+          const rawColumns = (data.board?.columns || []).map((col: any) => {
             if (col.id === columnId) {
               return {
                 ...col,
-                taskIds: [optimisticTask.id, ...(col.taskIds || [])]
+                taskIds: [optimisticTask.id, ...(col.taskIds || [])],
               };
             }
             return col;
@@ -262,13 +265,13 @@ export async function createTask(columnId: IKanbanColumn['id'], taskData: IKanba
           return {
             ...currentData,
             data: {
-              ...data.data,
+              ...data,
               board: {
-                ...data.data?.board,
+                ...data.board,
                 tasks: rawTasks,
-                columns: rawColumns
-              }
-            }
+                columns: rawColumns,
+              },
+            },
           };
         },
         false
@@ -288,15 +291,14 @@ export async function createTask(columnId: IKanbanColumn['id'], taskData: IKanba
           }),
         },
       };
-      
-      const response = await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'create-task' } });
+
+      await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'create-task' } });
 
       // Revalidate to get fresh data from server (this will replace optimistic updates)
-      await Promise.all(urlsToUpdate.map(url => mutate(url)));
-      
+      await Promise.all(urlsToUpdate.map((url) => mutate(url)));
     } catch (error) {
       // Remove optimistic task on error
-      urlsToUpdate.forEach(url => {
+      urlsToUpdate.forEach((url) => {
         mutate(
           url,
           (currentData) => {
@@ -304,12 +306,12 @@ export async function createTask(columnId: IKanbanColumn['id'], taskData: IKanba
             const { data } = currentData as BoardData;
 
             // Remove the optimistic task from both tasks and column taskIds
-            const rawTasks = (data.data?.board?.tasks || []).filter((task: any) => task.id !== tempId);
-            const rawColumns = (data.data?.board?.columns || []).map((col: any) => {
+            const rawTasks = (data.board?.tasks || []).filter((task: any) => task.id !== tempId);
+            const rawColumns = (data.board?.columns || []).map((col: any) => {
               if (col.id === columnId) {
                 return {
                   ...col,
-                  taskIds: (col.taskIds || []).filter((id: string) => id !== tempId)
+                  taskIds: (col.taskIds || []).filter((id: string) => id !== tempId),
                 };
               }
               return col;
@@ -318,13 +320,13 @@ export async function createTask(columnId: IKanbanColumn['id'], taskData: IKanba
             return {
               ...currentData,
               data: {
-                ...data.data,
+                ...data,
                 board: {
-                  ...data.data?.board,
+                  ...data.board,
                   tasks: rawTasks,
-                  columns: rawColumns
-                }
-              }
+                  columns: rawColumns,
+                },
+              },
             };
           },
           false
@@ -332,7 +334,6 @@ export async function createTask(columnId: IKanbanColumn['id'], taskData: IKanba
       });
       throw error;
     }
-    
   } else {
     /**
      * Work in local (fallback for when server is disabled)
@@ -345,7 +346,7 @@ export async function createTask(columnId: IKanbanColumn['id'], taskData: IKanba
           const { board } = data;
 
           // add task in board.tasks
-          const existingTasks = board.tasks[columnId] || [];
+          const existingTasks = board.tasks[columnId as keyof typeof board.tasks] || [];
           const tasks = { ...board.tasks, [columnId]: [taskData, ...existingTasks] };
 
           return { ...currentData, data: { ...data, board: { ...board, tasks } } };
@@ -384,10 +385,10 @@ export async function updateTask(columnId: IKanbanColumn['id'], taskData: IKanba
           const { board } = data;
 
           // tasks in column
-          const tasksInColumn = board.tasks[columnId] || [];
+          const tasksInColumn = board.tasks[columnId as keyof typeof board.tasks] || [];
 
           // find and update task
-          const updateTasks = tasksInColumn.map((task) =>
+          const updateTasks = tasksInColumn.map((task: any) =>
             task.id === taskData.id
               ? {
                   // Update data when found
@@ -480,10 +481,10 @@ export async function deleteTask(
         const { board } = data;
 
         // delete task in column
-        const existingTasks = board.tasks[columnId] || [];
+        const existingTasks = board.tasks[columnId as keyof typeof board.tasks] || [];
         const tasks = {
           ...board.tasks,
-          [columnId]: existingTasks.filter((task) => task.id !== taskId),
+          [columnId]: existingTasks.filter((task: any) => task.id !== taskId),
         };
 
         return { ...currentData, data: { ...data, board: { ...board, tasks } } };

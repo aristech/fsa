@@ -28,7 +28,6 @@ import { Searchbar } from '../components/searchbar';
 import { MenuButton } from '../components/menu-button';
 import { SettingsButton } from '../components/settings-button';
 import { LanguagePopover } from '../components/language-popover';
-import { ContactsPopover } from '../components/contacts-popover';
 import { navData as dashboardNavData } from '../nav-config-dashboard';
 import { dashboardLayoutVars, dashboardNavColorVars } from './css-vars';
 import { NotificationsDrawer } from '../components/notifications-drawer';

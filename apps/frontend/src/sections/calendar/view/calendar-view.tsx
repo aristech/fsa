@@ -6,10 +6,10 @@ import type { ICalendarEvent, ICalendarFilters } from 'src/types/calendar';
 import Calendar from '@fullcalendar/react';
 import listPlugin from '@fullcalendar/list';
 import dayGridPlugin from '@fullcalendar/daygrid';
+import { useState, startTransition } from 'react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { useBoolean, useSetState } from 'minimal-shared/hooks';
-import { useState, startTransition } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -22,13 +22,13 @@ import DialogTitle from '@mui/material/DialogTitle';
 import { fIsAfter, fIsBetween } from 'src/utils/format-time';
 
 import { deleteTask } from 'src/actions/kanban';
-import { updateEvent, useGetEvents } from 'src/actions/calendar';
 import { DashboardContent } from 'src/layouts/dashboard';
+import { updateEvent, useGetEvents } from 'src/actions/calendar';
 
 import { Iconify } from 'src/components/iconify';
 
-import { useEvent , CALENDAR_COLOR_OPTIONS } from 'src/sections/calendar/hooks/use-event';
 import { KanbanDetails } from 'src/sections/kanban/details/kanban-details';
+import { useEvent , CALENDAR_COLOR_OPTIONS } from 'src/sections/calendar/hooks/use-event';
 import { KanbanTaskCreateDialog } from 'src/sections/kanban/components/kanban-task-create-dialog';
 
 import { CalendarRoot } from '../styles';
