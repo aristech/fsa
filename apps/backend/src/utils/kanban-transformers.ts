@@ -31,6 +31,8 @@ export interface IKanbanTask {
   attachments?: any[];
   comments?: any[];
   completeStatus?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export function transformProjectToKanbanTask(
@@ -69,6 +71,8 @@ export function transformProjectToKanbanTask(
       clientCompany: "Client Company", // This would be populated from client data
     }),
     completeStatus: false, // Projects don't have completeStatus, default to false
+    createdAt: project.createdAt?.toISOString(),
+    updatedAt: project.updatedAt?.toISOString(),
   };
 }
 
@@ -173,5 +177,7 @@ export function transformTaskToKanbanTask(
       workOrderTitle: (task as any).workOrderTitle || workOrder?.title,
     }),
     completeStatus: (task as any).completeStatus || false,
+    createdAt: task.createdAt?.toISOString(),
+    updatedAt: task.updatedAt?.toISOString(),
   };
 }

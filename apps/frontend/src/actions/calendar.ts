@@ -40,15 +40,15 @@ export function useGetEvents() {
   const memoizedValue = useMemo(() => {
     const events = data?.events?.map((event) => ({
       ...event,
-        textColor: event?.color || '#1976d2',
-    }));
+      textColor: event?.color || '#1976d2',
+    })) || [];
 
     return {
-      events: events || [],
+      events,
       eventsLoading: isLoading,
       eventsError: error,
       eventsValidating: isValidating,
-      eventsEmpty: !isLoading && !isValidating && !data?.events?.length,
+      eventsEmpty: !isLoading && !isValidating && !events.length,
     };
   }, [data?.events, error, isLoading, isValidating]);
 

@@ -91,6 +91,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
 
   const [taskName, setTaskName] = useState(task.name);
   const [priority, setPriority] = useState(task.priority);
+  const [status, setStatus] = useState(task.columnId || task.status);
   const [taskDescription, setTaskDescription] = useState(task.description);
   const [tags, setTags] = useState<string[]>(task.tags || task.labels || []);
   // Fetch subtasks from backend
@@ -120,6 +121,13 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
   });
   const clients = Array.isArray(clientsData?.data?.clients) ? clientsData.data.clients : [];
 
+  // Fetch kanban meta data for statuses
+  const { data: kanbanMeta } = useSWR(open ? '/api/v1/kanban/meta' : null, async (url) => {
+    const response = await axiosInstance.get(url);
+    return response.data;
+  });
+  const statuses = Array.isArray(kanbanMeta?.data?.statuses) ? kanbanMeta.data.statuses : [];
+
   // Real-time functionality for tasks and comments
   const { typingUsers, startTyping, stopTyping } = useTaskRealtime(task.id);
 
@@ -143,6 +151,15 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       setTimeout(scrollCommentsToBottom, 100);
     }
   }, [tabs.value, comments.length, scrollCommentsToBottom]);
+
+  // Update local state when task changes
+  useEffect(() => {
+    setTaskName(task.name);
+    setPriority(task.priority);
+    setStatus(task.columnId || task.status);
+    setTaskDescription(task.description);
+    setTags(task.tags || task.labels || []);
+  }, [task]);
 
   // Handle real-time comment events
   useRealtimeComments(task.id, {
@@ -275,6 +292,30 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         .catch((e) => console.error('Failed to update priority', e));
     },
     [task.id]
+  );
+
+  const handleChangeStatus = useCallback(
+    (newValue: string) => {
+      setStatus(newValue);
+      // Move task to new column/status
+      axiosInstance
+        .post(`${endpoints.kanban}?endpoint=move-task`, {
+          taskId: task.id,
+          columnId: newValue,
+        })
+        .then(() => {
+          // Update the task in the parent component
+          onUpdateTask({ ...task, columnId: newValue, status: newValue } as any);
+          toast.success('Task status updated successfully');
+        })
+        .catch((e) => {
+          console.error('Failed to update status', e);
+          toast.error('Failed to update task status');
+          // Revert the status if update failed
+          setStatus(task.columnId || task.status);
+        });
+    },
+    [task, onUpdateTask]
   );
   // Persist date changes (start/end)
   useEffect(() => {
@@ -601,6 +642,35 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         <BlockLabel>Priority</BlockLabel>
         {/* Fallback to existing control if you prefer icons; for now, keep it and treat options dynamically */}
         <KanbanDetailsPriority priority={priority} onChangePriority={handleChangePriority} />
+      </Box>
+
+      {/* Status */}
+      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <BlockLabel>Status</BlockLabel>
+        <FormControl size="small" sx={{ minWidth: 120 }}>
+          <Select
+            value={status || ''}
+            onChange={(event) => handleChangeStatus(event.target.value)}
+            displayEmpty
+            sx={{ ml: 1 }}
+          >
+            {statuses.map((statusOption: any) => (
+              <MenuItem key={statusOption.id} value={statusOption.id}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      backgroundColor: statusOption.color || '#888',
+                    }}
+                  />
+                  {statusOption.name}
+                </Box>
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </Box>
       {/* Description */}
       <Box sx={{ display: 'flex' }}>

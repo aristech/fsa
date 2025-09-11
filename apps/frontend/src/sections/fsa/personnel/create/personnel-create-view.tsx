@@ -112,7 +112,7 @@ export function PersonnelCreateView({
   const { handleSubmit, control, reset } = methods;
 
   useEffect(() => {
-    if (!open || loading) return;
+    if (!open) return;
 
     const load = async () => {
       setLoading(true);
@@ -228,7 +228,7 @@ export function PersonnelCreateView({
     };
 
     load();
-  }, [open, personnelId, tenantId, loading, reset]);
+  }, [open, personnelId, tenantId, reset]);
 
   const onSubmit = handleSubmit(async (data) => {
     const isEdit = !!personnelId;

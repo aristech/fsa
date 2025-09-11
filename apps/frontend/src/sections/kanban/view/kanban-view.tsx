@@ -21,6 +21,7 @@ import { kanbanClasses } from '../classes';
 import { useBoardDnd } from '../hooks/use-board-dnd';
 import { KanbanColumn } from '../column/kanban-column';
 import { KanbanColumnAdd } from '../column/kanban-column-add';
+import { KanbanTableView } from '../components/kanban-table-view';
 import { KanbanColumnSkeleton } from '../components/kanban-skeleton';
 
 // ----------------------------------------------------------------------
@@ -49,6 +50,7 @@ export function KanbanView() {
   const { boardRef } = useBoardDnd(board);
 
   const [columnFixed, setColumnFixed] = useState(false);
+  const [tableView, setTableView] = useState(false);
 
   const renderLoading = () => (
     <Box sx={{ gap: 'var(--kanban-column-gap)', display: 'flex', alignItems: 'flex-start' }}>
@@ -58,16 +60,22 @@ export function KanbanView() {
 
   const renderEmpty = () => <EmptyContent filled sx={{ py: 10, maxHeight: { md: 480 } }} />;
 
-  const renderList = () => (
-    <FlexibleColumnContainer columnFixed={columnFixed}>
-      <AnimatePresence>
-        {board.columns.map((column) => (
-          <KanbanColumn key={column.id} column={column} tasks={board.tasks[column.id]} />
-        ))}
-      </AnimatePresence>
-      <KanbanColumnAdd />
-    </FlexibleColumnContainer>
-  );
+  const renderList = () => {
+    if (tableView) {
+      return <KanbanTableView />;
+    }
+
+    return (
+      <FlexibleColumnContainer columnFixed={columnFixed}>
+        <AnimatePresence>
+          {board.columns.map((column) => (
+            <KanbanColumn key={column.id} column={column} tasks={board.tasks[column.id]} />
+          ))}
+        </AnimatePresence>
+        <KanbanColumnAdd />
+      </FlexibleColumnContainer>
+    );
+  };
 
   const renderHead = () => (
     <Box
@@ -81,19 +89,37 @@ export function KanbanView() {
     >
       <Typography variant="h4">Kanban</Typography>
 
-      <FormControlLabel
-        label="Fixed column"
-        labelPlacement="start"
-        control={
-          <Switch
-            checked={columnFixed}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setColumnFixed(event.target.checked);
-            }}
-            slotProps={{ input: { id: 'fixed-column-switch' } }}
+      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+        <FormControlLabel
+          label="Table view"
+          labelPlacement="start"
+          control={
+            <Switch
+              checked={tableView}
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                setTableView(event.target.checked);
+              }}
+              slotProps={{ input: { id: 'table-view-switch' } }}
+            />
+          }
+        />
+
+        {!tableView && (
+          <FormControlLabel
+            label="Fixed column"
+            labelPlacement="start"
+            control={
+              <Switch
+                checked={columnFixed}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  setColumnFixed(event.target.checked);
+                }}
+                slotProps={{ input: { id: 'fixed-column-switch' } }}
+              />
+            }
           />
-        }
-      />
+        )}
+      </Box>
     </Box>
   );
 
@@ -115,7 +141,7 @@ export function KanbanView() {
       >
         {renderHead()}
 
-        <ScrollContainer ref={boardRef}>
+        <ScrollContainer ref={boardRef} tableView={tableView}>
           {boardLoading ? renderLoading() : <>{boardEmpty ? renderEmpty() : renderList()}</>}
         </ScrollContainer>
       </DashboardContent>
@@ -130,12 +156,23 @@ const flexStyles: CSSObject = {
   flex: '1 1 auto',
 };
 
-const ScrollContainer = styled('div')(({ theme }) => ({
+const ScrollContainer = styled('div', {
+  shouldForwardProp: (prop: string) => !['tableView', 'sx'].includes(prop),
+})<{ tableView?: boolean }>(({ theme }) => ({
   ...theme.mixins.scrollbarStyles(theme),
   ...flexStyles,
   display: 'flex',
   overflowX: 'auto',
   flexDirection: 'column',
+  variants: [
+    {
+      props: { tableView: true },
+      style: {
+        overflowX: 'visible',
+        ...flexStyles,
+      },
+    },
+  ],
 }));
 
 const FlexibleColumnContainer = styled('ul', {

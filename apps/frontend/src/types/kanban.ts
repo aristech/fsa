@@ -51,6 +51,9 @@ export type IKanbanTask = {
   clientId?: string;
   clientName?: string;
   clientCompany?: string;
+  // Timestamps
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type IKanbanColumn = {

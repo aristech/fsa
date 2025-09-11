@@ -3,13 +3,13 @@
 import type { Theme, SxProps } from '@mui/material/styles';
 import type { ICalendarEvent, ICalendarFilters } from 'src/types/calendar';
 
-import { startTransition } from 'react';
 import Calendar from '@fullcalendar/react';
 import listPlugin from '@fullcalendar/list';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { useBoolean, useSetState } from 'minimal-shared/hooks';
+import { useState, startTransition } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -21,12 +21,15 @@ import DialogTitle from '@mui/material/DialogTitle';
 
 import { fIsAfter, fIsBetween } from 'src/utils/format-time';
 
-import { DashboardContent } from 'src/layouts/dashboard';
+import { deleteTask } from 'src/actions/kanban';
 import { updateEvent, useGetEvents } from 'src/actions/calendar';
+import { DashboardContent } from 'src/layouts/dashboard';
 
 import { Iconify } from 'src/components/iconify';
 
 import { useEvent , CALENDAR_COLOR_OPTIONS } from 'src/sections/calendar/hooks/use-event';
+import { KanbanDetails } from 'src/sections/kanban/details/kanban-details';
+import { KanbanTaskCreateDialog } from 'src/sections/kanban/components/kanban-task-create-dialog';
 
 import { CalendarRoot } from '../styles';
 import { CalendarForm } from '../calendar-form';
@@ -41,6 +44,14 @@ export function CalendarView() {
   const theme = useTheme();
 
   const openFilters = useBoolean();
+  
+  // State for task details drawer
+  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [openTaskDetails, setOpenTaskDetails] = useState(false);
+  
+  // State for create task dialog
+  const [openCreateTask, setOpenCreateTask] = useState(false);
+  const [selectedDateRange, setSelectedDateRange] = useState<any>(null);
 
   const { events, eventsLoading } = useGetEvents();
 
@@ -57,8 +68,7 @@ export function CalendarView() {
     /********/
     onDropEvent,
     onChangeView,
-    onSelectRange,
-    onClickEvent,
+    onClickEvent: originalOnClickEvent,
     onResizeEvent,
     onDateNavigation,
     /********/
@@ -71,6 +81,61 @@ export function CalendarView() {
     /********/
     onClickEventInFilters,
   } = useCalendar();
+  
+  // Custom handlers for tasks
+  const handleSelectRange = (arg: any) => {
+    // When user clicks on empty day, open create task dialog
+    setSelectedDateRange(arg);
+    setOpenCreateTask(true);
+  };
+  
+  const handleClickEvent = (arg: any) => {
+    const { event } = arg;
+    
+    if (event.extendedProps?.type === 'task' || event._def?.extendedProps?.type === 'task') {
+      // Open task details drawer for task events
+      const taskData = event.extendedProps?.task || event._def?.extendedProps?.task;
+      if (taskData) {
+        setSelectedTask(taskData);
+        setOpenTaskDetails(true);
+      }
+    } else {
+      // Use original handler for regular calendar events
+      originalOnClickEvent(arg);
+    }
+  };
+  
+  const handleCloseTaskDetails = () => {
+    setOpenTaskDetails(false);
+    setSelectedTask(null);
+  };
+  
+  const handleUpdateTask = (updatedTask: any) => {
+    // Refresh task events data
+    // The SWR will automatically revalidate
+    setSelectedTask(updatedTask);
+  };
+  
+  const handleDeleteTask = async () => {
+    if (selectedTask) {
+      try {
+        await deleteTask(selectedTask.columnId || selectedTask.status, selectedTask.id, selectedTask);
+        handleCloseTaskDetails();
+      } catch (error) {
+        console.error('Failed to delete task:', error);
+      }
+    }
+  };
+  
+  const handleCloseCreateTask = () => {
+    setOpenCreateTask(false);
+    setSelectedDateRange(null);
+  };
+  
+  const handleCreateTaskSuccess = (task: any) => {
+    handleCloseCreateTask();
+    // Task events will be refreshed automatically through SWR
+  };
 
   const currentEvent = useEvent(events, selectedEventId, selectedRange, openForm);
 
@@ -201,8 +266,8 @@ export function CalendarView() {
               ref={calendarRef}
               initialView={view}
               events={dataFiltered}
-              select={onSelectRange}
-              eventClick={onClickEvent}
+              select={handleSelectRange}
+              eventClick={handleClickEvent}
               businessHours={{
                 daysOfWeek: [1, 2, 3, 4, 5], // Mon-Fri
               }}
@@ -224,6 +289,27 @@ export function CalendarView() {
 
       {renderCreateFormDialog()}
       {renderFiltersDrawer()}
+      
+      {/* Task Details Drawer */}
+      {selectedTask && (
+        <KanbanDetails
+          task={selectedTask}
+          open={openTaskDetails}
+          onClose={handleCloseTaskDetails}
+          onUpdateTask={handleUpdateTask}
+          onDeleteTask={handleDeleteTask}
+        />
+      )}
+      
+      {/* Create Task Dialog */}
+      <KanbanTaskCreateDialog
+        open={openCreateTask}
+        onClose={handleCloseCreateTask}
+        onSuccess={handleCreateTaskSuccess}
+        status="todo"
+        initialStartDate={selectedDateRange?.startStr}
+        initialEndDate={selectedDateRange?.endStr}
+      />
     </>
   );
 }

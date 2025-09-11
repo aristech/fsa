@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import {
   Box,
@@ -57,7 +57,7 @@ export function PersonnelQuickEditForm({ open, onClose, personnel }: PersonnelQu
   const [loading, setLoading] = useState(false);
 
   // Fetch roles when popover opens
-  useState(() => {
+  useEffect(() => {
     if (open) {
       const fetchRoles = async () => {
         try {
@@ -74,7 +74,7 @@ export function PersonnelQuickEditForm({ open, onClose, personnel }: PersonnelQu
 
       fetchRoles();
     }
-  });
+  }, [open]);
 
   const handleSave = async () => {
     setLoading(true);

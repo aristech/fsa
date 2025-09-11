@@ -228,26 +228,111 @@ export async function createTask(columnId: IKanbanColumn['id'], taskData: IKanba
    * Work on server
    */
   if (enableServer) {
-    const data = {
-      columnId,
-      taskData: {
-        ...taskData,
-        // Include client information if available
-        ...(taskData.clientId && {
-          clientId: taskData.clientId,
-          clientName: taskData.clientName,
-          clientCompany: taskData.clientCompany,
-        }),
-      },
-    };
-    await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'create-task' } });
+    // Generate temporary ID for optimistic update
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const optimisticTask = { ...taskData, id: tempId };
 
-    // Revalidate the cache to get fresh data from server
-    // Revalidate both the base URL and the client-filtered URL if applicable
-    mutate(KANBAN_ENDPOINT);
+    // Build URLs to update
+    const urlsToUpdate = [KANBAN_ENDPOINT];
     if (taskData.clientId) {
-      mutate(`${KANBAN_ENDPOINT}?clientId=${taskData.clientId}`);
+      urlsToUpdate.push(`${KANBAN_ENDPOINT}?clientId=${taskData.clientId}`);
     }
+
+    // Optimistically add the task immediately
+    urlsToUpdate.forEach(url => {
+      mutate(
+        url,
+        (currentData) => {
+          if (!currentData) return currentData;
+          const { data } = currentData as BoardData;
+          
+          // We need to update the raw data structure that comes from the server
+          // The useGetBoard hook rebuilds tasks based on column.taskIds
+          const rawTasks = [...(data.data?.board?.tasks || []), optimisticTask];
+          const rawColumns = (data.data?.board?.columns || []).map((col: any) => {
+            if (col.id === columnId) {
+              return {
+                ...col,
+                taskIds: [optimisticTask.id, ...(col.taskIds || [])]
+              };
+            }
+            return col;
+          });
+
+          return {
+            ...currentData,
+            data: {
+              ...data.data,
+              board: {
+                ...data.data?.board,
+                tasks: rawTasks,
+                columns: rawColumns
+              }
+            }
+          };
+        },
+        false
+      );
+    });
+
+    try {
+      const data = {
+        columnId,
+        taskData: {
+          ...taskData,
+          // Include client information if available
+          ...(taskData.clientId && {
+            clientId: taskData.clientId,
+            clientName: taskData.clientName,
+            clientCompany: taskData.clientCompany,
+          }),
+        },
+      };
+      
+      const response = await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'create-task' } });
+
+      // Revalidate to get fresh data from server (this will replace optimistic updates)
+      await Promise.all(urlsToUpdate.map(url => mutate(url)));
+      
+    } catch (error) {
+      // Remove optimistic task on error
+      urlsToUpdate.forEach(url => {
+        mutate(
+          url,
+          (currentData) => {
+            if (!currentData) return currentData;
+            const { data } = currentData as BoardData;
+
+            // Remove the optimistic task from both tasks and column taskIds
+            const rawTasks = (data.data?.board?.tasks || []).filter((task: any) => task.id !== tempId);
+            const rawColumns = (data.data?.board?.columns || []).map((col: any) => {
+              if (col.id === columnId) {
+                return {
+                  ...col,
+                  taskIds: (col.taskIds || []).filter((id: string) => id !== tempId)
+                };
+              }
+              return col;
+            });
+
+            return {
+              ...currentData,
+              data: {
+                ...data.data,
+                board: {
+                  ...data.data?.board,
+                  tasks: rawTasks,
+                  columns: rawColumns
+                }
+              }
+            };
+          },
+          false
+        );
+      });
+      throw error;
+    }
+    
   } else {
     /**
      * Work in local (fallback for when server is disabled)

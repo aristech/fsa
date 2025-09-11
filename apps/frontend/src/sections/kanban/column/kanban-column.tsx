@@ -80,8 +80,8 @@ export function KanbanColumn({ column, tasks, sx, ...other }: ColumnProps) {
   const handleCreateTask = useCallback(
     async (taskData: any) => {
       try {
-        // The dialog handles the API call, we just need to refresh the board
-        window.location.reload(); // Simple refresh for now - you might want to implement better state management
+        // The createTask function now handles cache updates automatically
+        // No need to reload the page
       } catch (error) {
         console.error(error);
       }

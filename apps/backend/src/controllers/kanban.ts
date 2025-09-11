@@ -18,6 +18,7 @@ import {
   transformProjectToKanbanTask,
   transformTaskToKanbanTask,
 } from "../utils/kanban-transformers";
+import { WorkOrderAssignmentService } from "../services/work-order-assignment-service";
 
 export async function getKanbanData(
   request: FastifyRequest,
@@ -277,6 +278,8 @@ export async function handleKanbanPost(
         return await handleUpdateTask(req, reply, body);
       case "move-task":
         return await handleMoveTask(req, reply, body);
+      case "remove-task-assignees":
+        return await handleRemoveTaskAssignees(req, reply, body);
       // Column (Status) endpoints
       case "rename-column":
         return await handleRenameColumn(req, reply, body);
@@ -372,26 +375,37 @@ async function handleCreateTask(
   // Validate assignees eligibility (active personnel only)
   let validatedAssignees: string[] = [];
   if (Array.isArray(assignees) ? assignees.length > 0 : !!assignee) {
-    const list = Array.isArray(assignees)
-      ? assignees
-      : assignee
-        ? [assignee]
-        : [];
-    const personnelDocs = await Personnel.find({
-      _id: { $in: list },
-      tenantId: tenant._id,
-    }).select("_id isActive status");
-    const eligible = personnelDocs
-      .filter((p: any) => p.isActive && p.status === "active")
-      .map((p: any) => p._id.toString());
-    validatedAssignees = eligible;
-    
-    console.log('👥 Personnel validation results:', {
-      inputAssignees: list,
-      foundPersonnel: personnelDocs.length,
-      eligiblePersonnel: eligible.length,
-      validatedAssignees: eligible
-    });
+    try {
+      const list = Array.isArray(assignees)
+        ? assignees
+        : assignee
+          ? [assignee]
+          : [];
+      
+      // Only validate if we have assignees to validate
+      if (list.length > 0) {
+        const personnelDocs = await Personnel.find({
+          _id: { $in: list },
+          tenantId: tenant._id,
+        }).select("_id isActive status");
+        
+        const eligible = personnelDocs
+          .filter((p: any) => p.isActive && p.status === "active")
+          .map((p: any) => p._id.toString());
+        validatedAssignees = eligible;
+        
+        console.log('👥 Personnel validation results:', {
+          inputAssignees: list,
+          foundPersonnel: personnelDocs.length,
+          eligiblePersonnel: eligible.length,
+          validatedAssignees: eligible
+        });
+      }
+    } catch (error) {
+      console.error('Error validating assignees:', error);
+      // Continue with empty assignees array if validation fails
+      validatedAssignees = [];
+    }
   }
 
   // If linking a work order, fetch its title/number if not provided
@@ -489,6 +503,27 @@ async function handleCreateTask(
 
   await newTask.save();
 
+  // If task is linked to a work order, inherit personnel assignments
+  if (workOrderId) {
+    try {
+      const inheritedAssignees = await WorkOrderAssignmentService.inheritWorkOrderAssignments(
+        newTask._id.toString(),
+        workOrderId,
+        tenant._id.toString(),
+        user.id,
+        { skipNotifications: true } // We'll handle notifications after inheritance
+      );
+      
+      // Update the task object with inherited assignees for notification purposes
+      if (inheritedAssignees.length > 0) {
+        newTask.assignees = inheritedAssignees;
+      }
+    } catch (error) {
+      console.error("Error inheriting work order assignments:", error);
+      // Don't fail task creation if inheritance fails
+    }
+  }
+
   // Send notifications for task creation
   try {
     await NotificationService.notifyTaskCreated(newTask, user.id);
@@ -497,18 +532,19 @@ async function handleCreateTask(
     // Don't fail the task creation if notifications fail
   }
 
-  // Send notifications for task assignment
-  if (validatedAssignees.length > 0) {
+  // Send notifications for task assignment (including inherited ones)
+  const finalAssignees = newTask.assignees || [];
+  if (finalAssignees.length > 0) {
     console.log('📋 Sending task assignment notifications:', {
       taskId: newTask._id,
       taskTitle: newTask.title,
-      validatedAssignees,
+      finalAssignees,
       assignedBy: user.id
     });
     try {
       await NotificationService.notifyTaskAssigned(
         newTask,
-        validatedAssignees,
+        finalAssignees.map((id: any) => id.toString()),
         [],
         user.id
       );
@@ -1166,4 +1202,61 @@ async function handleDeleteColumn(
 
   await Status.deleteOne({ _id: columnId, tenantId: tenant._id });
   return reply.send({ success: true, message: "Column deleted" });
+}
+
+async function handleRemoveTaskAssignees(
+  req: AuthenticatedRequest,
+  reply: FastifyReply,
+  body: any,
+) {
+  const { tenant, user } = req.context!;
+  const { taskId, personnelIds } = body;
+
+  if (!taskId || !personnelIds || !Array.isArray(personnelIds)) {
+    return reply.code(400).send({
+      success: false,
+      error: "taskId and personnelIds array are required",
+    });
+  }
+
+  try {
+    // Validate task exists and belongs to tenant
+    const task = await Task.findOne({
+      _id: taskId,
+      tenantId: tenant._id,
+    });
+
+    if (!task) {
+      return reply.code(404).send({
+        success: false,
+        error: "Task not found",
+      });
+    }
+
+    // Use our service to remove personnel from the task
+    await WorkOrderAssignmentService.removePersonnelFromTask(
+      taskId,
+      personnelIds,
+      tenant._id.toString(),
+      user.id
+    );
+
+    // Get updated task for response
+    const updatedTask = await Task.findById(taskId).select('assignees title');
+
+    return reply.send({
+      success: true,
+      message: `Removed ${personnelIds.length} personnel from task`,
+      data: {
+        taskId,
+        remainingAssignees: updatedTask?.assignees || [],
+      },
+    });
+  } catch (error) {
+    console.error("Error removing task assignees:", error);
+    return reply.code(500).send({
+      success: false,
+      error: "Internal server error",
+    });
+  }
 }

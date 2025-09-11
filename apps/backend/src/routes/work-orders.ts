@@ -12,6 +12,7 @@ import mongoose from "mongoose";
 import { WorkOrderProgressService } from "../services/work-order-progress-service";
 import { AssignmentPermissionService } from "../services/assignment-permission-service";
 import { EntityCleanupService } from "../services/entity-cleanup-service";
+import { WorkOrderAssignmentService } from "../services/work-order-assignment-service";
 
 export async function workOrderRoutes(fastify: FastifyInstance) {
   // Apply authentication middleware to all routes
@@ -284,6 +285,22 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           workOrder._id.toString(),
         );
 
+        // Propagate personnel assignments to existing tasks linked to this work order
+        if (body.personnelIds && Array.isArray(body.personnelIds) && body.personnelIds.length > 0) {
+          try {
+            await WorkOrderAssignmentService.propagateWorkOrderAssignments(
+              workOrder._id.toString(),
+              body.personnelIds,
+              [], // no previous personnel for new work order
+              tenant._id.toString(),
+              user.id
+            );
+          } catch (error) {
+            console.error('Error propagating work order assignments:', error);
+            // Don't fail work order creation if assignment propagation fails
+          }
+        }
+
         return reply.code(201).send({
           success: true,
           message: "Work order created successfully",
@@ -309,6 +326,21 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         const { tenant, user } = req.context!;
         const { id } = request.params as { id: string };
         const body = request.body as any;
+
+        // Get current work order to track personnel changes
+        const currentWorkOrder = await WorkOrder.findOne({
+          _id: id,
+          tenantId: tenant._id,
+        }).select('personnelIds');
+
+        if (!currentWorkOrder) {
+          return reply.code(404).send({
+            success: false,
+            error: "Work order not found",
+          });
+        }
+
+        const previousPersonnelIds = currentWorkOrder.personnelIds || [];
 
         // Validate personnelIds if provided
         if (body.personnelIds && Array.isArray(body.personnelIds)) {
@@ -369,6 +401,49 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
             workOrder.personnelIds || [],
             tenant._id.toString(),
           );
+
+          // Propagate assignment changes to existing tasks
+          const newPersonnelIds = workOrder.personnelIds || [];
+          const previousPersonnelIdsStr = previousPersonnelIds.map((id: any) => id.toString());
+          const newPersonnelIdsStr = newPersonnelIds.map((id: any) => id.toString());
+          
+          // Check if there are any changes in personnel assignments
+          const hasChanges = 
+            previousPersonnelIdsStr.length !== newPersonnelIdsStr.length ||
+            !previousPersonnelIdsStr.every((id: string) => newPersonnelIdsStr.includes(id)) ||
+            !newPersonnelIdsStr.every((id: string) => previousPersonnelIdsStr.includes(id));
+
+          if (hasChanges) {
+            try {
+              // Propagate new assignments to tasks
+              if (newPersonnelIdsStr.length > 0) {
+                await WorkOrderAssignmentService.propagateWorkOrderAssignments(
+                  workOrder._id.toString(),
+                  newPersonnelIdsStr,
+                  previousPersonnelIdsStr,
+                  tenant._id.toString(),
+                  user.id
+                );
+              }
+
+              // Handle removed personnel (they remain on tasks but we log this)
+              const removedPersonnelIds = previousPersonnelIdsStr.filter((id: string) => 
+                !newPersonnelIdsStr.includes(id)
+              );
+              
+              if (removedPersonnelIds.length > 0) {
+                await WorkOrderAssignmentService.handleWorkOrderPersonnelRemoval(
+                  workOrder._id.toString(),
+                  removedPersonnelIds,
+                  tenant._id.toString(),
+                  user.id
+                );
+              }
+            } catch (error) {
+              console.error('Error propagating work order assignment changes:', error);
+              // Don't fail the update if assignment propagation fails
+            }
+          }
         }
 
         return reply.send({

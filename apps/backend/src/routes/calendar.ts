@@ -3,6 +3,18 @@ import { authenticate } from "../middleware/auth";
 import { WorkOrder, Assignment, Project, Task } from "../models";
 import { AuthenticatedRequest } from "../types";
 
+// Priority color mapping - matches frontend constants
+const PRIORITY_COLORS = {
+  low: '#4caf50',    // success.main
+  medium: '#ff9800',  // warning.main
+  high: '#f44336',   // error.main
+  urgent: '#d32f2f', // error.dark
+};
+
+const getPriorityColor = (priority: string): string => {
+  return PRIORITY_COLORS[priority as keyof typeof PRIORITY_COLORS] || PRIORITY_COLORS.medium;
+};
+
 export async function calendarRoutes(fastify: FastifyInstance) {
   // Apply authentication middleware to all routes
   fastify.addHook("preHandler", authenticate);
@@ -74,20 +86,27 @@ export async function calendarRoutes(fastify: FastifyInstance) {
           status: p.status,
           priority: p.priority,
         })),
-        ...tasks.map((t) => ({
-          id: t._id.toString(),
-          title: t.title,
-          start: t.dueDate,
-          end: t.dueDate,
-          type: "task",
-          status: t.status,
-          priority: t.priority,
-        })),
+        ...tasks
+          .filter(t => t.startDate || t.dueDate) // Only include tasks with dates
+          .map((t) => ({
+            id: t._id.toString(),
+            title: t.title,
+            start: t.startDate || t.dueDate,
+            end: t.dueDate || t.startDate,
+            allDay: false,
+            type: "task",
+            status: t.status,
+            priority: t.priority,
+            color: getPriorityColor(t.priority || 'medium'),
+            extendedProps: {
+              taskId: t._id.toString(),
+              task: t,
+            },
+          })),
       ];
 
       return reply.send({
-        success: true,
-        data: { events },
+        events,
       });
     } catch (error) {
       console.error("Error fetching calendar events:", error);

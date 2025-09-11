@@ -22,6 +22,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 
 import axiosInstance from 'src/lib/axios';
 import { useClient } from 'src/contexts/client-context';
+import { createTask } from 'src/actions/kanban';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
@@ -126,8 +127,17 @@ export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Pro
   useEffect(() => {
     if (watchedWorkOrderId) {
       const selectedWorkOrder = workOrders.find((wo: any) => wo._id === watchedWorkOrderId);
-      if (selectedWorkOrder?.personnelIds) {
-        setValue('assignees', selectedWorkOrder.personnelIds);
+      if (selectedWorkOrder?.personnelIds && Array.isArray(selectedWorkOrder.personnelIds)) {
+        // Extract just the _id values from personnel objects
+        const personnelIds = selectedWorkOrder.personnelIds
+          .map((person: any) => 
+            // Handle both object format {_id: "...", employeeId: "..."} and string format
+            typeof person === 'object' ? person._id : person
+          )
+          .filter(Boolean); // Remove any null/undefined values
+        
+        console.log('Auto-populating assignees from work order:', personnelIds.length, 'personnel');
+        setValue('assignees', personnelIds);
       }
       // Also auto-select client from the selected work order
       const woClient = selectedWorkOrder?.clientId;
@@ -138,70 +148,95 @@ export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Pro
     }
   }, [watchedWorkOrderId, watchedClientId, workOrders, setValue]);
 
-  const onSubmit = handleSubmit(async (data) => {
-    setIsSubmitting(true);
-    try {
-      // Find selected work order and client for additional data
-      const selectedWorkOrder = workOrders.find((wo: any) => wo._id === data.workOrderId);
-      const selectedClientFromForm = clients.find((client: any) => client._id === data.clientId);
+  const onSubmit = handleSubmit(
+    async (data) => {
+      setIsSubmitting(true);
+      try {
+        // Find selected work order and client for additional data
+        const selectedWorkOrder = workOrders.find((wo: any) => wo._id === data.workOrderId);
+        const selectedClientFromForm = clients.find((client: any) => client._id === data.clientId);
 
-      const taskData = {
-        name: data.name,
-        description: data.description,
-        priority: data.priority,
-        labels: data.labels,
-        assignees: data.assignees,
-        workOrderId: data.workOrderId || undefined,
-        workOrderNumber: selectedWorkOrder?.workOrderNumber || undefined,
-        startDate: rangePicker.startDate?.toISOString(),
-        dueDate: rangePicker.endDate?.toISOString(),
-        // Add client information from form selection or context
-        ...(selectedClientFromForm && {
-          clientId: selectedClientFromForm._id,
-          clientName: selectedClientFromForm.name,
-          clientCompany: selectedClientFromForm.company,
-        }),
-        // Fallback to context client if no form selection
-        ...(!selectedClientFromForm &&
-          selectedClient && {
-            clientId: selectedClient._id,
-            clientName: selectedClient.name,
-            clientCompany: selectedClient.company,
+        const taskData = {
+          name: data.name,
+          description: data.description,
+          priority: data.priority,
+          labels: data.labels,
+          assignee: data.assignees?.map((id: string) => {
+            const person = personnel.find((p: any) => p._id === id);
+            return {
+              id,
+              name: person?.name || 'Unknown',
+              email: person?.email,
+              avatarUrl: person?.avatarUrl,
+            };
+          }) || [],
+          reporter: {
+            id: 'current-user', // You might want to get this from auth context
+            name: 'Current User',
+            email: 'user@example.com',
+          },
+          workOrderId: data.workOrderId || undefined,
+          workOrderNumber: selectedWorkOrder?.workOrderNumber || undefined,
+          workOrderTitle: selectedWorkOrder?.title || undefined,
+          due: rangePicker.startDate && rangePicker.endDate ? [
+            rangePicker.startDate.toISOString(),
+            rangePicker.endDate.toISOString()
+          ] : undefined,
+          createdAt: new Date().toISOString(),
+          status: 'Todo', // Default status
+          columnId: status,
+          // Add client information from form selection or context
+          ...(selectedClientFromForm && {
+            clientId: selectedClientFromForm._id,
+            clientName: selectedClientFromForm.name,
+            clientCompany: selectedClientFromForm.company,
           }),
-        // Final fallback: derive client from selected work order if available
-        ...(!selectedClientFromForm &&
-          !selectedClient &&
-          selectedWorkOrder?.clientId && {
-            clientId: (selectedWorkOrder.clientId as any)?._id || selectedWorkOrder.clientId,
-            clientName: (selectedWorkOrder.clientId as any)?.name,
-            clientCompany: (selectedWorkOrder.clientId as any)?.company,
-          }),
-      };
+          // Fallback to context client if no form selection
+          ...(!selectedClientFromForm &&
+            selectedClient && {
+              clientId: selectedClient._id,
+              clientName: selectedClient.name,
+              clientCompany: selectedClient.company,
+            }),
+          // Final fallback: derive client from selected work order if available
+          ...(!selectedClientFromForm &&
+            !selectedClient &&
+            selectedWorkOrder?.clientId && {
+              clientId: (selectedWorkOrder.clientId as any)?._id || selectedWorkOrder.clientId,
+              clientName: (selectedWorkOrder.clientId as any)?.name,
+              clientCompany: (selectedWorkOrder.clientId as any)?.company,
+            }),
+        };
 
-      const response = await axiosInstance.post('/api/v1/kanban', {
-        endpoint: 'create-task',
-        taskData,
-        columnId: status, // pass the selected column id; backend will map to status
-      });
-
-      if (response.data.success) {
+        // Use the optimistic createTask function
+        await createTask(status, taskData as any);
+        
         toast.success('Task created successfully!');
-        onSuccess(response.data.data);
+        onSuccess(taskData);
         handleClose();
+      } catch (error) {
+        console.error('Failed to create task:', error);
+        toast.error('Failed to create task. Please try again.');
+      } finally {
+        setIsSubmitting(false);
       }
-    } catch (error) {
-      console.error('Failed to create task:', error);
-      toast.error('Failed to create task. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+    },
+    (validationErrors) => {
+      console.error('Form validation failed:', validationErrors);
+      toast.error('Please fix the form errors before submitting.');
     }
-  });
+  );
 
   const handleClose = useCallback(() => {
     reset();
     rangePicker.onReset?.();
     onClose();
   }, [reset, rangePicker, onClose]);
+
+  const handleSubmitClick = () => {
+    // Debug helper - can be removed in production
+    console.log('Submit button clicked');
+  };
 
   return (
     <Drawer
@@ -457,6 +492,7 @@ export function KanbanTaskCreateDialog({ open, onClose, onSuccess, status }: Pro
             variant="contained"
             loading={isSubmitting}
             loadingIndicator="Creating..."
+            onClick={handleSubmitClick}
           >
             Create Task
           </LoadingButton>
