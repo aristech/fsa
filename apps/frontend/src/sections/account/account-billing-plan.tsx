@@ -40,7 +40,7 @@ export function AccountBillingPlan({ cardList, addressBook, plans }: Props) {
 
   const [selectedPlan, setSelectedPlan] = useState('');
   const [selectedCard, setSelectedCard] = useState<IPaymentCard | null>(primaryCard);
-  const [selectedAddress, setSelectedAddress] = useState<IAddressItem | null>(primaryAddress);
+  const [selectedAddress] = useState<IAddressItem | null>(primaryAddress);
 
   const handleSelectPlan = useCallback(
     (newValue: string) => {

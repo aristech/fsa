@@ -51,7 +51,7 @@ export function KanbanDetailsCommentInput({ taskId, onStartTyping, onStopTyping,
     } finally {
       setIsSubmitting(false);
     }
-  }, [taskId, message, isSubmitting]);
+  }, [taskId, message, isSubmitting, onCommentSent]);
 
   const handleKeyPress = useCallback(
     (event: React.KeyboardEvent) => {

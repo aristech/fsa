@@ -225,7 +225,7 @@ export function ItemInfo({ sx, assignee, comments, attachments, ...other }: Item
             }}
           >
             {assignee.map((user) => (
-              <Avatar key={user.id} alt={user.name} src={''} sx={{ fontSize: 11 }}>
+              <Avatar key={user.id} alt={user.name} src="" sx={{ fontSize: 11 }}>
                 {(user as any).initials ||
                   (user.name || '')
                     .split(' ')

@@ -77,7 +77,7 @@ export function PersonnelCreateView({
 }: PersonnelCreateViewProps) {
   const { tenantId } = useTenantAPI();
   const [roles, setRoles] = useState<RoleOption[]>([]);
-  const [users, setUsers] = useState<UserOption[]>([]);
+  const [, setUsers] = useState<UserOption[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [skillOptions, setSkillOptions] = useState<string[]>([]);
   const [certOptions, setCertOptions] = useState<string[]>([]);
@@ -228,7 +228,7 @@ export function PersonnelCreateView({
     };
 
     load();
-  }, [open, personnelId, tenantId]);
+  }, [open, personnelId, tenantId, loading, reset]);
 
   const onSubmit = handleSubmit(async (data) => {
     const isEdit = !!personnelId;

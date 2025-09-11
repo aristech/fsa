@@ -28,17 +28,17 @@ export function AccountBillingAddress({ addressBook, sx, ...other }: Props) {
 
   const [addressId, setAddressId] = useState('');
 
-  const handleAddAddress = useCallback((address: IAddressItem) => {
-    console.info('ADD ADDRESS', address);
-  }, []);
+  // const handleAddAddress = useCallback((address: IAddressItem) => {
+  //   console.info('ADD ADDRESS', address);
+  // }, []);
 
-  const handleSelectedId = useCallback(
-    (event: React.MouseEvent<HTMLElement>, id: string) => {
-      menuActions.onOpen(event);
-      setAddressId(id);
-    },
-    [menuActions]
-  );
+  // const handleSelectedId = useCallback(
+  //   (event: React.MouseEvent<HTMLElement>, id: string) => {
+  //     menuActions.onOpen(event);
+  //     setAddressId(id);
+  //   },
+  //   [menuActions]
+  // );
 
   const handleClose = useCallback(() => {
     menuActions.onClose();

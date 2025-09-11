@@ -26,7 +26,7 @@ export function SignOutButton({ onClose, sx, ...other }: Props) {
 
   const { checkUserSession } = useAuthContext();
 
-  const { logout: signOutAuth0 } = useAuth0();
+  useAuth0();
 
   const handleLogout = useCallback(async () => {
     try {

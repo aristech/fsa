@@ -200,7 +200,7 @@ export function WorkOrderDetails({ id }: Props) {
                           await axiosInstance.put(endpoints.fsa.workOrders.details(id), {
                             progressManual: Array.isArray(value) ? value[0] : value,
                           });
-                        } catch (err) {
+                        } catch {
                           // noop; could add a toast
                         }
                       }}

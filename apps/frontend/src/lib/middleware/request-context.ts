@@ -81,7 +81,7 @@ export function withRequestContext(
           if (!user || !user.isActive) {
             return NextResponse.json({ error: 'Invalid or inactive user' }, { status: 401 });
           }
-        } catch (error) {
+        } catch {
           return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
         }
       }

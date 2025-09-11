@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react';
+import type { ITimeEntry } from 'src/types/kanban';
+
 import useSWR, { mutate } from 'swr';
+import { useMemo, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
@@ -9,9 +11,9 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 
-import { Iconify } from 'src/components/iconify';
 import axiosInstance, { endpoints } from 'src/lib/axios';
-import type { ITimeEntry } from 'src/types/kanban';
+
+import { Iconify } from 'src/components/iconify';
 
 type Props = {
   taskId: string;
@@ -26,10 +28,10 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
 
   const { data, isLoading } = useSWR<{ success: boolean; data: ITimeEntry[] }>(
     listKey,
-    ([url, cfg]) => axiosInstance.get(url, cfg).then((r) => r.data)
+    ([url, cfg]: [string, any]) => axiosInstance.get(url, cfg).then((r) => r.data)
   );
 
-  const entries = data?.data || [];
+  const entries = useMemo(() => data?.data || [], [data]);
 
   const totals = useMemo(() => {
     const hours = entries.reduce((sum, e) => sum + (e.hours || 0), 0);

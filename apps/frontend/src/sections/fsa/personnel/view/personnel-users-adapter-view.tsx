@@ -108,12 +108,12 @@ export function PersonnelUsersAdapterView() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [tableData, setTableData] = useState<IUserItem[]>([]);
-  const [editHrefs, setEditHrefs] = useState<Record<string, string>>({});
+  const [, setEditHrefs] = useState<Record<string, string>>({});
   const [roleOptions, setRoleOptions] = useState<{ id: string; name: string }[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
 
   const filters = useSetState<IUserTableFilters>({ name: '', role: [], status: 'all' });
-  const { state: currentFilters, setState: updateFilters } = filters;
+  const { state: currentFilters } = filters;
 
   const loadData = async () => {
     try {
