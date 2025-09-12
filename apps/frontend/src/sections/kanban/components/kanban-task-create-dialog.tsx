@@ -430,7 +430,8 @@ export function KanbanTaskCreateDialog({
 
               <CustomDateRangePicker
                 variant="calendar"
-                title="Choose task dates"
+                title="Choose task dates & times"
+                enableTime
                 startDate={rangePicker.startDate}
                 endDate={rangePicker.endDate}
                 onChangeStartDate={rangePicker.onChangeStartDate}

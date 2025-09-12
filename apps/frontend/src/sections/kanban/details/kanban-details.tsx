@@ -485,41 +485,49 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       />
 
       {/* Reporter */}
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <BlockLabel>Reporter</BlockLabel>
-        <Tooltip title={task.reporter.name}>
-          <Avatar>
-            {task.reporter.initials ||
-              task.reporter.name
-                ?.split(' ')
-                .map((n) => n.charAt(0))
-                .join('')
-                .toUpperCase() ||
-              'R'}
-          </Avatar>
-        </Tooltip>
-      </Box>
+      {task.reporter && (
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <BlockLabel>Reporter</BlockLabel>
+          <Tooltip title={task.reporter.name || 'Reporter'}>
+            <Avatar>
+              {task.reporter.initials ||
+                task.reporter.name
+                  ?.split(' ')
+                  .map((n) => n.charAt(0))
+                  .join('')
+                  .toUpperCase() ||
+                'R'}
+            </Avatar>
+          </Tooltip>
+        </Box>
+      )}
       {/* Assignee */}
       <Box sx={{ display: 'flex' }}>
         <BlockLabel sx={{ height: 40, lineHeight: '40px' }}>Assignee</BlockLabel>
 
         <Box sx={{ gap: 1, display: 'flex', flexWrap: 'wrap' }}>
-          {task.assignee.map((user) => (
-            <Tooltip
-              key={user.id}
-              title={`${user.name}${(user as any).email ? ` • ${(user as any).email}` : ''}`}
-            >
-              <Avatar>
-                {user.initials ||
-                  user.name
-                    ?.split(' ')
-                    .map((n) => n.charAt(0))
-                    .join('')
-                    .toUpperCase() ||
-                  'A'}
-              </Avatar>
-            </Tooltip>
-          ))}
+          {task.assignee && Array.isArray(task.assignee) && task.assignee.length > 0 ? (
+            task.assignee.map((user) => (
+              <Tooltip
+                key={user.id}
+                title={`${user.name}${(user as any).email ? ` • ${(user as any).email}` : ''}`}
+              >
+                <Avatar>
+                  {user.initials ||
+                    user.name
+                      ?.split(' ')
+                      .map((n) => n.charAt(0))
+                      .join('')
+                      .toUpperCase() ||
+                    'A'}
+                </Avatar>
+              </Tooltip>
+            ))
+          ) : (
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              No assignees
+            </Typography>
+          )}
 
           <Tooltip title="Add assignee">
             <IconButton
@@ -626,7 +634,8 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
 
         <CustomDateRangePicker
           variant="calendar"
-          title="Choose task dates"
+          title="Choose task dates & times"
+          enableTime
           startDate={rangePicker.startDate}
           endDate={rangePicker.endDate}
           onChangeStartDate={rangePicker.onChangeStartDate}

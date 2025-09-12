@@ -17,12 +17,20 @@ export type ICalendarRange = {
 
 export type ICalendarEvent = {
   id: string;
-  color: string;
+  color?: string;
   title: string;
   allDay: boolean;
-  description: string;
+  description?: string;
   end: ICalendarDate;
   start: ICalendarDate;
+  priority?: "low" | "medium" | "high" | "urgent";
+  type?: "event" | "meeting" | "deadline" | "reminder" | "task" | "work-order" | "assignment" | "project";
+  location?: string;
+  attendees?: string[];
+  status?: string;
+  extendedProps?: {
+    [key: string]: any;
+  };
 };
 
 export type ListView = 'list' | 'listDay' | 'listWeek' | 'listMonth' | 'listYear';

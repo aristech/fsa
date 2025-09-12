@@ -34,10 +34,9 @@ export const EventSchema = z.object({
     .max(100, { error: 'Title must be less than 100 characters' }),
   description: z
     .string()
-    .min(1, { error: 'Description is required!' })
-    .min(50, { error: 'Description must be at least 50 characters' }),
+    .optional(),
   // Not required
-  color: z.string(),
+  color: z.string().optional(),
   allDay: z.boolean(),
   start: z.union([z.string(), z.number()]),
   end: z.union([z.string(), z.number()]),

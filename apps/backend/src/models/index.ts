@@ -19,3 +19,4 @@ export { MagicLink, type IMagicLink } from "./MagicLink";
 export { Counter, type ICounter } from "./counter";
 export { TimeEntry, type ITimeEntry } from "./TimeEntry";
 export { Notification, type INotification } from "./Notification";
+export { CalendarEvent, type ICalendarEvent } from "./CalendarEvent";

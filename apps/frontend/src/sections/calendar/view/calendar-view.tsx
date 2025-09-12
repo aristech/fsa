@@ -13,26 +13,22 @@ import { useBoolean, useSetState } from 'minimal-shared/hooks';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
-import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
 import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
-import DialogTitle from '@mui/material/DialogTitle';
 
 import { fIsAfter, fIsBetween } from 'src/utils/format-time';
 
-import { deleteTask } from 'src/actions/kanban';
+import { deleteTask, updateTaskDates } from 'src/actions/kanban';
 import { DashboardContent } from 'src/layouts/dashboard';
-import { updateEvent, useGetEvents } from 'src/actions/calendar';
+import { useGetEvents } from 'src/actions/calendar';
 
 import { Iconify } from 'src/components/iconify';
 
 import { KanbanDetails } from 'src/sections/kanban/details/kanban-details';
-import { useEvent , CALENDAR_COLOR_OPTIONS } from 'src/sections/calendar/hooks/use-event';
+import { CALENDAR_COLOR_OPTIONS } from 'src/sections/calendar/hooks/use-event';
 import { KanbanTaskCreateDialog } from 'src/sections/kanban/components/kanban-task-create-dialog';
 
 import { CalendarRoot } from '../styles';
-import { CalendarForm } from '../calendar-form';
 import { useCalendar } from '../hooks/use-calendar';
 import { CalendarToolbar } from '../calendar-toolbar';
 import { CalendarFilters } from '../calendar-filters';
@@ -53,7 +49,7 @@ export function CalendarView() {
   const [openCreateTask, setOpenCreateTask] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState<any>(null);
 
-  const { events, eventsLoading } = useGetEvents();
+  const { events, eventsLoading, eventsError, eventsEmpty } = useGetEvents();
 
   const filters = useSetState<ICalendarFilters>({ colors: [], startDate: null, endDate: null });
   const { state: currentFilters } = filters;
@@ -71,13 +67,6 @@ export function CalendarView() {
     onClickEvent: originalOnClickEvent,
     onResizeEvent,
     onDateNavigation,
-    /********/
-    openForm,
-    onOpenForm,
-    onCloseForm,
-    /********/
-    selectedRange,
-    selectedEventId,
     /********/
     onClickEventInFilters,
   } = useCalendar();
@@ -137,7 +126,23 @@ export function CalendarView() {
     // Task events will be refreshed automatically through SWR
   };
 
-  const currentEvent = useEvent(events, selectedEventId, selectedRange, openForm);
+  // Custom update function for task dates (used in drag/drop)
+  const updateTaskFromCalendar = async (eventData: Partial<ICalendarEvent>) => {
+    try {
+      // Check if this is a task event and has required data
+      if (eventData.id && eventData.start && eventData.end) {
+        const event = events.find(e => e.id === eventData.id);
+        if (event && event.extendedProps?.type === 'task') {
+          const startDate = typeof eventData.start === 'string' ? eventData.start : new Date(eventData.start).toISOString();
+          const endDate = typeof eventData.end === 'string' ? eventData.end : new Date(eventData.end).toISOString();
+          await updateTaskDates(eventData.id, startDate, endDate);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update task dates:', error);
+    }
+  };
+
 
   const canReset =
     currentFilters.colors.length > 0 || (!!currentFilters.startDate && !!currentFilters.endDate);
@@ -154,38 +159,6 @@ export function CalendarView() {
     flexDirection: 'column',
   };
 
-  const renderCreateFormDialog = () => (
-    <Dialog
-      fullWidth
-      maxWidth="xs"
-      open={openForm}
-      onClose={onCloseForm}
-      transitionDuration={{
-        enter: theme.transitions.duration.shortest,
-        exit: theme.transitions.duration.shortest - 80,
-      }}
-      slotProps={{
-        paper: {
-          sx: {
-            display: 'flex',
-            overflow: 'hidden',
-            flexDirection: 'column',
-            '& form': { ...flexStyles, minHeight: 0 },
-          },
-        },
-      }}
-    >
-      <DialogTitle sx={{ minHeight: 76 }}>
-        {openForm && <> {currentEvent?.id ? 'Edit' : 'Add'} event</>}
-      </DialogTitle>
-
-      <CalendarForm
-        currentEvent={currentEvent}
-        colorOptions={CALENDAR_COLOR_OPTIONS}
-        onClose={onCloseForm}
-      />
-    </Dialog>
-  );
 
   const renderFiltersDrawer = () => (
     <CalendarFilters
@@ -220,13 +193,6 @@ export function CalendarView() {
           }}
         >
           <Typography variant="h4">Calendar</Typography>
-          <Button
-            variant="contained"
-            startIcon={<Iconify icon="mingcute:add-line" />}
-            onClick={onOpenForm}
-          >
-            Add event
-          </Button>
         </Box>
 
         {canReset && renderResults()}
@@ -271,14 +237,32 @@ export function CalendarView() {
               businessHours={{
                 daysOfWeek: [1, 2, 3, 4, 5], // Mon-Fri
               }}
+              // Enhanced time handling and display
+              slotMinTime="06:00:00"
+              slotMaxTime="22:00:00"
+              slotDuration="00:30:00"
+              slotLabelInterval="01:00:00"
+              slotLabelFormat={{
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: false,
+              }}
+              eventTimeFormat={{
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: false,
+              }}
+              // Enable resizing for all event types
+              eventStartEditable
+              eventDurationEditable
               eventDrop={(arg) => {
                 startTransition(() => {
-                  onDropEvent(arg, updateEvent);
+                  onDropEvent(arg, updateTaskFromCalendar);
                 });
               }}
               eventResize={(arg) => {
                 startTransition(() => {
-                  onResizeEvent(arg, updateEvent);
+                  onResizeEvent(arg, updateTaskFromCalendar);
                 });
               }}
               plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
@@ -287,7 +271,6 @@ export function CalendarView() {
         </Card>
       </DashboardContent>
 
-      {renderCreateFormDialog()}
       {renderFiltersDrawer()}
       
       {/* Task Details Drawer */}

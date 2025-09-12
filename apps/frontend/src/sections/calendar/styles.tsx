@@ -127,6 +127,36 @@ export const CalendarRoot = styled('div')(({ theme }) => {
         overflow: 'unset',
         fontWeight: theme.typography.fontWeightBold,
       },
+      // Enhanced resize handles
+      '& .fc-event-resizer': {
+        display: 'block',
+        width: '100%',
+        height: '4px',
+        position: 'absolute',
+        zIndex: 4,
+        cursor: 'row-resize',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '20px',
+          height: '2px',
+          borderRadius: '1px',
+          backgroundColor: 'currentColor',
+          opacity: 0.6,
+        },
+        '&:hover::before': {
+          opacity: 1,
+          backgroundColor: theme.vars.palette.primary.main,
+        },
+      },
+      '& .fc-event-resizer-start': {
+        top: '-2px',
+      },
+      '& .fc-event-resizer-end': {
+        bottom: '-2px',
+      },
     },
     '& .fc-daygrid-event': {
       marginTop: 0,
