@@ -7,7 +7,7 @@ import { varAlpha } from 'minimal-shared/utils';
 function desktopVars(theme: Theme) {
   const {
     shape,
-    vars: { palette },
+    vars: { palette } = { palette: {} as any },
   } = theme;
 
   return {
@@ -40,7 +40,7 @@ function desktopVars(theme: Theme) {
 function mobileVars(theme: Theme) {
   const {
     shape,
-    vars: { palette },
+    vars: { palette } = { palette: {} as any },
   } = theme;
 
   return {

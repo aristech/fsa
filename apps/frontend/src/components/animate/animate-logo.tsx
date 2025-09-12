@@ -80,14 +80,14 @@ const LogoZoomPrimaryOutline = styled(m.span)(({ theme }) => ({
   position: 'absolute',
   width: 'calc(100% - 20px)',
   height: 'calc(100% - 20px)',
-  border: `solid 3px ${varAlpha(theme.vars?.palette.primary.darkChannel || '#000' || '0 0 0', 0.24)}`,
+  border: `solid 3px ${varAlpha(theme.vars?.palette.primary.darkChannel || '#000', 0.24)}`,
 }));
 
 const LogoZoomSecondaryOutline = styled(m.span)(({ theme }) => ({
   width: '100%',
   height: '100%',
   position: 'absolute',
-  border: `solid 8px ${varAlpha(theme.vars?.palette.primary.darkChannel || '#000' || '0 0 0', 0.24)}`,
+  border: `solid 8px ${varAlpha(theme.vars?.palette.primary.darkChannel || '#000', 0.24)}`,
 }));
 
 // ----------------------------------------------------------------------

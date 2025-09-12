@@ -117,11 +117,11 @@ function ScrollableContent() {
     scrollYProgress,
     [0, 0.25, 0.5, 0.75, 1],
     [
-      theme.vars?.palette.background.default,
-      theme.vars?.palette.background.neutral,
-      theme.vars?.palette.background.neutral,
-      theme.vars?.palette.background.neutral,
-      theme.vars?.palette.background.default,
+      theme.vars?.palette.background.default || '#ffffff',
+      theme.vars?.palette.background.neutral || '#f5f5f5',
+      theme.vars?.palette.background.neutral || '#f5f5f5',
+      theme.vars?.palette.background.neutral || '#f5f5f5',
+      theme.vars?.palette.background.default || '#ffffff',
     ]
   );
 

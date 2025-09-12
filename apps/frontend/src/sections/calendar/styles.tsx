@@ -106,12 +106,12 @@ export const CalendarRoot = styled('div')(({ theme }) => {
         border: `solid 1px ${varAlpha('currentColor', 0.16)}`,
         transition: theme.transitions.create(['background-color']),
         backgroundColor: varAlpha(
-          theme.vars?.palette.common.whiteChannel,
+          theme.vars?.palette.common.whiteChannel || '255 255 255',
           'calc(1 - var(--custom-event-bg-opacity))'
         ),
         '&:hover': {
           backgroundColor: varAlpha(
-            theme.vars?.palette.common.whiteChannel,
+            theme.vars?.palette.common.whiteChannel || '255 255 255',
             'calc(1 - var(--custom-event-bg-opacity) * 1.5)'
           ),
         },

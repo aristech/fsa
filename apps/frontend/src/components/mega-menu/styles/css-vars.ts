@@ -8,7 +8,7 @@ export function megaMenuVars(theme: Theme, variant: 'vertical' | 'horizontal' | 
   const {
     shape,
     spacing,
-    vars: { palette },
+    vars: { palette } = { palette: {} as any },
   } = theme;
 
   const getValue = (values: {

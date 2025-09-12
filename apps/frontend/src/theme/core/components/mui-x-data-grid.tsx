@@ -1,6 +1,6 @@
 import type { GridBaseIconProps } from '@mui/x-data-grid';
 import type { SvgIconProps } from '@mui/material/SvgIcon';
-import type { Theme, CSSObject, Components } from '@mui/material/styles';
+import type { Theme, CSSObject } from '@mui/material/styles';
 
 import { varAlpha } from 'minimal-shared/utils';
 
@@ -206,7 +206,7 @@ export const SeparatorIcon = (props: IconProps) => (
 /* **********************************************************************
  * 🧩 Components
  * **********************************************************************/
-const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
+const MuiDataGrid: any = {
   // ▼▼▼▼▼▼▼▼ ⚙️ PROPS ▼▼▼▼▼▼▼▼
   defaultProps: {
     showToolbar: true,
@@ -249,7 +249,7 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
   },
   // ▼▼▼▼▼▼▼▼ 🎨 STYLE ▼▼▼▼▼▼▼▼
   styleOverrides: {
-    root: ({ theme }) => {
+    root: ({ theme }: { theme: Theme }) => {
       const baseStyles: CSSObject = {
         borderWidth: 0,
         backgroundColor: 'transparent',
@@ -272,7 +272,7 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
     /**
      * @overlay
      */
-    overlay: ({ theme }) => ({
+    overlay: ({ theme }: { theme: Theme }) => ({
       [`& .${linearProgressClasses.root}`]: {
         height: 3,
         borderRadius: 0,
@@ -288,7 +288,7 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
     /**
      * @column
      */
-    columnHeader: ({ theme }) => ({
+    columnHeader: ({ theme }: { theme: Theme }) => ({
       color: theme.vars?.palette.text.secondary,
       backgroundColor: theme.vars?.palette.background.neutral,
       [`&.${gridClasses['columnHeader--sorted']}, &.${gridClasses['columnHeader--sorted']} .${gridClasses.sortIcon}`]:
@@ -299,7 +299,7 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
     /**
      * @cell
      */
-    cell: ({ theme }) => ({
+    cell: ({ theme }: { theme: Theme }) => ({
       borderTopStyle: 'dashed',
       '&:hover': {
         color: theme.vars?.palette.primary.main,
@@ -318,7 +318,7 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
     /**
      * @toolbar
      */
-    toolbar: ({ theme }) => ({
+    toolbar: ({ theme }: { theme: Theme }) => ({
       minHeight: 'auto',
       borderBottom: 'none',
       padding: theme.spacing(2),
@@ -329,7 +329,7 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
     /**
      * @panel
      */
-    panelContent: ({ theme }) => ({
+    panelContent: ({ theme }: { theme: Theme }) => ({
       gap: theme.spacing(4),
       padding: theme.spacing(3, 2.5, 3, 2),
       [`&.${gridClasses.paper}`]: {
@@ -338,10 +338,10 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
         padding: 0,
       },
     }),
-    panelFooter: ({ theme }) => ({
+    panelFooter: ({ theme }: { theme: Theme }) => ({
       padding: theme.spacing(1.5),
     }),
-    menu: ({ theme }) => ({
+    menu: ({ theme }: { theme: Theme }) => ({
       [`& .${paperClasses.root}`]: {
         ...theme.mixins.paperStyles(theme, { dropdown: true }),
       },
@@ -356,13 +356,13 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
     /**
      * @panel column
      */
-    columnsManagementHeader: ({ theme }) => ({
+    columnsManagementHeader: ({ theme }: { theme: Theme }) => ({
       paddingTop: theme.spacing(2.5),
     }),
-    columnsManagement: ({ theme }) => ({
+    columnsManagement: ({ theme }: { theme: Theme }) => ({
       gap: theme.spacing(0.5),
     }),
-    columnsManagementFooter: ({ theme }) => ({
+    columnsManagementFooter: ({ theme }: { theme: Theme }) => ({
       borderTopStyle: 'dashed',
       paddingTop: theme.spacing(1.5),
       paddingBottom: theme.spacing(1.5),
@@ -370,7 +370,7 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
     /**
      * @panel filter
      */
-    filterFormDeleteIcon: ({ theme }) => ({
+    filterFormDeleteIcon: ({ theme }: { theme: Theme }) => ({
       [`& .${iconButtonClasses.root}`]: {
         padding: '5px',
         backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.16),
@@ -383,6 +383,6 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
 /* **********************************************************************
  * 🚀 Export
  * **********************************************************************/
-export const dataGrid: Components<Theme> = {
+export const dataGrid: any = {
   MuiDataGrid,
 };

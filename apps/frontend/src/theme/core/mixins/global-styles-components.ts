@@ -238,8 +238,8 @@ export function softStyles(theme: Theme, colorKey: ColorKey, options?: StyleOpti
 
     const hover: CSSObject = getHoverStyles(options?.hover, {
       backgroundColor: varAlpha(
-        theme.vars?.palette.grey['500Channel'],
-        theme.vars?.opacity.soft.hoverBg
+        theme.vars?.palette.grey['500Channel'] || '158 158 158',
+        theme.vars?.opacity.soft.hoverBg || 0.08
       ),
     });
 
@@ -265,8 +265,8 @@ export function softStyles(theme: Theme, colorKey: ColorKey, options?: StyleOpti
       boxShadow: 'none',
       color: theme.vars?.palette[colorKey].dark,
       backgroundColor: varAlpha(
-        theme.vars?.palette[colorKey].mainChannel,
-        theme.vars?.opacity.soft.bg
+        theme.vars?.palette[colorKey].mainChannel || '0 0 0',
+        theme.vars?.opacity.soft.bg || 0.08
       ),
       ...theme.applyStyles('dark', {
         color: theme.vars?.palette[colorKey].light,
@@ -274,8 +274,8 @@ export function softStyles(theme: Theme, colorKey: ColorKey, options?: StyleOpti
     },
     hover: getHoverStyles(options?.hover, {
       backgroundColor: varAlpha(
-        theme.vars?.palette[colorKey].mainChannel,
-        theme.vars?.opacity.soft.hoverBg
+        theme.vars?.palette[colorKey].mainChannel || '0 0 0',
+        theme.vars?.opacity.soft.hoverBg || 0.12
       ),
     }),
   };

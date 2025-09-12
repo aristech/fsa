@@ -38,8 +38,8 @@ export function ResultItem({ title, path, labels, href, sx, ...other }: Props) {
             borderRadius: 1,
             borderColor: theme.vars?.palette.primary.main,
             backgroundColor: varAlpha(
-              theme.vars?.palette.primary.mainChannel,
-              theme.vars?.palette.action.hoverOpacity
+              theme.vars?.palette.primary.mainChannel || '0 0 0',
+              theme.vars?.palette.action.hoverOpacity || 0.04
             ),
           },
         }),

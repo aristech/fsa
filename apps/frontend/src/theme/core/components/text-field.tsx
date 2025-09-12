@@ -1,7 +1,6 @@
 import type { InputBaseClasses } from '@mui/material/InputBase';
+import type { FilledInputClasses } from '@mui/material/FilledInput';
 import type { OutlinedInputClasses } from '@mui/material/OutlinedInput';
-import type { PickerTextFieldOwnerState } from '@mui/x-date-pickers/models';
-import type { FilledInputProps, FilledInputClasses } from '@mui/material/FilledInput';
 import type { Theme, CSSObject, Components, ComponentsVariants } from '@mui/material/styles';
 
 import { varAlpha } from 'minimal-shared/utils';
@@ -15,24 +14,18 @@ import { inputAdornmentClasses } from '@mui/material/InputAdornment';
 
 type InputContext = 'standard' | 'picker';
 
-type InputSizeProps = Pick<FilledInputProps, 'size' | 'hiddenLabel'> & {
-  ownerState?: PickerTextFieldOwnerState;
-};
+// type InputSizeProps = Pick<FilledInputProps, 'size' | 'hiddenLabel'> & {
+//   ownerState?: PickerTextFieldOwnerState;
+// };
 
 type InputBaseVariants = ComponentsVariants<Theme>['MuiInputBase'];
-type PickersInputBaseVariants =
-  | InputBaseVariants
-  | ComponentsVariants<Theme>['MuiPickersInputBase'];
+type PickersInputBaseVariants = InputBaseVariants;
 
 type OutlinedInputVariants = ComponentsVariants<Theme>['MuiOutlinedInput'];
-type PickersOutlinedInputVariants =
-  | OutlinedInputVariants
-  | ComponentsVariants<Theme>['MuiPickersOutlinedInput'];
+type PickersOutlinedInputVariants = OutlinedInputVariants;
 
 type FilledInputVariants = ComponentsVariants<Theme>['MuiFilledInput'];
-type PickersFilledInputVariants =
-  | FilledInputVariants
-  | ComponentsVariants<Theme>['MuiPickersFilledInput'];
+type PickersFilledInputVariants = FilledInputVariants;
 
 export const INPUT_TYPOGRAPHY = {
   fontSize: { base: 15, responsive: 16 },
@@ -126,7 +119,7 @@ export const inputBaseVariants = {
       style: { ...INPUT_PADDING.base.medium },
     },
     {
-      props: ({ size, ownerState }: InputSizeProps) => (size || ownerState?.inputSize) === 'small',
+      props: (props: any) => (props.size || props.ownerState?.inputSize) === 'small',
       style: { ...INPUT_PADDING.base.small },
     },
   ],
@@ -218,7 +211,7 @@ export const outlinedInputVariants = {
       style: { ...INPUT_PADDING.outlined.medium },
     },
     {
-      props: ({ size, ownerState }: InputSizeProps) => (size || ownerState?.inputSize) === 'small',
+      props: (props: any) => (props.size || props.ownerState?.inputSize) === 'small',
       style: { ...INPUT_PADDING.outlined.small },
     },
   ],
@@ -288,16 +281,16 @@ export const filledInputVariants = {
       style: { ...INPUT_PADDING.filled.medium },
     },
     {
-      props: ({ size, ownerState }: InputSizeProps) => (size || ownerState?.inputSize) === 'small',
+      props: (props: any) => (props.size || props.ownerState?.inputSize) === 'small',
       style: { ...INPUT_PADDING.filled.small },
     },
     {
-      props: ({ hiddenLabel }: InputSizeProps) => !!hiddenLabel,
+      props: (props: any) => !!props.hiddenLabel,
       style: { ...INPUT_PADDING.filled.mediumHidden },
     },
     {
-      props: ({ size, hiddenLabel, ownerState }: InputSizeProps) =>
-        !!hiddenLabel && (size || ownerState?.inputSize) === 'small',
+      props: (props: any) =>
+        !!props.hiddenLabel && (props.size || props.ownerState?.inputSize) === 'small',
       style: { ...INPUT_PADDING.filled.smallHidden },
     },
   ],

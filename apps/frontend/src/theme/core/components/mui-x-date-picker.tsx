@@ -1,5 +1,5 @@
+import type { Theme } from '@mui/material/styles';
 import type { SvgIconProps } from '@mui/material/SvgIcon';
-import type { Theme, Components } from '@mui/material/styles';
 import type { TextFieldProps } from '@mui/material/TextField';
 
 import SvgIcon from '@mui/material/SvgIcon';
@@ -107,10 +107,10 @@ const defaultProps = {
 /* **********************************************************************
  * 🧩 Components
  * **********************************************************************/
-const MuiPickersLayout: Components<Theme>['MuiPickersLayout'] = {
+const MuiPickersLayout: any = {
   // ▼▼▼▼▼▼▼▼ 🎨 STYLE ▼▼▼▼▼▼▼▼
   styleOverrides: {
-    actionBar: ({ theme }) => ({
+    actionBar: ({ theme }: { theme: Theme }) => ({
       padding: theme.spacing(2),
       '& > :not(:first-of-type)': {
         marginLeft: theme.spacing(1),
@@ -128,31 +128,31 @@ const MuiPickersLayout: Components<Theme>['MuiPickersLayout'] = {
   },
 };
 
-const MuiPickerPopper: Components<Theme>['MuiPickerPopper'] = {
+const MuiPickerPopper: any = {
   // ▼▼▼▼▼▼▼▼ 🎨 STYLE ▼▼▼▼▼▼▼▼
   styleOverrides: {
-    paper: ({ theme }) => ({
+    paper: ({ theme }: { theme: Theme }) => ({
       boxShadow: theme.vars?.customShadows.dropdown,
       borderRadius: Number(theme.shape.borderRadius) * 1.5,
     }),
   },
 };
 
-const MuiDateTimePickerTabs: Components<Theme>['MuiDateTimePickerTabs'] = {
+const MuiDateTimePickerTabs: any = {
   // ▼▼▼▼▼▼▼▼ ⚙️ PROPS ▼▼▼▼▼▼▼▼
   defaultProps: { ...defaultProps.tabs },
 };
 
-const MuiClock: Components<Theme>['MuiClock'] = {
+const MuiClock: any = {
   // ▼▼▼▼▼▼▼▼ 🎨 STYLE ▼▼▼▼▼▼▼▼
   styleOverrides: {
-    clock: ({ theme }) => ({
+    clock: ({ theme }: { theme: Theme }) => ({
       backgroundColor: theme.vars?.palette.background.neutral,
     }),
   },
 };
 
-const inputComponents: Components<Theme> = {
+const inputComponents: any = {
   MuiPickersTextField: {
     defaultProps: {
       variant: 'outlined',
@@ -161,7 +161,7 @@ const inputComponents: Components<Theme> = {
       root: {
         variants: [
           {
-            props: (props) => !props.isFieldFocused && !props.isFieldValueEmpty,
+            props: (props: any) => !props.isFieldFocused && !props.isFieldValueEmpty,
             style: {
               [`& .${inputLabelClasses.root}[data-shrink="false"] + .${pickersInputBaseClasses.root} > .${pickersSectionListClasses.root}`]:
                 {
@@ -175,18 +175,18 @@ const inputComponents: Components<Theme> = {
   },
   MuiPickersInputBase: {
     styleOverrides: {
-      root: ({ theme }) => ({
+      root: ({ theme }: { theme: Theme }) => ({
         ...inputBaseStyles.root('picker', theme, {
           input: pickersSectionListClasses.root,
           disabled: pickersInputBaseClasses.disabled,
         }),
       }),
-      sectionsContainer: ({ theme }) => ({
+      sectionsContainer: ({ theme }: { theme: Theme }) => ({
         ...inputBaseStyles.input('picker', theme),
         variants: [
           ...inputBaseVariants.input,
           {
-            props: (props) => !props.isFieldFocused && !!props.isFieldValueEmpty,
+            props: (props: any) => !props.isFieldFocused && !!props.isFieldValueEmpty,
             style: {
               opacity: 1,
               color: theme.vars?.palette.text.disabled,
@@ -198,14 +198,14 @@ const inputComponents: Components<Theme> = {
   },
   MuiPickersInput: {
     styleOverrides: {
-      root: ({ theme }) => inputStyles.root(theme),
+      root: ({ theme }: { theme: Theme }) => inputStyles.root(theme),
     },
   },
   MuiPickersOutlinedInput: {
     styleOverrides: {
-      root: ({ theme }) => outlinedInputStyles.root(theme, pickersOutlinedInputClasses),
+      root: ({ theme }: { theme: Theme }) => outlinedInputStyles.root(theme, pickersOutlinedInputClasses),
       sectionsContainer: { variants: [...outlinedInputVariants.input] },
-      notchedOutline: ({ theme }) => outlinedInputStyles.notchedOutline(theme),
+      notchedOutline: ({ theme }: { theme: Theme }) => outlinedInputStyles.notchedOutline(theme),
     },
   },
   MuiPickersFilledInput: {
@@ -213,13 +213,13 @@ const inputComponents: Components<Theme> = {
       disableUnderline: true,
     },
     styleOverrides: {
-      root: ({ theme }) => filledInputStyles.root(theme, pickersFilledInputClasses),
+      root: ({ theme }: { theme: Theme }) => filledInputStyles.root(theme, pickersFilledInputClasses),
       sectionsContainer: { variants: [...filledInputVariants.input] },
     },
   },
 };
 
-const toolbarComponents: Components<Theme> = {
+const toolbarComponents: any = {
   MuiPickersToolbar: {
     styleOverrides: {
       content: { marginTop: 8 },
@@ -234,14 +234,14 @@ const toolbarComponents: Components<Theme> = {
     styleOverrides: {
       separator: { marginLeft: 2, marginRight: 2 },
       ampmLandscape: { gap: 16, justifyContent: 'flex-start' },
-      ampmLabel: ({ theme }) => ({ ...theme.typography.subtitle1 }),
+      ampmLabel: ({ theme }: { theme: Theme }) => ({ ...theme.typography.subtitle1 }),
     },
   },
   MuiDateTimePickerToolbar: {
     styleOverrides: {
       separator: { marginLeft: 2, marginRight: 2 },
       ampmLandscape: { gap: 16, justifyContent: 'flex-start' },
-      ampmLabel: ({ theme }) => ({ ...theme.typography.subtitle1 }),
+      ampmLabel: ({ theme }: { theme: Theme }) => ({ ...theme.typography.subtitle1 }),
       timeDigitsContainer: { alignItems: 'center' },
     },
   },
@@ -251,7 +251,7 @@ const toolbarComponents: Components<Theme> = {
  * ➤ Date picker
  * - https://mui.com/x/react-date-pickers/date-picker/
  */
-const datePickerComponents: Components<Theme> = {
+const datePickerComponents: any = {
   MuiDateField: { defaultProps: { ...defaultProps.baseField } },
   MuiDatePicker: { defaultProps: { slots: { ...defaultProps.dateSlots } } },
   MuiDesktopDatePicker: { defaultProps: { slots: { ...defaultProps.dateSlots } } },
@@ -263,7 +263,7 @@ const datePickerComponents: Components<Theme> = {
  * ➤ Time picker
  * - https://mui.com/x/react-date-pickers/time-picker/
  */
-const timePickerComponents: Components<Theme> = {
+const timePickerComponents: any = {
   MuiTimeField: { defaultProps: { ...defaultProps.baseField } },
   MuiTimePicker: { defaultProps: { slots: { ...defaultProps.timeSlots } } },
   MuiDesktopTimePicker: { defaultProps: { slots: { ...defaultProps.timeSlots } } },
@@ -275,7 +275,7 @@ const timePickerComponents: Components<Theme> = {
  * ➤ Date & Time picker
  * - https://mui.com/x/react-date-pickers/date-time-picker/
  */
-const dateTimePickerComponents: Components<Theme> = {
+const dateTimePickerComponents: any = {
   MuiDateTimeField: { defaultProps: { ...defaultProps.baseField } },
   MuiDateTimePicker: { defaultProps: { slots: { ...defaultProps.dateSlots } } },
   MuiDesktopDateTimePicker: { defaultProps: { slots: { ...defaultProps.dateSlots } } },
@@ -286,7 +286,7 @@ const dateTimePickerComponents: Components<Theme> = {
 /* **********************************************************************
  * 🚀 Export
  * **********************************************************************/
-export const datePicker: Components<Theme> = {
+export const datePicker: any = {
   ...toolbarComponents,
   MuiClock,
   MuiPickerPopper,

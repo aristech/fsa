@@ -28,7 +28,7 @@ export function dashboardNavColorVars(
   navLayout: SettingsState['navLayout'] = 'vertical'
 ): Record<'layout' | 'section', CSSObject | undefined> {
   const {
-    vars: { palette },
+    vars: { palette } = { palette: {} as any },
   } = theme;
 
   switch (navColor) {

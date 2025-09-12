@@ -67,7 +67,7 @@ export const allLangs: LangOption[] = [
     adapterLocale: 'en',
     numberFormat: { code: 'en-US', currency: 'USD' },
     systemValue: {
-      components: { ...enUSDate.components, ...enUSDataGrid.components },
+      components: { ...enUSDate.components, ...enUSDataGrid.components } as any,
     },
   },
   {

@@ -28,12 +28,12 @@ const colorVariants = [
     style: ({ theme }) => ({
       '&:hover': {
         borderColor: varAlpha(
-          theme.vars?.palette[colorKey].mainChannel,
-          theme.vars?.opacity.outlined.border
+          theme.vars?.palette[colorKey].mainChannel || '0 0 0',
+          theme.vars?.opacity.outlined.border || 0.23
         ),
         backgroundColor: varAlpha(
-          theme.vars?.palette[colorKey].mainChannel,
-          theme.vars?.palette.action.hoverOpacity
+          theme.vars?.palette[colorKey].mainChannel || '0 0 0',
+          theme.vars?.palette.action.hoverOpacity || 0.04
         ),
       },
     }),

@@ -18,7 +18,7 @@ const getRtlPosition = (position: 'left' | 'right', isRtl: boolean, value: numbe
 });
 
 const createBackgroundStyles = (theme: Theme, color: 'cyan' | 'red', size: number): CSSObject => {
-  const colorChannel = theme.vars?.palette[color === 'cyan' ? 'info' : 'error'].mainChannel;
+  const colorChannel = theme.vars?.palette[color === 'cyan' ? 'info' : 'error'].mainChannel || '0 0 0';
 
   return {
     backgroundRepeat: 'no-repeat',
