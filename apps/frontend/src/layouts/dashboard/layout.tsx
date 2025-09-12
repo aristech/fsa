@@ -32,7 +32,7 @@ import { navData as dashboardNavData } from '../nav-config-dashboard';
 import { dashboardLayoutVars, dashboardNavColorVars } from './css-vars';
 import { NotificationsDrawer } from '../components/notifications-drawer';
 import { EnhancedAccountDrawer } from '../components/enhanced-account-drawer';
-import { MainSection, layoutClasses, HeaderSection, LayoutSection } from '../core';
+import { MainSection, HeaderSection, layoutClasses, LayoutSection } from '../core';
 
 // ----------------------------------------------------------------------
 

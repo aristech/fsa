@@ -5,7 +5,6 @@ import { useMemo } from 'react';
 
 import { info, error, primary, success, warning, secondary } from 'src/theme/core';
 
-
 export const CALENDAR_COLOR_OPTIONS = [
   primary.main,
   secondary.main,

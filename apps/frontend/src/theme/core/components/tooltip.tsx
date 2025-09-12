@@ -24,9 +24,9 @@ const MuiTooltip: Components<Theme>['MuiTooltip'] = {
   styleOverrides: {
     tooltip: ({ theme }) => ({
       borderRadius: Number(theme.shape.borderRadius) * 0.75,
-      [parseCssVar(theme.vars.palette.Tooltip.bg)]: theme.vars.palette.grey[800],
+      [parseCssVar(theme.vars?.palette.Tooltip.bg || '--tooltip-bg')]: theme.vars?.palette.grey[800],
       ...theme.applyStyles('dark', {
-        [parseCssVar(theme.vars.palette.Tooltip.bg)]: theme.vars.palette.grey[700],
+        [parseCssVar(theme.vars?.palette.Tooltip.bg || '--tooltip-bg')]: theme.vars?.palette.grey[700],
       }),
     }),
   },

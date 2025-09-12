@@ -40,7 +40,7 @@ const FlagRoot = styled('span')(({ theme }) => ({
   alignItems: 'center',
   display: 'inline-flex',
   justifyContent: 'center',
-  backgroundColor: theme.vars.palette.background.neutral,
+  backgroundColor: theme.vars?.palette.background.neutral,
 }));
 
 const FlagImg = styled('img')(() => ({

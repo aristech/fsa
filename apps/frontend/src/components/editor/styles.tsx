@@ -14,14 +14,14 @@ export const EditorRoot = styled('div')(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   borderRadius: theme.shape.borderRadius,
-  border: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.2)}`,
+  border: `solid 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.2)}`,
   /**
    * State: error, disabled, fullscreen
    */
   [`&.${editorClasses.state.error}`]: {
-    borderColor: theme.vars.palette.error.main,
+    borderColor: theme.vars?.palette.error.main,
     [`& .${editorClasses.content.root}`]: {
-      backgroundColor: varAlpha(theme.vars.palette.error.mainChannel, 0.08),
+      backgroundColor: varAlpha(theme.vars?.palette.error.mainChannel || '0 0 0', 0.08),
     },
   },
   [`&.${editorClasses.state.disabled}`]: {
@@ -36,7 +36,7 @@ export const EditorRoot = styled('div')(({ theme }) => ({
     width: `calc(100% - ${32}px)`,
     height: `calc(100% - ${32}px)`,
     zIndex: theme.zIndex.modal,
-    backgroundColor: theme.vars.palette.background.default,
+    backgroundColor: theme.vars?.palette.background.default,
   },
   /**
    * Placeholder
@@ -48,7 +48,7 @@ export const EditorRoot = styled('div')(({ theme }) => ({
       float: 'left',
       pointerEvents: 'none',
       content: 'attr(data-placeholder)',
-      color: theme.vars.palette.text.disabled,
+      color: theme.vars?.palette.text.disabled,
     },
   },
   /**
@@ -61,7 +61,7 @@ export const EditorRoot = styled('div')(({ theme }) => ({
     flexDirection: 'column',
     borderBottomLeftRadius: 'inherit',
     borderBottomRightRadius: 'inherit',
-    backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+    backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
     '& .tiptap': {
       '> * + *': { marginTop: 0, marginBottom: MARGIN },
       '&.ProseMirror': { flex: '1 1 auto', outline: 'none', padding: theme.spacing(0, 2) },
@@ -79,7 +79,7 @@ export const EditorRoot = styled('div')(({ theme }) => ({
       /**
        * Link
        */
-      [`& .${editorClasses.content.link}`]: { color: theme.vars.palette.primary.main },
+      [`& .${editorClasses.content.link}`]: { color: theme.vars?.palette.primary.main },
       /**
        * Hr divider
        */
@@ -91,7 +91,7 @@ export const EditorRoot = styled('div')(({ theme }) => ({
         WebkitFlexShrink: 0,
         borderStyle: 'solid',
         borderBottomWidth: 'thin',
-        borderColor: theme.vars.palette.divider,
+        borderColor: theme.vars?.palette.divider,
       },
       /**
        * Image
@@ -102,7 +102,7 @@ export const EditorRoot = styled('div')(({ theme }) => ({
         maxWidth: '100%',
         margin: 'auto auto 1.25em',
         '&.ProseMirror-selectednode': {
-          outline: `2px solid ${theme.vars.palette.primary.main}`,
+          outline: `2px solid ${theme.vars?.palette.primary.main}`,
         },
       },
       /**
@@ -129,8 +129,8 @@ export const EditorRoot = styled('div')(({ theme }) => ({
         position: 'relative',
         fontFamily: 'Georgia, serif',
         padding: theme.spacing(3, 3, 3, 8),
-        color: theme.vars.palette.text.secondary,
-        borderLeft: `solid 8px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.08)}`,
+        color: theme.vars?.palette.text.secondary,
+        borderLeft: `solid 8px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08)}`,
         [theme.breakpoints.up('md')]: { width: '100%', maxWidth: 640 },
         '& p': {
           margin: 0,
@@ -144,7 +144,7 @@ export const EditorRoot = styled('div')(({ theme }) => ({
           fontSize: '3em',
           content: '"\\201C"',
           position: 'absolute',
-          color: theme.vars.palette.text.disabled,
+          color: theme.vars?.palette.text.disabled,
         },
       },
       /**
@@ -152,10 +152,10 @@ export const EditorRoot = styled('div')(({ theme }) => ({
        */
       [`& .${editorClasses.content.codeInline}`]: {
         padding: theme.spacing(0.25, 0.5),
-        color: theme.vars.palette.text.secondary,
+        color: theme.vars?.palette.text.secondary,
         fontSize: theme.typography.body2.fontSize,
         borderRadius: Number(theme.shape.borderRadius) / 2,
-        backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.2),
+        backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.2),
       },
       /**
        * Code block
@@ -164,10 +164,10 @@ export const EditorRoot = styled('div')(({ theme }) => ({
         position: 'relative',
         '& pre': {
           overflowX: 'auto',
-          color: theme.vars.palette.common.white,
+          color: theme.vars?.palette.common.white,
           padding: theme.spacing(5, 3, 3, 3),
           borderRadius: theme.shape.borderRadius,
-          backgroundColor: theme.vars.palette.grey[900],
+          backgroundColor: theme.vars?.palette.grey[900],
           fontFamily: "'JetBrainsMono', monospace",
           '& code': { fontSize: theme.typography.body2.fontSize },
         },
@@ -179,10 +179,10 @@ export const EditorRoot = styled('div')(({ theme }) => ({
           outline: 'none',
           borderRadius: 4,
           position: 'absolute',
-          color: theme.vars.palette.common.white,
+          color: theme.vars?.palette.common.white,
           fontWeight: theme.typography.fontWeightMedium,
-          borderColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
-          backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+          borderColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
+          backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
         },
       },
     },

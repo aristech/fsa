@@ -140,10 +140,10 @@ export function ClientEditForm({ client }: Props) {
           country: client.address?.country || 'US',
         },
         billingAddress: {
-          street:  '',
+          street: '',
           city: '',
-          state:'',
-          zipCode:  '',
+          state: '',
+          zipCode: '',
           country: '',
         },
         contactPerson: {

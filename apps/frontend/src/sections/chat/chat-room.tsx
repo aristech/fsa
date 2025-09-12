@@ -59,7 +59,7 @@ export function ChatRoom({ collapseNav, participants, messages, loading, sx, ...
             width: NAV_WIDTH,
             flexDirection: 'column',
             display: { xs: 'none', lg: 'flex' },
-            borderLeft: `solid 1px ${theme.vars.palette.divider}`,
+            borderLeft: `solid 1px ${theme.vars?.palette.divider}`,
             transition: theme.transitions.create(['width'], {
               duration: theme.transitions.duration.shorter,
             }),

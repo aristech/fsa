@@ -48,7 +48,7 @@ export function NavLayoutOptions({
             sx={[
               (theme) => ({
                 height: 64,
-                border: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.08)}`,
+                border: `solid 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08)}`,
               }),
             ]}
           >

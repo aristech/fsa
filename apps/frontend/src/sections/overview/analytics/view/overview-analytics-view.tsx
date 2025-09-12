@@ -6,8 +6,8 @@ import Typography from '@mui/material/Typography';
 import { CONFIG } from 'src/global-config';
 import { DashboardContent } from 'src/layouts/dashboard';
 import {
-  _analyticTasks,
   _analyticPosts,
+  _analyticTasks,
   _analyticTraffic,
   _analyticOrderTimeline,
 } from 'src/_mock';

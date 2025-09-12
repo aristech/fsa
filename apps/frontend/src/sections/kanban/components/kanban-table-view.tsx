@@ -21,14 +21,14 @@ import {
   TextField,
   Typography,
   AvatarGroup,
-  TableSortLabel,
   InputAdornment,
+  TableSortLabel,
 } from '@mui/material';
 
 import { fDate } from 'src/utils/format-time';
 import { sortTasks, searchTasks } from 'src/utils/search-utils';
 
-import { updateTask, deleteTask, useGetBoard } from 'src/actions/kanban';
+import { deleteTask, updateTask, useGetBoard } from 'src/actions/kanban';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
@@ -551,7 +551,7 @@ export function KanbanTableView() {
           rowsPerPageOptions={[5, 10, 25, 50, 100]}
           sx={{
             flexShrink: 0,
-            borderTop: (theme) => `1px solid ${theme.vars.palette.divider}`,
+            borderTop: (theme) => `1px solid ${theme.vars?.palette.divider}`,
           }}
         />
       </Box>

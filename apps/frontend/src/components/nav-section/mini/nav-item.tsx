@@ -146,7 +146,7 @@ const ItemRoot = styled(ButtonBase, { shouldForwardProp })<StyledState>(({
   const subItemStyles: CSSObject = {
     minHeight: 'var(--nav-item-sub-height)',
     padding: 'var(--nav-item-sub-padding)',
-    color: theme.vars.palette.text.secondary,
+    color: theme.vars?.palette.text.secondary,
     ...(open && {
       color: 'var(--nav-item-sub-open-color)',
       backgroundColor: 'var(--nav-item-sub-open-bg)',

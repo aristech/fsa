@@ -27,10 +27,12 @@ export function useTenant() {
 export function useTenantAPI() {
   const { tenantId, tenantSlug } = useTenant();
 
-  const getURL = useCallback((path: string) => 
-    // Backend automatically resolves tenant from database, no need to append parameters
-     path
-  , []);
+  const getURL = useCallback(
+    (path: string) =>
+      // Backend automatically resolves tenant from database, no need to append parameters
+      path,
+    []
+  );
 
   return {
     getURL,

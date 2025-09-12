@@ -11,7 +11,7 @@ const MuiDialog: Components<Theme>['MuiDialog'] = {
           props: (props) => !props.fullScreen,
           style: ({ theme }) => ({
             margin: theme.spacing(2),
-            boxShadow: theme.vars.customShadows.dialog,
+            boxShadow: theme.vars?.customShadows.dialog,
             borderRadius: Number(theme.shape.borderRadius) * 2,
           }),
         },

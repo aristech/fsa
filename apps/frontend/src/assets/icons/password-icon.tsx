@@ -14,8 +14,8 @@ function PasswordIcon({ sx, ...other }: SvgIconProps) {
       xmlns="http://www.w3.org/2000/svg"
       sx={[
         (theme) => ({
-          '--primary-main': theme.vars.palette.primary.main,
-          '--warning-light': theme.vars.palette.warning.light,
+          '--primary-main': theme.vars?.palette.primary.main,
+          '--warning-light': theme.vars?.palette.warning.light,
           width: 96,
           flexShrink: 0,
           height: 'auto',

@@ -81,8 +81,8 @@ const ItemRoot = styled('li')(({ theme }) => ({
   height: 'var(--item-size)',
   marginLeft: 'var(--item-gap)',
   backgroundColor: 'var(--item-color)',
-  border: `solid 2px ${theme.vars.palette.background.paper}`,
-  boxShadow: `inset -1px 1px 2px ${varAlpha(theme.vars.palette.common.blackChannel, 0.24)}`,
+  border: `solid 2px ${theme.vars?.palette.background.paper}`,
+  boxShadow: `inset -1px 1px 2px ${varAlpha(theme.vars?.palette.common.blackChannel || '0 0 0', 0.24)}`,
 }));
 
 const ItemLabel = styled('li')(({ theme }) => ({

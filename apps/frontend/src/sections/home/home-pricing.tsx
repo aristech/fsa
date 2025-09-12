@@ -47,8 +47,8 @@ export function HomePricing({ sx, ...other }: BoxProps) {
           sx={(theme) => ({
             ...(plan.license === 'Plus' && {
               [theme.breakpoints.down(1440)]: {
-                borderLeft: `dashed 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.2)}`,
-                borderRight: `dashed 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.2)}`,
+                borderLeft: `dashed 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.2)}`,
+                borderRight: `dashed 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.2)}`,
               },
             }),
           })}
@@ -64,7 +64,7 @@ export function HomePricing({ sx, ...other }: BoxProps) {
         onChange={tabs.onChange}
         sx={[
           (theme) => ({
-            boxShadow: `0px -2px 0px 0px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.08)} inset`,
+            boxShadow: `0px -2px 0px 0px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08)} inset`,
           }),
         ]}
       >
@@ -78,7 +78,7 @@ export function HomePricing({ sx, ...other }: BoxProps) {
           (theme) => ({
             width: 1,
             borderRadius: 2,
-            border: `dashed 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.2)}`,
+            border: `dashed 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.2)}`,
           }),
         ]}
       >

@@ -21,7 +21,7 @@ export function ContactHero({ sx, ...other }: BoxProps) {
         (theme) => ({
           ...theme.mixins.bgGradient({
             images: [
-              `linear-gradient(0deg, ${varAlpha(theme.vars.palette.grey['900Channel'], 0.8)}, ${varAlpha(theme.vars.palette.grey['900Channel'], 0.8)})`,
+              `linear-gradient(0deg, ${varAlpha(theme.vars?.palette.grey['900Channel'] || '0 0 0', 0.8)}, ${varAlpha(theme.vars?.palette.grey['900Channel'] || '0 0 0', 0.8)})`,
               `url(${CONFIG.assetsDir}/assets/images/contact/hero.webp)`,
             ],
           }),

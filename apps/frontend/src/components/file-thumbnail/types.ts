@@ -1,5 +1,5 @@
 import type { TooltipProps } from '@mui/material/Tooltip';
-import type { RemoveButton, ThumbnailRoot, ThumbnailImage, DownloadButton } from './styles';
+import type { RemoveButton, ThumbnailRoot, DownloadButton, ThumbnailImage } from './styles';
 
 // ----------------------------------------------------------------------
 

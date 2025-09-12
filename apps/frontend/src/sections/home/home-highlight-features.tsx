@@ -4,7 +4,7 @@ import type { UseClientRectReturn } from 'minimal-shared/hooks';
 import { useRef, useState } from 'react';
 import { varAlpha } from 'minimal-shared/utils';
 import { useClientRect } from 'minimal-shared/hooks';
-import { m, useSpring, useScroll, useTransform, useMotionValueEvent } from 'framer-motion';
+import { m, useScroll, useSpring, useTransform, useMotionValueEvent } from 'framer-motion';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -240,9 +240,9 @@ function Item({ item, sx, ...other }: ItemProps) {
               (theme) => ({
                 borderRadius: 2,
                 overflow: 'hidden',
-                boxShadow: `-40px 40px 80px 0px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.16)}`,
+                boxShadow: `-40px 40px 80px 0px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.16)}`,
                 ...theme.applyStyles('dark', {
-                  boxShadow: `-40px 40px 80px 0px ${varAlpha(theme.vars.palette.common.blackChannel, 0.16)}`,
+                  boxShadow: `-40px 40px 80px 0px ${varAlpha(theme.vars?.palette.common.blackChannel || '0 0 0', 0.16)}`,
                 }),
               }),
             ]}

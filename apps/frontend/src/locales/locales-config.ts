@@ -5,10 +5,10 @@ import resourcesToBackend from 'i18next-resources-to-backend';
 
 // MUI Core Locales
 import {
+  arSA as arSACore,
   frFR as frFRCore,
   viVN as viVNCore,
   zhCN as zhCNCore,
-  arSA as arSACore,
 } from '@mui/material/locale';
 // MUI Date Pickers Locales
 import {
@@ -19,11 +19,11 @@ import {
 } from '@mui/x-date-pickers/locales';
 // MUI Data Grid Locales
 import {
+  arSD as arSDDataGrid,
   enUS as enUSDataGrid,
   frFR as frFRDataGrid,
   viVN as viVNDataGrid,
   zhCN as zhCNDataGrid,
-  arSD as arSDDataGrid,
 } from '@mui/x-data-grid/locales';
 
 // ----------------------------------------------------------------------

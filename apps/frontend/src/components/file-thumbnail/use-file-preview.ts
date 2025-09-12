@@ -91,8 +91,8 @@ export function useFilesPreview(files: (File | string)[]): UseFilesPreviewReturn
       const previewUrl = isFile
         ? URL.createObjectURL(file)
         : /^https?:\/\//i.test(file as string)
-        ? (file as string)
-        : `${CONFIG.serverUrl}${file as string}`;
+          ? (file as string)
+          : `${CONFIG.serverUrl}${file as string}`;
 
       if (isFile) objectUrlsRef.current.push(previewUrl);
 

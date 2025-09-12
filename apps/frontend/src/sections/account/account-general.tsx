@@ -5,7 +5,6 @@ import Grid from '@mui/material/Grid';
 
 import { schemaUtils } from 'src/components/hook-form';
 
-
 // ----------------------------------------------------------------------
 
 export type UpdateUserSchemaType = z.infer<typeof UpdateUserSchema>;
@@ -30,9 +29,5 @@ export const UpdateUserSchema = z.object({
 // ----------------------------------------------------------------------
 
 export function AccountGeneral() {
- 
-
-  return (
-    <Grid />
-  );
+  return <Grid />;
 }

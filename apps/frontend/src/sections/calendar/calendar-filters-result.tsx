@@ -50,7 +50,7 @@ export function CalendarFiltersResult({ filters, totalResults, sx }: Props) {
                     height: 18,
                     bgcolor: item,
                     borderRadius: '50%',
-                    border: `solid 1px ${varAlpha(theme.vars.palette.common.whiteChannel, 0.24)}`,
+                    border: `solid 1px ${varAlpha(theme.vars?.palette.common.whiteChannel || '0 0 0', 0.24)}`,
                   }),
                 ]}
               />

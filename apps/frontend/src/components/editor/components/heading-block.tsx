@@ -75,7 +75,7 @@ export function HeadingBlock({ editor, isActive }: HeadingBlock) {
           typography: 'body2',
           fontWeight: 'fontWeightMedium',
           justifyContent: 'space-between',
-          border: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.2)}`,
+          border: `solid 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.2)}`,
         })}
       >
         {selectedOption?.label ?? 'Paragraph'}

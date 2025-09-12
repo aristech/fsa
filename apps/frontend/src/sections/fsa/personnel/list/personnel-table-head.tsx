@@ -1,6 +1,6 @@
 'use client';
 
-import { TableRow, Checkbox, TableHead, TableCell, TableSortLabel } from '@mui/material';
+import { Checkbox, TableRow, TableCell, TableHead, TableSortLabel } from '@mui/material';
 
 // ----------------------------------------------------------------------
 

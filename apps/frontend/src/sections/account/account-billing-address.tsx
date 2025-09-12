@@ -14,8 +14,6 @@ import CardHeader from '@mui/material/CardHeader';
 import { Iconify } from 'src/components/iconify';
 import { CustomPopover } from 'src/components/custom-popover';
 
-
-
 // ----------------------------------------------------------------------
 
 type Props = CardProps & {
@@ -81,8 +79,6 @@ export function AccountBillingAddress({ addressBook, sx, ...other }: Props) {
       </MenuList>
     </CustomPopover>
   );
-
-
 
   return (
     <>

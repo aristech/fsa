@@ -109,7 +109,7 @@ const ContentRoot = styled('div', {
   padding: theme.spacing(0, 3),
   ...(filled && {
     borderRadius: Number(theme.shape.borderRadius) * 2,
-    backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.04),
-    border: `dashed 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.08)}`,
+    backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.04),
+    border: `dashed 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08)}`,
   }),
 }));

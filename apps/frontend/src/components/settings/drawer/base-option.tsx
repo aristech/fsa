@@ -70,12 +70,12 @@ const ItemRoot = styled(ButtonBase, {
   alignItems: 'flex-start',
   padding: theme.spacing(2, 2, 2, 2.5),
   borderRadius: Number(theme.shape.borderRadius) * 2,
-  border: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.12)}`,
+  border: `solid 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.12)}`,
   '&:hover': {
-    backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+    backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
   },
   ...(selected && {
-    backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+    backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
   }),
 }));
 

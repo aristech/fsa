@@ -17,7 +17,7 @@ const BasicButtonsRoot = styled('div')(({ theme }) => ({
   zIndex: 9,
   alignItems: 'center',
   display: 'inline-flex',
-  color: theme.vars.palette.action.active,
+  color: theme.vars?.palette.action.active,
 }));
 
 export function CarouselArrowBasicButtons({
@@ -137,9 +137,9 @@ const NumberButtonsRoot = styled('div')(({ theme }) => ({
   alignItems: 'center',
   display: 'inline-flex',
   padding: theme.spacing(0.5),
-  color: theme.vars.palette.common.white,
+  color: theme.vars?.palette.common.white,
   borderRadius: Number(theme.shape.borderRadius) * 1.25,
-  backgroundColor: varAlpha(theme.vars.palette.grey['900Channel'], 0.48),
+  backgroundColor: varAlpha(theme.vars?.palette.grey['900Channel'] || '0 0 0', 0.48),
   [`& .${carouselClasses.arrows.label}`]: {
     ...theme.typography.subtitle2,
     margin: theme.spacing(0, 0.5),

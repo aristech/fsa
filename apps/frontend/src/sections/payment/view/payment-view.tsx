@@ -32,7 +32,7 @@ export function PaymentView() {
                 display: 'grid',
                 borderRadius: 2,
                 gridTemplateColumns: { xs: 'repeat(1, 1fr)', md: 'repeat(2, 1fr)' },
-                border: { md: `dashed 1px ${theme.vars.palette.divider}` },
+                border: { md: `dashed 1px ${theme.vars?.palette.divider}` },
               }),
             ]}
           >

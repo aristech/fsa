@@ -28,8 +28,8 @@ function SeoIllustration({ hideBackground, sx, ...other }: SvgProps) {
       xmlns="http://www.w3.org/2000/svg"
       sx={[
         (theme) => ({
-          '--primary-light': theme.vars.palette.primary.light,
-          '--primary-dark': theme.vars.palette.primary.dark,
+          '--primary-light': theme.vars?.palette.primary.light,
+          '--primary-dark': theme.vars?.palette.primary.dark,
           width: 320,
           maxWidth: 1,
           flexShrink: 0,

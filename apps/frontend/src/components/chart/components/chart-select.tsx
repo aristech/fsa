@@ -60,7 +60,7 @@ export function ChartSelect({ options, value, onChange, slotProps, ...other }: C
             height: 34,
             borderRadius: 1,
             typography: 'subtitle2',
-            border: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.24)}`,
+            border: `solid 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.24)}`,
           }),
           ...(Array.isArray(slotProps?.button?.sx) ? slotProps.button.sx : [slotProps?.button?.sx]),
         ]}

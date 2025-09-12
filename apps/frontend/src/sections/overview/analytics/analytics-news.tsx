@@ -3,8 +3,8 @@ import type { CardProps } from '@mui/material/Card';
 import type { IDateValue } from 'src/types/common';
 
 import Box from '@mui/material/Box';
-import Link from '@mui/material/Link';
 import Card from '@mui/material/Card';
+import Link from '@mui/material/Link';
 import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
 import CardHeader from '@mui/material/CardHeader';
@@ -71,7 +71,7 @@ function Item({ item, sx, ...other }: ItemProps) {
           gap: 2,
           display: 'flex',
           alignItems: 'center',
-          borderBottom: `dashed 1px ${theme.vars.palette.divider}`,
+          borderBottom: `dashed 1px ${theme.vars?.palette.divider}`,
         }),
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}

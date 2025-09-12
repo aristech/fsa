@@ -172,10 +172,10 @@ export function HomeFAQs({ sx, ...other }: BoxProps) {
             border: 'none',
             borderRadius: 2,
             '&:hover': {
-              bgcolor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+              bgcolor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
             },
             [`&.${accordionClasses.expanded}`]: {
-              bgcolor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+              bgcolor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
             },
           })}
         >
@@ -200,7 +200,7 @@ export function HomeFAQs({ sx, ...other }: BoxProps) {
           px: 3,
           py: 8,
           textAlign: 'center',
-          background: `linear-gradient(to left, ${varAlpha(theme.vars.palette.grey['500Channel'], 0.08)}, transparent)`,
+          background: `linear-gradient(to left, ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08)}, transparent)`,
         }),
       ]}
     >

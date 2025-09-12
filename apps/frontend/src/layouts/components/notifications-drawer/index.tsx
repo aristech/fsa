@@ -14,11 +14,15 @@ import Badge from '@mui/material/Badge';
 import Drawer from '@mui/material/Drawer';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 
-import { getNotifications, getNotificationCounts, markNotificationsAsRead } from 'src/actions/notifications';
+import {
+  getNotifications,
+  getNotificationCounts,
+  markNotificationsAsRead,
+} from 'src/actions/notifications';
 
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
@@ -41,28 +45,31 @@ export function NotificationsDrawer({ sx, ...other }: NotificationsDrawerProps) 
   const [counts, setCounts] = useState({ total: 0, unread: 0, archived: 0 });
   const [loading, setLoading] = useState(false);
 
-  const loadNotifications = useCallback(async (tab: string = currentTab) => {
-    try {
-      setLoading(true);
-      let filters = {};
+  const loadNotifications = useCallback(
+    async (tab: string = currentTab) => {
+      try {
+        setLoading(true);
+        let filters = {};
 
-      if (tab === 'unread') {
-        filters = { isRead: false, isArchived: false };
-      } else if (tab === 'archived') {
-        filters = { isArchived: true };
-      } else {
-        filters = { isArchived: false };
+        if (tab === 'unread') {
+          filters = { isRead: false, isArchived: false };
+        } else if (tab === 'archived') {
+          filters = { isArchived: true };
+        } else {
+          filters = { isArchived: false };
+        }
+
+        const response = await getNotifications(filters);
+        const transformedNotifications = response.data.map(transformNotification);
+        setNotifications(transformedNotifications);
+      } catch (error) {
+        console.error('Failed to load notifications:', error);
+      } finally {
+        setLoading(false);
       }
-
-      const response = await getNotifications(filters);
-      const transformedNotifications = response.data.map(transformNotification);
-      setNotifications(transformedNotifications);
-    } catch (error) {
-      console.error('Failed to load notifications:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [currentTab]);
+    },
+    [currentTab]
+  );
 
   const loadCounts = useCallback(async () => {
     try {
@@ -73,10 +80,13 @@ export function NotificationsDrawer({ sx, ...other }: NotificationsDrawerProps) 
     }
   }, []);
 
-  const handleChangeTab = useCallback((event: React.SyntheticEvent, newValue: string) => {
-    setCurrentTab(newValue);
-    loadNotifications(newValue);
-  }, [loadNotifications]);
+  const handleChangeTab = useCallback(
+    (event: React.SyntheticEvent, newValue: string) => {
+      setCurrentTab(newValue);
+      loadNotifications(newValue);
+    },
+    [loadNotifications]
+  );
 
   useEffect(() => {
     if (open) {

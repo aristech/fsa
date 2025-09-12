@@ -1,5 +1,6 @@
 import type { INotification, ITask, IUser } from '../models';
 import { Notification, User, Task, Personnel } from '../models';
+import { realtimeService } from './realtime-service';
 
 // ----------------------------------------------------------------------
 
@@ -26,11 +27,22 @@ export interface TaskUpdateContext {
 
 export class NotificationService {
   /**
-   * Create a single notification
+   * Get unread notification count for a user
+   */
+  static async getUnreadCount(tenantId: string, userId: string): Promise<number> {
+    return Notification.countDocuments({
+      tenantId,
+      userId,
+      isRead: false,
+      isArchived: false,
+    });
+  }
+
+  /**
+   * Create a single notification with real-time updates
    */
   static async createNotification(params: CreateNotificationParams): Promise<INotification> {
     try {
-
       const notification = new Notification({
         tenantId: params.tenantId,
         userId: params.userId,
@@ -47,6 +59,14 @@ export class NotificationService {
 
       const savedNotification = await notification.save();
       console.log(`✅ Created ${params.type} notification for user ${params.userId}: "${params.title}"`);
+      
+      // Get updated unread count and emit real-time notification
+      const unreadCount = await this.getUnreadCount(params.tenantId, params.userId);
+      realtimeService.emitNotificationToUser(params.userId, 'created', {
+        notification: savedNotification,
+        unreadCount,
+      });
+
       return savedNotification;
     } catch (error) {
       console.error('Error creating notification:', error);
@@ -381,7 +401,7 @@ export class NotificationService {
   }
 
   /**
-   * Mark notification(s) as read
+   * Mark notification(s) as read with real-time updates
    */
   static async markAsRead(
     tenantId: string,
@@ -395,6 +415,24 @@ export class NotificationService {
     }
 
     await Notification.updateMany(query, { isRead: true, updatedAt: new Date() });
+    
+    // Get updated unread count and emit real-time update
+    const unreadCount = await this.getUnreadCount(tenantId, userId);
+    
+    if (notificationIds && notificationIds.length > 0) {
+      // If specific notifications were marked as read
+      notificationIds.forEach(notificationId => {
+        realtimeService.emitNotificationToUser(userId, 'read', {
+          notificationId,
+          unreadCount,
+        });
+      });
+    } else {
+      // If all notifications were marked as read
+      realtimeService.emitNotificationToUser(userId, 'unread_count', {
+        unreadCount,
+      });
+    }
   }
 
   /**
@@ -432,5 +470,79 @@ export class NotificationService {
     ]);
 
     return { total, unread, archived };
+  }
+
+  /**
+   * Create notifications for comment creation on tasks
+   */
+  static async notifyCommentCreated(
+    taskId: string,
+    comment: string,
+    commenterUserId: string,
+    tenantId: string
+  ): Promise<void> {
+    console.log('🗨️ notifyCommentCreated called with:', {
+      taskId,
+      commenterUserId,
+      tenantId,
+    });
+
+    try {
+      // Get task details
+      const task = await Task.findOne({ _id: taskId, tenantId }).lean() as any;
+      if (!task) {
+        console.error('Task not found for comment notification');
+        return;
+      }
+
+      // Get recipients (task assignees and reporter, excluding the commenter)
+      const recipients = await this.getTaskNotificationRecipients(task, commenterUserId);
+
+      if (recipients.length === 0) {
+        console.log('No recipients found for comment notification');
+        return;
+      }
+
+      // Get commenter name for better notification message
+      let commenterName = 'Someone';
+      try {
+        const commenter = await User.findById(commenterUserId).select('firstName lastName').lean() as any;
+        if (commenter) {
+          commenterName = `${commenter.firstName || ''} ${commenter.lastName || ''}`.trim() || 'Someone';
+        }
+      } catch (error) {
+        console.error('Error fetching commenter name:', error);
+      }
+
+      // Create notifications for all recipients
+      const notificationPromises = recipients.map(userId =>
+        this.createNotification({
+          tenantId,
+          userId,
+          type: 'task_updated', // Using existing type since there's no comment type
+          title: `New comment on: ${task.title}`,
+          message: `${commenterName} commented on the task "${task.title}": "${comment.length > 100 ? comment.substring(0, 100) + '...' : comment}"`,
+          category: 'task',
+          relatedEntity: {
+            entityType: 'task',
+            entityId: task._id,
+            entityTitle: task.title,
+          },
+          metadata: {
+            taskId: task._id,
+            workOrderId: task.workOrderId,
+            projectId: task.projectId,
+            reporterId: task.createdBy,
+            changes: ['comment'],
+          },
+          createdBy: commenterUserId,
+        })
+      );
+
+      await Promise.all(notificationPromises);
+      console.log(`✅ Created comment notifications for ${recipients.length} recipients`);
+    } catch (error) {
+      console.error('Error creating comment notifications:', error);
+    }
   }
 }

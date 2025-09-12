@@ -14,9 +14,9 @@ function EmailInboxIcon({ sx, ...other }: SvgIconProps) {
       xmlns="http://www.w3.org/2000/svg"
       sx={[
         (theme) => ({
-          '--primary-main': theme.vars.palette.primary.main,
-          '--warning-light': theme.vars.palette.warning.light,
-          '--warning-dark': theme.vars.palette.warning.dark,
+          '--primary-main': theme.vars?.palette.primary.main,
+          '--warning-light': theme.vars?.palette.warning.light,
+          '--warning-dark': theme.vars?.palette.warning.dark,
           width: 96,
           flexShrink: 0,
           height: 'auto',

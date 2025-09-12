@@ -13,7 +13,7 @@ import { usePathname } from 'src/routes/hooks';
 
 import { NavItem } from './nav-item';
 import { navBasicClasses } from '../styles';
-import { NavUl, NavLi, NavDropdown, NavDropdownPaper } from '../components';
+import { NavLi, NavUl, NavDropdown, NavDropdownPaper } from '../components';
 
 // ----------------------------------------------------------------------
 

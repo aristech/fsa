@@ -9,17 +9,17 @@ export interface DurationConfig {
  */
 export function formatMinutesToDuration(minutes: number, config?: DurationConfig): string {
   if (!minutes || minutes <= 0) return '0 min';
-  
+
   const workingDayHours = config?.workingDayHours || 8;
   const workingDayMinutes = workingDayHours * 60;
-  
+
   if (minutes < 60) {
     return `${minutes} min`;
   }
-  
+
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
-  
+
   if (minutes < workingDayMinutes) {
     // Show as hours and minutes
     if (remainingMinutes === 0) {
@@ -27,12 +27,12 @@ export function formatMinutesToDuration(minutes: number, config?: DurationConfig
     }
     return `${hours}h ${remainingMinutes}m`;
   }
-  
+
   // Show as days and hours for longer durations
   const days = Math.floor(minutes / workingDayMinutes);
   const remainingHours = Math.floor((minutes % workingDayMinutes) / 60);
   const finalMinutes = minutes % 60;
-  
+
   let result = `${days}d`;
   if (remainingHours > 0) {
     result += ` ${remainingHours}h`;
@@ -40,7 +40,7 @@ export function formatMinutesToDuration(minutes: number, config?: DurationConfig
   if (finalMinutes > 0) {
     result += ` ${finalMinutes}m`;
   }
-  
+
   return result;
 }
 
@@ -52,10 +52,10 @@ export function estimatedDurationToMinutes(
   config?: DurationConfig
 ): number {
   if (!estimatedDuration) return 0;
-  
+
   const { value, unit } = estimatedDuration;
   const workingDayHours = config?.workingDayHours || 8;
-  
+
   switch (unit) {
     case 'hours':
       return value * 60;
@@ -77,7 +77,7 @@ export function formatEstimatedDuration(
   estimatedDuration: { value: number; unit: string } | null
 ): string {
   if (!estimatedDuration) return '—';
-  
+
   const { value, unit } = estimatedDuration;
   return `${value} ${unit}`;
 }
@@ -91,9 +91,9 @@ export function calculateTimeProgress(
   config?: DurationConfig
 ): number {
   if (!estimatedDuration || !actualMinutes) return 0;
-  
+
   const estimatedMinutes = estimatedDurationToMinutes(estimatedDuration, config);
   if (estimatedMinutes <= 0) return 0;
-  
+
   return Math.min(100, Math.round((actualMinutes / estimatedMinutes) * 100));
 }

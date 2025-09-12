@@ -85,7 +85,7 @@ export function getInputTypography(
  * **********************************************************************/
 export const inputBaseStyles = {
   root: (context: InputContext, theme: Theme, classes: Partial<InputBaseClasses>): CSSObject => ({
-    '--disabled-color': theme.vars.palette.action.disabled,
+    '--disabled-color': theme.vars?.palette.action.disabled,
     ...getInputTypography(theme, ['lineHeight']),
     [`&.${classes.disabled}`]: {
       [`& .${inputAdornmentClasses.root} *`]: { color: 'var(--disabled-color)' },
@@ -100,7 +100,7 @@ export const inputBaseStyles = {
       ...getInputTypography(theme, ['fontSize', 'height', 'lineHeight']),
       '&:focus': { borderRadius: 'inherit' },
       '&::placeholder, &::-webkit-input-placeholder, &::-moz-placeholder, &:-ms-input-placeholder, &::-ms-input-placeholder':
-        { color: theme.vars.palette.text.disabled },
+        { color: theme.vars?.palette.text.disabled },
     }),
     ...(context === 'picker' && {
       ...getInputTypography(theme, ['fontSize', 'lineHeight']),
@@ -162,10 +162,10 @@ const MuiInputBase: Components<Theme>['MuiInputBase'] = {
 export const inputStyles = {
   root: (theme: Theme): CSSObject => ({
     '&::before': {
-      borderBottomColor: theme.vars.palette.shared.inputUnderline,
+      borderBottomColor: theme.vars?.palette.shared.inputUnderline,
     },
     '&::after': {
-      borderBottomColor: theme.vars.palette.text.primary,
+      borderBottomColor: theme.vars?.palette.text.primary,
     },
   }),
 };
@@ -184,17 +184,17 @@ export const outlinedInputStyles = {
   root: (theme: Theme, classes: Partial<OutlinedInputClasses>): CSSObject => ({
     [`&.${classes.focused}:not(.${classes.error})`]: {
       [`& .${classes.notchedOutline}`]: {
-        borderColor: theme.vars.palette.text.primary,
+        borderColor: theme.vars?.palette.text.primary,
       },
     },
     [`&.${classes.disabled}`]: {
       [`& .${classes.notchedOutline}`]: {
-        borderColor: theme.vars.palette.action.disabledBackground,
+        borderColor: theme.vars?.palette.action.disabledBackground,
       },
     },
   }),
   notchedOutline: (theme: Theme): CSSObject => ({
-    borderColor: theme.vars.palette.shared.inputOutlined,
+    borderColor: theme.vars?.palette.shared.inputOutlined,
     transition: theme.transitions.create(['border-color'], {
       duration: theme.transitions.duration.shortest,
     }),
@@ -244,11 +244,11 @@ const MuiOutlinedInput: Components<Theme>['MuiOutlinedInput'] = {
  * **********************************************************************/
 export const filledInputStyles = {
   root: (theme: Theme, classes: Partial<FilledInputClasses>): CSSObject => {
-    const baseBg = varAlpha(theme.vars.palette.grey['500Channel'], 0.08);
-    const hoverBg = varAlpha(theme.vars.palette.grey['500Channel'], 0.16);
-    const errorBg = varAlpha(theme.vars.palette.error.mainChannel, 0.08);
-    const errorHoverBg = varAlpha(theme.vars.palette.error.mainChannel, 0.16);
-    const disabledBg = theme.vars.palette.action.disabledBackground;
+    const baseBg = varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08);
+    const hoverBg = varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.16);
+    const errorBg = varAlpha(theme.vars?.palette.error.mainChannel || '0 0 0', 0.08);
+    const errorHoverBg = varAlpha(theme.vars?.palette.error.mainChannel || '0 0 0', 0.16);
+    const disabledBg = theme.vars?.palette.action.disabledBackground;
 
     return {
       backgroundColor: baseBg,

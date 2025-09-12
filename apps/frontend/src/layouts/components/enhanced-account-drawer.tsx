@@ -17,8 +17,8 @@ import Tooltip from '@mui/material/Tooltip';
 import Divider from '@mui/material/Divider';
 import MenuList from '@mui/material/MenuList';
 import MenuItem from '@mui/material/MenuItem';
-import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
 import CardContent from '@mui/material/CardContent';
 
 import { paths } from 'src/routes/paths';
@@ -46,6 +46,14 @@ export type EnhancedAccountDrawerProps = IconButtonProps & {
     icon?: React.ReactNode;
     info?: React.ReactNode;
   }[];
+};
+
+const ROLE_TITLES: Record<string, string> = {
+  admin: 'Administrator',
+  manager: 'Manager',
+  technician: 'Technician',
+  dispatcher: 'Dispatcher',
+  customer: 'Customer',
 };
 
 export function EnhancedAccountDrawer({ data = [], sx, ...other }: EnhancedAccountDrawerProps) {
@@ -103,7 +111,12 @@ export function EnhancedAccountDrawer({ data = [], sx, ...other }: EnhancedAccou
             </Typography>
 
             <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-              <Chip label={user?.role || 'User'} size="small" color="primary" variant="outlined" />
+              <Chip
+                label={ROLE_TITLES[user?.role || ''] || user?.role || 'User'}
+                size="small"
+                color="primary"
+                variant="outlined"
+              />
 
               {user?.isTenantOwner && (
                 <Chip
@@ -186,7 +199,7 @@ export function EnhancedAccountDrawer({ data = [], sx, ...other }: EnhancedAccou
             typography: 'body2',
             color: 'text.secondary',
             '&:hover': {
-              bgcolor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+              bgcolor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
               color: 'text.primary',
             },
           },
@@ -242,9 +255,9 @@ export function EnhancedAccountDrawer({ data = [], sx, ...other }: EnhancedAccou
           onClick={onOpen}
           sx={[
             (theme) => ({
-              bgcolor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+              bgcolor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
               '&:hover': {
-                bgcolor: varAlpha(theme.vars.palette.grey['500Channel'], 0.12),
+                bgcolor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.12),
               },
             }),
             ...(Array.isArray(sx) ? sx : sx ? [sx] : []),

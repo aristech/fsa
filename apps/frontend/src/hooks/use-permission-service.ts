@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
-import {
-  permissionService,
-  type UserPermissionContext,
-} from 'src/lib/services/permission-service';
+import { permissionService, type UserPermissionContext } from 'src/lib/services/permission-service';
 
 // ----------------------------------------------------------------------
 

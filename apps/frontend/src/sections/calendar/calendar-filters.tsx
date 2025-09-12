@@ -166,7 +166,7 @@ export function CalendarFilters({
             <ListItemButton
               onClick={() => onClickEvent(`${event.id}`)}
               sx={[
-                (theme) => ({ py: 1.5, borderBottom: `dashed 1px ${theme.vars.palette.divider}` }),
+                (theme) => ({ py: 1.5, borderBottom: `dashed 1px ${theme.vars?.palette.divider}` }),
               ]}
             >
               <Box

@@ -72,7 +72,7 @@ export function MultiFilePreview({
                 (theme) => ({
                   width: 80,
                   height: 80,
-                  border: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.16)}`,
+                  border: `solid 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.16)}`,
                 }),
                 ...(Array.isArray(thumbnailProps?.sx) ? thumbnailProps.sx : [thumbnailProps?.sx]),
               ]}
@@ -152,7 +152,7 @@ const PreviewItem = styled('li', {
         gap: theme.spacing(1.5),
         padding: theme.spacing(1, 1, 1, 1.5),
         borderRadius: theme.shape.borderRadius,
-        border: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.16)}`,
+        border: `solid 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.16)}`,
       }),
     },
   ],

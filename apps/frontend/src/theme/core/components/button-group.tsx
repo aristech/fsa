@@ -24,15 +24,15 @@ const containedVariants = [
   {
     props: (props) => props.variant === 'contained',
     style: ({ theme }) => ({
-      borderColor: theme.vars.palette.shared.buttonOutlined,
+      borderColor: theme.vars?.palette.shared.buttonOutlined,
     }),
   },
   ...(colorKeys.palette.map((colorKey) => ({
     props: (props) => props.variant === 'contained' && props.color === colorKey,
     style: ({ theme }) => ({
       borderColor: varAlpha(
-        theme.vars.palette[colorKey].darkChannel,
-        theme.vars.opacity.outlined.border
+        theme.vars?.palette[colorKey].darkChannel || '0 0 0',
+        theme.vars?.opacity.outlined.border || '0.2'
       ),
     }),
   })) satisfies ButtonGroupVariants),
@@ -42,13 +42,13 @@ const textVariants = [
   {
     props: (props) => props.variant === 'text',
     style: ({ theme }) => ({
-      borderColor: varAlpha('currentColor', theme.vars.opacity.outlined.border),
+      borderColor: varAlpha('currentColor', theme.vars?.opacity.outlined.border || '0.2'),
     }),
   },
   {
     props: (props) => props.variant === 'text' && props.color === 'inherit',
     style: ({ theme }) => ({
-      borderColor: theme.vars.palette.shared.buttonOutlined,
+      borderColor: theme.vars?.palette.shared.buttonOutlined,
     }),
   },
 ] satisfies ButtonGroupVariants;
@@ -58,13 +58,13 @@ const softVariants = [
     props: (props) => props.variant === 'soft',
     style: ({ theme }) => ({
       borderStyle: 'solid',
-      borderColor: varAlpha('currentColor', theme.vars.opacity.soft.border),
+      borderColor: varAlpha('currentColor', theme.vars?.opacity.soft.border || '0.12'),
     }),
   },
   {
     props: (props) => props.variant === 'soft' && props.color === 'inherit',
     style: ({ theme }) => ({
-      borderColor: theme.vars.palette.shared.buttonOutlined,
+      borderColor: theme.vars?.palette.shared.buttonOutlined,
     }),
   },
 ] satisfies ButtonGroupVariants;
@@ -85,7 +85,7 @@ const disabledVariants = [
     props: {},
     style: ({ theme }) => ({
       [`&.${buttonGroupClasses.disabled}`]: {
-        borderColor: theme.vars.palette.action.disabledBackground,
+        borderColor: theme.vars?.palette.action.disabledBackground,
       },
     }),
   },

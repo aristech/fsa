@@ -20,16 +20,16 @@ const customTabsIndicatorStyles = {
       '--item-padding-x': '16px',
       '--list-padding-x': '8px',
       '--indicator-radius': '8px',
-      '--indicator-shadow': theme.vars.customShadows.z1,
-      '--indicator-bg': theme.vars.palette.common.white,
+      '--indicator-shadow': theme.vars?.customShadows.z1,
+      '--indicator-bg': theme.vars?.palette.common.white,
       ...theme.applyStyles('dark', {
-        '--indicator-bg': theme.vars.palette.grey[900],
+        '--indicator-bg': theme.vars?.palette.grey[900],
       }),
     };
 
     return {
       ...cssVars,
-      backgroundColor: theme.vars.palette.background.neutral,
+      backgroundColor: theme.vars?.palette.background.neutral,
       [`& .${tabClasses.root}`]: {
         zIndex: 1,
         minHeight: 52,
@@ -182,7 +182,7 @@ const MuiTab: Components<Theme>['MuiTab'] = {
       minWidth: 48,
       paddingLeft: 0,
       paddingRight: 0,
-      color: theme.vars.palette.text.secondary,
+      color: theme.vars?.palette.text.secondary,
       fontWeight: theme.typography.fontWeightMedium,
       lineHeight: theme.typography.body2.lineHeight,
       variants: [...tabVariants],

@@ -26,7 +26,7 @@ const MuiInputLabel: Components<Theme>['MuiInputLabel'] = {
           props: (props) => !props.shrink,
           style: {
             ...getInputTypography(theme, ['fontSize', 'lineHeight']),
-            color: theme.vars.palette.text.disabled,
+            color: theme.vars?.palette.text.disabled,
           },
         },
         {
@@ -57,14 +57,14 @@ const MuiFormLabel: Components<Theme>['MuiFormLabel'] = {
   styleOverrides: {
     root: ({ theme }) => ({
       [`&.${formLabelClasses.disabled}`]: {
-        color: theme.vars.palette.action.disabled,
+        color: theme.vars?.palette.action.disabled,
       },
       variants: [
         {
           props: (props) => !props.error,
           style: {
             [`&.${formLabelClasses.focused}`]: {
-              color: theme.vars.palette.text.secondary,
+              color: theme.vars?.palette.text.secondary,
             },
           },
         },

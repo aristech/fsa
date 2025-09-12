@@ -194,7 +194,7 @@ export function OverviewAppView() {
               icon="solar:letter-bold"
               chart={{
                 series: 75,
-                colors: [theme.vars.palette.info.light, theme.vars.palette.info.main],
+                colors: [theme.vars?.palette.info.light, theme.vars?.palette.info.main],
               }}
               sx={{ bgcolor: 'info.dark', [`& .${svgColorClasses.root}`]: { color: 'info.light' } }}
             />

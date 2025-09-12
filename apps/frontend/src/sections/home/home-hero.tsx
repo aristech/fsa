@@ -91,7 +91,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
           sx={[
             (theme) => ({
               ...theme.mixins.textGradient(
-                `300deg, ${theme.vars.palette.primary.main} 0%, ${theme.vars.palette.warning.main} 25%, ${theme.vars.palette.primary.main} 50%, ${theme.vars.palette.warning.main} 75%, ${theme.vars.palette.primary.main} 100%`
+                `300deg, ${theme.vars?.palette.primary.main} 0%, ${theme.vars?.palette.warning.main} 25%, ${theme.vars?.palette.primary.main} 50%, ${theme.vars?.palette.warning.main} 75%, ${theme.vars?.palette.primary.main} 100%`
               ),
               backgroundSize: '400%',
               ml: { xs: 0.75, md: 1, xl: 1.5 },
@@ -140,7 +140,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
               height: 32,
             },
           }}
-         />
+        />
         160+ Happy customers
       </Box>
     </m.div>

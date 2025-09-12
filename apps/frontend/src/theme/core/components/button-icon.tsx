@@ -19,7 +19,7 @@ const colorVariants = [
   ...(colorKeys.common.map((colorKey) => ({
     props: (props) => props.color === colorKey,
     style: ({ theme }) => ({
-      color: theme.vars.palette.common[colorKey],
+      color: theme.vars?.palette.common[colorKey],
     }),
   })) satisfies IconButtonVariants),
 ] satisfies IconButtonVariants;

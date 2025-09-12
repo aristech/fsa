@@ -37,7 +37,7 @@ const containedVariants = [
     style: ({ theme }) => ({
       ...theme.mixins.filledStyles(theme, 'inherit', {
         hover: {
-          boxShadow: theme.vars.customShadows.z8,
+          boxShadow: theme.vars?.customShadows.z8,
         },
       }),
     }),
@@ -47,7 +47,7 @@ const containedVariants = [
     style: ({ theme }) => ({
       ...theme.mixins.filledStyles(theme, colorKey, {
         hover: {
-          boxShadow: theme.vars.customShadows.z8,
+          boxShadow: theme.vars?.customShadows.z8,
         },
       }),
     }),
@@ -56,7 +56,7 @@ const containedVariants = [
     props: (props) => props.variant === 'contained' && props.color === colorKey,
     style: ({ theme }) => ({
       '&:hover': {
-        boxShadow: theme.vars.customShadows[colorKey],
+        boxShadow: theme.vars?.customShadows[colorKey],
       },
     }),
   })) satisfies ButtonVariants),
@@ -66,27 +66,27 @@ const outlinedVariants = [
   {
     props: (props) => props.variant === 'outlined',
     style: ({ theme }) => ({
-      borderColor: varAlpha('currentColor', theme.vars.opacity.outlined.border),
+      borderColor: varAlpha('currentColor', theme.vars?.opacity.outlined.border || '0.2'),
       '&:hover': {
         borderColor: 'currentColor',
         boxShadow: '0 0 0 0.75px currentColor',
-        backgroundColor: varAlpha('currentColor', theme.vars.palette.action.hoverOpacity),
+        backgroundColor: varAlpha('currentColor', theme.vars?.palette.action.hoverOpacity || '0.08'),
       },
     }),
   },
   {
     props: (props) => props.variant === 'outlined' && props.color === 'inherit',
     style: ({ theme }) => ({
-      borderColor: theme.vars.palette.shared.buttonOutlined,
+      borderColor: theme.vars?.palette.shared.buttonOutlined,
       '&:hover': {
-        backgroundColor: theme.vars.palette.action.hover,
+        backgroundColor: theme.vars?.palette.action.hover,
       },
     }),
   },
   ...(colorKeys.common.map((colorKey) => ({
     props: (props) => props.variant === 'outlined' && props.color === colorKey,
     style: ({ theme }) => ({
-      color: theme.vars.palette.common[colorKey],
+      color: theme.vars?.palette.common[colorKey],
     }),
   })) satisfies ButtonVariants),
 ] satisfies ButtonVariants;
@@ -96,7 +96,7 @@ const textVariants = [
     props: (props) => props.variant === 'text',
     style: ({ theme }) => ({
       '&:hover': {
-        backgroundColor: varAlpha('currentColor', theme.vars.palette.action.hoverOpacity),
+        backgroundColor: varAlpha('currentColor', theme.vars?.palette.action.hoverOpacity || '0.08'),
       },
     }),
   },
@@ -104,14 +104,14 @@ const textVariants = [
     props: (props) => props.variant === 'text' && props.color === 'inherit',
     style: ({ theme }) => ({
       '&:hover': {
-        backgroundColor: theme.vars.palette.action.hover,
+        backgroundColor: theme.vars?.palette.action.hover,
       },
     }),
   },
   ...(colorKeys.common.map((colorKey) => ({
     props: (props) => props.variant === 'text' && props.color === colorKey,
     style: ({ theme }) => ({
-      color: theme.vars.palette.common[colorKey],
+      color: theme.vars?.palette.common[colorKey],
     }),
   })) satisfies ButtonVariants),
 ] satisfies ButtonVariants;
@@ -167,7 +167,7 @@ const disabledVariants = [
     props: (props) => props.variant === 'soft',
     style: ({ theme }) => ({
       [`&.${buttonClasses.disabled}`]: {
-        backgroundColor: theme.vars.palette.action.disabledBackground,
+        backgroundColor: theme.vars?.palette.action.disabledBackground,
       },
     }),
   },

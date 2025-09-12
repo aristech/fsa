@@ -15,7 +15,7 @@ import type { CSSObject } from '@mui/material/styles';
  * // With gradient and image overlay
  * ...theme.mixins.bgGradient({
  *   images: [
- *     `linear-gradient(0deg, ${varAlpha(theme.vars.palette.primary.darkerChannel, 0.8)}, ${varAlpha(theme.vars.palette.primary.darkerChannel, 0.8)})`,
+ *     `linear-gradient(0deg, ${varAlpha(theme.vars?.palette.primary.darkerChannel || '0 0 0', 0.8)}, ${varAlpha(theme.vars?.palette.primary.darkerChannel || '0 0 0', 0.8)})`,
  *     `url(/assets/overlay.png)`,
  *   ],
  *   sizes: ['cover', '80px 80px'],
@@ -27,7 +27,7 @@ import type { CSSObject } from '@mui/material/styles';
  * // With a single gradient only
  * ...theme.mixins.bgGradient({
  *   images: [
- *     `linear-gradient(0deg, ${varAlpha(theme.vars.palette.primary.darkerChannel, 0.8)}, ${varAlpha(theme.vars.palette.primary.darkerChannel, 0.8)})`,
+ *     `linear-gradient(0deg, ${varAlpha(theme.vars?.palette.primary.darkerChannel || '0 0 0', 0.8)}, ${varAlpha(theme.vars?.palette.primary.darkerChannel || '0 0 0', 0.8)})`,
  *   ],
  * })
  */
@@ -61,7 +61,7 @@ export function bgGradient({ sizes, repeats, images, positions }: BgGradientProp
  * @example
  * // With image overlay
  * ...theme.mixins.bgBlur({
- *   color: varAlpha(theme.vars.palette.background.paperChannel, 0.8),
+ *   color: varAlpha(theme.vars?.palette.background.paperChannel || '0 0 0', 0.8),
  *   imgUrl: '/assets/overlay.png',
  *   blur: 8,
  * })
@@ -69,7 +69,7 @@ export function bgGradient({ sizes, repeats, images, positions }: BgGradientProp
  * @example
  * // With color only
  * ...theme.mixins.bgBlur({
- *   color: varAlpha(theme.vars.palette.background.paperChannel, 0.8),
+ *   color: varAlpha(theme.vars?.palette.background.paperChannel || '0 0 0', 0.8),
  * })
  */
 

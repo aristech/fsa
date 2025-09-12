@@ -17,9 +17,9 @@ function UploadIllustration({ hideBackground, sx, ...other }: SvgProps) {
       xmlns="http://www.w3.org/2000/svg"
       sx={[
         (theme) => ({
-          '--primary-main': theme.vars.palette.primary.main,
-          '--primary-dark': theme.vars.palette.primary.dark,
-          '--primary-darker': theme.vars.palette.primary.darker,
+          '--primary-main': theme.vars?.palette.primary.main,
+          '--primary-dark': theme.vars?.palette.primary.dark,
+          '--primary-darker': theme.vars?.palette.primary.darker,
           width: 320,
           maxWidth: 1,
           flexShrink: 0,

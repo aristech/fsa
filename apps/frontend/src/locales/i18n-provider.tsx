@@ -11,7 +11,7 @@ import { initReactI18next, I18nextProvider as Provider } from 'react-i18next';
 
 import { CONFIG } from 'src/global-config';
 
-import { i18nOptions, fallbackLng, storageConfig, i18nResourceLoader } from './locales-config';
+import { fallbackLng, i18nOptions, storageConfig, i18nResourceLoader } from './locales-config';
 
 // ----------------------------------------------------------------------
 

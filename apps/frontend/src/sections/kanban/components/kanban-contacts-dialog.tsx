@@ -99,7 +99,11 @@ export function KanbanContactsDialog({ assignee = [], open, onClose, onAssign }:
                     }}
                   >
                     <Avatar>
-                      {contact.name?.split(' ').map(n => n.charAt(0)).join('').toUpperCase() || 'C'}
+                      {contact.name
+                        ?.split(' ')
+                        .map((n) => n.charAt(0))
+                        .join('')
+                        .toUpperCase() || 'C'}
                     </Avatar>
 
                     <ListItemText primary={contact.name} secondary={contact.email} />
@@ -114,15 +118,15 @@ export function KanbanContactsDialog({ assignee = [], open, onClose, onAssign }:
                           sx={{ mr: -0.5 }}
                         />
                       }
-                    onClick={() => {
-                      let next = assignee;
-                      if (checked) {
-                        next = assignee.filter((p) => p.id !== contact.id);
-                      } else {
-                        next = [...assignee, contact];
-                      }
-                      onAssign?.(next);
-                    }}
+                      onClick={() => {
+                        let next = assignee;
+                        if (checked) {
+                          next = assignee.filter((p) => p.id !== contact.id);
+                        } else {
+                          next = [...assignee, contact];
+                        }
+                        onAssign?.(next);
+                      }}
                     >
                       {checked ? 'Assigned' : 'Assign'}
                     </Button>

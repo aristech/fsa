@@ -65,7 +65,11 @@ export function FsaStatsCards() {
                     bgcolor: alpha((theme.palette as any)[stat.color].main, 0.08),
                   }}
                 >
-                  <Iconify icon={stat.icon as any} width={32} sx={{ color: (theme.palette as any)[stat.color].main }} />
+                  <Iconify
+                    icon={stat.icon as any}
+                    width={32}
+                    sx={{ color: (theme.palette as any)[stat.color].main }}
+                  />
                 </Stack>
               </Stack>
             </CardContent>

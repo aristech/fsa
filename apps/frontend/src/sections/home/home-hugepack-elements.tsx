@@ -3,7 +3,7 @@ import type { BoxProps } from '@mui/material/Box';
 
 import { useRef, useState } from 'react';
 import { useClientRect } from 'minimal-shared/hooks';
-import { m, useSpring, useScroll, useTransform, useMotionValueEvent } from 'framer-motion';
+import { m, useScroll, useSpring, useTransform, useMotionValueEvent } from 'framer-motion';
 
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
@@ -117,11 +117,11 @@ function ScrollableContent() {
     scrollYProgress,
     [0, 0.25, 0.5, 0.75, 1],
     [
-      theme.vars.palette.background.default,
-      theme.vars.palette.background.neutral,
-      theme.vars.palette.background.neutral,
-      theme.vars.palette.background.neutral,
-      theme.vars.palette.background.default,
+      theme.vars?.palette.background.default,
+      theme.vars?.palette.background.neutral,
+      theme.vars?.palette.background.neutral,
+      theme.vars?.palette.background.neutral,
+      theme.vars?.palette.background.default,
     ]
   );
 

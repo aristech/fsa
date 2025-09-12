@@ -20,9 +20,9 @@ export const ColumnWrapper = styled(m.li)({
 export const ColumnRoot = styled('div')(({ theme }) => {
   const backgroundOverStyles: Record<'idle' | 'taskOver' | 'columnOver', CSSObject> = {
     idle: {
-      '--background-over': varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+      '--background-over': varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
       ...theme.applyStyles('dark', {
-        '--background-over': varAlpha(theme.vars.palette.grey['500Channel'], 0.16),
+        '--background-over': varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.16),
       }),
       top: 0,
       left: 0,
@@ -38,12 +38,12 @@ export const ColumnRoot = styled('div')(({ theme }) => {
     taskOver: {
       borderStyle: 'solid',
       backgroundColor: 'var(--background-over)',
-      borderColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+      borderColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
     },
     columnOver: {
       borderStyle: 'dashed',
       backgroundColor: 'var(--background-over)',
-      borderColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.24),
+      borderColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.24),
     },
   };
 
@@ -53,7 +53,7 @@ export const ColumnRoot = styled('div')(({ theme }) => {
     flexDirection: 'column',
     gap: 'var(--kanban-item-gap)',
     borderRadius: 'var(--kanban-column-radius)',
-    backgroundColor: theme.vars.palette.background.neutral,
+    backgroundColor: theme.vars?.palette.background.neutral,
     '&::before': backgroundOverStyles.idle,
     [`&.${kanbanClasses.state.dragging}`]: {
       opacity: 0.4,

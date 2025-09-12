@@ -7,8 +7,8 @@ import type { PickersTextFieldProps } from '@mui/x-date-pickers/PickersTextField
 import dayjs from 'dayjs';
 import { Controller, useFormContext } from 'react-hook-form';
 
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 
 // ----------------------------------------------------------------------

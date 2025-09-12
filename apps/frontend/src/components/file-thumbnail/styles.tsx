@@ -42,10 +42,10 @@ export const RemoveButton = styled(IconButton)(({ theme }) => ({
   padding: theme.spacing(0.5),
   width: 20,
   height: 20,
-  color: theme.vars.palette.common.white,
-  backgroundColor: varAlpha(theme.vars.palette.grey['900Channel'], 0.48),
+  color: theme.vars?.palette.common.white,
+  backgroundColor: varAlpha(theme.vars?.palette.grey['900Channel'] || '0 0 0', 0.48),
   '&:hover': {
-    backgroundColor: varAlpha(theme.vars.palette.grey['900Channel'], 0.72),
+    backgroundColor: varAlpha(theme.vars?.palette.grey['900Channel'] || '0 0 0', 0.72),
   },
 }));
 
@@ -59,9 +59,9 @@ export const DownloadButton = styled(ButtonBase)(({ theme }) => ({
   opacity: 1,
   position: 'absolute',
   borderRadius: theme.shape.borderRadius,
-  color: theme.vars.palette.common.white,
-  backgroundColor: varAlpha(theme.vars.palette.grey['900Channel'], 0.48),
+  color: theme.vars?.palette.common.white,
+  backgroundColor: varAlpha(theme.vars?.palette.grey['900Channel'] || '0 0 0', 0.48),
   '&:hover': {
-    backgroundColor: varAlpha(theme.vars.palette.grey['900Channel'], 0.72),
+    backgroundColor: varAlpha(theme.vars?.palette.grey['900Channel'] || '0 0 0', 0.72),
   },
 }));

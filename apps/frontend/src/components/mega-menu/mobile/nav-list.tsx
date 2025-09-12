@@ -10,7 +10,7 @@ import Drawer, { drawerClasses } from '@mui/material/Drawer';
 import { usePathname } from 'src/routes/hooks';
 
 import { Scrollbar } from '../../scrollbar';
-import { Nav, NavUl, NavLi, NavItem, NavSubList, NavDrawerHeader } from '../components';
+import { Nav, NavLi, NavUl, NavItem, NavSubList, NavDrawerHeader } from '../components';
 
 // ----------------------------------------------------------------------
 

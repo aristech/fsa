@@ -22,7 +22,7 @@ import { settingIcons } from './icons';
 import { Iconify } from '../../iconify';
 import { BaseOption } from './base-option';
 import { Scrollbar } from '../../scrollbar';
-import { SmallBlock, LargeBlock } from './styles';
+import { LargeBlock, SmallBlock } from './styles';
 import { PresetsOptions } from './presets-options';
 import { FullScreenButton } from './fullscreen-button';
 import { FontSizeOptions, FontFamilyOptions } from './font-options';
@@ -301,7 +301,7 @@ export function SettingsDrawer({ sx, defaultSettings }: SettingsDrawerProps) {
           sx: [
             (theme) => ({
               ...theme.mixins.paperStyles(theme, {
-                color: varAlpha(theme.vars.palette.background.defaultChannel, 0.9),
+                color: varAlpha(theme.vars?.palette.background.defaultChannel || '0 0 0', 0.9),
               }),
               width: 360,
             }),

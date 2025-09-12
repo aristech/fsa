@@ -48,10 +48,10 @@ const StepConnector = styled(MuiStepConnector)(({ theme }) => ({
   right: 'calc(50% + 20px)',
   [`& .${stepConnectorClasses.line}`]: {
     borderTopWidth: 2,
-    borderColor: theme.vars.palette.divider,
+    borderColor: theme.vars?.palette.divider,
   },
   [`&.${stepConnectorClasses.active}, &.${stepConnectorClasses.completed}`]: {
-    [`& .${stepConnectorClasses.line}`]: { borderColor: theme.vars.palette.primary.main },
+    [`& .${stepConnectorClasses.line}`]: { borderColor: theme.vars?.palette.primary.main },
   },
 }));
 

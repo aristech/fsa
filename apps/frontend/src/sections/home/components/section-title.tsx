@@ -72,7 +72,7 @@ export function SectionTitle({
             opacity: 0.4,
             display: 'inline-block',
             ...theme.mixins.textGradient(
-              `to right, ${theme.vars.palette.text.primary}, ${varAlpha(theme.vars.palette.text.primaryChannel, 0.2)}`
+              `to right, ${theme.vars?.palette.text.primary}, ${varAlpha(theme.vars?.palette.text.primaryChannel || '0 0 0', 0.2)}`
             ),
           })}
         >

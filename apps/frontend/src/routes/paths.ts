@@ -50,7 +50,7 @@ export const paths = {
       signIn: `${ROOTS.AUTH}/jwt/sign-in`,
       signUp: `${ROOTS.AUTH}/jwt/sign-up`,
       verifyAccount: `${ROOTS.AUTH}/jwt/verify-account`,
-    }
+    },
   },
   authDemo: {
     split: {
@@ -165,6 +165,12 @@ export const paths = {
         root: `${ROOTS.DASHBOARD}/clients`,
         new: `${ROOTS.DASHBOARD}/clients/new`,
         edit: (id: string) => `${ROOTS.DASHBOARD}/clients/${id}/edit`,
+      },
+      personnel: {
+        root: `${ROOTS.DASHBOARD}/personnel`,
+        new: `${ROOTS.DASHBOARD}/personnel/new`,
+        details: (id: string) => `${ROOTS.DASHBOARD}/personnel/${id}`,
+        edit: (id: string) => `${ROOTS.DASHBOARD}/personnel/${id}/edit`,
       },
       technicians: {
         root: `${ROOTS.DASHBOARD}/technicians`,

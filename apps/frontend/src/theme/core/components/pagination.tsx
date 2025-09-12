@@ -43,14 +43,14 @@ const outlinedVariants = [
   {
     props: (props) => props.variant === 'outlined',
     style: ({ theme }) => ({
-      borderColor: theme.vars.palette.shared.buttonOutlined,
+      borderColor: theme.vars?.palette.shared.buttonOutlined,
       [`&.${paginationItemClasses.selected}`]: {
         borderColor: 'currentColor',
-        backgroundColor: varAlpha('currentColor', theme.vars.palette.action.selectedOpacity),
+        backgroundColor: varAlpha('currentColor', theme.vars?.palette.action.selectedOpacity || '0.12'),
         '&:hover': {
           backgroundColor: varAlpha(
             'currentColor',
-            `calc(${theme.vars.palette.action.selectedOpacity} * 2)`
+            `calc(${theme.vars?.palette.action.selectedOpacity || '0.12'} * 2)`
           ),
         },
       },
@@ -60,9 +60,9 @@ const outlinedVariants = [
     props: (props) => props.variant === 'outlined' && props.color === 'standard',
     style: ({ theme }) => ({
       [`&.${paginationItemClasses.selected}`]: {
-        backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+        backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
         '&:hover': {
-          backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.16),
+          backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.16),
         },
       },
     }),
@@ -90,7 +90,7 @@ const disabledVariants = [
     style: ({ theme }) => ({
       [`&.${paginationItemClasses.disabled}`]: {
         [`&.${paginationItemClasses.selected}`]: {
-          backgroundColor: theme.vars.palette.action.disabledBackground,
+          backgroundColor: theme.vars?.palette.action.disabledBackground,
         },
       },
     }),

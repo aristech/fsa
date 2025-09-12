@@ -71,7 +71,7 @@ export function PaymentCardListDialog({
               (theme) => ({
                 cursor: 'pointer',
                 ...(selected(card.id) && {
-                  boxShadow: `0 0 0 2px ${theme.vars.palette.text.primary}`,
+                  boxShadow: `0 0 0 2px ${theme.vars?.palette.text.primary}`,
                 }),
               }),
             ]}

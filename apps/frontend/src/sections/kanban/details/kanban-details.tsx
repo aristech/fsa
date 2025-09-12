@@ -70,7 +70,7 @@ const BlockLabel = styled('span')(({ theme }) => ({
   ...theme.typography.caption,
   width: 100,
   flexShrink: 0,
-  color: theme.vars.palette.text.secondary,
+  color: theme.vars?.palette.text.secondary,
   fontWeight: theme.typography.fontWeightSemiBold,
 }));
 
@@ -534,8 +534,8 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
               onClick={contactsDialog.onTrue}
               sx={[
                 (theme) => ({
-                  border: `dashed 1px ${theme.vars.palette.divider}`,
-                  bgcolor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+                  border: `dashed 1px ${theme.vars?.palette.divider}`,
+                  bgcolor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
                 }),
               ]}
             >
@@ -622,8 +622,8 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
               onClick={rangePicker.onOpen}
               sx={[
                 (theme) => ({
-                  border: `dashed 1px ${theme.vars.palette.divider}`,
-                  bgcolor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+                  border: `dashed 1px ${theme.vars?.palette.divider}`,
+                  bgcolor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
                 }),
               ]}
             >

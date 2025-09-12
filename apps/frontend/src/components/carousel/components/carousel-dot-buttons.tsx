@@ -131,8 +131,8 @@ const DotItem = styled(ButtonBase, {
           height: size,
           borderRadius: '50%',
           ...theme.typography.body2,
-          color: theme.vars.palette.text.disabled,
-          border: `solid 1px ${theme.vars.palette.shared.buttonOutlined}`,
+          color: theme.vars?.palette.text.disabled,
+          border: `solid 1px ${theme.vars?.palette.shared.buttonOutlined}`,
           ...(selected && {
             ...theme.mixins.filledStyles(theme, 'inherit'),
             fontWeight: theme.typography.fontWeightSemiBold,

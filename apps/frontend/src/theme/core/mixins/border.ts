@@ -11,7 +11,7 @@ import type { CSSObject } from '@mui/material/styles';
  *
  * @example
  * ...theme.mixins.borderGradient({
- *   color: `to right, ${theme.vars.palette.primary.main}, ${varAlpha(theme.vars.palette.primary.mainChannel, 0.2)}`,
+ *   color: `to right, ${theme.vars?.palette.primary.main}, ${varAlpha(theme.vars?.palette.primary.mainChannel || '0 0 0', 0.2)}`,
  *   padding: '4px'
  * })
  */

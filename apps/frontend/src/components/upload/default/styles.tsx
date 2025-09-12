@@ -24,8 +24,8 @@ export const UploadArea = styled('div')(({ theme }) => ({
   padding: theme.spacing(3),
   borderRadius: theme.shape.borderRadius,
   transition: theme.transitions.create(['opacity']),
-  backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
-  border: `1px dashed ${varAlpha(theme.vars.palette.grey['500Channel'], 0.2)}`,
+  backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
+  border: `1px dashed ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.2)}`,
   '&:hover': {
     opacity: 0.72,
   },
@@ -37,9 +37,9 @@ export const UploadArea = styled('div')(({ theme }) => ({
     pointerEvents: 'none',
   },
   [`&.${uploadClasses.state.error}`]: {
-    color: theme.vars.palette.error.main,
-    borderColor: theme.vars.palette.error.main,
-    backgroundColor: varAlpha(theme.vars.palette.error.mainChannel, 0.08),
+    color: theme.vars?.palette.error.main,
+    borderColor: theme.vars?.palette.error.main,
+    backgroundColor: varAlpha(theme.vars?.palette.error.mainChannel || '0 0 0', 0.08),
   },
 }));
 
@@ -60,10 +60,10 @@ export const PlaceholderContainer = styled('div')(({ theme }) => ({
   },
   [`& .${uploadClasses.placeholder.description}`]: {
     ...theme.typography.body2,
-    color: theme.vars.palette.text.secondary,
+    color: theme.vars?.palette.text.secondary,
     '& span': {
       textDecoration: 'underline',
-      color: theme.vars.palette.primary.main,
+      color: theme.vars?.palette.primary.main,
     },
   },
 }));
@@ -73,9 +73,9 @@ export const DeleteButton = styled(IconButton)(({ theme }) => ({
   right: 16,
   zIndex: 9,
   position: 'absolute',
-  color: varAlpha(theme.vars.palette.common.whiteChannel, 0.8),
-  backgroundColor: varAlpha(theme.vars.palette.grey['900Channel'], 0.72),
+  color: varAlpha(theme.vars?.palette.common.whiteChannel || '0 0 0', 0.8),
+  backgroundColor: varAlpha(theme.vars?.palette.grey['900Channel'] || '0 0 0', 0.72),
   '&:hover': {
-    backgroundColor: varAlpha(theme.vars.palette.grey['900Channel'], 0.48),
+    backgroundColor: varAlpha(theme.vars?.palette.grey['900Channel'] || '0 0 0', 0.48),
   },
 }));

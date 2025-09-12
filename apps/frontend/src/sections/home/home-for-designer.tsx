@@ -29,7 +29,7 @@ export function HomeForDesigner({ sx, ...other }: BoxProps) {
           backgroundColor: 'grey.700',
           ...theme.mixins.bgGradient({
             images: [
-              `linear-gradient(135deg, ${varAlpha(theme.vars.palette.grey['900Channel'], 0.8)} 0%, ${theme.vars.palette.grey[900]} 75%)`,
+              `linear-gradient(135deg, ${varAlpha(theme.vars?.palette.grey['900Channel'] || '0 0 0', 0.8)} 0%, ${theme.vars?.palette.grey[900]} 75%)`,
               `url(${CONFIG.assetsDir}/assets/images/home/for-designer.webp)`,
             ],
           }),
@@ -84,7 +84,7 @@ export function HomeForDesigner({ sx, ...other }: BoxProps) {
                 sx: [
                   (theme) => ({
                     ...theme.mixins.textGradient(
-                      `to right, ${theme.vars.palette.common.white}, ${varAlpha(theme.vars.palette.common.whiteChannel, 0.2)}`
+                      `to right, ${theme.vars?.palette.common.white}, ${varAlpha(theme.vars?.palette.common.whiteChannel || '0 0 0', 0.2)}`
                     ),
                   }),
                 ],
@@ -93,7 +93,7 @@ export function HomeForDesigner({ sx, ...other }: BoxProps) {
                 sx: [
                   (theme) => ({
                     ...theme.mixins.textGradient(
-                      `135deg, ${theme.vars.palette.warning.main}, ${theme.vars.palette.primary.main}`
+                      `135deg, ${theme.vars?.palette.warning.main}, ${theme.vars?.palette.primary.main}`
                     ),
                   }),
                 ],
@@ -126,17 +126,17 @@ const renderActionButton = () => (
     duration={12}
     slotProps={{
       outlineColor: (theme) =>
-        `linear-gradient(135deg, ${varAlpha(theme.vars.palette.primary.mainChannel, 0.04)}, ${varAlpha(theme.vars.palette.warning.mainChannel, 0.04)})`,
+        `linear-gradient(135deg, ${varAlpha(theme.vars?.palette.primary.mainChannel || '0 0 0', 0.04)}, ${varAlpha(theme.vars?.palette.warning.mainChannel || '0 0 0', 0.04)})`,
       primaryBorder: {
         size: 50,
         width: '1.5px',
         sx: (theme) => ({
-          color: theme.vars.palette.primary.main,
+          color: theme.vars?.palette.primary.main,
         }),
       },
       secondaryBorder: {
         sx: (theme) => ({
-          color: theme.vars.palette.warning.main,
+          color: theme.vars?.palette.warning.main,
         }),
       },
     }}
@@ -160,17 +160,17 @@ const renderTopBorder = () => (
   <AnimateBorder
     duration={32}
     slotProps={{
-      outlineColor: (theme) => varAlpha(theme.vars.palette.primary.mainChannel, 0.08),
+      outlineColor: (theme) => varAlpha(theme.vars?.palette.primary.mainChannel || '0 0 0', 0.08),
       primaryBorder: {
         size: 300,
         width: '0 3px 3px 0',
         sx: (theme) => ({
-          color: varAlpha(theme.vars.palette.primary.lightChannel, 0.8),
+          color: varAlpha(theme.vars?.palette.primary.lightChannel || '0 0 0', 0.8),
         }),
       },
       secondaryBorder: {
         sx: (theme) => ({
-          color: varAlpha(theme.vars.palette.primary.lightChannel, 0.8),
+          color: varAlpha(theme.vars?.palette.primary.lightChannel || '0 0 0', 0.8),
         }),
       },
     }}
@@ -182,7 +182,7 @@ const renderTopBorder = () => (
         height: 'calc(50% + 16px)',
         position: 'absolute',
         borderRadius: '0 0 24px 0',
-        backgroundImage: `linear-gradient(135deg, ${varAlpha(theme.vars.palette.grey['900Channel'], 0.8)} 0%, ${theme.vars.palette.grey[900]} 75%)`,
+        backgroundImage: `linear-gradient(135deg, ${varAlpha(theme.vars?.palette.grey['900Channel'] || '0 0 0', 0.8)} 0%, ${theme.vars?.palette.grey[900]} 75%)`,
         display: { xs: 'none', md: 'block' },
       }),
     ]}
@@ -193,17 +193,17 @@ const renderBottomBorder = () => (
   <AnimateBorder
     duration={32}
     slotProps={{
-      outlineColor: (theme) => varAlpha(theme.vars.palette.common.whiteChannel, 0.08),
+      outlineColor: (theme) => varAlpha(theme.vars?.palette.common.whiteChannel || '0 0 0', 0.08),
       primaryBorder: {
         size: 300,
         width: '3px 0 0 3px',
         sx: (theme) => ({
-          color: varAlpha(theme.vars.palette.common.whiteChannel, 0.8),
+          color: varAlpha(theme.vars?.palette.common.whiteChannel || '0 0 0', 0.8),
         }),
       },
       secondaryBorder: {
         sx: (theme) => ({
-          color: varAlpha(theme.vars.palette.common.whiteChannel, 0.8),
+          color: varAlpha(theme.vars?.palette.common.whiteChannel || '0 0 0', 0.8),
         }),
       },
     }}
@@ -215,7 +215,7 @@ const renderBottomBorder = () => (
         width: 'calc(50% + 16px)',
         height: 'calc(50% + 16px)',
         borderRadius: '24px 0 0 0',
-        bgcolor: varAlpha(theme.vars.palette.grey['900Channel'], 0.48),
+        bgcolor: varAlpha(theme.vars?.palette.grey['900Channel'] || '0 0 0', 0.48),
         display: { xs: 'none', md: 'block' },
       }),
     ]}

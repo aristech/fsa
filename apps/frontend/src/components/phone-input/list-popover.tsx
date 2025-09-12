@@ -115,7 +115,7 @@ export function CountryListPopover({
           height: 20,
           ml: 'auto',
           width: '1px',
-          bgcolor: theme.vars.palette.divider,
+          bgcolor: theme.vars?.palette.divider,
         })}
       />
     </ButtonBase>

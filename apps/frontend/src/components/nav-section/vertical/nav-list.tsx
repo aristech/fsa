@@ -10,7 +10,7 @@ import { usePathname } from 'src/routes/hooks';
 
 import { NavItem } from './nav-item';
 import { navSectionClasses } from '../styles';
-import { NavUl, NavLi, NavCollapse } from '../components';
+import { NavLi, NavUl, NavCollapse } from '../components';
 
 // ----------------------------------------------------------------------
 

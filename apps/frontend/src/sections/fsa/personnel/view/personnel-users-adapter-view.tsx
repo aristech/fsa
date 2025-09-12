@@ -181,7 +181,13 @@ export function PersonnelUsersAdapterView() {
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [table.page, table.rowsPerPage, currentFilters.status, currentFilters.role, currentFilters.name]);
+  }, [
+    table.page,
+    table.rowsPerPage,
+    currentFilters.status,
+    currentFilters.role,
+    currentFilters.name,
+  ]);
 
   const dataFiltered = useMemo(
     () =>

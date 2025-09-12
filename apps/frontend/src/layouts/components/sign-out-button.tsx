@@ -12,7 +12,6 @@ import { toast } from 'src/components/snackbar';
 import { useAuthContext } from 'src/auth/hooks';
 import { signOut as jwtSignOut } from 'src/auth/context/jwt/action';
 
-
 // ----------------------------------------------------------------------
 
 const signOut = jwtSignOut;
@@ -41,14 +40,13 @@ export function SignOutButton({ onClose, sx, ...other }: Props) {
     }
   }, [checkUserSession, onClose, router]);
 
-
   return (
     <Button
       fullWidth
       variant="soft"
       size="large"
       color="error"
-      onClick={ handleLogout}
+      onClick={handleLogout}
       sx={sx}
       {...other}
     >

@@ -20,7 +20,7 @@ type Props = BoxProps & {
 
 export function KanbanDetailsCommentList({ comments, sx, ...other }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  
+
   const slides = comments
     .filter((comment) => comment.messageType === 'image')
     .map((slide) => ({ src: slide.message }));
@@ -56,9 +56,7 @@ export function KanbanDetailsCommentList({ comments, sx, ...other }: Props) {
       >
         {comments.map((comment) => (
           <Box component="li" key={comment.id} sx={{ gap: 2, display: 'flex' }}>
-            <Avatar>
-              {comment.initials || comment.name?.charAt(0)?.toUpperCase() || 'U'}
-            </Avatar>
+            <Avatar>{comment.initials || comment.name?.charAt(0)?.toUpperCase() || 'U'}</Avatar>
 
             <Box
               sx={{

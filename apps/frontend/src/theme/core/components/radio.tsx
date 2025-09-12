@@ -48,7 +48,7 @@ const MuiRadio: Components<Theme>['MuiRadio'] = {
           props: (props) => props.color === 'default',
           style: {
             [`&.${radioClasses.checked}`]: {
-              color: theme.vars.palette.text.primary,
+              color: theme.vars?.palette.text.primary,
             },
           },
         },

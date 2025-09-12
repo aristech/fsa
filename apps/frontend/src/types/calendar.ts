@@ -23,8 +23,16 @@ export type ICalendarEvent = {
   description?: string;
   end: ICalendarDate;
   start: ICalendarDate;
-  priority?: "low" | "medium" | "high" | "urgent";
-  type?: "event" | "meeting" | "deadline" | "reminder" | "task" | "work-order" | "assignment" | "project";
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  type?:
+    | 'event'
+    | 'meeting'
+    | 'deadline'
+    | 'reminder'
+    | 'task'
+    | 'work-order'
+    | 'assignment'
+    | 'project';
   location?: string;
   attendees?: string[];
   status?: string;

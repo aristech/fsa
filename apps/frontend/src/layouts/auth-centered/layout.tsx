@@ -19,7 +19,7 @@ import { Logo } from 'src/components/logo';
 
 import { AuthCenteredContent } from './content';
 import { SettingsButton } from '../components/settings-button';
-import { MainSection, LayoutSection, HeaderSection } from '../core';
+import { MainSection, HeaderSection, LayoutSection } from '../core';
 
 // ----------------------------------------------------------------------
 

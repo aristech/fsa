@@ -77,7 +77,7 @@ const CarouselItemRoot = styled(Link)(({ theme }) => ({
   flexDirection: 'column',
   padding: theme.spacing(0, 1),
   transition: theme.transitions.create('color'),
-  '&:hover': { color: theme.vars.palette.primary.main },
+  '&:hover': { color: theme.vars?.palette.primary.main },
 }));
 
 const CarouselItemTitle = styled('span')(({ theme }) => ({

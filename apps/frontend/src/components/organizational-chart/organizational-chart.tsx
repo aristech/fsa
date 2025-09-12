@@ -31,7 +31,7 @@ export function OrganizationalChart<T>({ data, nodeItem, ...other }: OrgChartPro
       lineWidth="1.5px"
       nodePadding="4px"
       lineBorderRadius="24px"
-      lineColor={theme.vars.palette.divider}
+      lineColor={theme.vars?.palette.divider}
       label={label}
       {...other}
     >

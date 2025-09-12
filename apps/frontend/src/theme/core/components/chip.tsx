@@ -74,13 +74,13 @@ const outlinedVariants = [
   {
     props: (props) => props.variant === 'outlined' && props.color === 'default',
     style: ({ theme }) => ({
-      borderColor: theme.vars.palette.shared.buttonOutlined,
+      borderColor: theme.vars?.palette.shared.buttonOutlined,
     }),
   },
   ...(colorKeys.common.map((colorKey) => ({
     props: (props) => props.variant === 'outlined' && props.color === colorKey,
     style: ({ theme }) => ({
-      color: theme.vars.palette.common[colorKey],
+      color: theme.vars?.palette.common[colorKey],
     }),
   })) satisfies ChipVariants),
 ] satisfies ChipVariants;
@@ -112,8 +112,8 @@ const avatarVariants = [
   ...(colorKeys.palette.map((colorKey) => ({
     props: (props) => props.color === colorKey,
     style: ({ theme }) => ({
-      color: theme.vars.palette[colorKey].lighter,
-      backgroundColor: theme.vars.palette[colorKey].dark,
+      color: theme.vars?.palette[colorKey].lighter,
+      backgroundColor: theme.vars?.palette[colorKey].dark,
     }),
   })) satisfies ChipVariants),
 ] satisfies ChipVariants;
@@ -135,17 +135,17 @@ const disabledVariants = [
     style: ({ theme }) => ({
       [`&.${chipClasses.disabled}`]: {
         opacity: 1,
-        color: theme.vars.palette.action.disabled,
+        color: theme.vars?.palette.action.disabled,
         [`&:not(.${chipClasses.outlined})`]: {
-          backgroundColor: theme.vars.palette.action.disabledBackground,
+          backgroundColor: theme.vars?.palette.action.disabledBackground,
         },
         [`&.${chipClasses.outlined}`]: {
-          borderColor: theme.vars.palette.action.disabledBackground,
+          borderColor: theme.vars?.palette.action.disabledBackground,
         },
         [`& .${chipClasses.avatar}`]: {
-          color: theme.vars.palette.action.disabled,
-          backgroundColor: theme.vars.palette.action.disabledBackground,
-          '& img': { opacity: theme.vars.palette.action.disabledOpacity },
+          color: theme.vars?.palette.action.disabled,
+          backgroundColor: theme.vars?.palette.action.disabledBackground,
+          '& img': { opacity: theme.vars?.palette.action.disabledOpacity },
         },
       },
     }),

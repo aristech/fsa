@@ -52,7 +52,7 @@ export const mixins: MixinsOptions = {
   },
   scrollbarStyles: (theme: Theme): CSSObject => ({
     scrollbarWidth: 'thin',
-    scrollbarColor: `${varAlpha(theme.vars.palette.text.disabledChannel, 0.4)} ${varAlpha(theme.vars.palette.text.disabledChannel, 0.08)}`,
+    scrollbarColor: `${varAlpha(theme.vars?.palette.text.disabledChannel || '0 0 0', 0.4)} ${varAlpha(theme.vars?.palette.text.disabledChannel || '0 0 0', 0.08)}`,
   }),
   bgBlur,
   maxLine,

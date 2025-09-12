@@ -1,5 +1,5 @@
 import type { IUserAccountBillingHistory } from 'src/types/user';
-import type { IPaymentCard, IAddressItem } from 'src/types/common';
+import type { IAddressItem, IPaymentCard } from 'src/types/common';
 
 import Grid from '@mui/material/Grid';
 

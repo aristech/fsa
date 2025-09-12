@@ -33,7 +33,7 @@ export function NavHorizontal({
           position: 'relative',
           flexDirection: 'column',
           display: { xs: 'none', [layoutQuery]: 'flex' },
-          borderBottom: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.08)}`,
+          borderBottom: `solid 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08)}`,
         }),
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}

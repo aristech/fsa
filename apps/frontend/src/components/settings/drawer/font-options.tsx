@@ -97,7 +97,7 @@ export function FontSizeOptions({
           },
           [`& .${sliderClasses.track}`]: {
             height: 12,
-            background: `linear-gradient(135deg, ${theme.vars.palette.primary.light}, ${theme.vars.palette.primary.dark})`,
+            background: `linear-gradient(135deg, ${theme.vars?.palette.primary.light}, ${theme.vars?.palette.primary.dark})`,
           },
         }),
         ...(Array.isArray(sx) ? sx : [sx]),

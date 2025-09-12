@@ -17,7 +17,7 @@ import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
 import { SectionTitle } from './components/section-title';
-import { FloatLine, CircleSvg, FloatTriangleDownIcon } from './components/svg-elements';
+import { CircleSvg, FloatLine, FloatTriangleDownIcon } from './components/svg-elements';
 
 // ----------------------------------------------------------------------
 
@@ -66,9 +66,9 @@ export function HomeZoneUI({ sx, ...other }: BoxProps) {
       sx={[
         (theme) => ({
           alignItems: 'flex-end',
-          filter: `drop-shadow(0 24px 48px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.16)})`,
+          filter: `drop-shadow(0 24px 48px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.16)})`,
           ...theme.applyStyles('dark', {
-            filter: `drop-shadow(0 24px 48px ${varAlpha(theme.vars.palette.common.blackChannel, 0.16)})`,
+            filter: `drop-shadow(0 24px 48px ${varAlpha(theme.vars?.palette.common.blackChannel || '0 0 0', 0.16)})`,
           }),
         }),
       ]}
@@ -83,7 +83,7 @@ export function HomeZoneUI({ sx, ...other }: BoxProps) {
             objectFit: 'cover',
             aspectRatio: '16/10',
             borderRadius: '16px 16px 0 16px',
-            border: `solid 2px ${theme.vars.palette.common.white}`,
+            border: `solid 2px ${theme.vars?.palette.common.white}`,
           }),
         ]}
       />

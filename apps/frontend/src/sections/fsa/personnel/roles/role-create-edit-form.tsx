@@ -5,7 +5,22 @@ import { useForm } from 'react-hook-form';
 import { useState, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-import { Box,Grid, Card, Stack, Alert, Button, Divider, Checkbox, FormLabel, FormGroup, Typography, CardContent, FormControl, FormControlLabel } from '@mui/material';
+import {
+  Box,
+  Card,
+  Grid,
+  Alert,
+  Stack,
+  Button,
+  Divider,
+  Checkbox,
+  FormGroup,
+  FormLabel,
+  Typography,
+  CardContent,
+  FormControl,
+  FormControlLabel,
+} from '@mui/material';
 
 import {
   type Role,
@@ -190,7 +205,6 @@ export function RoleCreateEditForm({ role, onSuccess, onCancel }: RoleCreateEdit
               helperText="Slug will be auto-generated from name"
             />
           </Grid>
-
 
           <Grid size={{ xs: 12 }}>
             <RHFTextField

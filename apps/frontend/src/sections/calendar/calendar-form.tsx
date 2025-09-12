@@ -15,7 +15,7 @@ import DialogActions from '@mui/material/DialogActions';
 
 import { fIsAfter } from 'src/utils/format-time';
 
-import { createEvent, updateEvent, deleteEvent } from 'src/actions/calendar';
+import { createEvent, deleteEvent, updateEvent } from 'src/actions/calendar';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
@@ -32,9 +32,7 @@ export const EventSchema = z.object({
     .string()
     .min(1, { error: 'Title is required!' })
     .max(100, { error: 'Title must be less than 100 characters' }),
-  description: z
-    .string()
-    .optional(),
+  description: z.string().optional(),
   // Not required
   color: z.string().optional(),
   allDay: z.boolean(),

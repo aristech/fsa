@@ -9,10 +9,10 @@ import { styled } from '@mui/material/styles';
 export const CalendarRoot = styled('div')(({ theme }) => {
   const cssVars: CSSObject = {
     '--fc-small-font-size': '0.813rem',
-    '--fc-border-color': theme.vars.palette.TableCell.border,
-    '--fc-page-bg-color': theme.vars.palette.background.default,
-    '--fc-neutral-text-color': theme.vars.palette.text.secondary,
-    '--fc-neutral-bg-color': theme.vars.palette.background.neutral,
+    '--fc-border-color': theme.vars?.palette.TableCell.border,
+    '--fc-page-bg-color': theme.vars?.palette.background.default,
+    '--fc-neutral-text-color': theme.vars?.palette.text.secondary,
+    '--fc-neutral-bg-color': theme.vars?.palette.background.neutral,
     /********/
     '--fc-more-link-bg-color': 'var(--fc-neutral-bg-color)',
     '--fc-more-link-text-color': 'var(--fc-neutral-text-color)',
@@ -20,21 +20,21 @@ export const CalendarRoot = styled('div')(({ theme }) => {
     '--fc-bg-event-opacity': 0.48, // Apply for eventDisplay="background"
     '--fc-bg-event-color': 'transparent',
     '--fc-event-selected-overlay-color': 'transparent',
-    '--fc-list-event-hover-bg-color': theme.vars.palette.action.hover,
+    '--fc-list-event-hover-bg-color': theme.vars?.palette.action.hover,
     /********/
     '--fc-today-bg-color': 'transparent',
-    '--fc-now-indicator-color': theme.vars.palette.error.main,
-    '--fc-highlight-color': varAlpha(theme.vars.palette.grey['500Channel'], 0.12),
-    '--fc-non-business-color': varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+    '--fc-now-indicator-color': theme.vars?.palette.error.main,
+    '--fc-highlight-color': varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.12),
+    '--fc-non-business-color': varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
     /********/
     '--custom-event-bg-opacity': 0.24,
     '--custom-day-number-py': '4px',
     '--custom-day-number-px': '8px',
     '--custom-day-number-active-size': '26px',
-    '--custom-day-other-color': theme.vars.palette.action.disabled,
-    '--custom-day-business-color': theme.vars.palette.text.secondary,
-    '--custom-today-color': theme.vars.palette.error.contrastText,
-    '--custom-today-bg': theme.vars.palette.error.main,
+    '--custom-day-other-color': theme.vars?.palette.action.disabled,
+    '--custom-day-business-color': theme.vars?.palette.text.secondary,
+    '--custom-today-color': theme.vars?.palette.error.contrastText,
+    '--custom-today-bg': theme.vars?.palette.error.main,
   };
 
   const containerStyles: CSSObject = {
@@ -106,12 +106,12 @@ export const CalendarRoot = styled('div')(({ theme }) => {
         border: `solid 1px ${varAlpha('currentColor', 0.16)}`,
         transition: theme.transitions.create(['background-color']),
         backgroundColor: varAlpha(
-          theme.vars.palette.common.whiteChannel,
+          theme.vars?.palette.common.whiteChannel,
           'calc(1 - var(--custom-event-bg-opacity))'
         ),
         '&:hover': {
           backgroundColor: varAlpha(
-            theme.vars.palette.common.whiteChannel,
+            theme.vars?.palette.common.whiteChannel,
             'calc(1 - var(--custom-event-bg-opacity) * 1.5)'
           ),
         },
@@ -148,7 +148,7 @@ export const CalendarRoot = styled('div')(({ theme }) => {
         },
         '&:hover::before': {
           opacity: 1,
-          backgroundColor: theme.vars.palette.primary.main,
+          backgroundColor: theme.vars?.palette.primary.main,
         },
       },
       '& .fc-event-resizer-start': {
@@ -171,7 +171,7 @@ export const CalendarRoot = styled('div')(({ theme }) => {
   const timeGridStyles: CSSObject = {
     '& .fc-timegrid-axis-cushion': {
       ...theme.typography.body2,
-      color: theme.vars.palette.text.secondary,
+      color: theme.vars?.palette.text.secondary,
     },
     '& .fc-timegrid-slot-label-cushion': {
       ...theme.typography.body2,
@@ -186,19 +186,19 @@ export const CalendarRoot = styled('div')(({ theme }) => {
       ...theme.typography.body2,
     },
     '& .fc-list-event-time': {
-      color: theme.vars.palette.text.secondary,
+      color: theme.vars?.palette.text.secondary,
     },
     '& .fc-list-empty': {
       ...theme.typography.h6,
       backgroundColor: 'transparent',
-      color: theme.vars.palette.text.disabled,
+      color: theme.vars?.palette.text.disabled,
     },
   };
 
   const popoverStyles: CSSObject = {
     '& .fc-popover': {
       borderWidth: 0,
-      boxShadow: theme.vars.customShadows.dropdown,
+      boxShadow: theme.vars?.customShadows.dropdown,
       borderRadius: Number(theme.shape.borderRadius) * 1.5,
     },
     '& .fc-popover-header': {
@@ -223,13 +223,13 @@ export const CalendarRoot = styled('div')(({ theme }) => {
     '& .fc-daygrid-more-link': {
       ...theme.typography.caption,
       padding: theme.spacing(0, 1),
-      color: theme.vars.palette.text.secondary,
+      color: theme.vars?.palette.text.secondary,
       fontWeight: theme.typography.fontWeightMedium,
       transition: theme.transitions.create(['color']),
       '&:hover': {
         textDecoration: 'underline',
         backgroundColor: 'transparent',
-        color: theme.vars.palette.text.primary,
+        color: theme.vars?.palette.text.primary,
       },
     },
     '& .fc-timegrid-more-link': {

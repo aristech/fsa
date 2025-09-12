@@ -2,7 +2,7 @@
 
 import type { BoxProps } from '@mui/material/Box';
 import type { Theme, SxProps } from '@mui/material/styles';
-import type { MotionValue, MotionProps } from 'framer-motion';
+import type { MotionProps, MotionValue } from 'framer-motion';
 import type { PaletteColorKey } from 'src/theme/core';
 
 import { Fragment } from 'react';
@@ -71,7 +71,7 @@ export function ScrollProgress({
         {
           width: progressSize,
           height: progressSize,
-          ...(color !== 'inherit' && { color: theme.vars.palette[color].main }),
+          ...(color !== 'inherit' && { color: theme.vars?.palette[color].main }),
         },
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}
@@ -102,7 +102,7 @@ export function ScrollProgress({
         {
           height: progressSize,
           ...(color !== 'inherit' && {
-            background: `linear-gradient(135deg, ${theme.vars.palette[color].light}, ${theme.vars.palette[color].main})`,
+            background: `linear-gradient(135deg, ${theme.vars?.palette[color].light}, ${theme.vars?.palette[color].main})`,
           }),
         },
         ...(Array.isArray(sx) ? sx : [sx]),
@@ -127,7 +127,7 @@ export function ScrollProgress({
 
 const CircularRoot = styled(m.svg)(({ theme }) => ({
   transform: 'rotate(-90deg)',
-  color: theme.vars.palette.text.primary,
+  color: theme.vars?.palette.text.primary,
   circle: { fill: 'none', strokeDashoffset: 0, stroke: 'currentColor' },
 }));
 
@@ -136,5 +136,5 @@ const LinearRoot = styled(m.div)(({ theme }) => ({
   left: 0,
   right: 0,
   transformOrigin: '0%',
-  backgroundColor: theme.vars.palette.text.primary,
+  backgroundColor: theme.vars?.palette.text.primary,
 }));

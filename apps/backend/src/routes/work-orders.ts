@@ -258,12 +258,35 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           }
         }
 
+        // Handle attachments for creation
+        let processedCreateBody = { ...body };
+        if (body.attachments && Array.isArray(body.attachments)) {
+          processedCreateBody.attachments = body.attachments.map((att: any) => {
+            if (typeof att === 'string') {
+              // Convert string URL to attachment object format
+              return {
+                name: att.split('/').pop() || 'Unknown',
+                url: att,
+                type: 'application/octet-stream',
+                size: 0
+              };
+            }
+            // Ensure all required fields are present
+            return {
+              name: att.name || 'Unknown',
+              url: att.url || '',
+              type: att.type || 'application/octet-stream',
+              size: att.size || 0
+            };
+          });
+        }
+
         // Generate per-tenant sequential work order number using atomic counter
         const seq = await getNextSequence(tenant._id.toString(), "workOrder");
         const workOrderNumber = `WO-${String(seq).padStart(6, "0")}`;
 
         const workOrder = new WorkOrder({
-          ...body,
+          ...processedCreateBody,
           tenantId: tenant._id,
           workOrderNumber,
           createdBy: user.id,
@@ -369,13 +392,36 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           }
         }
 
+        // Handle attachments conversion if provided
+        let processedBody = { ...body };
+        if (body.attachments && Array.isArray(body.attachments)) {
+          processedBody.attachments = body.attachments.map((att: any) => {
+            if (typeof att === 'string') {
+              // Convert string URL to attachment object format
+              return {
+                name: att.split('/').pop() || 'Unknown',
+                url: att,
+                type: 'application/octet-stream',
+                size: 0
+              };
+            }
+            // Ensure all required fields are present
+            return {
+              name: att.name || 'Unknown',
+              url: att.url || '',
+              type: att.type || 'application/octet-stream',
+              size: att.size || 0
+            };
+          });
+        }
+
         const workOrder = await WorkOrder.findOneAndUpdate(
           {
             _id: id,
             tenantId: tenant._id,
           },
           {
-            ...body,
+            ...processedBody,
             updatedAt: new Date(),
           },
           { new: true },

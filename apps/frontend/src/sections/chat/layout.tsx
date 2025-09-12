@@ -38,9 +38,9 @@ const LayoutRoot = styled('div')(({ theme }) => ({
   flex: '1 1 0',
   display: 'flex',
   position: 'relative',
-  boxShadow: theme.vars.customShadows.card,
+  boxShadow: theme.vars?.customShadows.card,
   borderRadius: Number(theme.shape.borderRadius) * 2,
-  backgroundColor: theme.vars.palette.background.paper,
+  backgroundColor: theme.vars?.palette.background.paper,
 }));
 
 const LayoutHeader = styled('div')(({ theme }) => ({
@@ -49,7 +49,7 @@ const LayoutHeader = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   padding: theme.spacing(1, 1, 1, 2.5),
-  borderBottom: `solid 1px ${theme.vars.palette.divider}`,
+  borderBottom: `solid 1px ${theme.vars?.palette.divider}`,
 }));
 
 const LayoutNav = styled('div')(() => ({

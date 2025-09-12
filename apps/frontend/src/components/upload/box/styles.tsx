@@ -15,9 +15,9 @@ export const UploadArea = styled('div')(({ theme }) => ({
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: theme.shape.borderRadius,
-  color: theme.vars.palette.text.disabled,
-  backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
-  border: `dashed 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.2)}`,
+  color: theme.vars?.palette.text.disabled,
+  backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
+  border: `dashed 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.2)}`,
   '&:hover': {
     opacity: 0.72,
   },
@@ -29,8 +29,8 @@ export const UploadArea = styled('div')(({ theme }) => ({
     pointerEvents: 'none',
   },
   [`&.${uploadClasses.state.error}`]: {
-    color: theme.vars.palette.error.main,
-    borderColor: theme.vars.palette.error.main,
-    backgroundColor: varAlpha(theme.vars.palette.error.mainChannel, 0.08),
+    color: theme.vars?.palette.error.main,
+    borderColor: theme.vars?.palette.error.main,
+    backgroundColor: varAlpha(theme.vars?.palette.error.mainChannel || '0 0 0', 0.08),
   },
 }));

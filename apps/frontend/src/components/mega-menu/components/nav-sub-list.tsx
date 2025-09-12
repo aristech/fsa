@@ -10,7 +10,7 @@ import { usePathname } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
 
 import { megaMenuClasses } from '../styles';
-import { NavUl, NavLi } from './nav-elements';
+import { NavLi, NavUl } from './nav-elements';
 
 // ----------------------------------------------------------------------
 
@@ -61,15 +61,15 @@ const NavSubItem = styled(Link, {
 })<Partial<NavSubItemProps>>(({ theme }) => ({
   ...theme.typography.body2,
   fontSize: theme.typography.pxToRem(13),
-  color: theme.vars.palette.text.secondary,
+  color: theme.vars?.palette.text.secondary,
   transition: theme.transitions.create(['color']),
-  '&:hover': { color: theme.vars.palette.text.primary },
+  '&:hover': { color: theme.vars?.palette.text.primary },
   variants: [
     {
       props: { active: true },
       style: {
         textDecoration: 'underline',
-        color: theme.vars.palette.text.primary,
+        color: theme.vars?.palette.text.primary,
         fontWeight: theme.typography.fontWeightSemiBold,
       },
     },

@@ -25,11 +25,11 @@ const colorVariants = [
     style: ({ theme }) => ({
       [`&.${switchClasses.checked}`]: {
         [`& + .${switchClasses.track}`]: {
-          backgroundColor: theme.vars.palette.text.primary,
+          backgroundColor: theme.vars?.palette.text.primary,
         },
         [`& .${switchClasses.thumb}`]: {
           ...theme.applyStyles('dark', {
-            color: theme.vars.palette.grey[800],
+            color: theme.vars?.palette.grey[800],
           }),
         },
       },
@@ -64,11 +64,11 @@ const disabledVariants = [
     style: ({ theme }) => ({
       [`&.${switchClasses.disabled}`]: {
         [`& + .${switchClasses.track}`]: {
-          opacity: theme.vars.opacity.switchTrackDisabled,
+          opacity: theme.vars?.opacity.switchTrackDisabled,
         },
         [`& .${switchClasses.thumb}`]: {
           ...theme.applyStyles('dark', {
-            opacity: theme.vars.opacity.switchTrackDisabled,
+            opacity: theme.vars?.opacity.switchTrackDisabled,
           }),
         },
       },
@@ -83,7 +83,7 @@ const checkedVariants = [
       [`&.${switchClasses.checked}`]: {
         transform: `translateX(${DIMENSIONS.medium.translateX})`,
         [`& + .${switchClasses.track}`]: {
-          opacity: theme.vars.opacity.switchTrack,
+          opacity: theme.vars?.opacity.switchTrack,
         },
       },
     }),
@@ -108,12 +108,12 @@ const MuiSwitch: Components<Theme>['MuiSwitch'] = {
     thumb: ({ theme }) => ({
       width: DIMENSIONS.medium.thumb,
       height: DIMENSIONS.medium.thumb,
-      color: theme.vars.palette.common.white,
+      color: theme.vars?.palette.common.white,
     }),
     track: ({ theme }) => ({
       height: DIMENSIONS.medium.track,
       borderRadius: DIMENSIONS.medium.trackRadius,
-      backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.48),
+      backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.48),
     }),
   },
 };

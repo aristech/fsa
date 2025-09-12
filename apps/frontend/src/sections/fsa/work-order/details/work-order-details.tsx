@@ -1,11 +1,11 @@
 'use client';
 
-import useSWR from 'swr';
+import useSWR, { mutate } from 'swr';
 
 import {
   Card,
-  Grid,
   Chip,
+  Grid,
   Stack,
   Button,
   Slider,
@@ -14,6 +14,8 @@ import {
   CardContent,
   LinearProgress,
 } from '@mui/material';
+
+import { paths } from 'src/routes/paths';
 
 import { fDateTime } from 'src/utils/format-time';
 import {
@@ -26,6 +28,8 @@ import axiosInstance, { endpoints } from 'src/lib/axios';
 
 import { Iconify } from 'src/components/iconify';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
+
+import { WorkOrderDetailsAttachments } from './work-order-details-attachments';
 
 // ----------------------------------------------------------------------
 
@@ -112,7 +116,11 @@ export function WorkOrderDetails({ id }: Props) {
         ]}
         action={
           <Stack direction="row" spacing={1}>
-            <Button variant="outlined" startIcon={<Iconify icon="eva:edit-fill" />}>
+            <Button
+              variant="outlined"
+              startIcon={<Iconify icon="eva:edit-fill" />}
+              href={paths.dashboard.fsa.workOrders.edit(id)}
+            >
               Edit
             </Button>
             <Button variant="contained" startIcon={<Iconify icon="eva:checkmark-fill" />}>
@@ -183,7 +191,8 @@ export function WorkOrderDetails({ id }: Props) {
                 <Typography variant="body2" color="text.secondary">
                   {(summary?.progress ?? 0).toString()}% • {summary?.tasksCompleted ?? 0}/
                   {summary?.tasksTotal ?? 0} completed
-                  {typeof summary?.tasksInProgress === 'number' ? ` • ${summary?.tasksInProgress ?? 0} in progress`
+                  {typeof summary?.tasksInProgress === 'number'
+                    ? ` • ${summary?.tasksInProgress ?? 0} in progress`
                     : ''}
                 </Typography>
 
@@ -301,7 +310,7 @@ export function WorkOrderDetails({ id }: Props) {
                         </Typography>
                         <Typography variant="body2">
                           {(workOrder as any)?.cost?.labor
-                            ? `$${((workOrder as any).cost.labor).toFixed(2)}`
+                            ? `$${(workOrder as any).cost.labor.toFixed(2)}`
                             : '$0.00'}
                         </Typography>
                       </Stack>
@@ -369,6 +378,30 @@ export function WorkOrderDetails({ id }: Props) {
                       Unassigned
                     </Typography>
                   )}
+                </Stack>
+              </CardContent>
+            </Card>
+
+            {/* Attachments */}
+            <Card>
+              <CardContent>
+                <Stack spacing={2}>
+                  <Typography variant="h6">Attachments</Typography>
+                  <WorkOrderDetailsAttachments
+                    attachments={(workOrder as any)?.attachments || []}
+                    workOrderId={id}
+                    onChange={async (attachments) => {
+                      try {
+                        await axiosInstance.put(endpoints.fsa.workOrders.details(id), {
+                          attachments,
+                        });
+                        // Refresh the work order data to show updated attachments
+                        await mutate(endpoints.fsa.workOrders.details(id));
+                      } catch (error) {
+                        console.error('Failed to update work order attachments:', error);
+                      }
+                    }}
+                  />
                 </Stack>
               </CardContent>
             </Card>

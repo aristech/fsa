@@ -34,5 +34,5 @@ export const BreadcrumbsSeparator = styled('span')(({ theme }) => ({
   width: 4,
   height: 4,
   borderRadius: '50%',
-  backgroundColor: theme.vars.palette.text.disabled,
+  backgroundColor: theme.vars?.palette.text.disabled,
 }));

@@ -118,10 +118,10 @@ export async function optionalAuth(
       return;
     }
 
-    // Get tenant from database
-    const tenant = await Tenant.findOne({ isActive: true });
+    // Get tenant from database for this specific user
+    const tenant = await Tenant.findOne({ _id: user.tenantId, isActive: true });
     if (!tenant) {
-      // No tenant found - continue without user context
+      // No tenant found for this user - continue without user context
       return;
     }
 

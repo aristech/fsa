@@ -70,7 +70,7 @@ type ThumbsRootProps = Pick<CarouselOptions, 'axis'> & {
 const ThumbsRoot = styled('div', {
   shouldForwardProp: (prop: string) => !['axis', 'enableMask', 'sx'].includes(prop),
 })<ThumbsRootProps>(({ enableMask, theme }) => {
-  const maskBg = `${theme.vars.palette.background.paper} 20%, transparent 100%)`;
+  const maskBg = `${theme.vars?.palette.background.paper} 20%, transparent 100%)`;
 
   return {
     flexShrink: 0,

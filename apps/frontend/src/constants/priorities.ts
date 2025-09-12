@@ -25,7 +25,7 @@ export const PRIORITIES: PriorityOption[] = [
   },
   {
     value: 'medium',
-    label: 'Medium', 
+    label: 'Medium',
     color: 'warning.main', // Material-UI theme color
     icon: 'solar:double-alt-arrow-right-bold-duotone',
     order: 2,
@@ -65,14 +65,14 @@ export const DEFAULT_PRIORITY: Priority = 'medium';
  * Get priority option by value
  */
 export function getPriorityOption(value: string): PriorityOption | undefined {
-  return PRIORITIES.find(p => p.value === value);
+  return PRIORITIES.find((p) => p.value === value);
 }
 
 /**
  * Get priority options for dropdowns/selects (simple version)
  */
 export function getPriorityOptions(): { value: string; label: string }[] {
-  return PRIORITIES.map(p => ({ value: p.value, label: p.label }));
+  return PRIORITIES.map((p) => ({ value: p.value, label: p.label }));
 }
 
 /**

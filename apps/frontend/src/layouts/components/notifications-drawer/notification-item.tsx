@@ -47,10 +47,10 @@ const readerContent = (data: string) => {
   if (!data) {
     return <span>No title</span>;
   }
-  
+
   // Check if data contains HTML tags, if not, render as plain text
   const hasHtmlTags = /<[^>]*>/.test(data);
-  
+
   if (hasHtmlTags) {
     return (
       <Box
@@ -63,7 +63,7 @@ const readerContent = (data: string) => {
       />
     );
   }
-  
+
   return <span>{data}</span>;
 };
 
@@ -85,33 +85,41 @@ const renderIcon = (type: string) =>
 const getCategoryLabel = (category: string, type: string) => {
   if (type.startsWith('task_')) {
     switch (type) {
-      case 'task_created': return 'Task Created';
-      case 'task_updated': return 'Task Updated';
-      case 'task_assigned': return 'Task Assigned';
-      case 'task_completed': return 'Task Completed';
-      case 'task_deleted': return 'Task Deleted';
-      default: return 'Task';
+      case 'task_created':
+        return 'Task Created';
+      case 'task_updated':
+        return 'Task Updated';
+      case 'task_assigned':
+        return 'Task Assigned';
+      case 'task_completed':
+        return 'Task Completed';
+      case 'task_deleted':
+        return 'Task Deleted';
+      default:
+        return 'Task';
     }
   }
   if (type.startsWith('time_')) {
     switch (type) {
-      case 'time_logged': return 'Time Logged';
-      case 'time_updated': return 'Time Updated';
-      default: return 'Time Entry';
+      case 'time_logged':
+        return 'Time Logged';
+      case 'time_updated':
+        return 'Time Updated';
+      default:
+        return 'Time Entry';
     }
   }
   return category.charAt(0).toUpperCase() + category.slice(1);
 };
 
 export function NotificationItem({ notification }: NotificationItemProps) {
-
   const handleNotificationClick = async () => {
     try {
       // Mark this notification as read if it's unread
       if (notification.isUnRead) {
         await markNotificationsAsRead([notification.id]);
       }
-      
+
       // TODO: Add navigation to the related entity (task, work order, etc.)
       // For now, we'll just mark it as read
       console.log('Notification clicked:', notification);
@@ -147,11 +155,22 @@ export function NotificationItem({ notification }: NotificationItemProps) {
       secondary={
         <>
           {notification.message && (
-            <Box component="p" sx={{ mt: 0.5, mb: 1, typography: 'body2', color: 'text.secondary' }}>
+            <Box
+              component="p"
+              sx={{ mt: 0.5, mb: 1, typography: 'body2', color: 'text.secondary' }}
+            >
               {notification.message}
             </Box>
           )}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, typography: 'caption', color: 'text.disabled' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              typography: 'caption',
+              color: 'text.disabled',
+            }}
+          >
             {notification.createdAt ? fToNow(notification.createdAt) : 'Unknown time'}
             <Box
               component="span"
@@ -309,7 +328,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
         (theme) => ({
           p: 2.5,
           alignItems: 'flex-start',
-          borderBottom: `dashed 1px ${theme.vars.palette.divider}`,
+          borderBottom: `dashed 1px ${theme.vars?.palette.divider}`,
           ...(notification.isUnRead && {
             bgcolor: 'action.selected',
           }),

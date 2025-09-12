@@ -296,7 +296,7 @@ export async function createTask(columnId: IKanbanColumn['id'], taskData: IKanba
 
       // Revalidate to get fresh data from server (this will replace optimistic updates)
       await Promise.all(urlsToUpdate.map((url) => mutate(url)));
-      
+
       // Also revalidate calendar cache since new tasks with dates appear there
       mutate(endpoints.calendar);
       if (taskData.clientId) {
@@ -365,23 +365,27 @@ export async function createTask(columnId: IKanbanColumn['id'], taskData: IKanba
 
 // ----------------------------------------------------------------------
 
-export async function updateTaskDates(taskId: string, startDate: string | null, dueDate: string | null) {
+export async function updateTaskDates(
+  taskId: string,
+  startDate: string | null,
+  dueDate: string | null
+) {
   /**
    * Update task dates specifically for calendar drag/drop operations
    */
   if (enableServer) {
     const taskData = {
       id: taskId,
-      startDate: startDate,
-      dueDate: dueDate,
+      startDate,
+      dueDate,
     };
-    
+
     await axios.post(KANBAN_ENDPOINT, { taskData }, { params: { endpoint: 'update-task' } });
-    
+
     // Revalidate both kanban and calendar caches
     mutate(KANBAN_ENDPOINT);
     mutate(endpoints.calendar);
-    
+
     // Also revalidate client-filtered endpoints (common patterns)
     mutate((key) => typeof key === 'string' && key.includes(KANBAN_ENDPOINT));
     mutate((key) => typeof key === 'string' && key.includes(endpoints.calendar));
@@ -404,7 +408,7 @@ export async function updateTask(columnId: IKanbanColumn['id'], taskData: IKanba
     if (taskData.clientId) {
       mutate(`${KANBAN_ENDPOINT}?clientId=${taskData.clientId}`);
     }
-    
+
     // Also revalidate calendar cache since tasks appear in both views
     mutate(endpoints.calendar);
     if (taskData.clientId) {
@@ -507,7 +511,7 @@ export async function deleteTask(
     if (taskData?.clientId) {
       mutate(`${KANBAN_ENDPOINT}?clientId=${taskData.clientId}`);
     }
-    
+
     // Also revalidate calendar cache since deleted tasks should be removed from calendar
     mutate(endpoints.calendar);
     if (taskData?.clientId) {

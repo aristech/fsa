@@ -273,7 +273,7 @@ export function ChatNav({
             width: NAV_WIDTH,
             flexDirection: 'column',
             display: { xs: 'none', md: 'flex' },
-            borderRight: `solid 1px ${theme.vars.palette.divider}`,
+            borderRight: `solid 1px ${theme.vars?.palette.divider}`,
             transition: theme.transitions.create(['width'], {
               duration: theme.transitions.duration.shorter,
             }),

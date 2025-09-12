@@ -105,7 +105,7 @@ export function KanbanDetailsToolbar({
         </MenuItem>
         <Box
           component="div"
-          sx={{ my: 0.5, borderTop: (theme) => `1px dashed ${theme.vars.palette.divider}` }}
+          sx={{ my: 0.5, borderTop: (theme) => `1px dashed ${theme.vars?.palette.divider}` }}
         />
         {workOrders.map((wo) => {
           const label = wo.title || wo.number || wo._id;
@@ -156,7 +156,7 @@ export function KanbanDetailsToolbar({
             display: 'flex',
             alignItems: 'center',
             p: theme.spacing(2.5, 1, 2.5, 2.5),
-            borderBottom: `solid 1px ${theme.vars.palette.divider}`,
+            borderBottom: `solid 1px ${theme.vars?.palette.divider}`,
           }),
           ...(Array.isArray(sx) ? sx : [sx]),
         ]}

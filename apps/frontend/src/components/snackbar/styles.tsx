@@ -21,7 +21,7 @@ const loadingIconStyles = (theme: Theme): CSSObject => ({
   position: 'relative',
   borderRadius: 'inherit',
   justifyContent: 'center',
-  background: theme.vars.palette.background.neutral,
+  background: theme.vars?.palette.background.neutral,
   [snackbarClasses.loaderVisible]: {
     display: 'inline-flex',
   },
@@ -31,7 +31,7 @@ const loadingIconStyles = (theme: Theme): CSSObject => ({
     height: 24,
     borderRadius: '50%',
     animation: 'rotate 3s infinite linear',
-    background: `conic-gradient(transparent, ${varAlpha(theme.vars.palette.text.disabledChannel, 0.64)})`,
+    background: `conic-gradient(transparent, ${varAlpha(theme.vars?.palette.text.disabledChannel || '0 0 0', 0.64)})`,
   },
 });
 
@@ -121,27 +121,27 @@ const toastStyles = (theme: Theme): CSSObject => ({
     display: 'flex',
     alignItems: 'center',
     padding: theme.spacing(0.5, 1, 0.5, 0.5),
-    boxShadow: theme.vars.customShadows.z8,
-    backgroundColor: theme.vars.palette.background.paper,
+    boxShadow: theme.vars?.customShadows.z8,
+    backgroundColor: theme.vars?.palette.background.paper,
     [`&:has(${snackbarClasses.closeBtnVisible})`]: {
       [`& .${snackbarClasses.content}`]: { paddingRight: 24 },
     },
     [snackbarClasses.default]: {
       padding: theme.spacing(1, 1, 1, 1.5),
-      color: theme.vars.palette.background.paper,
-      backgroundColor: theme.vars.palette.text.primary,
+      color: theme.vars?.palette.background.paper,
+      backgroundColor: theme.vars?.palette.text.primary,
     },
     [`&.${snackbarClasses.info} .${snackbarClasses.icon}`]: {
-      color: theme.vars.palette.info.main,
+      color: theme.vars?.palette.info.main,
     },
     [`&.${snackbarClasses.success} .${snackbarClasses.icon}`]: {
-      color: theme.vars.palette.success.main,
+      color: theme.vars?.palette.success.main,
     },
     [`&.${snackbarClasses.warning} .${snackbarClasses.icon}`]: {
-      color: theme.vars.palette.warning.main,
+      color: theme.vars?.palette.warning.main,
     },
     [`&.${snackbarClasses.error} .${snackbarClasses.icon}`]: {
-      color: theme.vars.palette.error.main,
+      color: theme.vars?.palette.error.main,
     },
   },
 });

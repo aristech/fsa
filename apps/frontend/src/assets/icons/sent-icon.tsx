@@ -14,8 +14,8 @@ function SentIcon({ sx, ...other }: SvgIconProps) {
       xmlns="http://www.w3.org/2000/svg"
       sx={[
         (theme) => ({
-          '--primary-main': theme.vars.palette.primary.main,
-          '--primary-dark': theme.vars.palette.primary.dark,
+          '--primary-main': theme.vars?.palette.primary.main,
+          '--primary-dark': theme.vars?.palette.primary.dark,
           width: 96,
           flexShrink: 0,
           height: 'auto',

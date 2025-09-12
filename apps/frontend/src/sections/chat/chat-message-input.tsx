@@ -130,7 +130,7 @@ export function ChatMessageInput({
             px: 1,
             height: 56,
             flexShrink: 0,
-            borderTop: `solid 1px ${theme.vars.palette.divider}`,
+            borderTop: `solid 1px ${theme.vars?.palette.divider}`,
           }),
         ]}
       />

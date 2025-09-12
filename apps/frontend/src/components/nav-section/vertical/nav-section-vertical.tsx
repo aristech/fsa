@@ -9,7 +9,7 @@ import Collapse from '@mui/material/Collapse';
 import { useTheme } from '@mui/material/styles';
 
 import { NavList } from './nav-list';
-import { Nav, NavUl, NavLi, NavSubheader } from '../components';
+import { Nav, NavLi, NavUl, NavSubheader } from '../components';
 import { navSectionClasses, navSectionCssVars } from '../styles';
 
 // ----------------------------------------------------------------------

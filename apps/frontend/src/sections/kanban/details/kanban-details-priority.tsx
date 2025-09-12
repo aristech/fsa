@@ -42,9 +42,9 @@ export function KanbanDetailsPriority({ priority, onChangePriority, sx, ...other
             lineHeight: '20px',
             textTransform: 'capitalize',
             fontWeight: 'fontWeightBold',
-            boxShadow: `inset 0 0 0 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.24)}`,
+            boxShadow: `inset 0 0 0 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.24)}`,
             ...(option.value === priority && {
-              boxShadow: `inset 0 0 0 2px ${theme.vars.palette.text.primary}`,
+              boxShadow: `inset 0 0 0 2px ${theme.vars?.palette.text.primary}`,
             }),
           })}
         >

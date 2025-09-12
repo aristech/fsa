@@ -6,8 +6,8 @@ import type { MapRef, MapProps as ReactMapProps } from 'react-map-gl/maplibre';
 import { lazy, Suspense } from 'react';
 
 import NoSsr from '@mui/material/NoSsr';
-import Skeleton from '@mui/material/Skeleton';
 import { styled } from '@mui/material/styles';
+import Skeleton from '@mui/material/Skeleton';
 
 import { MAP_STYLES } from './map-styles';
 

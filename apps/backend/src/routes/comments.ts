@@ -3,6 +3,7 @@ import { authenticate } from "../middleware/auth";
 import { Comment, Task, User } from "../models";
 import { AuthenticatedRequest } from "../types";
 import { realtimeService } from "../services/realtime-service";
+import { NotificationService } from "../services/notification-service";
 
 export async function commentsRoutes(fastify: FastifyInstance) {
   // Get comments for a task
@@ -108,6 +109,14 @@ export async function commentsRoutes(fastify: FastifyInstance) {
         taskId,
         comment: transformedComment,
       });
+
+      // Send notifications to task assignees and reporter
+      await NotificationService.notifyCommentCreated(
+        taskId,
+        comment.message,
+        user.id,
+        user.tenantId
+      );
 
       return reply.code(201).send({ success: true, data: transformedComment });
     } catch (error) {

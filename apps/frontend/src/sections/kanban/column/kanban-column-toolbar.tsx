@@ -163,7 +163,7 @@ export function KanbanColumnToolBar({
           sx={[
             (theme) => ({
               borderRadius: '50%',
-              borderColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.24),
+              borderColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.24),
             }),
           ]}
         >

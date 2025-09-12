@@ -83,13 +83,18 @@ export const navData: NavSectionProps['data'] = [
   {
     subheader: 'Management',
     items: [
-     { title: 'Projects & Tasks', path: paths.dashboard.kanban, icon: ICONS.kanban },
+      { title: 'Projects & Tasks', path: paths.dashboard.kanban, icon: ICONS.kanban },
       { title: 'Calendar', path: paths.dashboard.calendar, icon: ICONS.calendar },
-      { title: 'Chat', path: paths.dashboard.chat, icon: ICONS.chat, info: (
+      {
+        title: 'Chat',
+        path: paths.dashboard.chat,
+        icon: ICONS.chat,
+        info: (
           <Label color="error" variant="inverted">
             +32
           </Label>
-        ), },
+        ),
+      },
     ],
   },
   /**
@@ -98,7 +103,6 @@ export const navData: NavSectionProps['data'] = [
   {
     subheader: 'Field Service Automation',
     items: [
-     
       {
         title: 'Work Orders',
         path: paths.dashboard.fsa.workOrders.root,
@@ -149,7 +153,6 @@ export const navData: NavSectionProps['data'] = [
           },
         ],
       },
-   
     ],
   },
   /**
@@ -157,7 +160,6 @@ export const navData: NavSectionProps['data'] = [
    */
   {
     subheader: 'Settings',
-    items: [
-    ]
+    items: [],
   },
 ];

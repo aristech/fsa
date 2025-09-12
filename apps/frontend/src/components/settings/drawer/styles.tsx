@@ -23,7 +23,7 @@ const LargeBlockRoot = styled('div')(({ theme }) => ({
   flexDirection: 'column',
   padding: theme.spacing(4, 2, 2, 2),
   borderRadius: Number(theme.shape.borderRadius) * 2,
-  border: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.12)}`,
+  border: `solid 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.12)}`,
 }));
 
 const LargeLabel = styled('span')(({ theme }) => ({
@@ -35,11 +35,11 @@ const LargeLabel = styled('span')(({ theme }) => ({
   display: 'inline-flex',
   padding: theme.spacing(0, 1.25),
   fontSize: theme.typography.pxToRem(13),
-  color: theme.vars.palette.common.white,
+  color: theme.vars?.palette.common.white,
   fontWeight: theme.typography.fontWeightSemiBold,
-  backgroundColor: theme.vars.palette.text.primary,
+  backgroundColor: theme.vars?.palette.text.primary,
   ...theme.applyStyles('dark', {
-    color: theme.vars.palette.grey[800],
+    color: theme.vars?.palette.grey[800],
   }),
 }));
 
@@ -100,7 +100,7 @@ const SmallLabel = styled(ButtonBase, {
   alignSelf: 'flex-start',
   gap: theme.spacing(0.25),
   fontSize: theme.typography.pxToRem(11),
-  color: theme.vars.palette.text.secondary,
+  color: theme.vars?.palette.text.secondary,
   fontWeight: theme.typography.fontWeightSemiBold,
   transition: theme.transitions.create(['color']),
   variants: [
@@ -109,10 +109,10 @@ const SmallLabel = styled(ButtonBase, {
       style: {
         cursor: 'pointer',
         pointerEvent: 'auto',
-        color: theme.vars.palette.text.primary,
+        color: theme.vars?.palette.text.primary,
         fontWeight: theme.typography.fontWeightBold,
         '&:hover': {
-          color: theme.vars.palette.primary.main,
+          color: theme.vars?.palette.primary.main,
         },
       },
     },
@@ -153,10 +153,10 @@ export function OptionButton({ selected, sx, children, ...other }: OptionButtonP
           ...(selected && {
             color: 'text.primary',
             bgcolor: 'background.paper',
-            borderColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
-            boxShadow: `-8px 8px 20px -4px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.12)}`,
+            borderColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
+            boxShadow: `-8px 8px 20px -4px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.12)}`,
             ...theme.applyStyles('dark', {
-              boxShadow: `-8px 8px 20px -4px ${varAlpha(theme.vars.palette.common.blackChannel, 0.12)}`,
+              boxShadow: `-8px 8px 20px -4px ${varAlpha(theme.vars?.palette.common.blackChannel || '0 0 0', 0.12)}`,
             }),
             '& svg': {
               color: 'primary.main',

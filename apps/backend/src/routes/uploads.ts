@@ -16,11 +16,41 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
       // Use Fastify's built-in saveRequestFiles for robust multipart handling
       const parts = await (request as any).saveRequestFiles();
       
-      // Extract form fields from request.body
+      // Extract form fields from multipart data
       const body = request.body as any;
-      const scope = body?.scope || 'task';
+      let scope = 'task';
+      let taskId = '';
+      let workOrderId = '';
       
-      fastify.log.info({ partsCount: parts.length, scope, body }, 'uploads: parsed multipart data');
+      // Extract form fields from body (available in some versions)
+      if (body?.scope) {
+        scope = body.scope;
+      }
+      if (body?.taskId) {
+        taskId = body.taskId;
+      }
+      if (body?.workOrderId) {
+        workOrderId = body.workOrderId;
+      }
+      
+      // Fallback: look for form fields in parts if not in body
+      if (!body?.scope && parts.length > 0) {
+        // Check if any parts contain form field data
+        for (const part of parts) {
+          if (part.fieldname === 'scope') {
+            const fieldData = await fs.readFile(part.filepath, 'utf-8');
+            scope = fieldData;
+          } else if (part.fieldname === 'taskId') {
+            const fieldData = await fs.readFile(part.filepath, 'utf-8');
+            taskId = fieldData;
+          } else if (part.fieldname === 'workOrderId') {
+            const fieldData = await fs.readFile(part.filepath, 'utf-8');
+            workOrderId = fieldData;
+          }
+        }
+      }
+      
+      fastify.log.info({ partsCount: parts.length, scope, taskId, workOrderId, body }, 'uploads: parsed multipart data');
 
       if (parts.length === 0) {
         fastify.log.error('uploads: no file parts found');
@@ -29,17 +59,24 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
 
       const user: any = (request as any).user;
       const tenantId = user.tenantId;
-      const scopeDir = scope === 'workOrder' ? 'work-orders' : 'tasks';
-      const ownerId = body?.taskId || body?.workOrderId || 'misc';
+      const scopeDir = scope === 'workOrder' ? 'work_orders' : 'tasks';
+      const ownerId = taskId || workOrderId || 'misc';
 
       const baseDir = path.join(process.cwd(), 'uploads', String(tenantId), scopeDir, String(ownerId));
       await fs.mkdir(baseDir, { recursive: true });
       
-      fastify.log.info({ tenantId, scopeDir, ownerId, fileCount: parts.length }, 'uploads: saving files');
+      fastify.log.info({ tenantId, scopeDir, ownerId, baseDir, fileCount: parts.length }, 'uploads: saving files to directory');
 
       const saved: Array<{ url: string; path: string; name: string; size: number; mime: string }> = [];
       
-      for (const part of parts) {
+      // Filter out form field parts, only process file parts
+      const fileParts = parts.filter((part: any) => 
+        part.fieldname === 'files' || (part.filename && !['scope', 'taskId', 'workOrderId'].includes(part.fieldname))
+      );
+      
+      fastify.log.info({ totalParts: parts.length, fileParts: fileParts.length }, 'uploads: filtered file parts');
+      
+      for (const part of fileParts) {
         const filename = `${Date.now()}-${part.filename}`;
         const destPath = path.join(baseDir, filename);
         

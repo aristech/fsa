@@ -75,7 +75,7 @@ const markActiveVariants = [
     props: (props) => props.color === 'inherit',
     style: ({ theme }) => ({
       ...theme.applyStyles('dark', {
-        backgroundColor: varAlpha(theme.vars.palette.grey['800Channel'], 0.48),
+        backgroundColor: varAlpha(theme.vars?.palette.grey['800Channel'] || '0 0 0', 0.48),
       }),
     }),
   },
@@ -86,7 +86,7 @@ const disabledVariants = [
     props: {},
     style: ({ theme }) => ({
       [`&.${sliderClasses.disabled}`]: {
-        color: theme.vars.palette.action.disabled,
+        color: theme.vars?.palette.action.disabled,
       },
     }),
   },
@@ -106,15 +106,15 @@ const MuiSlider: Components<Theme>['MuiSlider'] = {
       variants: [...disabledVariants],
     },
     thumb: ({ theme }) => ({
-      boxShadow: theme.vars.customShadows.z1,
-      color: theme.vars.palette.common.white,
-      border: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.08)}`,
+      boxShadow: theme.vars?.customShadows.z1,
+      color: theme.vars?.palette.common.white,
+      border: `solid 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08)}`,
       '&::before': {
         opacity: 0.4,
         boxShadow: 'none',
         width: 'calc(100% - 4px)',
         height: 'calc(100% - 4px)',
-        backgroundImage: `linear-gradient(180deg, ${theme.vars.palette.grey[500]}, transparent)`,
+        backgroundImage: `linear-gradient(180deg, ${theme.vars?.palette.grey[500]}, transparent)`,
         ...theme.applyStyles('dark', {
           opacity: 0.8,
         }),
@@ -123,14 +123,14 @@ const MuiSlider: Components<Theme>['MuiSlider'] = {
     }),
     rail: ({ theme }) => ({
       opacity: 0.12,
-      backgroundColor: theme.vars.palette.grey[500],
+      backgroundColor: theme.vars?.palette.grey[500],
       variants: [...railVariants],
     }),
     track: {
       variants: [...trackVariants],
     },
     mark: ({ style, theme }) => ({
-      backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.48),
+      backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.48),
       // start mark
       '&[data-index="0"]': { display: 'none' },
       // end mark
@@ -138,18 +138,18 @@ const MuiSlider: Components<Theme>['MuiSlider'] = {
       variants: [...markVariants],
     }),
     markActive: ({ theme }) => ({
-      backgroundColor: varAlpha(theme.vars.palette.common.whiteChannel, 0.64),
+      backgroundColor: varAlpha(theme.vars?.palette.common.whiteChannel || '0 0 0', 0.64),
       variants: [...markActiveVariants],
     }),
     markLabel: ({ theme }) => ({
       fontSize: theme.typography.pxToRem(13),
-      color: theme.vars.palette.text.disabled,
+      color: theme.vars?.palette.text.disabled,
     }),
     valueLabel: ({ theme }) => ({
       borderRadius: 8,
-      backgroundColor: theme.vars.palette.grey[800],
+      backgroundColor: theme.vars?.palette.grey[800],
       ...theme.applyStyles('dark', {
-        backgroundColor: theme.vars.palette.grey[700],
+        backgroundColor: theme.vars?.palette.grey[700],
       }),
     }),
   },

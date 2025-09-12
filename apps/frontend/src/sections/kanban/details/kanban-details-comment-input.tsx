@@ -22,7 +22,12 @@ type Props = {
   onCommentSent?: () => void;
 };
 
-export function KanbanDetailsCommentInput({ taskId, onStartTyping, onStopTyping, onCommentSent }: Props) {
+export function KanbanDetailsCommentInput({
+  taskId,
+  onStartTyping,
+  onStopTyping,
+  onCommentSent,
+}: Props) {
   const { user } = useAuthContext();
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,11 +43,11 @@ export function KanbanDetailsCommentInput({ taskId, onStartTyping, onStopTyping,
         message: message.trim(),
         messageType: 'text',
       });
-      
+
       setMessage('');
       mutate(`/api/v1/comments/${taskId}`);
       toast.success('Comment added');
-      
+
       // Notify parent to scroll to bottom
       onCommentSent?.();
     } catch (error) {
@@ -114,28 +119,27 @@ export function KanbanDetailsCommentInput({ taskId, onStartTyping, onStopTyping,
       }}
     >
       <Avatar>
-        {user?.firstName && user?.lastName 
+        {user?.firstName && user?.lastName
           ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase()
-          : user?.email?.charAt(0).toUpperCase() || 'U'
-        }
+          : user?.email?.charAt(0).toUpperCase() || 'U'}
       </Avatar>
 
       <Paper variant="outlined" sx={{ p: 1, flexGrow: 1, bgcolor: 'transparent' }}>
-        <InputBase 
-          fullWidth 
-          multiline 
-          rows={2} 
-          placeholder="Type a message (Ctrl+Enter to send)" 
+        <InputBase
+          fullWidth
+          multiline
+          rows={2}
+          placeholder="Type a message (Ctrl+Enter to send)"
           value={message}
           onChange={handleInputChange}
           onKeyDown={handleKeyPress}
           onBlur={handleBlur}
-          sx={{ px: 1 }} 
+          sx={{ px: 1 }}
         />
 
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             onClick={handleSubmitComment}
             disabled={!message.trim() || isSubmitting}
           >

@@ -104,14 +104,14 @@ export function NumberInput({
       <NumberInputRoot
         sx={[
           (theme) => ({
-            '--border-color': varAlpha(theme.vars.palette.grey['500Channel'], 0.2),
+            '--border-color': varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.2),
             '--vertical-divider-color': hideDivider
               ? 'transparent'
-              : varAlpha(theme.vars.palette.grey['500Channel'], 0.2),
+              : varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.2),
             '--input-background':
               !disabled && error
-                ? varAlpha(theme.vars.palette.error.mainChannel, 0.08)
-                : varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+                ? varAlpha(theme.vars?.palette.error.mainChannel || '0 0 0', 0.08)
+                : varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
           }),
           ...(Array.isArray(sx) ? sx : [sx]),
         ]}

@@ -21,7 +21,7 @@ import { Logo } from 'src/components/logo';
 import { AuthSplitSection } from './section';
 import { AuthSplitContent } from './content';
 import { SettingsButton } from '../components/settings-button';
-import { MainSection, LayoutSection, HeaderSection } from '../core';
+import { MainSection, HeaderSection, LayoutSection } from '../core';
 
 // ----------------------------------------------------------------------
 
@@ -113,7 +113,7 @@ export function AuthSplitLayout({
             label: 'Jwt',
             path: paths.auth.jwt.signIn,
             icon: `${CONFIG.assetsDir}/assets/icons/platforms/ic-jwt.svg`,
-          }
+          },
         ]}
       />
       <AuthSplitContent layoutQuery={layoutQuery} {...slotProps?.content}>

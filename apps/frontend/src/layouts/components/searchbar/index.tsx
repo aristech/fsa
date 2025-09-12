@@ -95,13 +95,13 @@ export function Searchbar({ data: navItems = [], sx, ...other }: SearchbarProps)
             pr: 1,
             borderRadius: 1.5,
             cursor: 'pointer',
-            bgcolor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+            bgcolor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
             transition: theme.transitions.create('background-color', {
               easing: theme.transitions.easing.easeInOut,
               duration: theme.transitions.duration.shortest,
             }),
             '&:hover': {
-              bgcolor: varAlpha(theme.vars.palette.grey['500Channel'], 0.16),
+              bgcolor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.16),
             },
           },
         },
@@ -128,7 +128,7 @@ export function Searchbar({ data: navItems = [], sx, ...other }: SearchbarProps)
           cursor: 'inherit',
           bgcolor: 'common.white',
           fontSize: theme.typography.pxToRem(12),
-          boxShadow: theme.vars.customShadows.z1,
+          boxShadow: theme.vars?.customShadows.z1,
           display: { xs: 'none', [breakpoint]: 'inline-flex' },
         }}
       >
@@ -202,7 +202,7 @@ export function Searchbar({ data: navItems = [], sx, ...other }: SearchbarProps)
           inputProps={{ id: 'search-input' }}
           sx={{
             p: 3,
-            borderBottom: `solid 1px ${theme.vars.palette.divider}`,
+            borderBottom: `solid 1px ${theme.vars?.palette.divider}`,
             [`& .${inputBaseClasses.input}`]: { typography: 'h6' },
           }}
         />

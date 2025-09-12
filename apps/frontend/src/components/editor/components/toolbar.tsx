@@ -230,8 +230,8 @@ const ToolbarRoot = styled(Stack)(({ theme }) => ({
   padding: theme.spacing(1.25),
   borderTopLeftRadius: 'inherit',
   borderTopRightRadius: 'inherit',
-  backgroundColor: theme.vars.palette.background.paper,
-  borderBottom: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.2)}`,
+  backgroundColor: theme.vars?.palette.background.paper,
+  borderBottom: `solid 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.2)}`,
 }));
 
 const ToolbarBlock = styled('div')(({ theme }) => ({

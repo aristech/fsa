@@ -1,7 +1,6 @@
 'use client';
 
 import type { Theme, ThemeProviderProps as MuiThemeProviderProps } from '@mui/material/styles';
-import type {} from './extend-theme-types';
 import type { ThemeOptions } from './types';
 
 import CssBaseline from '@mui/material/CssBaseline';

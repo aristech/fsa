@@ -31,7 +31,7 @@ export function AuthCenteredContent({
           display: 'flex',
           flexDirection: 'column',
           maxWidth: 'var(--layout-auth-content-width)',
-          bgcolor: theme.vars.palette.background.default,
+          bgcolor: theme.vars?.palette.background.default,
         }),
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}

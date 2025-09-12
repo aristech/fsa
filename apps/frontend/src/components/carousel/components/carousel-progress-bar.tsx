@@ -31,8 +31,8 @@ const ProgressBarRoot = styled('div')(({ theme }) => ({
   borderRadius: 6,
   overflow: 'hidden',
   position: 'relative',
-  color: theme.vars.palette.text.primary,
-  backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.2),
+  color: theme.vars?.palette.text.primary,
+  backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.2),
 }));
 
 const ProgressBar = styled('span')(({ theme }) => ({

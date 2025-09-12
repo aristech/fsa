@@ -69,11 +69,11 @@ const standardVariants = [
   ...(SEVERITIES.map((colorKey) => ({
     props: (props) => props.variant === 'standard' && props.severity === colorKey,
     style: ({ theme }) => ({
-      color: theme.vars.palette[colorKey].darker,
-      backgroundColor: theme.vars.palette[colorKey].lighter,
+      color: theme.vars?.palette[colorKey].darker,
+      backgroundColor: theme.vars?.palette[colorKey].lighter,
       ...theme.applyStyles('dark', {
-        color: theme.vars.palette[colorKey].lighter,
-        backgroundColor: theme.vars.palette[colorKey].darker,
+        color: theme.vars?.palette[colorKey].lighter,
+        backgroundColor: theme.vars?.palette[colorKey].darker,
       }),
     }),
   })) satisfies AlertVariants),
@@ -83,7 +83,7 @@ const filledVariants = [
   ...(SEVERITIES.map((colorKey) => ({
     props: (props) => props.variant === 'filled' && props.severity === colorKey,
     style: ({ theme }) => ({
-      color: theme.vars.palette[colorKey].contrastText,
+      color: theme.vars?.palette[colorKey].contrastText,
     }),
   })) satisfies AlertVariants),
 ] satisfies AlertVariants;
@@ -92,11 +92,11 @@ const outlinedVariants = [
   ...(SEVERITIES.map((colorKey) => ({
     props: (props) => props.variant === 'outlined' && props.severity === colorKey,
     style: ({ theme }) => ({
-      color: theme.vars.palette[colorKey].dark,
-      backgroundColor: varAlpha(theme.vars.palette[colorKey].mainChannel, 0.08),
-      border: `solid 1px ${varAlpha(theme.vars.palette[colorKey].mainChannel, 0.16)}`,
+      color: theme.vars?.palette[colorKey].dark,
+      backgroundColor: varAlpha(theme.vars?.palette[colorKey].mainChannel || '0 0 0', 0.08),
+      border: `solid 1px ${varAlpha(theme.vars?.palette[colorKey].mainChannel || '0 0 0', 0.16)}`,
       ...theme.applyStyles('dark', {
-        color: theme.vars.palette[colorKey].light,
+        color: theme.vars?.palette[colorKey].light,
       }),
     }),
   })) satisfies AlertVariants),
@@ -123,10 +123,10 @@ const MuiAlert: Components<Theme>['MuiAlert'] = {
     icon: ({ theme }) => ({
       opacity: 1,
       ...theme.applyStyles('dark', {
-        [parseCssVar(theme.vars.palette.Alert.infoIconColor)]: theme.vars.palette.info.light,
-        [parseCssVar(theme.vars.palette.Alert.errorIconColor)]: theme.vars.palette.error.light,
-        [parseCssVar(theme.vars.palette.Alert.successIconColor)]: theme.vars.palette.success.light,
-        [parseCssVar(theme.vars.palette.Alert.warningIconColor)]: theme.vars.palette.warning.light,
+        [parseCssVar(theme.vars?.palette.Alert.infoIconColor || '--alert-info-icon-color')]: theme.vars?.palette.info.light,
+        [parseCssVar(theme.vars?.palette.Alert.errorIconColor || '--alert-error-icon-color')]: theme.vars?.palette.error.light,
+        [parseCssVar(theme.vars?.palette.Alert.successIconColor || '--alert-success-icon-color')]: theme.vars?.palette.success.light,
+        [parseCssVar(theme.vars?.palette.Alert.warningIconColor || '--alert-warning-icon-color')]: theme.vars?.palette.warning.light,
       }),
     }),
   },

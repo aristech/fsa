@@ -12,33 +12,49 @@ export interface RealtimeIndicatorProps {
   variant?: 'chip' | 'icon';
 }
 
-export function RealtimeIndicator({ sx, showText = true, variant = 'chip' }: RealtimeIndicatorProps) {
+export function RealtimeIndicator({
+  sx,
+  showText = true,
+  variant = 'chip',
+}: RealtimeIndicatorProps) {
   const { isConnected, connectionState, stats } = useRealtimeConnection();
 
   const getStatusColor = () => {
     switch (connectionState) {
-      case 'connected': return 'success';
-      case 'connecting': return 'warning';
-      case 'disconnected': return 'error';
-      default: return 'default';
+      case 'connected':
+        return 'success';
+      case 'connecting':
+        return 'warning';
+      case 'disconnected':
+        return 'error';
+      default:
+        return 'default';
     }
   };
 
   const getStatusText = () => {
     switch (connectionState) {
-      case 'connected': return 'Real-time Connected';
-      case 'connecting': return 'Connecting...';
-      case 'disconnected': return 'Disconnected';
-      default: return 'Unknown';
+      case 'connected':
+        return 'Real-time Connected';
+      case 'connecting':
+        return 'Connecting...';
+      case 'disconnected':
+        return 'Disconnected';
+      default:
+        return 'Unknown';
     }
   };
 
   const getStatusIcon = () => {
     switch (connectionState) {
-      case 'connected': return 'material-symbols:wifi';
-      case 'connecting': return 'material-symbols:wifi-off';
-      case 'disconnected': return 'material-symbols:wifi-off';
-      default: return 'material-symbols:help';
+      case 'connected':
+        return 'material-symbols:wifi';
+      case 'connecting':
+        return 'material-symbols:wifi-off';
+      case 'disconnected':
+        return 'material-symbols:wifi-off';
+      default:
+        return 'material-symbols:help';
     }
   };
 
@@ -46,8 +62,10 @@ export function RealtimeIndicator({ sx, showText = true, variant = 'chip' }: Rea
     <Box>
       <Box sx={{ fontWeight: 'bold', mb: 1 }}>{getStatusText()}</Box>
       <Box sx={{ fontSize: '0.8em' }}>
-        Active Rooms: {stats.activeRooms}<br/>
-        Event Listeners: {stats.eventListeners}<br/>
+        Active Rooms: {stats.activeRooms}
+        <br />
+        Event Listeners: {stats.eventListeners}
+        <br />
         {stats.reconnectAttempts > 0 && `Reconnect Attempts: ${stats.reconnectAttempts}`}
       </Box>
     </Box>
@@ -57,14 +75,19 @@ export function RealtimeIndicator({ sx, showText = true, variant = 'chip' }: Rea
     return (
       <Tooltip title={tooltipContent}>
         <Box sx={{ display: 'flex', alignItems: 'center', ...sx }}>
-          <Iconify 
-            icon={getStatusIcon()} 
-            sx={{ 
-              color: getStatusColor() === 'success' ? 'success.main' : 
-                     getStatusColor() === 'warning' ? 'warning.main' : 
-                     getStatusColor() === 'error' ? 'error.main' : 'text.disabled',
-              fontSize: 20 
-            }} 
+          <Iconify
+            icon={getStatusIcon()}
+            sx={{
+              color:
+                getStatusColor() === 'success'
+                  ? 'success.main'
+                  : getStatusColor() === 'warning'
+                    ? 'warning.main'
+                    : getStatusColor() === 'error'
+                      ? 'error.main'
+                      : 'text.disabled',
+              fontSize: 20,
+            }}
           />
         </Box>
       </Tooltip>
@@ -80,10 +103,10 @@ export function RealtimeIndicator({ sx, showText = true, variant = 'chip' }: Rea
         icon={<Iconify icon={getStatusIcon()} />}
         label={showText ? getStatusText() : undefined}
         sx={{
-          '& .MuiChip-icon': { 
-            fontSize: '1rem !important' 
+          '& .MuiChip-icon': {
+            fontSize: '1rem !important',
           },
-          ...sx
+          ...sx,
         }}
       />
     </Tooltip>

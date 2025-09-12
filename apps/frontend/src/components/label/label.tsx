@@ -6,7 +6,7 @@ import { upperFirst } from 'es-toolkit';
 import { mergeClasses } from 'minimal-shared/utils';
 
 import { labelClasses } from './classes';
-import { LabelRoot, LabelIcon } from './styles';
+import { LabelIcon, LabelRoot } from './styles';
 
 // ----------------------------------------------------------------------
 

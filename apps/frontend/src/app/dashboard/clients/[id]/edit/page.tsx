@@ -1,4 +1,3 @@
-
 import { ClientEditView } from 'src/sections/fsa/client/edit/view/client-edit-view';
 
 // ----------------------------------------------------------------------

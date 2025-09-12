@@ -43,20 +43,20 @@ const statusVariants = [
       '&::before, &::after': {
         content: "''",
         borderRadius: 1,
-        backgroundColor: theme.vars.palette.common.white,
+        backgroundColor: theme.vars?.palette.common.white,
       },
     }),
   },
   {
     props: (props) => props.variant === 'online',
     style: ({ theme }) => ({
-      backgroundColor: theme.vars.palette.success.main,
+      backgroundColor: theme.vars?.palette.success.main,
     }),
   },
   {
     props: (props) => props.variant === 'always',
     style: ({ theme }) => ({
-      backgroundColor: theme.vars.palette.warning.main,
+      backgroundColor: theme.vars?.palette.warning.main,
       '&::before': { width: 2, height: 4, transform: 'translate(1px, -1px)' },
       '&::after': { width: 2, height: 4, transform: 'translate(0, 1px) rotate(125deg)' },
     }),
@@ -64,14 +64,14 @@ const statusVariants = [
   {
     props: (props) => props.variant === 'busy',
     style: ({ theme }) => ({
-      backgroundColor: theme.vars.palette.error.main,
+      backgroundColor: theme.vars?.palette.error.main,
       '&::before': { width: 6, height: 2 },
     }),
   },
   {
     props: (props) => props.variant === 'offline',
     style: ({ theme }) => ({
-      backgroundColor: theme.vars.palette.text.disabled,
+      backgroundColor: theme.vars?.palette.text.disabled,
       '&::before': { width: 6, height: 6, borderRadius: '50%' },
     }),
   },

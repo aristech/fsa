@@ -8,9 +8,9 @@ import {
   Box,
   Card,
   Chip,
-  Table,
-  Stack,
   Alert,
+  Stack,
+  Table,
   Button,
   Dialog,
   Tooltip,
@@ -188,7 +188,6 @@ export function RolesList() {
 
   return (
     <>
-     
       <Card>
         <Box sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6">Roles & Permissions</Typography>

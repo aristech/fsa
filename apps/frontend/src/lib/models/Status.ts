@@ -42,7 +42,7 @@ const StatusSchema: Schema = new Schema(
       required: [true, 'Status color is required'],
       default: '#2196f3',
       validate: {
-        validator (v: string) {
+        validator(v: string) {
           return /^#[0-9A-F]{6}$/i.test(v);
         },
         message: 'Color must be a valid hex color code',

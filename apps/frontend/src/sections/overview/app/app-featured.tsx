@@ -4,8 +4,8 @@ import type { CardProps } from '@mui/material/Card';
 import Autoplay from 'embla-carousel-autoplay';
 
 import Box from '@mui/material/Box';
-import Link from '@mui/material/Link';
 import Card from '@mui/material/Card';
+import Link from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 
 import { Image } from 'src/components/image';
@@ -114,7 +114,7 @@ function CarouselItem({ item, sx, ...other }: CarouselItemProps) {
         slotProps={{
           overlay: {
             sx: (theme) => ({
-              backgroundImage: `linear-gradient(to bottom, transparent 0%, ${theme.vars.palette.common.black} 75%)`,
+              backgroundImage: `linear-gradient(to bottom, transparent 0%, ${theme.vars?.palette.common.black} 75%)`,
             }),
           },
         }}

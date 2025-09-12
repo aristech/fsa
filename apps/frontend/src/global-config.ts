@@ -19,7 +19,6 @@ export type ConfigValue = {
     skip: boolean;
     redirectPath: string;
   };
-
 };
 
 // ----------------------------------------------------------------------

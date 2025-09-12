@@ -32,25 +32,30 @@ import { setSession } from 'src/auth/context/jwt/utils';
 
 export type VerifyAccountSchemaType = zod.infer<typeof VerifyAccountSchema>;
 
-export const VerifyAccountSchema = zod.object({
-  password: zod.string().min(8).refine(
-    (password) => {
-      // Password validation: min 8 chars, mixed case, symbols, numbers
-      const hasLowerCase = /[a-z]/.test(password);
-      const hasUpperCase = /[A-Z]/.test(password);
-      const hasNumbers = /\d/.test(password);
-      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-      return hasLowerCase && hasUpperCase && hasNumbers && hasSpecialChar;
-    },
-    {
-      message: 'Password must contain uppercase, lowercase, numbers, and special characters',
-    }
-  ),
-  confirmPassword: zod.string().min(1, 'Confirm password is required'),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'],
-});
+export const VerifyAccountSchema = zod
+  .object({
+    password: zod
+      .string()
+      .min(8)
+      .refine(
+        (password) => {
+          // Password validation: min 8 chars, mixed case, symbols, numbers
+          const hasLowerCase = /[a-z]/.test(password);
+          const hasUpperCase = /[A-Z]/.test(password);
+          const hasNumbers = /\d/.test(password);
+          const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+          return hasLowerCase && hasUpperCase && hasNumbers && hasSpecialChar;
+        },
+        {
+          message: 'Password must contain uppercase, lowercase, numbers, and special characters',
+        }
+      ),
+    confirmPassword: zod.string().min(1, 'Confirm password is required'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 
 const defaultValues: VerifyAccountSchemaType = {
   password: '',
@@ -62,9 +67,9 @@ const defaultValues: VerifyAccountSchemaType = {
 export function JwtVerifyAccountView() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   const { checkUserSession } = useAuthContext();
-  
+
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(true);
   const [accountInfo, setAccountInfo] = useState<{
@@ -90,7 +95,7 @@ export function JwtVerifyAccountView() {
   // Validate magic link token on component mount
   const validateToken = useCallback(async () => {
     const token = searchParams.get('token');
-    
+
     if (!token) {
       setErrorMsg('No verification token provided');
       setLoading(false);
@@ -110,9 +115,7 @@ export function JwtVerifyAccountView() {
       }
     } catch (error: any) {
       console.error('Error validating magic link:', error);
-      setErrorMsg(
-        error.response?.data?.message || 'Invalid or expired verification link'
-      );
+      setErrorMsg(error.response?.data?.message || 'Invalid or expired verification link');
     } finally {
       setLoading(false);
     }
@@ -125,7 +128,7 @@ export function JwtVerifyAccountView() {
   const onSubmit = useCallback(
     async (data: VerifyAccountSchemaType) => {
       const token = searchParams.get('token');
-      
+
       if (!token) {
         setErrorMsg('No verification token provided');
         return;
@@ -156,9 +159,7 @@ export function JwtVerifyAccountView() {
         }
       } catch (error: any) {
         console.error('Error setting up account:', error);
-        setErrorMsg(
-          error.response?.data?.message || 'Failed to setup account. Please try again.'
-        );
+        setErrorMsg(error.response?.data?.message || 'Failed to setup account. Please try again.');
       }
     },
     [searchParams, checkUserSession, router]
@@ -311,9 +312,7 @@ export function JwtVerifyAccountView() {
         </Typography>
       </Box>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        {renderForm}
-      </form>
+      <form onSubmit={handleSubmit(onSubmit)}>{renderForm}</form>
 
       <Box sx={{ mt: 3, textAlign: 'center' }}>
         <Button variant="text" onClick={handleGoBack}>

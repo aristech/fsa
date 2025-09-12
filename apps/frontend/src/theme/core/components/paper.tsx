@@ -15,7 +15,7 @@ const MuiPaper: Components<Theme>['MuiPaper'] = {
         {
           props: (props) => props.variant === 'outlined',
           style: ({ theme }) => ({
-            borderColor: theme.vars.palette.shared.paperOutlined,
+            borderColor: theme.vars?.palette.shared.paperOutlined,
           }),
         },
       ],

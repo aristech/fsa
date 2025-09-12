@@ -34,7 +34,7 @@ export const MarkdownRoot = styled('div')(({ theme }) => ({
     WebkitFlexShrink: 0,
     borderStyle: 'solid',
     borderBottomWidth: 'thin',
-    borderColor: theme.vars.palette.divider,
+    borderColor: theme.vars?.palette.divider,
   },
   /**
    * Image
@@ -72,8 +72,8 @@ export const MarkdownRoot = styled('div')(({ theme }) => ({
     position: 'relative',
     fontFamily: 'Georgia, serif',
     padding: theme.spacing(3, 3, 3, 8),
-    color: theme.vars.palette.text.secondary,
-    borderLeft: `solid 8px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.08)}`,
+    color: theme.vars?.palette.text.secondary,
+    borderLeft: `solid 8px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08)}`,
     [theme.breakpoints.up('md')]: { width: '100%', maxWidth: 640 },
     '& p': { margin: 0, fontSize: 'inherit', fontFamily: 'inherit' },
     '&::before': {
@@ -83,7 +83,7 @@ export const MarkdownRoot = styled('div')(({ theme }) => ({
       fontSize: '3em',
       content: '"\\201C"',
       position: 'absolute',
-      color: theme.vars.palette.text.disabled,
+      color: theme.vars?.palette.text.disabled,
     },
   },
   /**
@@ -91,10 +91,10 @@ export const MarkdownRoot = styled('div')(({ theme }) => ({
    */
   [`& .${markdownClasses.content.codeInline}`]: {
     padding: theme.spacing(0.25, 0.5),
-    color: theme.vars.palette.text.secondary,
+    color: theme.vars?.palette.text.secondary,
     fontSize: theme.typography.body2.fontSize,
     borderRadius: Number(theme.shape.borderRadius) / 2,
-    backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.2),
+    backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.2),
   },
   /**
    * Code block
@@ -104,13 +104,13 @@ export const MarkdownRoot = styled('div')(({ theme }) => ({
     '& pre': {
       overflowX: 'auto',
       padding: theme.spacing(3),
-      color: theme.vars.palette.common.white,
+      color: theme.vars?.palette.common.white,
       borderRadius: theme.shape.borderRadius,
       fontFamily: "'JetBrainsMono', monospace",
-      backgroundColor: theme.vars.palette.grey[900],
+      backgroundColor: theme.vars?.palette.grey[900],
       '& code': { fontSize: theme.typography.body2.fontSize },
       ...theme.applyStyles('dark', {
-        backgroundColor: theme.vars.palette.grey[800],
+        backgroundColor: theme.vars?.palette.grey[800],
       }),
     },
   },
@@ -121,13 +121,13 @@ export const MarkdownRoot = styled('div')(({ theme }) => ({
     width: '100%',
     borderCollapse: 'collapse',
     fontSize: theme.typography.body2.fontSize,
-    border: `1px solid ${theme.vars.palette.divider}`,
+    border: `1px solid ${theme.vars?.palette.divider}`,
     'th, td': {
       padding: theme.spacing(1),
-      border: `1px solid ${theme.vars.palette.divider}`,
+      border: `1px solid ${theme.vars?.palette.divider}`,
     },
     'tbody tr:nth-of-type(odd)': {
-      backgroundColor: theme.vars.palette.background.neutral,
+      backgroundColor: theme.vars?.palette.background.neutral,
     },
   },
   /**
@@ -144,14 +144,14 @@ export const MarkdownRoot = styled('div')(({ theme }) => ({
       height: 17,
       borderRadius: 3,
       position: 'absolute',
-      backgroundColor: theme.vars.palette.grey[300],
+      backgroundColor: theme.vars?.palette.grey[300],
       ...theme.applyStyles('dark', {
-        backgroundColor: theme.vars.palette.grey[700],
+        backgroundColor: theme.vars?.palette.grey[700],
       }),
     },
     '&:checked': {
       '&:before': {
-        backgroundColor: theme.vars.palette.primary.main,
+        backgroundColor: theme.vars?.palette.primary.main,
       },
       '&:after': {
         top: 1,
@@ -163,7 +163,7 @@ export const MarkdownRoot = styled('div')(({ theme }) => ({
         borderStyle: 'solid',
         transform: 'rotate(45deg)',
         borderWidth: '0 2px 2px 0',
-        borderColor: theme.vars.palette.common.white,
+        borderColor: theme.vars?.palette.common.white,
       },
     },
   },

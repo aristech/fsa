@@ -120,12 +120,12 @@ function OptionItem({
       sx={[
         (theme) => ({
           borderRadius: 1.5,
-          border: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.24)}`,
+          border: `solid 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.24)}`,
           transition: theme.transitions.create(['box-shadow'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.shortest,
           }),
-          ...(selected && { boxShadow: `0 0 0 2px ${theme.vars.palette.text.primary}` }),
+          ...(selected && { boxShadow: `0 0 0 2px ${theme.vars?.palette.text.primary}` }),
         }),
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}

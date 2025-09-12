@@ -1,4 +1,3 @@
-import type {} from 'embla-carousel-auto-scroll';
 import type { EmblaCarouselType } from 'embla-carousel';
 import type { UseCarouselAutoplayReturn } from '../types';
 

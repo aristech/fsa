@@ -10,8 +10,8 @@ import type {
 import {
   ScaleControl,
   GeolocateControl,
-  NavigationControl,
   FullscreenControl,
+  NavigationControl,
 } from 'react-map-gl/maplibre';
 
 // ----------------------------------------------------------------------

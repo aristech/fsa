@@ -99,7 +99,7 @@ const ToolbarRoot = styled('div')(({ theme }) => ({
   gap: theme.spacing(0.5),
   padding: theme.spacing(0.5),
   borderRadius: theme.shape.borderRadius,
-  boxShadow: theme.vars.customShadows.z8,
-  backgroundColor: theme.vars.palette.background.paper,
-  border: `1px solid ${theme.vars.palette.shared.paperOutlined}`,
+  boxShadow: theme.vars?.customShadows.z8,
+  backgroundColor: theme.vars?.palette.background.paper,
+  border: `1px solid ${theme.vars?.palette.shared.paperOutlined}`,
 }));

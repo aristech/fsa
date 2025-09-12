@@ -23,7 +23,7 @@ export function AppWelcome({ title, description, action, img, sx, ...other }: Pr
         (theme) => ({
           ...theme.mixins.bgGradient({
             images: [
-              `linear-gradient(to right, ${varAlpha(theme.vars.palette.grey['900Channel'], 0.88)} 0%, ${theme.vars.palette.grey[900]} 75%)`,
+              `linear-gradient(to right, ${varAlpha(theme.vars?.palette.grey['900Channel'] || '0 0 0', 0.88)} 0%, ${theme.vars?.palette.grey[900]} 75%)`,
               `url(${CONFIG.assetsDir}/assets/background/background-5.webp)`,
             ],
           }),
@@ -40,7 +40,7 @@ export function AppWelcome({ title, description, action, img, sx, ...other }: Pr
           color: 'common.white',
           textAlign: { xs: 'center', md: 'left' },
           flexDirection: { xs: 'column', md: 'row' },
-          border: `solid 1px ${theme.vars.palette.grey[800]}`,
+          border: `solid 1px ${theme.vars?.palette.grey[800]}`,
         }),
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}

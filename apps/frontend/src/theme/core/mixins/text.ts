@@ -13,7 +13,7 @@ import { createTheme as getTheme } from '@mui/material/styles';
  * @returns A CSSObject that applies the gradient as text color.
  *
  * @example
- * ...theme.mixins.textGradient( `to right, ${theme.vars.palette.text.primary}, ${varAlpha(theme.vars.palette.text.primary, 0.2)}` )
+ * ...theme.mixins.textGradient( `to right, ${theme.vars?.palette.text.primary}, ${varAlpha(theme.vars?.palette.text.primary || '0 0 0', 0.2)}` )
  */
 
 export function textGradient(color?: string): CSSObject {

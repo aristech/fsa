@@ -18,7 +18,7 @@ type AuthGuardProps = {
 };
 
 const signInPaths = {
-  jwt: paths.auth.jwt.signIn
+  jwt: paths.auth.jwt.signIn,
 };
 
 export function AuthGuard({ children }: AuthGuardProps) {

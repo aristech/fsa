@@ -79,7 +79,7 @@ export function KanbanTaskAdd({ status, openAddTask, onAddTask, onCloseAddTask }
             (theme) => ({
               borderRadius: 1.5,
               bgcolor: 'background.default',
-              boxShadow: theme.vars.customShadows.z1,
+              boxShadow: theme.vars?.customShadows.z1,
             }),
           ]}
         >
@@ -113,7 +113,7 @@ export function KanbanTaskAdd({ status, openAddTask, onAddTask, onCloseAddTask }
         )}
 
         <FormHelperText sx={{ mx: 1 }}>
-          Press Enter to create the task. 
+          Press Enter to create the task.
           {!selectedClient && ' Task will not be associated with any client.'}
           {selectedClient && ' Task will be associated with the selected client.'}
         </FormHelperText>

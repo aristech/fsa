@@ -64,13 +64,13 @@ export const LabelRoot = styled('span', {
     ...colorKeys.common.map((colorKey) => ({
       props: { variant: 'outlined', color: colorKey },
       style: {
-        color: theme.vars.palette.common[colorKey],
+        color: theme.vars?.palette.common[colorKey],
       },
     })),
     ...colorKeys.palette.map((colorKey) => ({
       props: { variant: 'outlined', color: colorKey },
       style: {
-        color: theme.vars.palette[colorKey].main,
+        color: theme.vars?.palette[colorKey].main,
       },
     })),
     /**
@@ -92,25 +92,25 @@ export const LabelRoot = styled('span', {
     {
       props: { variant: 'inverted', color: 'default' },
       style: {
-        color: theme.vars.palette.grey[800],
-        backgroundColor: theme.vars.palette.grey[300],
+        color: theme.vars?.palette.grey[800],
+        backgroundColor: theme.vars?.palette.grey[300],
       },
     },
     ...colorKeys.common.map((colorKey) => ({
       props: { variant: 'inverted', color: colorKey },
       style: {
-        color: theme.vars.palette.common[colorKey],
-        backgroundColor: varAlpha('currentColor', theme.vars.opacity.soft.commonHoverBg),
+        color: theme.vars?.palette.common[colorKey],
+        backgroundColor: varAlpha('currentColor', theme.vars?.opacity.soft.commonHoverBg),
       },
     })),
     ...colorKeys.palette.map((colorKey) => ({
       props: { variant: 'inverted', color: colorKey },
       style: {
-        color: theme.vars.palette[colorKey].darker,
-        backgroundColor: theme.vars.palette[colorKey].lighter,
+        color: theme.vars?.palette[colorKey].darker,
+        backgroundColor: theme.vars?.palette[colorKey].lighter,
         ...theme.applyStyles('dark', {
-          color: theme.vars.palette[colorKey].lighter,
-          backgroundColor: theme.vars.palette[colorKey].darker,
+          color: theme.vars?.palette[colorKey].lighter,
+          backgroundColor: theme.vars?.palette[colorKey].darker,
         }),
       },
     })),

@@ -102,9 +102,9 @@ const expandedVariants = [
   {
     props: (props) => !props.disableGutters && !!props.expanded,
     style: ({ theme }) => ({
-      boxShadow: theme.vars.customShadows.z8,
+      boxShadow: theme.vars?.customShadows.z8,
       borderRadius: theme.shape.borderRadius,
-      backgroundColor: theme.vars.palette.background.paper,
+      backgroundColor: theme.vars?.palette.background.paper,
     }),
   },
 ] satisfies AccordionVariants;
@@ -113,7 +113,7 @@ const disableGuttersVariants = [
   {
     props: (props) => !!props.disableGutters,
     style: ({ theme }) => ({
-      borderBottom: `solid 1px ${theme.vars.palette.divider}`,
+      borderBottom: `solid 1px ${theme.vars?.palette.divider}`,
       '&:last-of-type': { borderBottom: 'none' },
       '&::before': { display: 'none' }, // Hide the border
       [`& .${accordionSummaryClasses.root}`]: {
@@ -135,7 +135,7 @@ const disableVariants = [
       [`&.${accordionClasses.disabled}`]: {
         backgroundColor: 'transparent',
         [`& .${accordionDetailsClasses.root}`]: {
-          opacity: theme.vars.palette.action.disabledOpacity,
+          opacity: theme.vars?.palette.action.disabledOpacity,
         },
       },
     }),

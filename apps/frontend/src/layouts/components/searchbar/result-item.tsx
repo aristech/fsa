@@ -33,13 +33,13 @@ export function ResultItem({ title, path, labels, href, sx, ...other }: Props) {
           borderWidth: 1,
           borderStyle: 'dashed',
           borderColor: 'transparent',
-          borderBottomColor: theme.vars.palette.divider,
+          borderBottomColor: theme.vars?.palette.divider,
           '&:hover': {
             borderRadius: 1,
-            borderColor: theme.vars.palette.primary.main,
+            borderColor: theme.vars?.palette.primary.main,
             backgroundColor: varAlpha(
-              theme.vars.palette.primary.mainChannel,
-              theme.vars.palette.action.hoverOpacity
+              theme.vars?.palette.primary.mainChannel,
+              theme.vars?.palette.action.hoverOpacity
             ),
           },
         }),

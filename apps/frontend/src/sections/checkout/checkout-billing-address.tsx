@@ -1,4 +1,3 @@
-
 import { useBoolean } from 'minimal-shared/hooks';
 
 import Box from '@mui/material/Box';
@@ -10,7 +9,6 @@ import { Iconify } from 'src/components/iconify';
 import { useCheckoutContext } from './context';
 import { CheckoutSummary } from './checkout-summary';
 
-
 // ----------------------------------------------------------------------
 
 export function CheckoutBillingAddress() {
@@ -20,33 +18,31 @@ export function CheckoutBillingAddress() {
 
   return (
     <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 8 }}>
-          
+      <Grid size={{ xs: 12, md: 8 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Button
+            size="small"
+            color="inherit"
+            onClick={() => onChangeStep('back')}
+            startIcon={<Iconify icon="eva:arrow-ios-back-fill" />}
+          >
+            Back
+          </Button>
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-            <Button
-              size="small"
-              color="inherit"
-              onClick={() => onChangeStep('back')}
-              startIcon={<Iconify icon="eva:arrow-ios-back-fill" />}
-            >
-              Back
-            </Button>
-
-            <Button
-              size="small"
-              color="primary"
-              onClick={addressForm.onTrue}
-              startIcon={<Iconify icon="mingcute:add-line" />}
-            >
-              Add address
-            </Button>
-          </Box>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 4 }}>
-          <CheckoutSummary checkoutState={checkoutState} />
-        </Grid>
+          <Button
+            size="small"
+            color="primary"
+            onClick={addressForm.onTrue}
+            startIcon={<Iconify icon="mingcute:add-line" />}
+          >
+            Add address
+          </Button>
+        </Box>
       </Grid>
+
+      <Grid size={{ xs: 12, md: 4 }}>
+        <CheckoutSummary checkoutState={checkoutState} />
+      </Grid>
+    </Grid>
   );
 }

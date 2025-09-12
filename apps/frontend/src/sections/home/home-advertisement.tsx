@@ -34,8 +34,8 @@ export function HomeAdvertisement({ sx, ...other }: BoxProps) {
             sx={(theme) => ({
               ...theme.mixins.bgGradient({
                 images: [
-                  `linear-gradient(0deg, ${varAlpha(theme.vars.palette.grey['500Channel'], 0.04)} 1px, transparent 1px)`,
-                  `linear-gradient(90deg, ${varAlpha(theme.vars.palette.grey['500Channel'], 0.04)} 1px, transparent 1px)`,
+                  `linear-gradient(0deg, ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.04)} 1px, transparent 1px)`,
+                  `linear-gradient(90deg, ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.04)} 1px, transparent 1px)`,
                 ],
                 sizes: ['36px 36px'],
                 repeats: ['repeat'],
@@ -51,7 +51,7 @@ export function HomeAdvertisement({ sx, ...other }: BoxProps) {
               alignItems: 'center',
               textAlign: { xs: 'center', md: 'left' },
               flexDirection: { xs: 'column', md: 'row' },
-              border: `solid 1px ${theme.vars.palette.grey[800]}`,
+              border: `solid 1px ${theme.vars?.palette.grey[800]}`,
             })}
           >
             {renderImage()}
@@ -91,7 +91,7 @@ const renderDescription = () => (
         component="span"
         sx={(theme) => ({
           ...theme.mixins.textGradient(
-            `to right, ${theme.vars.palette.common.white}, ${varAlpha(theme.vars.palette.common.whiteChannel, 0.4)}`
+            `to right, ${theme.vars?.palette.common.white}, ${varAlpha(theme.vars?.palette.common.whiteChannel || '0 0 0', 0.4)}`
           ),
           ml: 1,
         })}
@@ -173,7 +173,7 @@ const renderBlur = () => (
       maxWidth: 420,
       aspectRatio: '1/1',
       position: 'absolute',
-      backgroundImage: `radial-gradient(farthest-side at top right, ${theme.vars.palette.grey[500]} 0%, ${varAlpha(theme.vars.palette.grey['500Channel'], 0.08)} 75%, transparent 90%)`,
+      backgroundImage: `radial-gradient(farthest-side at top right, ${theme.vars?.palette.grey[500]} 0%, ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08)} 75%, transparent 90%)`,
     })}
   />
 );

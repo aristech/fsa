@@ -79,7 +79,7 @@ export function ChatHeaderCompose({ contacts, onAddRecipients }: Props) {
                       position: 'absolute',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      bgcolor: varAlpha(theme.vars.palette.grey['900Channel'], 0.8),
+                      bgcolor: varAlpha(theme.vars?.palette.grey['900Channel'] || '0 0 0', 0.8),
                       transition: theme.transitions.create(['opacity'], {
                         easing: theme.transitions.easing.easeInOut,
                         duration: theme.transitions.duration.shorter,

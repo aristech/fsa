@@ -39,9 +39,9 @@ const MuiAutocomplete: Components<Theme>['MuiAutocomplete'] = {
         lineHeight: '24px',
         textAlign: 'center',
         padding: theme.spacing(0, 0.75),
-        color: theme.vars.palette.text.secondary,
+        color: theme.vars?.palette.text.secondary,
         borderRadius: theme.shape.borderRadius,
-        backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.16),
+        backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.16),
       },
     }),
     paper: ({ theme }) => ({

@@ -57,8 +57,8 @@ export function ChatRoomParticipantDialog({ participant, open, onClose }: Props)
               sx={[
                 (theme) => ({
                   borderRadius: 1,
-                  bgcolor: varAlpha(theme.vars.palette.error.mainChannel, 0.08),
-                  '&:hover': { bgcolor: varAlpha(theme.vars.palette.error.mainChannel, 0.16) },
+                  bgcolor: varAlpha(theme.vars?.palette.error.mainChannel || '0 0 0', 0.08),
+                  '&:hover': { bgcolor: varAlpha(theme.vars?.palette.error.mainChannel || '0 0 0', 0.16) },
                 }),
               ]}
             >
@@ -71,8 +71,8 @@ export function ChatRoomParticipantDialog({ participant, open, onClose }: Props)
               sx={[
                 (theme) => ({
                   borderRadius: 1,
-                  bgcolor: varAlpha(theme.vars.palette.info.mainChannel, 0.08),
-                  '&:hover': { bgcolor: varAlpha(theme.vars.palette.info.mainChannel, 0.16) },
+                  bgcolor: varAlpha(theme.vars?.palette.info.mainChannel || '0 0 0', 0.08),
+                  '&:hover': { bgcolor: varAlpha(theme.vars?.palette.info.mainChannel || '0 0 0', 0.16) },
                 }),
               ]}
             >
@@ -85,8 +85,8 @@ export function ChatRoomParticipantDialog({ participant, open, onClose }: Props)
               sx={[
                 (theme) => ({
                   borderRadius: 1,
-                  bgcolor: varAlpha(theme.vars.palette.primary.mainChannel, 0.08),
-                  '&:hover': { bgcolor: varAlpha(theme.vars.palette.primary.mainChannel, 0.16) },
+                  bgcolor: varAlpha(theme.vars?.palette.primary.mainChannel || '0 0 0', 0.08),
+                  '&:hover': { bgcolor: varAlpha(theme.vars?.palette.primary.mainChannel || '0 0 0', 0.16) },
                 }),
               ]}
             >
@@ -99,8 +99,8 @@ export function ChatRoomParticipantDialog({ participant, open, onClose }: Props)
               sx={[
                 (theme) => ({
                   borderRadius: 1,
-                  bgcolor: varAlpha(theme.vars.palette.secondary.mainChannel, 0.08),
-                  '&:hover': { bgcolor: varAlpha(theme.vars.palette.secondary.mainChannel, 0.16) },
+                  bgcolor: varAlpha(theme.vars?.palette.secondary.mainChannel || '0 0 0', 0.08),
+                  '&:hover': { bgcolor: varAlpha(theme.vars?.palette.secondary.mainChannel || '0 0 0', 0.16) },
                 }),
               ]}
             >

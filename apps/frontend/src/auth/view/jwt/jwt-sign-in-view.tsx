@@ -40,8 +40,8 @@ export const SignInSchema = z.object({
   tenantSlug: z
     .string()
     .min(1, { error: 'Tenant slug is required!' })
-    .regex(/^[a-z0-9_]+$/, {
-      error: 'Tenant slug must contain only lowercase letters, numbers, and underscores!',
+    .regex(/^[a-z0-9-]+$/, {
+      error: 'Tenant slug must contain only lowercase letters, numbers, and hyphen!',
     }),
   rememberMe: z.boolean().optional().default(false),
 });

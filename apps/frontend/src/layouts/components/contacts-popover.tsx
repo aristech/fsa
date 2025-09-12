@@ -10,8 +10,8 @@ import Badge from '@mui/material/Badge';
 import Avatar from '@mui/material/Avatar';
 import MenuItem from '@mui/material/MenuItem';
 import MenuList from '@mui/material/MenuList';
-import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
 import ListItemText from '@mui/material/ListItemText';
 
 import { fToNow } from 'src/utils/format-time';
@@ -85,7 +85,7 @@ export function ContactsPopover({ data = [], sx, ...other }: ContactsPopoverProp
         aria-label="Contacts button"
         onClick={onOpen}
         sx={[
-          (theme) => ({ ...(open && { bgcolor: theme.vars.palette.action.selected }) }),
+          (theme) => ({ ...(open && { bgcolor: theme.vars?.palette.action.selected }) }),
           ...(Array.isArray(sx) ? sx : [sx]),
         ]}
         {...other}

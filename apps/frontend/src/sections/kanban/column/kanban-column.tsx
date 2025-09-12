@@ -6,7 +6,7 @@ import { AnimatePresence } from 'framer-motion';
 import { useBoolean } from 'minimal-shared/hooks';
 import { mergeClasses } from 'minimal-shared/utils';
 
-import { createTask, updateColumn, deleteColumn } from 'src/actions/kanban';
+import { createTask, deleteColumn, updateColumn } from 'src/actions/kanban';
 
 import { kanbanClasses } from '../classes';
 import { DropIndicator } from '../item/styles';
@@ -15,7 +15,7 @@ import { KanbanTaskItem } from '../item/kanban-task-item';
 import { KanbanColumnToolBar } from './kanban-column-toolbar';
 import { KanbanTaskAdd } from '../components/kanban-task-add';
 import { getAttr, columnMotionOptions } from '../utils/helpers';
-import { ColumnRoot, ColumnList, ColumnWrapper } from './styles';
+import { ColumnList, ColumnRoot, ColumnWrapper } from './styles';
 import { KanbanTaskCreateDialog } from '../components/kanban-task-create-dialog';
 
 // ----------------------------------------------------------------------
@@ -52,8 +52,6 @@ export function KanbanColumn({ column, tasks, sx, ...other }: ColumnProps) {
     [column.id, column.name]
   );
 
-
-
   const handleDeleteColumn = useCallback(async () => {
     try {
       deleteColumn(column.id);
@@ -77,17 +75,14 @@ export function KanbanColumn({ column, tasks, sx, ...other }: ColumnProps) {
     [column.id, openAddTask]
   );
 
-  const handleCreateTask = useCallback(
-    async (taskData: any) => {
-      try {
-        // The createTask function now handles cache updates automatically
-        // No need to reload the page
-      } catch (error) {
-        console.error(error);
-      }
-    },
-    []
-  );
+  const handleCreateTask = useCallback(async (taskData: any) => {
+    try {
+      // The createTask function now handles cache updates automatically
+      // No need to reload the page
+    } catch (error) {
+      console.error(error);
+    }
+  }, []);
 
   const renderHeader = () => (
     <KanbanColumnToolBar

@@ -49,7 +49,7 @@ export function AppWidget({ title, total, icon, chart, sx, ...other }: Props) {
           name: { show: false },
           value: {
             offsetY: 6,
-            color: theme.vars.palette.common.white,
+            color: theme.vars?.palette.common.white,
             fontSize: theme.typography.subtitle2.fontSize as string,
           },
         },

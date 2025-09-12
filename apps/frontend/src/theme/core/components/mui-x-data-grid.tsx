@@ -276,24 +276,24 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
       [`& .${linearProgressClasses.root}`]: {
         height: 3,
         borderRadius: 0,
-        backgroundColor: varAlpha(theme.vars.palette.text.primaryChannel, 0.16),
+        backgroundColor: varAlpha(theme.vars?.palette.text.primaryChannel || '0 0 0', 0.16),
         [`& .${linearProgressClasses.bar1}, .${linearProgressClasses.bar2}`]: {
-          backgroundColor: theme.vars.palette.text.primary,
+          backgroundColor: theme.vars?.palette.text.primary,
         },
       },
       [`& .${circularProgressClasses.root}`]: {
-        color: theme.vars.palette.text.primary,
+        color: theme.vars?.palette.text.primary,
       },
     }),
     /**
      * @column
      */
     columnHeader: ({ theme }) => ({
-      color: theme.vars.palette.text.secondary,
-      backgroundColor: theme.vars.palette.background.neutral,
+      color: theme.vars?.palette.text.secondary,
+      backgroundColor: theme.vars?.palette.background.neutral,
       [`&.${gridClasses['columnHeader--sorted']}, &.${gridClasses['columnHeader--sorted']} .${gridClasses.sortIcon}`]:
         {
-          color: theme.vars.palette.text.primary,
+          color: theme.vars?.palette.text.primary,
         },
     }),
     /**
@@ -302,11 +302,11 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
     cell: ({ theme }) => ({
       borderTopStyle: 'dashed',
       '&:hover': {
-        color: theme.vars.palette.primary.main,
+        color: theme.vars?.palette.primary.main,
       },
       [`&.${gridClasses['cell--editing']}`]: {
         boxShadow: 'none',
-        backgroundColor: varAlpha(theme.vars.palette.primary.mainChannel, 0.08),
+        backgroundColor: varAlpha(theme.vars?.palette.primary.mainChannel || '0 0 0', 0.08),
       },
       [`&.${gridClasses['cell--withLeftBorder']}`]: {
         borderLeftStyle: 'dashed',
@@ -373,7 +373,7 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
     filterFormDeleteIcon: ({ theme }) => ({
       [`& .${iconButtonClasses.root}`]: {
         padding: '5px',
-        backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.16),
+        backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.16),
         [`& .${svgIconClasses.root}`]: { width: 16, height: 16 },
       },
     }),

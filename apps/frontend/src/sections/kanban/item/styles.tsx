@@ -21,13 +21,13 @@ import { kanbanClasses } from '../classes';
 export const DropIndicator = styled('div')(({ theme }) => ({
   flexShrink: 0,
   borderRadius: 'var(--kanban-item-radius)',
-  backgroundColor: theme.vars.palette.action.hover,
-  border: `dashed 1px ${theme.vars.palette.shared.paperOutlined}`,
+  backgroundColor: theme.vars?.palette.action.hover,
+  border: `dashed 1px ${theme.vars?.palette.shared.paperOutlined}`,
 }));
 
 export const ItemPreview = styled('div')(({ theme }) => ({
   padding: theme.spacing(2),
-  backgroundColor: theme.vars.palette.background.paper,
+  backgroundColor: theme.vars?.palette.background.paper,
 }));
 
 /* **********************************************************************
@@ -47,13 +47,13 @@ export const ItemRoot = styled(m.li)(({ theme }) => {
     position: 'relative',
     flexDirection: 'column',
     borderRadius: 'var(--kanban-item-radius)',
-    backgroundColor: theme.vars.palette.common.white,
+    backgroundColor: theme.vars?.palette.common.white,
     transition: theme.transitions.create(['filter', 'box-shadow', 'background-color']),
     ...theme.applyStyles('dark', {
-      backgroundColor: theme.vars.palette.grey[900],
+      backgroundColor: theme.vars?.palette.grey[900],
     }),
     '&:hover': {
-      boxShadow: theme.vars.customShadows.z8,
+      boxShadow: theme.vars?.customShadows.z8,
     },
     [`&.${kanbanClasses.state.dragging}`]: {
       filter: 'grayscale(1)',
@@ -66,7 +66,7 @@ export const ItemRoot = styled(m.li)(({ theme }) => {
       animation: `${transitionKey} 320ms ease-in-out`,
     },
     [`&.${kanbanClasses.state.openDetails}`]: {
-      backgroundColor: theme.vars.palette.action.selected,
+      backgroundColor: theme.vars?.palette.action.selected,
       '& > *': { opacity: 0.8 },
     },
   };
@@ -143,7 +143,11 @@ export type ItemStatusProps = Omit<IconifyProps, 'icon'> & {
 export function ItemStatus({ sx, status, completed, ...other }: ItemStatusProps) {
   const map: Record<string, { icon: IconifyName; color: string; title: string }> = {
     low: { icon: 'solar:double-alt-arrow-down-bold-duotone', color: 'success.main', title: 'Low' },
-    medium: { icon: 'solar:double-alt-arrow-right-bold-duotone', color: 'warning.main', title: 'Medium' },
+    medium: {
+      icon: 'solar:double-alt-arrow-right-bold-duotone',
+      color: 'warning.main',
+      title: 'Medium',
+    },
     high: { icon: 'solar:double-alt-arrow-up-bold-duotone', color: 'error.main', title: 'High' },
     urgent: { icon: 'solar:danger-triangle-bold-duotone', color: 'error.dark', title: 'Urgent' },
   };
@@ -153,7 +157,12 @@ export function ItemStatus({ sx, status, completed, ...other }: ItemStatusProps)
     <Box sx={{ position: 'absolute', top: 4, right: 4, display: 'inline-flex', gap: 0.5 }}>
       {completed && (
         <Box component="span" sx={{ display: 'inline-flex' }} title="Completed">
-          <Iconify icon="solar:check-circle-bold" sx={{ color: 'success.main' }} width={18} height={18} />
+          <Iconify
+            icon="solar:check-circle-bold"
+            sx={{ color: 'success.main' }}
+            width={18}
+            height={18}
+          />
         </Box>
       )}
       <Box component="span" sx={{ display: 'inline-flex' }} title={conf.title}>
@@ -172,9 +181,9 @@ export function ItemStatus({ sx, status, completed, ...other }: ItemStatusProps)
 export type ItemInfoProps = BoxProps & Pick<IKanbanTask, 'assignee' | 'comments' | 'attachments'>;
 
 export function ItemInfo({ sx, assignee, comments, attachments, ...other }: ItemInfoProps) {
-  const hasComments = !!comments.length;
-  const hasAssignee = !!assignee.length;
-  const hasAttachments = !!attachments.length;
+  const hasComments = !!comments?.length;
+  const hasAssignee = !!assignee?.length;
+  const hasAttachments = !!attachments?.length;
 
   if (!hasComments && !hasAttachments && !hasAssignee) return null;
 

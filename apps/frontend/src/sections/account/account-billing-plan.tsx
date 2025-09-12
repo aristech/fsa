@@ -1,4 +1,4 @@
-import type { IPaymentCard, IAddressItem } from 'src/types/common';
+import type { IAddressItem, IPaymentCard } from 'src/types/common';
 
 import { useState, useCallback } from 'react';
 import { useBoolean } from 'minimal-shared/hooks';
@@ -11,7 +11,7 @@ import Button from '@mui/material/Button';
 import CardHeader from '@mui/material/CardHeader';
 import ButtonBase from '@mui/material/ButtonBase';
 
-import { PlanFreeIcon, PlanStarterIcon, PlanPremiumIcon } from 'src/assets/icons';
+import { PlanFreeIcon, PlanPremiumIcon, PlanStarterIcon } from 'src/assets/icons';
 
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
@@ -72,7 +72,7 @@ export function AccountBillingPlan({ cardList, addressBook, plans }: Props) {
               position: 'relative',
               ...(plan.primary && { opacity: 0.48, cursor: 'default' }),
               ...(plan.subscription === selectedPlan && {
-                boxShadow: `0 0 0 2px ${theme.vars.palette.text.primary}`,
+                boxShadow: `0 0 0 2px ${theme.vars?.palette.text.primary}`,
               }),
             }),
           ]}
@@ -181,7 +181,7 @@ export function AccountBillingPlan({ cardList, addressBook, plans }: Props) {
         gap: 1.5,
         display: 'flex',
         justifyContent: 'flex-end',
-        borderTop: `dashed 1px ${theme.vars.palette.divider}`,
+        borderTop: `dashed 1px ${theme.vars?.palette.divider}`,
       })}
     >
       <Button variant="outlined">Cancel plan</Button>
@@ -203,8 +203,6 @@ export function AccountBillingPlan({ cardList, addressBook, plans }: Props) {
       }
     />
   );
-
-
 
   return (
     <>

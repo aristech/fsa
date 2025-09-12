@@ -4,7 +4,14 @@ export interface INotification {
   _id: string;
   tenantId: string;
   userId: string;
-  type: 'task_created' | 'task_updated' | 'task_assigned' | 'task_completed' | 'task_deleted' | 'time_logged' | 'time_updated';
+  type:
+    | 'task_created'
+    | 'task_updated'
+    | 'task_assigned'
+    | 'task_completed'
+    | 'task_deleted'
+    | 'time_logged'
+    | 'time_updated';
   title: string;
   message?: string;
   category: 'task' | 'system' | 'reminder';

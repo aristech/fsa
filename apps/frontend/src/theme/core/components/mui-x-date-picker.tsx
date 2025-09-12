@@ -17,8 +17,8 @@ import {
   inputBaseStyles,
   filledInputStyles,
   inputBaseVariants,
-  outlinedInputStyles,
   filledInputVariants,
+  outlinedInputStyles,
   outlinedInputVariants,
 } from './text-field';
 
@@ -119,7 +119,7 @@ const MuiPickersLayout: Components<Theme>['MuiPickersLayout'] = {
         '&:last-of-type': {
           ...theme.mixins.filledStyles(theme, 'inherit', {
             hover: {
-              boxShadow: theme.vars.customShadows.z8,
+              boxShadow: theme.vars?.customShadows.z8,
             },
           }),
         },
@@ -132,7 +132,7 @@ const MuiPickerPopper: Components<Theme>['MuiPickerPopper'] = {
   // ▼▼▼▼▼▼▼▼ 🎨 STYLE ▼▼▼▼▼▼▼▼
   styleOverrides: {
     paper: ({ theme }) => ({
-      boxShadow: theme.vars.customShadows.dropdown,
+      boxShadow: theme.vars?.customShadows.dropdown,
       borderRadius: Number(theme.shape.borderRadius) * 1.5,
     }),
   },
@@ -147,7 +147,7 @@ const MuiClock: Components<Theme>['MuiClock'] = {
   // ▼▼▼▼▼▼▼▼ 🎨 STYLE ▼▼▼▼▼▼▼▼
   styleOverrides: {
     clock: ({ theme }) => ({
-      backgroundColor: theme.vars.palette.background.neutral,
+      backgroundColor: theme.vars?.palette.background.neutral,
     }),
   },
 };
@@ -189,7 +189,7 @@ const inputComponents: Components<Theme> = {
             props: (props) => !props.isFieldFocused && !!props.isFieldValueEmpty,
             style: {
               opacity: 1,
-              color: theme.vars.palette.text.disabled,
+              color: theme.vars?.palette.text.disabled,
             },
           },
         ],

@@ -143,7 +143,7 @@ const ItemContainer = styled('span', {
   backgroundColor: color,
   width: 'calc(var(--item-size) - 16px)',
   height: 'calc(var(--item-size) - 16px)',
-  border: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.16)}`,
+  border: `solid 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.16)}`,
   transition: theme.transitions.create(['all'], {
     duration: theme.transitions.duration.shortest,
   }),

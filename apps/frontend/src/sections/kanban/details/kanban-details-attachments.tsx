@@ -25,11 +25,13 @@ export function KanbanDetailsAttachments({ attachments, onChange }: Props) {
 
     // Check file sizes
     const maxSizeBytes = CONFIG.upload.maxFileSizeMB * 1024 * 1024;
-    const oversizedFiles = filesToValidate.filter(file => file.size > maxSizeBytes);
-    
+    const oversizedFiles = filesToValidate.filter((file) => file.size > maxSizeBytes);
+
     if (oversizedFiles.length > 0) {
-      const fileNames = oversizedFiles.map(f => f.name).join(', ');
-      toast.error(`File(s) too large: ${fileNames}. Maximum size is ${CONFIG.upload.maxFileSizeMB}MB per file.`);
+      const fileNames = oversizedFiles.map((f) => f.name).join(', ');
+      toast.error(
+        `File(s) too large: ${fileNames}. Maximum size is ${CONFIG.upload.maxFileSizeMB}MB per file.`
+      );
       return false;
     }
 
@@ -47,7 +49,7 @@ export function KanbanDetailsAttachments({ attachments, onChange }: Props) {
         const form = new FormData();
         form.append('scope', 'task');
         acceptedFiles.forEach((file) => form.append('files', file));
-        
+
         try {
           const res = await axiosInstance.post('/api/v1/uploads', form, {
             headers: {
@@ -63,7 +65,7 @@ export function KanbanDetailsAttachments({ attachments, onChange }: Props) {
           // Show backend error message if available, otherwise fallback
           const errorMessage = error.message || 'Upload failed. Previewing locally only.';
           toast.error(errorMessage);
-          
+
           // Still add files for local preview
           const next = [...files, ...acceptedFiles];
           setFiles(next);
@@ -89,12 +91,13 @@ export function KanbanDetailsAttachments({ attachments, onChange }: Props) {
       files={files}
       onRemove={(file) => handleRemoveFile(file)}
       endNode={
-        <UploadBox 
+        <UploadBox
           onDrop={handleDrop}
           placeholder={
             <div>
               <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '8px' }}>
-                Max {CONFIG.upload.maxFileSizeMB}MB per file, {CONFIG.upload.maxFilesPerRequest} files max
+                Max {CONFIG.upload.maxFileSizeMB}MB per file, {CONFIG.upload.maxFilesPerRequest}{' '}
+                files max
               </div>
             </div>
           }

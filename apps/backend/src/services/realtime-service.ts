@@ -31,6 +31,12 @@ export interface RealtimeEvents {
   'user:typing': (data: { taskId: string; userId: string; userEmail: string }) => void;
   'user:stop_typing': (data: { taskId: string; userId: string; userEmail: string }) => void;
   
+  // Notifications
+  'notification:created': (data: { notification: any; unreadCount: number }) => void;
+  'notification:updated': (data: { notification: any; unreadCount: number }) => void;
+  'notification:read': (data: { notificationId: string; unreadCount: number }) => void;
+  'notification:unread_count': (data: { unreadCount: number }) => void;
+  
   // Generic events for future use
   'notification': (data: { type: string; message: string; data?: any }) => void;
 }
@@ -205,6 +211,35 @@ class RealtimeService {
     }
     
     return Array.from(onlineUsers.entries()).map(([userId, email]) => ({ userId, email }));
+  }
+
+  // Emit notification events to specific user
+  emitNotificationToUser(userId: string, eventType: 'created' | 'updated' | 'read' | 'unread_count', data: any) {
+    if (!this.io) return;
+    
+    const eventName = `notification:${eventType}` as keyof RealtimeEvents;
+    
+    // Find all connections for this user
+    for (const [socketId, userData] of this.connectedUsers.entries() as any) {
+      if (userData.userId === userId) {
+        this.io.to(socketId).emit(eventName, data);
+      }
+    }
+  }
+
+  // Broadcast notification to multiple users
+  emitNotificationToUsers(userIds: string[], eventType: 'created' | 'updated', data: any) {
+    if (!this.io || !userIds.length) return;
+    
+    const eventName = `notification:${eventType}` as keyof RealtimeEvents;
+    
+    userIds.forEach(userId => {
+      for (const [socketId, userData] of this.connectedUsers.entries() as any) {
+        if (userData.userId === userId) {
+          this.io!.to(socketId).emit(eventName, data);
+        }
+      }
+    });
   }
 
   // Get connection stats

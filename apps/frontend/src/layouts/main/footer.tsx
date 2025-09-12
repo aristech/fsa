@@ -38,7 +38,7 @@ const LINKS = [
 
 const FooterRoot = styled('footer')(({ theme }) => ({
   position: 'relative',
-  backgroundColor: theme.vars.palette.background.default,
+  backgroundColor: theme.vars?.palette.background.default,
 }));
 
 export type FooterProps = React.ComponentProps<typeof FooterRoot>;
@@ -93,7 +93,7 @@ export function Footer({
                 justifyContent: 'center',
                 [theme.breakpoints.up(layoutQuery)]: { mb: 0, justifyContent: 'flex-start' },
               })}
-             />
+            />
           </Grid>
 
           <Grid size={{ xs: 12, [layoutQuery]: 6 }}>

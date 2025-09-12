@@ -66,19 +66,22 @@ export function useRealtimeEvent<K extends keyof RealtimeEvents>(
     callbackRef.current = callback;
   });
 
-  useEffect(() => {
-    const wrappedCallback = ((...args: Parameters<RealtimeEvents[K]>) => {
-      // @ts-expect-error Generic callback variance
-      callbackRef.current(...args);
-    }) as RealtimeEvents[K];
+  useEffect(
+    () => {
+      const wrappedCallback = ((...args: Parameters<RealtimeEvents[K]>) => {
+        // @ts-expect-error Generic callback variance
+        callbackRef.current(...args);
+      }) as RealtimeEvents[K];
 
-    const unsubscribe = realtimeClient.on(event, wrappedCallback);
+      const unsubscribe = realtimeClient.on(event, wrappedCallback);
 
-    return () => {
-      unsubscribe();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [event].concat(deps as any[]));
+      return () => {
+        unsubscribe();
+      };
+       
+    },
+    [event].concat(deps as any[])
+  );
 }
 
 // Hook for task-specific real-time features
@@ -98,42 +101,56 @@ export function useTaskRealtime(taskId: string) {
   }, [taskId]);
 
   // Handle typing indicators
-  useRealtimeEvent('user:typing', useCallback((data) => {
-    if (data.taskId !== taskId) return;
+  useRealtimeEvent(
+    'user:typing',
+    useCallback(
+      (data) => {
+        if (data.taskId !== taskId) return;
 
-    setTypingUsers(prev => {
-      const existing = prev.find(u => u.userId === data.userId);
-      if (existing) return prev;
-      return [...prev, { userId: data.userId, userEmail: data.userEmail }];
-    });
+        setTypingUsers((prev) => {
+          const existing = prev.find((u) => u.userId === data.userId);
+          if (existing) return prev;
+          return [...prev, { userId: data.userId, userEmail: data.userEmail }];
+        });
 
-    // Clear existing timeout for this user
-    const existingTimeout = typingTimeoutRef.current.get(data.userId);
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
-    }
+        // Clear existing timeout for this user
+        const existingTimeout = typingTimeoutRef.current.get(data.userId);
+        if (existingTimeout) {
+          clearTimeout(existingTimeout);
+        }
 
-    // Set new timeout to remove user from typing list
-    const timeout = setTimeout(() => {
-      setTypingUsers(prev => prev.filter(u => u.userId !== data.userId));
-      typingTimeoutRef.current.delete(data.userId);
-    }, 3000); // Remove after 3 seconds of inactivity
+        // Set new timeout to remove user from typing list
+        const timeout = setTimeout(() => {
+          setTypingUsers((prev) => prev.filter((u) => u.userId !== data.userId));
+          typingTimeoutRef.current.delete(data.userId);
+        }, 3000); // Remove after 3 seconds of inactivity
 
-    typingTimeoutRef.current.set(data.userId, timeout);
-  }, [taskId]), [taskId]);
+        typingTimeoutRef.current.set(data.userId, timeout);
+      },
+      [taskId]
+    ),
+    [taskId]
+  );
 
-  useRealtimeEvent('user:stop_typing', useCallback((data) => {
-    if (data.taskId !== taskId) return;
+  useRealtimeEvent(
+    'user:stop_typing',
+    useCallback(
+      (data) => {
+        if (data.taskId !== taskId) return;
 
-    setTypingUsers(prev => prev.filter(u => u.userId !== data.userId));
+        setTypingUsers((prev) => prev.filter((u) => u.userId !== data.userId));
 
-    // Clear timeout for this user
-    const timeout = typingTimeoutRef.current.get(data.userId);
-    if (timeout) {
-      clearTimeout(timeout);
-      typingTimeoutRef.current.delete(data.userId);
-    }
-  }, [taskId]), [taskId]);
+        // Clear timeout for this user
+        const timeout = typingTimeoutRef.current.get(data.userId);
+        if (timeout) {
+          clearTimeout(timeout);
+          typingTimeoutRef.current.delete(data.userId);
+        }
+      },
+      [taskId]
+    ),
+    [taskId]
+  );
 
   // Typing indicator functions
   const startTyping = useCallback(() => {
@@ -145,10 +162,13 @@ export function useTaskRealtime(taskId: string) {
   }, [taskId]);
 
   // Cleanup typing timeouts on unmount
-  useEffect(() => () => {
-      typingTimeoutRef.current.forEach(timeout => clearTimeout(timeout));
+  useEffect(
+    () => () => {
+      typingTimeoutRef.current.forEach((timeout) => clearTimeout(timeout));
       typingTimeoutRef.current.clear();
-    }, []);
+    },
+    []
+  );
 
   return {
     typingUsers,
@@ -158,46 +178,78 @@ export function useTaskRealtime(taskId: string) {
 }
 
 // Hook for real-time comments
-export function useRealtimeComments(taskId: string, onCommentEvent?: {
-  onCreated?: (comment: any) => void;
-  onUpdated?: (commentId: string, comment: any) => void;
-  onDeleted?: (commentId: string) => void;
-}) {
+export function useRealtimeComments(
+  taskId: string,
+  onCommentEvent?: {
+    onCreated?: (comment: any) => void;
+    onUpdated?: (commentId: string, comment: any) => void;
+    onDeleted?: (commentId: string) => void;
+  }
+) {
   // Handle comment events
-  useRealtimeEvent('comment:created', useCallback((data) => {
-    if (data.taskId === taskId) {
-      onCommentEvent?.onCreated?.(data.comment);
-    }
-  }, [taskId, onCommentEvent]), [taskId]);
+  useRealtimeEvent(
+    'comment:created',
+    useCallback(
+      (data) => {
+        if (data.taskId === taskId) {
+          onCommentEvent?.onCreated?.(data.comment);
+        }
+      },
+      [taskId, onCommentEvent]
+    ),
+    [taskId]
+  );
 
-  useRealtimeEvent('comment:updated', useCallback((data) => {
-    if (data.taskId === taskId) {
-      onCommentEvent?.onUpdated?.(data.commentId, data.comment);
-    }
-  }, [taskId, onCommentEvent]), [taskId]);
+  useRealtimeEvent(
+    'comment:updated',
+    useCallback(
+      (data) => {
+        if (data.taskId === taskId) {
+          onCommentEvent?.onUpdated?.(data.commentId, data.comment);
+        }
+      },
+      [taskId, onCommentEvent]
+    ),
+    [taskId]
+  );
 
-  useRealtimeEvent('comment:deleted', useCallback((data) => {
-    if (data.taskId === taskId) {
-      onCommentEvent?.onDeleted?.(data.commentId);
-    }
-  }, [taskId, onCommentEvent]), [taskId]);
+  useRealtimeEvent(
+    'comment:deleted',
+    useCallback(
+      (data) => {
+        if (data.taskId === taskId) {
+          onCommentEvent?.onDeleted?.(data.commentId);
+        }
+      },
+      [taskId, onCommentEvent]
+    ),
+    [taskId]
+  );
 }
 
 // Hook for online users
 export function useOnlineUsers() {
   const [onlineUsers, setOnlineUsers] = useState<Array<{ userId: string; userEmail: string }>>([]);
 
-  useRealtimeEvent('user:online', useCallback((data) => {
-    setOnlineUsers(prev => {
-      const existing = prev.find(u => u.userId === data.userId);
-      if (existing) return prev;
-      return [...prev, { userId: data.userId, userEmail: data.userEmail }];
-    });
-  }, []), []);
+  useRealtimeEvent(
+    'user:online',
+    useCallback((data) => {
+      setOnlineUsers((prev) => {
+        const existing = prev.find((u) => u.userId === data.userId);
+        if (existing) return prev;
+        return [...prev, { userId: data.userId, userEmail: data.userEmail }];
+      });
+    }, []),
+    []
+  );
 
-  useRealtimeEvent('user:offline', useCallback((data) => {
-    setOnlineUsers(prev => prev.filter(u => u.userId !== data.userId));
-  }, []), []);
+  useRealtimeEvent(
+    'user:offline',
+    useCallback((data) => {
+      setOnlineUsers((prev) => prev.filter((u) => u.userId !== data.userId));
+    }, []),
+    []
+  );
 
   return onlineUsers;
 }

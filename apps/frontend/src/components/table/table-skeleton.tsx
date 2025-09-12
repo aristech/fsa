@@ -2,8 +2,8 @@
 
 import type { TableRowProps } from '@mui/material/TableRow';
 
-import Skeleton from '@mui/material/Skeleton';
 import TableRow from '@mui/material/TableRow';
+import Skeleton from '@mui/material/Skeleton';
 import TableCell from '@mui/material/TableCell';
 
 // ----------------------------------------------------------------------

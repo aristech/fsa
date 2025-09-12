@@ -79,9 +79,9 @@ export function HomeMinimal({ sx, ...other }: BoxProps) {
             borderRadius: 2,
             position: 'absolute',
             bgcolor: 'background.default',
-            boxShadow: `-40px 40px 80px 0px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.16)}`,
+            boxShadow: `-40px 40px 80px 0px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.16)}`,
             ...theme.applyStyles('dark', {
-              boxShadow: `-40px 40px 80px 0px ${varAlpha(theme.vars.palette.common.blackChannel, 0.16)}`,
+              boxShadow: `-40px 40px 80px 0px ${varAlpha(theme.vars?.palette.common.blackChannel || '0 0 0', 0.16)}`,
             }),
           }),
         ]}

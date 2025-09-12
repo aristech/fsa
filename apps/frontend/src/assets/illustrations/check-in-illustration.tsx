@@ -13,11 +13,11 @@ function CheckInIllustration({ sx, ...other }: SvgIconProps) {
       xmlns="http://www.w3.org/2000/svg"
       sx={[
         (theme) => ({
-          '--primary-lighter': theme.vars.palette.primary.lighter,
-          '--primary-light': theme.vars.palette.primary.light,
-          '--primary-main': theme.vars.palette.primary.main,
-          '--primary-dark': theme.vars.palette.primary.dark,
-          '--primary-darker': theme.vars.palette.primary.darker,
+          '--primary-lighter': theme.vars?.palette.primary.lighter,
+          '--primary-light': theme.vars?.palette.primary.light,
+          '--primary-main': theme.vars?.palette.primary.main,
+          '--primary-dark': theme.vars?.palette.primary.dark,
+          '--primary-darker': theme.vars?.palette.primary.darker,
           width: 120,
           maxWidth: 1,
           flexShrink: 0,

@@ -99,7 +99,7 @@ export function OrderDetailsItems({
                 minWidth: 640,
                 display: 'flex',
                 alignItems: 'center',
-                borderBottom: `dashed 2px ${theme.vars.palette.background.neutral}`,
+                borderBottom: `dashed 2px ${theme.vars?.palette.background.neutral}`,
               }),
             ]}
           >

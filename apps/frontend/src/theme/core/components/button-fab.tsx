@@ -64,27 +64,27 @@ const filledVariants = [
     props: (props) => isVariant(VARIANTS.filled, props.variant) && props.color === 'default',
     style: ({ theme }) => ({
       ...theme.mixins.filledStyles(theme, 'default', { hover: true }),
-      boxShadow: theme.vars.customShadows.z8,
+      boxShadow: theme.vars?.customShadows.z8,
     }),
   },
   {
     props: (props) => isVariant(VARIANTS.filled, props.variant) && props.color === 'inherit',
     style: ({ theme }) => ({
       ...theme.mixins.filledStyles(theme, 'inherit', { hover: true }),
-      boxShadow: theme.vars.customShadows.z8,
+      boxShadow: theme.vars?.customShadows.z8,
     }),
   },
   ...(colorKeys.common.map((colorKey) => ({
     props: (props) => isVariant(VARIANTS.filled, props.variant) && props.color === colorKey,
     style: ({ theme }) => ({
       ...theme.mixins.filledStyles(theme, colorKey, { hover: true }),
-      boxShadow: theme.vars.customShadows.z8,
+      boxShadow: theme.vars?.customShadows.z8,
     }),
   })) satisfies FabVariants),
   ...(colorKeys.palette.map((colorKey) => ({
     props: (props) => isVariant(VARIANTS.filled, props.variant) && props.color === colorKey,
     style: ({ theme }) => ({
-      boxShadow: theme.vars.customShadows[colorKey],
+      boxShadow: theme.vars?.customShadows[colorKey],
     }),
   })) satisfies FabVariants),
 ] satisfies FabVariants;
@@ -97,11 +97,11 @@ const outlinedVariants = [
       boxShadow: 'none',
       borderStyle: 'solid',
       backgroundColor: 'transparent',
-      borderColor: varAlpha('currentColor', theme.vars.opacity.outlined.border),
+      borderColor: varAlpha('currentColor', theme.vars?.opacity.outlined.border),
       '&:hover': {
         borderColor: 'currentColor',
         boxShadow: '0 0 0 0.75px currentColor',
-        backgroundColor: varAlpha('currentColor', theme.vars.palette.action.hoverOpacity),
+        backgroundColor: varAlpha('currentColor', theme.vars?.palette.action.hoverOpacity),
       },
     }),
   },
@@ -110,28 +110,28 @@ const outlinedVariants = [
       isVariant(VARIANTS.outlined, props.variant) &&
       (props.color === 'default' || props.color === 'inherit'),
     style: ({ theme }) => ({
-      borderColor: theme.vars.palette.shared.buttonOutlined,
+      borderColor: theme.vars?.palette.shared.buttonOutlined,
       '&:hover': {
-        backgroundColor: theme.vars.palette.action.hover,
+        backgroundColor: theme.vars?.palette.action.hover,
       },
     }),
   },
   {
     props: (props) => isVariant(VARIANTS.outlined, props.variant) && props.color === 'default',
     style: ({ theme }) => ({
-      color: theme.vars.palette.action.active,
+      color: theme.vars?.palette.action.active,
     }),
   },
   ...(colorKeys.common.map((colorKey) => ({
     props: (props) => isVariant(VARIANTS.outlined, props.variant) && props.color === colorKey,
     style: ({ theme }) => ({
-      color: theme.vars.palette.common[colorKey],
+      color: theme.vars?.palette.common[colorKey],
     }),
   })) satisfies FabVariants),
   ...(colorKeys.palette.map((colorKey) => ({
     props: (props) => isVariant(VARIANTS.outlined, props.variant) && props.color === colorKey,
     style: ({ theme }) => ({
-      color: theme.vars.palette[colorKey].main,
+      color: theme.vars?.palette[colorKey].main,
     }),
   })) satisfies FabVariants),
 ] satisfies FabVariants;
@@ -177,7 +177,7 @@ const disabledVariants = [
     style: ({ theme }) => ({
       [`&.${fabClasses.disabled}`]: {
         backgroundColor: 'transparent',
-        borderColor: theme.vars.palette.action.disabledBackground,
+        borderColor: theme.vars?.palette.action.disabledBackground,
       },
     }),
   },

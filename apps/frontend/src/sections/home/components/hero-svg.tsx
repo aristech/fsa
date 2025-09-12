@@ -280,10 +280,10 @@ function Dot({ color = 'primary', animate, transition, sx, ...other }: DotProps)
             width: 1,
             height: 1,
             borderRadius: '50%',
-            boxShadow: `0px -2px 4px 0px ${theme.vars.palette[color].main} inset`,
-            background: `linear-gradient(135deg, ${theme.vars.palette[color].lighter}, ${theme.vars.palette[color].light})`,
+            boxShadow: `0px -2px 4px 0px ${theme.vars?.palette[color].main} inset`,
+            background: `linear-gradient(135deg, ${theme.vars?.palette[color].lighter}, ${theme.vars?.palette[color].light})`,
             ...theme.applyStyles('dark', {
-              boxShadow: `0px -2px 4px 0px ${theme.vars.palette[color].dark} inset`,
+              boxShadow: `0px -2px 4px 0px ${theme.vars?.palette[color].dark} inset`,
             }),
           }),
           ...(Array.isArray(sx) ? sx : [sx]),

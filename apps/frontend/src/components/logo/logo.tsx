@@ -31,10 +31,10 @@ export function Logo({
 
   const uniqueId = useId();
 
-  const TEXT_PRIMARY = theme.vars.palette.text.primary;
-  const PRIMARY_LIGHT = theme.vars.palette.primary.light;
-  const PRIMARY_MAIN = theme.vars.palette.primary.main;
-  const PRIMARY_DARKER = theme.vars.palette.primary.dark;
+  const TEXT_PRIMARY = theme.vars?.palette.text.primary;
+  const PRIMARY_LIGHT = theme.vars?.palette.primary.light;
+  const PRIMARY_MAIN = theme.vars?.palette.primary.main;
+  const PRIMARY_DARKER = theme.vars?.palette.primary.dark;
 
   /*
     * OR using local (public folder)

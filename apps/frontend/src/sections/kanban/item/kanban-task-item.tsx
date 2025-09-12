@@ -17,9 +17,9 @@ import { KanbanDetails } from '../details/kanban-details';
 import { useTaskItemDnd } from '../hooks/use-task-item-dnd';
 import { getAttr, isSafari, taskMotionOptions } from '../utils/helpers';
 import {
-  ItemRoot,
   ItemInfo,
   ItemName,
+  ItemRoot,
   ItemStatus,
   ItemContent,
   ItemPreview,
@@ -115,7 +115,6 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
         {/* Client / Work order indicators */}
         {(task.clientName || (task as any).workOrderTitle || (task as any).workOrderNumber) && (
           <Box sx={{ mt: 0.5, mb: 0.5, display: 'flex', gap: 0.5, alignItems: 'flex-start' }}>
-            
             {task.clientName && (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                 <Chip
@@ -136,26 +135,26 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
                     },
                   }}
                 />
-                {((task as any).workOrderTitle) && (
-              <Chip
-                size="small"
-                color="info"
-                variant="soft"
-                label={(task as any).workOrderTitle}
-                sx={{
-                  maxWidth: 150,
-                  fontSize: '0.7rem',
-                  height: 20,
-                  '& .MuiChip-label': {
-                    px: 1,
-                    display: 'block',
-                    overflow: 'hidden',
-                    whiteSpace: 'nowrap',
-                    textOverflow: 'ellipsis',
-                  },
-                }}
-              />
-            )}
+                {(task as any).workOrderTitle && (
+                  <Chip
+                    size="small"
+                    color="info"
+                    variant="soft"
+                    label={(task as any).workOrderTitle}
+                    sx={{
+                      maxWidth: 150,
+                      fontSize: '0.7rem',
+                      height: 20,
+                      '& .MuiChip-label': {
+                        px: 1,
+                        display: 'block',
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        textOverflow: 'ellipsis',
+                      },
+                    }}
+                  />
+                )}
               </Box>
             )}
           </Box>

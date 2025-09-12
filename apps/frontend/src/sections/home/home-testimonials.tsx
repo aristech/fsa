@@ -8,7 +8,7 @@ import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
 import Container from '@mui/material/Container';
 
-import { varFade, MotionViewport, AnimateCountUp } from 'src/components/animate';
+import { varFade, AnimateCountUp, MotionViewport } from 'src/components/animate';
 import {
   useCarousel,
   CarouselDotButtons,
@@ -83,7 +83,7 @@ export function HomeTestimonials({ sx, ...other }: BoxProps) {
           height: '1px',
           border: 'none',
           position: 'absolute',
-          background: `linear-gradient(to right, transparent 0%, ${theme.vars.palette.grey[500]} 50%, transparent 100%)`,
+          background: `linear-gradient(to right, transparent 0%, ${theme.vars?.palette.grey[500]} 50%, transparent 100%)`,
           ...(position === 'top' && { top: 0 }),
           ...(position === 'bottom' && { bottom: 0 }),
         }),
@@ -101,7 +101,7 @@ export function HomeTestimonials({ sx, ...other }: BoxProps) {
           width: '1px',
           opacity: 0.16,
           border: 'none',
-          background: `linear-gradient(to bottom, transparent 0%, ${theme.vars.palette.grey[500]} 50%, transparent 100%)`,
+          background: `linear-gradient(to bottom, transparent 0%, ${theme.vars?.palette.grey[500]} 50%, transparent 100%)`,
           display: { xs: 'none', md: 'block' },
         }),
       ]}
@@ -111,7 +111,6 @@ export function HomeTestimonials({ sx, ...other }: BoxProps) {
   const renderContent = () => (
     <Stack sx={{ position: 'relative', py: { xs: 5, md: 8 } }}>
       {horizontalDivider('top')}
-
 
       <Box
         sx={{
@@ -169,7 +168,7 @@ export function HomeTestimonials({ sx, ...other }: BoxProps) {
                 sx={[
                   (theme) => ({
                     ...theme.mixins.textGradient(
-                      `90deg, ${theme.vars.palette.text.primary}, ${varAlpha(theme.vars.palette.text.primaryChannel, 0.2)}`
+                      `90deg, ${theme.vars?.palette.text.primary}, ${varAlpha(theme.vars?.palette.text.primaryChannel || '0 0 0', 0.2)}`
                     ),
                     opacity: 0.4,
                     typography: 'h6',
@@ -207,4 +206,3 @@ export function HomeTestimonials({ sx, ...other }: BoxProps) {
 }
 
 // ----------------------------------------------------------------------
-

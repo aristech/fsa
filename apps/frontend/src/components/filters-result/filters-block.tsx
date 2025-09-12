@@ -34,7 +34,7 @@ const BlockRoot = styled('div')(({ theme }) => ({
   gap: theme.spacing(1),
   padding: theme.spacing(1),
   borderRadius: theme.shape.borderRadius,
-  border: `dashed 1px ${theme.vars.palette.divider}`,
+  border: `dashed 1px ${theme.vars?.palette.divider}`,
 }));
 
 const BlockLabel = styled('span')(({ theme }) => ({

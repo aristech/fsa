@@ -19,7 +19,7 @@ export const UploadArea = styled('div')(({ theme }) => ({
   borderRadius: '50%',
   position: 'relative',
   padding: theme.spacing(1),
-  border: `1px dashed ${varAlpha(theme.vars.palette.grey['500Channel'], 0.2)}`,
+  border: `1px dashed ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.2)}`,
   [`&.${uploadClasses.state.dragActive}`]: {
     opacity: 0.72,
   },
@@ -28,20 +28,20 @@ export const UploadArea = styled('div')(({ theme }) => ({
     pointerEvents: 'none',
   },
   [`&.${uploadClasses.state.error}`]: {
-    borderColor: theme.vars.palette.error.main,
+    borderColor: theme.vars?.palette.error.main,
     [`& .${uploadClasses.placeholder.root}`]: {
-      color: theme.vars.palette.error.main,
-      backgroundColor: varAlpha(theme.vars.palette.error.mainChannel, 0.08),
+      color: theme.vars?.palette.error.main,
+      backgroundColor: varAlpha(theme.vars?.palette.error.mainChannel || '0 0 0', 0.08),
     },
     [`&.${uploadClasses.state.hasFile}`]: {
-      backgroundColor: varAlpha(theme.vars.palette.error.mainChannel, 0.08),
+      backgroundColor: varAlpha(theme.vars?.palette.error.mainChannel || '0 0 0', 0.08),
     },
   },
   [`&.${uploadClasses.state.hasFile}`]: {
     [`& .${uploadClasses.placeholder.root}`]: {
       opacity: 0,
-      color: theme.vars.palette.common.white,
-      backgroundColor: varAlpha(theme.vars.palette.grey['900Channel'], 0.64),
+      color: theme.vars?.palette.common.white,
+      backgroundColor: varAlpha(theme.vars?.palette.grey['900Channel'] || '0 0 0', 0.64),
     },
     [`&:hover .${uploadClasses.placeholder.root}`]: {
       opacity: 1,
@@ -76,8 +76,8 @@ export const PlaceholderContainer = styled('div')(({ theme }) => ({
   flexDirection: 'column',
   justifyContent: 'center',
   gap: theme.spacing(1),
-  color: theme.vars.palette.text.disabled,
-  backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+  color: theme.vars?.palette.text.disabled,
+  backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
   transition: theme.transitions.create(['opacity'], {
     duration: theme.transitions.duration.shorter,
   }),

@@ -12,8 +12,8 @@ import Drawer from '@mui/material/Drawer';
 import Tooltip from '@mui/material/Tooltip';
 import MenuList from '@mui/material/MenuList';
 import MenuItem from '@mui/material/MenuItem';
-import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
 
 import { paths } from 'src/routes/paths';
 import { usePathname } from 'src/routes/hooks';
@@ -71,8 +71,8 @@ export function AccountDrawer({ data = [], sx, ...other }: AccountDrawerProps) {
         (theme) => ({
           py: 3,
           px: 2.5,
-          borderTop: `dashed 1px ${theme.vars.palette.divider}`,
-          borderBottom: `dashed 1px ${theme.vars.palette.divider}`,
+          borderTop: `dashed 1px ${theme.vars?.palette.divider}`,
+          borderBottom: `dashed 1px ${theme.vars?.palette.divider}`,
           '& li': { p: 0 },
         }),
       ]}
@@ -195,8 +195,8 @@ export function AccountDrawer({ data = [], sx, ...other }: AccountDrawerProps) {
               <IconButton
                 sx={[
                   (theme) => ({
-                    bgcolor: varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
-                    border: `dashed 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.32)}`,
+                    bgcolor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.08),
+                    border: `dashed 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.32)}`,
                   }),
                 ]}
               >

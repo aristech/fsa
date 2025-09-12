@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useBoolean } from 'minimal-shared/hooks';
 
-import { Chip, Stack, Alert, Container, Typography } from '@mui/material';
+import { Chip, Alert, Stack, Container, Typography } from '@mui/material';
 
 import { PersonnelList } from '../personnel-list';
 import { PersonnelFilters } from '../personnel-filters';

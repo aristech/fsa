@@ -18,7 +18,7 @@ export const NavCollapse = styled(Collapse, {
     content: '""',
     opacity: 0.24,
     position: 'absolute',
-    backgroundColor: theme.vars.palette.grey[500],
+    backgroundColor: theme.vars?.palette.grey[500],
   };
 
   return {

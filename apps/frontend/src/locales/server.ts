@@ -8,8 +8,8 @@ import { initReactI18next } from 'react-i18next/initReactI18next';
 
 import {
   defaultNS,
-  i18nOptions,
   fallbackLng,
+  i18nOptions,
   storageConfig,
   supportedLngs,
   i18nResourceLoader,

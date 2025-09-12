@@ -12,7 +12,7 @@ const MuiBackdrop: Components<Theme>['MuiBackdrop'] = {
         {
           props: (props) => !props.invisible,
           style: {
-            backgroundColor: varAlpha(theme.vars.palette.grey['800Channel'], 0.48),
+            backgroundColor: varAlpha(theme.vars?.palette.grey['800Channel'] || '0 0 0', 0.48),
           },
         },
       ],

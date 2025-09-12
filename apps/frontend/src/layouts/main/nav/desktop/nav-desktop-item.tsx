@@ -76,22 +76,22 @@ const ItemRoot = styled(ButtonBase, { shouldForwardProp })<StyledState>(({
     content: '""',
     borderRadius: '50%',
     position: 'absolute',
-    backgroundColor: varAlpha(theme.vars.palette.text.disabledChannel, 0.64),
+    backgroundColor: varAlpha(theme.vars?.palette.text.disabledChannel || '0 0 0', 0.64),
     transition: theme.transitions.create(['opacity', 'scale'], {
       duration: theme.transitions.duration.shorter,
     }),
-    ...(active && { ...dotTransitions.out, backgroundColor: theme.vars.palette.primary.main }),
+    ...(active && { ...dotTransitions.out, backgroundColor: theme.vars?.palette.primary.main }),
   };
 
   const rootItemStyles: CSSObject = {
     ...(open && { '&::before': { ...dotTransitions.out } }),
-    ...(active && { color: theme.vars.palette.primary.main }),
+    ...(active && { color: theme.vars?.palette.primary.main }),
   };
 
   const subItemStyles: CSSObject = {
-    color: theme.vars.palette.text.secondary,
-    '&:hover': { color: theme.vars.palette.text.primary },
-    ...(active && { color: theme.vars.palette.text.primary }),
+    color: theme.vars?.palette.text.secondary,
+    '&:hover': { color: theme.vars?.palette.text.primary },
+    ...(active && { color: theme.vars?.palette.text.primary }),
   };
 
   return {

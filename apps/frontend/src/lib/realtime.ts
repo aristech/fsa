@@ -9,19 +9,19 @@ export interface RealtimeEvents {
   'comment:created': (data: { taskId: string; comment: any }) => void;
   'comment:updated': (data: { taskId: string; commentId: string; comment: any }) => void;
   'comment:deleted': (data: { taskId: string; commentId: string }) => void;
-  
+
   // Task Updates
   'task:updated': (data: { taskId: string; updates: any }) => void;
   'task:status_changed': (data: { taskId: string; oldStatus: string; newStatus: string }) => void;
-  
+
   // User Presence
   'user:online': (data: { userId: string; userEmail: string }) => void;
   'user:offline': (data: { userId: string; userEmail: string }) => void;
   'user:typing': (data: { taskId: string; userId: string; userEmail: string }) => void;
   'user:stop_typing': (data: { taskId: string; userId: string; userEmail: string }) => void;
-  
+
   // Generic events
-  'notification': (data: { type: string; message: string; data?: any }) => void;
+  notification: (data: { type: string; message: string; data?: any }) => void;
 }
 
 class RealtimeClient {
@@ -33,6 +33,17 @@ class RealtimeClient {
   private eventListeners = new Map<string, Set<(...args: any[]) => void>>();
   private currentTaskRooms = new Set<string>();
 
+  // Connection status
+  get isConnected(): boolean {
+    return this.socket?.connected || false;
+  }
+
+  get connectionState(): 'connected' | 'connecting' | 'disconnected' {
+    if (this.socket?.connected) return 'connected';
+    if (this.isConnecting) return 'connecting';
+    return 'disconnected';
+  }
+
   // Connection management
   connect(token?: string): Promise<void> {
     if (this.socket?.connected || this.isConnecting) {
@@ -41,10 +52,12 @@ class RealtimeClient {
 
     return new Promise((resolve, reject) => {
       this.isConnecting = true;
-      
+
       // Get token from sessionStorage if not provided
-      const authToken = token || (typeof window !== 'undefined' ? sessionStorage.getItem('jwt_access_token') : null);
-      
+      const authToken =
+        token ||
+        (typeof window !== 'undefined' ? sessionStorage.getItem('jwt_access_token') : null);
+
       if (!authToken) {
         this.isConnecting = false;
         reject(new Error('No authentication token available'));
@@ -66,12 +79,12 @@ class RealtimeClient {
         console.log('🔌 Connected to real-time server');
         this.isConnecting = false;
         this.reconnectAttempts = 0;
-        
+
         // Rejoin any active task rooms
-        this.currentTaskRooms.forEach(taskId => {
+        this.currentTaskRooms.forEach((taskId) => {
           this.joinTaskRoom(taskId);
         });
-        
+
         resolve();
       });
 
@@ -79,7 +92,7 @@ class RealtimeClient {
         console.error('🔌 Connection error:', error.message);
         this.isConnecting = false;
         this.reconnectAttempts++;
-        
+
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
           reject(new Error(`Failed to connect after ${this.maxReconnectAttempts} attempts`));
         }
@@ -88,7 +101,7 @@ class RealtimeClient {
       this.socket.on('disconnect', (reason) => {
         console.log('🔌 Disconnected:', reason);
         this.isConnecting = false;
-        
+
         if (reason === 'io server disconnect') {
           // Server-initiated disconnect, try to reconnect
           setTimeout(() => this.connect(authToken), this.reconnectDelay);
@@ -115,7 +128,7 @@ class RealtimeClient {
       console.warn('🔌 Cannot join task room: not connected');
       return;
     }
-    
+
     this.socket.emit('join:task', taskId);
     this.currentTaskRooms.add(taskId);
     console.log(`📝 Joined task room: ${taskId}`);
@@ -125,7 +138,7 @@ class RealtimeClient {
     if (!this.socket?.connected) {
       return;
     }
-    
+
     this.socket.emit('leave:task', taskId);
     this.currentTaskRooms.delete(taskId);
     console.log(`📝 Left task room: ${taskId}`);
@@ -147,14 +160,14 @@ class RealtimeClient {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, new Set());
     }
-    
+
     this.eventListeners.get(event)!.add(callback);
-    
+
     // If socket is connected, register the listener
     if (this.socket) {
       this.socket.on(event, callback as any);
     }
-    
+
     // Return unsubscribe function
     return () => this.off(event, callback);
   }
@@ -167,10 +180,25 @@ class RealtimeClient {
         this.eventListeners.delete(event);
       }
     }
-    
+
     if (this.socket) {
       this.socket.off(event, callback as any);
     }
+  }
+
+  // Utility methods
+  getCurrentTaskRooms(): string[] {
+    return Array.from(this.currentTaskRooms);
+  }
+
+  getStats() {
+    return {
+      connected: this.isConnected,
+      connectionState: this.connectionState,
+      activeRooms: this.currentTaskRooms.size,
+      eventListeners: this.eventListeners.size,
+      reconnectAttempts: this.reconnectAttempts,
+    };
   }
 
   private setupEventHandlers(): void {
@@ -195,32 +223,6 @@ class RealtimeClient {
     this.socket.on('reconnect_failed', () => {
       console.error('🔌 Reconnection failed after maximum attempts');
     });
-  }
-
-  // Connection status
-  get isConnected(): boolean {
-    return this.socket?.connected || false;
-  }
-
-  get connectionState(): 'connected' | 'connecting' | 'disconnected' {
-    if (this.socket?.connected) return 'connected';
-    if (this.isConnecting) return 'connecting';
-    return 'disconnected';
-  }
-
-  // Utility methods
-  getCurrentTaskRooms(): string[] {
-    return Array.from(this.currentTaskRooms);
-  }
-
-  getStats() {
-    return {
-      connected: this.isConnected,
-      connectionState: this.connectionState,
-      activeRooms: this.currentTaskRooms.size,
-      eventListeners: this.eventListeners.size,
-      reconnectAttempts: this.reconnectAttempts,
-    };
   }
 }
 

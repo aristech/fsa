@@ -57,5 +57,5 @@ const LoadingContent = styled('div')(({ theme }) => ({
   position: 'fixed',
   alignItems: 'center',
   justifyContent: 'center',
-  backgroundColor: theme.vars.palette.background.default,
+  backgroundColor: theme.vars?.palette.background.default,
 }));

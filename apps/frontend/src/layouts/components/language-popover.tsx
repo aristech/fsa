@@ -71,7 +71,7 @@ export function LanguagePopover({ data = [], sx, ...other }: LanguagePopoverProp
             p: 0,
             width: 40,
             height: 40,
-            ...(open && { bgcolor: theme.vars.palette.action.selected }),
+            ...(open && { bgcolor: theme.vars?.palette.action.selected }),
           }),
           ...(Array.isArray(sx) ? sx : [sx]),
         ]}

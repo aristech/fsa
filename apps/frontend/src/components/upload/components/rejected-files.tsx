@@ -45,8 +45,8 @@ const RejectedList = styled('ul')(({ theme }) => ({
   padding: theme.spacing(2),
   marginTop: theme.spacing(3),
   borderRadius: theme.shape.borderRadius,
-  border: `dashed 1px ${theme.vars.palette.error.main}`,
-  backgroundColor: varAlpha(theme.vars.palette.error.mainChannel, 0.08),
+  border: `dashed 1px ${theme.vars?.palette.error.main}`,
+  backgroundColor: varAlpha(theme.vars?.palette.error.mainChannel || '0 0 0', 0.08),
 }));
 
 const RejectedItem = styled('li')({

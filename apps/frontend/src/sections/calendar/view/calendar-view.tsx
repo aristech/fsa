@@ -18,11 +18,9 @@ import Typography from '@mui/material/Typography';
 
 import { fIsAfter, fIsBetween } from 'src/utils/format-time';
 
-import { deleteTask, updateTaskDates } from 'src/actions/kanban';
-import { DashboardContent } from 'src/layouts/dashboard';
 import { useGetEvents } from 'src/actions/calendar';
-
-import { Iconify } from 'src/components/iconify';
+import { DashboardContent } from 'src/layouts/dashboard';
+import { deleteTask, updateTaskDates } from 'src/actions/kanban';
 
 import { KanbanDetails } from 'src/sections/kanban/details/kanban-details';
 import { CALENDAR_COLOR_OPTIONS } from 'src/sections/calendar/hooks/use-event';
@@ -40,11 +38,11 @@ export function CalendarView() {
   const theme = useTheme();
 
   const openFilters = useBoolean();
-  
+
   // State for task details drawer
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [openTaskDetails, setOpenTaskDetails] = useState(false);
-  
+
   // State for create task dialog
   const [openCreateTask, setOpenCreateTask] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState<any>(null);
@@ -70,17 +68,17 @@ export function CalendarView() {
     /********/
     onClickEventInFilters,
   } = useCalendar();
-  
+
   // Custom handlers for tasks
   const handleSelectRange = (arg: any) => {
     // When user clicks on empty day, open create task dialog
     setSelectedDateRange(arg);
     setOpenCreateTask(true);
   };
-  
+
   const handleClickEvent = (arg: any) => {
     const { event } = arg;
-    
+
     if (event.extendedProps?.type === 'task' || event._def?.extendedProps?.type === 'task') {
       // Open task details drawer for task events
       const taskData = event.extendedProps?.task || event._def?.extendedProps?.task;
@@ -93,34 +91,38 @@ export function CalendarView() {
       originalOnClickEvent(arg);
     }
   };
-  
+
   const handleCloseTaskDetails = () => {
     setOpenTaskDetails(false);
     setSelectedTask(null);
   };
-  
+
   const handleUpdateTask = (updatedTask: any) => {
     // Refresh task events data
     // The SWR will automatically revalidate
     setSelectedTask(updatedTask);
   };
-  
+
   const handleDeleteTask = async () => {
     if (selectedTask) {
       try {
-        await deleteTask(selectedTask.columnId || selectedTask.status, selectedTask.id, selectedTask);
+        await deleteTask(
+          selectedTask.columnId || selectedTask.status,
+          selectedTask.id,
+          selectedTask
+        );
         handleCloseTaskDetails();
       } catch (error) {
         console.error('Failed to delete task:', error);
       }
     }
   };
-  
+
   const handleCloseCreateTask = () => {
     setOpenCreateTask(false);
     setSelectedDateRange(null);
   };
-  
+
   const handleCreateTaskSuccess = (task: any) => {
     handleCloseCreateTask();
     // Task events will be refreshed automatically through SWR
@@ -131,10 +133,16 @@ export function CalendarView() {
     try {
       // Check if this is a task event and has required data
       if (eventData.id && eventData.start && eventData.end) {
-        const event = events.find(e => e.id === eventData.id);
+        const event = events.find((e) => e.id === eventData.id);
         if (event && event.extendedProps?.type === 'task') {
-          const startDate = typeof eventData.start === 'string' ? eventData.start : new Date(eventData.start).toISOString();
-          const endDate = typeof eventData.end === 'string' ? eventData.end : new Date(eventData.end).toISOString();
+          const startDate =
+            typeof eventData.start === 'string'
+              ? eventData.start
+              : new Date(eventData.start).toISOString();
+          const endDate =
+            typeof eventData.end === 'string'
+              ? eventData.end
+              : new Date(eventData.end).toISOString();
           await updateTaskDates(eventData.id, startDate, endDate);
         }
       }
@@ -142,7 +150,6 @@ export function CalendarView() {
       console.error('Failed to update task dates:', error);
     }
   };
-
 
   const canReset =
     currentFilters.colors.length > 0 || (!!currentFilters.startDate && !!currentFilters.endDate);
@@ -158,7 +165,6 @@ export function CalendarView() {
     display: 'flex',
     flexDirection: 'column',
   };
-
 
   const renderFiltersDrawer = () => (
     <CalendarFilters
@@ -272,7 +278,7 @@ export function CalendarView() {
       </DashboardContent>
 
       {renderFiltersDrawer()}
-      
+
       {/* Task Details Drawer */}
       {selectedTask && (
         <KanbanDetails
@@ -283,7 +289,7 @@ export function CalendarView() {
           onDeleteTask={handleDeleteTask}
         />
       )}
-      
+
       {/* Create Task Dialog */}
       <KanbanTaskCreateDialog
         open={openCreateTask}

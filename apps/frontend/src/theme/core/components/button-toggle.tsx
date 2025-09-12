@@ -28,12 +28,12 @@ const colorVariants = [
     style: ({ theme }) => ({
       '&:hover': {
         borderColor: varAlpha(
-          theme.vars.palette[colorKey].mainChannel,
-          theme.vars.opacity.outlined.border
+          theme.vars?.palette[colorKey].mainChannel,
+          theme.vars?.opacity.outlined.border
         ),
         backgroundColor: varAlpha(
-          theme.vars.palette[colorKey].mainChannel,
-          theme.vars.palette.action.hoverOpacity
+          theme.vars?.palette[colorKey].mainChannel,
+          theme.vars?.palette.action.hoverOpacity
         ),
       },
     }),
@@ -57,10 +57,10 @@ const standaloneStateVariants = [
       },
       [`&.${toggleButtonClasses.disabled}`]: {
         boxShadow: 'none',
-        color: theme.vars.palette.action.disabled,
-        borderColor: theme.vars.palette.action.disabledBackground,
+        color: theme.vars?.palette.action.disabled,
+        borderColor: theme.vars?.palette.action.disabledBackground,
         [`&.${toggleButtonClasses.selected}`]: {
-          backgroundColor: theme.vars.palette.action.disabledBackground,
+          backgroundColor: theme.vars?.palette.action.disabledBackground,
         },
       },
     }),
@@ -101,7 +101,7 @@ const MuiToggleButtonGroup: Components<Theme>['MuiToggleButtonGroup'] = {
       ...DIMENSIONS.group,
       gap: 'var(--group-gap)',
       padding: 'var(--group-gap)',
-      border: `1px solid ${theme.vars.palette.shared.paperOutlined}`,
+      border: `1px solid ${theme.vars?.palette.shared.paperOutlined}`,
     }),
     grouped: () => ({
       border: 'none',

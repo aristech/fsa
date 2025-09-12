@@ -49,14 +49,14 @@ const ItemRoot = styled(ButtonBase, {
   padding: theme.spacing(0, 0.75),
   borderRadius: Number(theme.shape.borderRadius) * 0.75,
   '&:hover': {
-    backgroundColor: theme.vars.palette.action.hover,
+    backgroundColor: theme.vars?.palette.action.hover,
   },
   variants: [
     {
       props: (props) => !!props.active,
       style: {
-        backgroundColor: theme.vars.palette.action.selected,
-        border: `solid 1px ${theme.vars.palette.action.hover}`,
+        backgroundColor: theme.vars?.palette.action.selected,
+        border: `solid 1px ${theme.vars?.palette.action.hover}`,
       },
     },
     {

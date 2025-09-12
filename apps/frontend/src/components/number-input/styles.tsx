@@ -57,7 +57,7 @@ export const CaptionText = styled('span')(({ theme }) => ({
   gap: theme.spacing(0.5),
   justifyContent: 'center',
   marginTop: theme.spacing(-0.25),
-  color: theme.vars.palette.text.disabled,
+  color: theme.vars?.palette.text.disabled,
   padding: theme.spacing(0, 0.5, 0.5, 0.5),
 }));
 

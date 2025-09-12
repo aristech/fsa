@@ -51,11 +51,11 @@ const ItemRoot = styled('div', {
   alignItems: 'center',
   gap: theme.spacing(0.5),
   display: 'inline-flex',
-  color: theme.vars.palette.text.primary,
+  color: theme.vars?.palette.text.primary,
   ...(disabled && {
     cursor: 'default',
     pointerEvents: 'none',
-    color: theme.vars.palette.text.disabled,
+    color: theme.vars?.palette.text.disabled,
   }),
 }));
 

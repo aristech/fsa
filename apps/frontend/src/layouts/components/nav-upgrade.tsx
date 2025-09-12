@@ -88,7 +88,7 @@ export function UpgradeBlock({ sx, ...other }: BoxProps) {
         (theme) => ({
           ...theme.mixins.bgGradient({
             images: [
-              `linear-gradient(135deg, ${varAlpha(theme.vars.palette.error.lightChannel, 0.92)}, ${varAlpha(theme.vars.palette.secondary.darkChannel, 0.92)})`,
+              `linear-gradient(135deg, ${varAlpha(theme.vars?.palette.error.lightChannel || '0 0 0', 0.92)}, ${varAlpha(theme.vars?.palette.secondary.darkChannel || '0 0 0', 0.92)})`,
               `url(${CONFIG.assetsDir}/assets/background/background-7.webp)`,
             ],
           }),
@@ -109,7 +109,7 @@ export function UpgradeBlock({ sx, ...other }: BoxProps) {
           height: 1,
           borderRadius: 2,
           position: 'absolute',
-          border: `solid 3px ${varAlpha(theme.vars.palette.common.whiteChannel, 0.16)}`,
+          border: `solid 3px ${varAlpha(theme.vars?.palette.common.whiteChannel || '0 0 0', 0.16)}`,
         })}
       />
 

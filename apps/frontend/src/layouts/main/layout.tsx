@@ -23,7 +23,7 @@ import { MenuButton } from '../components/menu-button';
 import { navData as mainNavData } from '../nav-config-main';
 import { SignInButton } from '../components/sign-in-button';
 import { SettingsButton } from '../components/settings-button';
-import { MainSection, LayoutSection, HeaderSection } from '../core';
+import { MainSection, HeaderSection, LayoutSection } from '../core';
 
 // ----------------------------------------------------------------------
 

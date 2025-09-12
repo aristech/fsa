@@ -12,8 +12,8 @@ import { MoreLinks } from './more-links';
 import { BreadcrumbsLink } from './breadcrumb-link';
 import {
   BreadcrumbsRoot,
-  BreadcrumbsHeading,
   BreadcrumbsContent,
+  BreadcrumbsHeading,
   BreadcrumbsContainer,
   BreadcrumbsSeparator,
 } from './styles';

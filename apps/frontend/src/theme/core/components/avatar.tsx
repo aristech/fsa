@@ -57,8 +57,8 @@ const customRenderSurplus = (surplus: number) => (
         alignItems: 'center',
         justifyContent: 'center',
         position: 'absolute',
-        color: theme.vars.palette.primary.dark,
-        backgroundColor: theme.vars.palette.primary.lighter,
+        color: theme.vars?.palette.primary.dark,
+        backgroundColor: theme.vars?.palette.primary.lighter,
         fontSize: {
           '@': theme.typography.pxToRem(11),
           '@32': theme.typography.pxToRem(12),
@@ -80,10 +80,10 @@ const colorVariants = [
   {
     props: {},
     style: ({ theme }) => ({
-      color: theme.vars.palette.action.active,
-      [parseCssVar(theme.vars.palette.Avatar.defaultBg)]: theme.vars.palette.grey[300],
+      color: theme.vars?.palette.action.active,
+      [parseCssVar(theme.vars?.palette.Avatar.defaultBg || '--avatar-default-bg')]: theme.vars?.palette.grey[300],
       ...theme.applyStyles('dark', {
-        [parseCssVar(theme.vars.palette.Avatar.defaultBg)]: theme.vars.palette.grey[700],
+        [parseCssVar(theme.vars?.palette.Avatar.defaultBg || '--avatar-default-bg')]: theme.vars?.palette.grey[700],
       }),
     }),
   },
@@ -98,8 +98,8 @@ const colorVariants = [
     props: (props) =>
       props.color === colorKey || (!!props.alt && getAvatarColor(props.alt) === colorKey),
     style: ({ theme }) => ({
-      color: theme.vars.palette[colorKey].contrastText,
-      backgroundColor: theme.vars.palette[colorKey].main,
+      color: theme.vars?.palette[colorKey].contrastText,
+      backgroundColor: theme.vars?.palette[colorKey].main,
     }),
   })) satisfies AvatarVariants),
 ] satisfies AvatarVariants;

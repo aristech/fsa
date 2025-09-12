@@ -1,25 +1,23 @@
 'use client';
 
 import type { Dayjs } from 'dayjs';
-
 import type { PaperProps } from '@mui/material/Paper';
 import type { DialogProps } from '@mui/material/Dialog';
-
 import type { UseDateRangePickerReturn } from './use-date-range-picker';
 
-import { useCallback } from 'react';
 import dayjs from 'dayjs';
+import { useCallback } from 'react';
 
-import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
-import FormHelperText from '@mui/material/FormHelperText';
 import Stack from '@mui/material/Stack';
+import Dialog from '@mui/material/Dialog';
+import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import FormHelperText from '@mui/material/FormHelperText';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { DateCalendar, dateCalendarClasses } from '@mui/x-date-pickers/DateCalendar';
@@ -59,21 +57,27 @@ export function CustomDateRangePicker({
   }, [onClose, onSubmit]);
 
   // Helper functions for time handling
-  const handleStartTimeChange = useCallback((newTime: string) => {
-    if (startDate && newTime) {
-      const [hours, minutes] = newTime.split(':').map(Number);
-      const newStartDate = startDate.hour(hours).minute(minutes);
-      onChangeStartDate(newStartDate);
-    }
-  }, [startDate, onChangeStartDate]);
+  const handleStartTimeChange = useCallback(
+    (newTime: string) => {
+      if (startDate && newTime) {
+        const [hours, minutes] = newTime.split(':').map(Number);
+        const newStartDate = startDate.hour(hours).minute(minutes);
+        onChangeStartDate(newStartDate);
+      }
+    },
+    [startDate, onChangeStartDate]
+  );
 
-  const handleEndTimeChange = useCallback((newTime: string) => {
-    if (endDate && newTime) {
-      const [hours, minutes] = newTime.split(':').map(Number);
-      const newEndDate = endDate.hour(hours).minute(minutes);
-      onChangeEndDate(newEndDate);
-    }
-  }, [endDate, onChangeEndDate]);
+  const handleEndTimeChange = useCallback(
+    (newTime: string) => {
+      if (endDate && newTime) {
+        const [hours, minutes] = newTime.split(':').map(Number);
+        const newEndDate = endDate.hour(hours).minute(minutes);
+        onChangeEndDate(newEndDate);
+      }
+    },
+    [endDate, onChangeEndDate]
+  );
 
   const getTimeString = useCallback((date: Dayjs | null) => {
     if (!date) {
@@ -96,29 +100,36 @@ export function CustomDateRangePicker({
     return options;
   }, []);
 
-  const TimeSelector = useCallback(({ label, value, onChange }: { 
-    label: string; 
-    value: string; 
-    onChange: (value: string) => void;
-  }) => (
-    <TextField
-      select
-      label={label}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      size="small"
-      SelectProps={{
-        native: true,
-      }}
-      sx={{ minWidth: 100 }}
-    >
-      {timeOptions().map((time) => (
-        <option key={time} value={time}>
-          {time}
-        </option>
-      ))}
-    </TextField>
-  ), [timeOptions]);
+  const TimeSelector = useCallback(
+    ({
+      label,
+      value,
+      onChange,
+    }: {
+      label: string;
+      value: string;
+      onChange: (value: string) => void;
+    }) => (
+      <TextField
+        select
+        label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        size="small"
+        SelectProps={{
+          native: true,
+        }}
+        sx={{ minWidth: 100 }}
+      >
+        {timeOptions().map((time) => (
+          <option key={time} value={time}>
+            {time}
+          </option>
+        ))}
+      </TextField>
+    ),
+    [timeOptions]
+  );
 
   const dialogPaperSx = (slotProps?.paper as PaperProps)?.sx;
 
@@ -151,7 +162,7 @@ export function CustomDateRangePicker({
             flexDirection: isCalendarView ? 'row' : 'column',
             [`& .${dateCalendarClasses.root}`]: {
               borderRadius: 2,
-              border: `dashed 1px ${theme.vars.palette.divider}`,
+              border: `dashed 1px ${theme.vars?.palette.divider}`,
             },
           }),
         ]}
@@ -159,7 +170,9 @@ export function CustomDateRangePicker({
         {isCalendarView ? (
           <>
             <div>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>Start day</Typography>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Start day
+              </Typography>
               <DateCalendar value={startDate} onChange={onChangeStartDate} />
               {enableTime && (
                 <Stack direction="row" spacing={1} sx={{ mt: 2, px: 1 }}>
@@ -172,7 +185,9 @@ export function CustomDateRangePicker({
               )}
             </div>
             <div>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>End day</Typography>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                End day
+              </Typography>
               <DateCalendar value={endDate} onChange={onChangeEndDate} />
               {enableTime && (
                 <Stack direction="row" spacing={1} sx={{ mt: 2, px: 1 }}>
@@ -189,16 +204,16 @@ export function CustomDateRangePicker({
           <>
             {enableTime ? (
               <>
-                <DateTimePicker 
-                  label="Start date & time" 
-                  value={startDate} 
+                <DateTimePicker
+                  label="Start date & time"
+                  value={startDate}
                   onChange={onChangeStartDate}
                   minutesStep={15}
                   ampm={false}
                 />
-                <DateTimePicker 
-                  label="End date & time" 
-                  value={endDate} 
+                <DateTimePicker
+                  label="End date & time"
+                  value={endDate}
                   onChange={onChangeEndDate}
                   minutesStep={15}
                   ampm={false}

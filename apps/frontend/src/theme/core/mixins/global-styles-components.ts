@@ -30,8 +30,8 @@ export function menuItemStyles(theme: Theme): CSSObject {
     },
     [`&.${menuItemClasses.selected}`]: {
       fontWeight: theme.typography.fontWeightSemiBold,
-      backgroundColor: theme.vars.palette.action.selected,
-      '&:hover': { backgroundColor: theme.vars.palette.action.hover },
+      backgroundColor: theme.vars?.palette.action.selected,
+      '&:hover': { backgroundColor: theme.vars?.palette.action.hover },
     },
     [`& .${checkboxClasses.root}`]: {
       padding: theme.spacing(0.5),
@@ -39,8 +39,8 @@ export function menuItemStyles(theme: Theme): CSSObject {
       marginRight: theme.spacing(0.5),
     },
     [`&.${autocompleteClasses.option}[aria-selected="true"]`]: {
-      backgroundColor: theme.vars.palette.action.selected,
-      '&:hover': { backgroundColor: theme.vars.palette.action.hover },
+      backgroundColor: theme.vars?.palette.action.selected,
+      '&:hover': { backgroundColor: theme.vars?.palette.action.hover },
     },
     [`&+.${dividerClasses.root}`]: {
       margin: theme.spacing(0.5, 0),
@@ -67,7 +67,7 @@ export function menuItemStyles(theme: Theme): CSSObject {
  * // Paper with dropdown styles and custom blur
  * ...theme.mixins.paperStyles(theme, {
  *   blur: 10,
- *   color: varAlpha(theme.vars.palette.background.defaultChannel, 0.9),
+ *   color: varAlpha(theme.vars?.palette.background.defaultChannel || '0 0 0', 0.9),
  *   dropdown: true
  * })
  */
@@ -99,10 +99,10 @@ export function paperStyles(theme: Theme, options?: PaperStyleOptions): CSSObjec
     }),
     backdropFilter: `blur(${blur}px)`,
     WebkitBackdropFilter: `blur(${blur}px)`,
-    backgroundColor: color ?? varAlpha(theme.vars.palette.background.paperChannel, 0.9),
+    backgroundColor: color ?? varAlpha(theme.vars?.palette.background.paperChannel || '0 0 0', 0.9),
     ...(dropdown && {
       padding: theme.spacing(0.5),
-      boxShadow: theme.vars.customShadows.dropdown,
+      boxShadow: theme.vars?.customShadows.dropdown,
       borderRadius: `${Number(theme.shape.borderRadius) * 1.25}px`,
     }),
   };
@@ -121,7 +121,7 @@ export function paperStyles(theme: Theme, options?: PaperStyleOptions): CSSObjec
  * @example
  * // Filled styles
  * ...theme.mixins.filledStyles(theme, 'inherit', { hover: true })
- * ...theme.mixins.filledStyles(theme, 'inherit', { hover: { boxShadow: theme.vars.customShadows.z8 }, })
+ * ...theme.mixins.filledStyles(theme, 'inherit', { hover: { boxShadow: theme.vars?.customShadows.z8 }, })
  *
  * // Soft styles
  * ...theme.mixins.softStyles(theme, 'inherit')
@@ -155,12 +155,12 @@ export function filledStyles(theme: Theme, colorKey: ColorKey, options?: StyleOp
 
   if (colorKey === 'default') {
     const base: CSSObject = {
-      color: theme.vars.palette.grey[800],
-      backgroundColor: theme.vars.palette.grey[300],
+      color: theme.vars?.palette.grey[800],
+      backgroundColor: theme.vars?.palette.grey[300],
     };
 
     const hover: CSSObject = getHoverStyles(options?.hover, {
-      backgroundColor: theme.vars.palette.grey[400],
+      backgroundColor: theme.vars?.palette.grey[400],
     });
 
     return { ...base, ...hover };
@@ -168,18 +168,18 @@ export function filledStyles(theme: Theme, colorKey: ColorKey, options?: StyleOp
 
   if (colorKey === 'inherit') {
     const base: CSSObject = {
-      color: theme.vars.palette.common.white,
-      backgroundColor: theme.vars.palette.grey[800],
+      color: theme.vars?.palette.common.white,
+      backgroundColor: theme.vars?.palette.grey[800],
       ...theme.applyStyles('dark', {
-        color: theme.vars.palette.grey[800],
-        backgroundColor: theme.vars.palette.common.white,
+        color: theme.vars?.palette.grey[800],
+        backgroundColor: theme.vars?.palette.common.white,
       }),
     };
 
     const hover: CSSObject = getHoverStyles(options?.hover, {
-      backgroundColor: theme.vars.palette.grey[700],
+      backgroundColor: theme.vars?.palette.grey[700],
       ...theme.applyStyles('dark', {
-        backgroundColor: theme.vars.palette.grey[400],
+        backgroundColor: theme.vars?.palette.grey[400],
       }),
     });
 
@@ -188,14 +188,14 @@ export function filledStyles(theme: Theme, colorKey: ColorKey, options?: StyleOp
 
   if (colorKey === 'white' || colorKey === 'black') {
     const base: CSSObject = {
-      color: `${theme.vars.palette.common[colorKey === 'white' ? 'black' : 'white']}`,
-      backgroundColor: theme.vars.palette.common[colorKey],
+      color: `${theme.vars?.palette.common[colorKey === 'white' ? 'black' : 'white']}`,
+      backgroundColor: theme.vars?.palette.common[colorKey],
     };
 
     const hover: CSSObject = getHoverStyles(options?.hover, {
       backgroundColor: varAlpha(
-        `${theme.vars.palette.common[`${colorKey}Channel`]}`,
-        theme.vars.opacity.filled.commonHoverBg
+        `${theme.vars?.palette.common[`${colorKey}Channel`]}`,
+        theme.vars?.opacity.filled.commonHoverBg
       ),
     });
 
@@ -204,11 +204,11 @@ export function filledStyles(theme: Theme, colorKey: ColorKey, options?: StyleOp
 
   const colorPalette: Record<'base' | 'hover', CSSObject> = {
     base: {
-      color: theme.vars.palette[colorKey].contrastText,
-      backgroundColor: theme.vars.palette[colorKey].main,
+      color: theme.vars?.palette[colorKey].contrastText,
+      backgroundColor: theme.vars?.palette[colorKey].main,
     },
     hover: getHoverStyles(options?.hover, {
-      backgroundColor: theme.vars.palette[colorKey].dark,
+      backgroundColor: theme.vars?.palette[colorKey].dark,
     }),
   };
 
@@ -233,13 +233,13 @@ export function softStyles(theme: Theme, colorKey: ColorKey, options?: StyleOpti
   if (colorKey === 'inherit') {
     const base: CSSObject = {
       boxShadow: 'none',
-      backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], theme.vars.opacity.soft.bg),
+      backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', theme.vars?.opacity.soft.bg),
     };
 
     const hover: CSSObject = getHoverStyles(options?.hover, {
       backgroundColor: varAlpha(
-        theme.vars.palette.grey['500Channel'],
-        theme.vars.opacity.soft.hoverBg
+        theme.vars?.palette.grey['500Channel'],
+        theme.vars?.opacity.soft.hoverBg
       ),
     });
 
@@ -249,12 +249,12 @@ export function softStyles(theme: Theme, colorKey: ColorKey, options?: StyleOpti
   if (colorKey === 'white' || colorKey === 'black') {
     const base: CSSObject = {
       boxShadow: 'none',
-      color: theme.vars.palette.common[colorKey],
-      backgroundColor: varAlpha('currentColor', theme.vars.opacity.soft.commonBg),
+      color: theme.vars?.palette.common[colorKey],
+      backgroundColor: varAlpha('currentColor', theme.vars?.opacity.soft.commonBg),
     };
 
     const hover: CSSObject = getHoverStyles(options?.hover, {
-      backgroundColor: varAlpha('currentColor', theme.vars.opacity.soft.commonHoverBg),
+      backgroundColor: varAlpha('currentColor', theme.vars?.opacity.soft.commonHoverBg),
     });
 
     return { ...base, ...hover };
@@ -263,19 +263,19 @@ export function softStyles(theme: Theme, colorKey: ColorKey, options?: StyleOpti
   const colorPalette: Record<'base' | 'hover', CSSObject> = {
     base: {
       boxShadow: 'none',
-      color: theme.vars.palette[colorKey].dark,
+      color: theme.vars?.palette[colorKey].dark,
       backgroundColor: varAlpha(
-        theme.vars.palette[colorKey].mainChannel,
-        theme.vars.opacity.soft.bg
+        theme.vars?.palette[colorKey].mainChannel,
+        theme.vars?.opacity.soft.bg
       ),
       ...theme.applyStyles('dark', {
-        color: theme.vars.palette[colorKey].light,
+        color: theme.vars?.palette[colorKey].light,
       }),
     },
     hover: getHoverStyles(options?.hover, {
       backgroundColor: varAlpha(
-        theme.vars.palette[colorKey].mainChannel,
-        theme.vars.opacity.soft.hoverBg
+        theme.vars?.palette[colorKey].mainChannel,
+        theme.vars?.opacity.soft.hoverBg
       ),
     }),
   };

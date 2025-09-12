@@ -43,7 +43,7 @@ export function AuthSplitSection({
         (theme) => ({
           ...theme.mixins.bgGradient({
             images: [
-              `linear-gradient(0deg, ${varAlpha(theme.vars.palette.background.defaultChannel, 0.92)}, ${varAlpha(theme.vars.palette.background.defaultChannel, 0.92)})`,
+              `linear-gradient(0deg, ${varAlpha(theme.vars?.palette.background.defaultChannel || '0 0 0', 0.92)}, ${varAlpha(theme.vars?.palette.background.defaultChannel || '0 0 0', 0.92)})`,
               `url(${CONFIG.assetsDir}/assets/background/background-3-blur.webp)`,
             ],
           }),

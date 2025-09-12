@@ -47,7 +47,7 @@ const MuiCheckbox: Components<Theme>['MuiCheckbox'] = {
           props: (props) => props.color === 'default',
           style: {
             [`&.${checkboxClasses.checked}`]: {
-              color: theme.vars.palette.text.primary,
+              color: theme.vars?.palette.text.primary,
             },
           },
         },

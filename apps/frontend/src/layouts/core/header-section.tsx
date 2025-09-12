@@ -55,7 +55,7 @@ export function HeaderSection({
       sx={[
         (theme) => ({
           ...(isOffset && {
-            '--color': `var(--offset-color, ${theme.vars.palette.text.primary})`,
+            '--color': `var(--offset-color, ${theme.vars?.palette.text.primary})`,
           }),
         }),
         ...(Array.isArray(sx) ? sx : [sx]),
@@ -102,7 +102,7 @@ const HeaderRoot = styled(AppBar, {
 
   const bgStyles: CSSObject = {
     ...theme.mixins.bgBlur({
-      color: varAlpha(theme.vars.palette.background.defaultChannel, 0.8),
+      color: varAlpha(theme.vars?.palette.background.defaultChannel || '0 0 0', 0.8),
     }),
     ...pauseStyles,
     top: 0,
@@ -123,7 +123,7 @@ const HeaderRoot = styled(AppBar, {
     borderRadius: '50%',
     width: `calc(100% - 48px)`,
     zIndex: pauseZindex.bottom,
-    boxShadow: theme.vars.customShadows.z8,
+    boxShadow: theme.vars?.customShadows.z8,
     ...(isOffset && { opacity: 0.48, visibility: 'visible' }),
   };
 

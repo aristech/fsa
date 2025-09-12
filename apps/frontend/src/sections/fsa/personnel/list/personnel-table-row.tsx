@@ -9,11 +9,11 @@ import {
   Stack,
   Avatar,
   Tooltip,
-  TableRow,
   Checkbox,
+  TableRow,
   TableCell,
-  Typography,
   IconButton,
+  Typography,
 } from '@mui/material';
 
 import { Iconify } from 'src/components/iconify';

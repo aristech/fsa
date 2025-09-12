@@ -37,7 +37,7 @@ export function NavItemDashboard({ path, sx, ...other }: NavItemDashboardProps) 
               easing: theme.transitions.easing.sharp,
             }),
             '&:hover': {
-              bgcolor: varAlpha(theme.vars.palette.grey['500Channel'], 0.12),
+              bgcolor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.12),
             },
           }),
           ...(Array.isArray(sx) ? sx : [sx]),

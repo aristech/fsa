@@ -8,7 +8,7 @@ import type {
   DateSelectArg,
   EventClickArg,
 } from '@fullcalendar/core';
-import type { ICalendarView, ICalendarRange, ICalendarEvent } from 'src/types/calendar';
+import type { ICalendarView, ICalendarEvent, ICalendarRange } from 'src/types/calendar';
 
 import { useRef, useState, useEffect, useCallback } from 'react';
 

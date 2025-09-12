@@ -18,12 +18,12 @@ const getRtlPosition = (position: 'left' | 'right', isRtl: boolean, value: numbe
 });
 
 const createBackgroundStyles = (theme: Theme, color: 'cyan' | 'red', size: number): CSSObject => {
-  const colorChannel = theme.vars.palette[color === 'cyan' ? 'info' : 'error'].mainChannel;
+  const colorChannel = theme.vars?.palette[color === 'cyan' ? 'info' : 'error'].mainChannel;
 
   return {
     backgroundRepeat: 'no-repeat',
     backgroundSize: `${size * 3}px ${size * 3}px`,
-    backgroundColor: theme.vars.palette.background.paper,
+    backgroundColor: theme.vars?.palette.background.paper,
     backgroundPosition: color === 'cyan' ? 'top right' : 'bottom left',
     backgroundImage: `linear-gradient(45deg, ${varAlpha(colorChannel, 0.1)}, ${varAlpha(colorChannel, 0.1)})`,
   };
@@ -51,10 +51,10 @@ export const Arrow = styled('span', {
     backdropFilter: '6px',
     borderBottomLeftRadius: size / 4,
     clipPath: 'polygon(0% 0%, 100% 100%, 0% 100%)',
-    backgroundColor: theme.vars.palette.background.paper,
-    border: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.12)}`,
+    backgroundColor: theme.vars?.palette.background.paper,
+    border: `solid 1px ${varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.12)}`,
     ...theme.applyStyles('dark', {
-      border: `solid 1px ${varAlpha(theme.vars.palette.common.blackChannel, 0.12)}`,
+      border: `solid 1px ${varAlpha(theme.vars?.palette.common.blackChannel || '0 0 0', 0.12)}`,
     }),
 
     variants: [

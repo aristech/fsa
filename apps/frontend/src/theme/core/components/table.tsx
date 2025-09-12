@@ -22,9 +22,9 @@ const MuiTableRow: Components<Theme>['MuiTableRow'] = {
   styleOverrides: {
     root: ({ theme }) => ({
       [`&.${tableRowClasses.selected}`]: {
-        backgroundColor: varAlpha(theme.vars.palette.primary.darkChannel, 0.04),
+        backgroundColor: varAlpha(theme.vars?.palette.primary.darkChannel || '0 0 0', 0.04),
         '&:hover': {
-          backgroundColor: varAlpha(theme.vars.palette.primary.darkChannel, 0.08),
+          backgroundColor: varAlpha(theme.vars?.palette.primary.darkChannel || '0 0 0', 0.08),
         },
       },
       '&:last-of-type': {
@@ -44,13 +44,13 @@ const MuiTableCell: Components<Theme>['MuiTableCell'] = {
     },
     head: ({ theme }) => ({
       fontSize: theme.typography.pxToRem(14),
-      color: theme.vars.palette.text.secondary,
+      color: theme.vars?.palette.text.secondary,
       fontWeight: theme.typography.fontWeightSemiBold,
-      backgroundColor: theme.vars.palette.background.neutral,
+      backgroundColor: theme.vars?.palette.background.neutral,
     }),
     stickyHeader: ({ theme }) => ({
-      backgroundColor: theme.vars.palette.background.paper,
-      backgroundImage: `linear-gradient(to bottom, ${theme.vars.palette.background.neutral}, ${theme.vars.palette.background.neutral})`,
+      backgroundColor: theme.vars?.palette.background.paper,
+      backgroundImage: `linear-gradient(to bottom, ${theme.vars?.palette.background.neutral}, ${theme.vars?.palette.background.neutral})`,
     }),
     paddingCheckbox: ({ theme }) => ({
       paddingLeft: theme.spacing(1),

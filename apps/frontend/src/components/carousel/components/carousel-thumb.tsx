@@ -55,7 +55,7 @@ const ThumbRoot = styled(ButtonBase, {
   variants: [
     {
       props: { selected: true },
-      style: { opacity: 1, boxShadow: `0 0 0 2px ${theme.vars.palette.primary.main}` },
+      style: { opacity: 1, boxShadow: `0 0 0 2px ${theme.vars?.palette.primary.main}` },
     },
   ],
 }));

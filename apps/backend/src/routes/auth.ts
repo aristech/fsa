@@ -12,6 +12,7 @@ import { TenantSetupService } from "../services/tenant-setup";
 const signInSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  tenantSlug: z.string().min(1),
 });
 
 const signUpSchema = z.object({
@@ -19,6 +20,7 @@ const signUpSchema = z.object({
   lastName: z.string().min(1),
   email: z.string().email(),
   password: z.string().min(6),
+  tenantSlug: z.string().min(1),
   role: z
     .enum(["admin", "manager", "technician", "dispatcher", "customer"])
     .optional(),
@@ -53,16 +55,40 @@ export async function authRoutes(fastify: FastifyInstance) {
   // Sign in
   fastify.post("/sign-in", async (request, reply) => {
     try {
-      const { email, password } = signInSchema.parse(request.body);
+      const { email, password, tenantSlug } = signInSchema.parse(request.body);
 
-      // Find user
-      const user = await User.findOne({ email });
+      // Find tenant by slug first
+      console.log(`🔍 Looking for tenant with slug: "${tenantSlug}"`);
+      const tenant = await Tenant.findOne({ slug: tenantSlug, isActive: true });
+      if (!tenant) {
+        console.log(`❌ Tenant not found or not active for slug: "${tenantSlug}"`);
+        // Get available tenants for debugging
+        const availableTenants = await Tenant.find({ isActive: true }).select('slug name').lean();
+        console.log('Available tenants:', availableTenants.map(t => ({ slug: t.slug, name: t.name })));
+        return reply.status(401).send({
+          success: false,
+          message: "Invalid tenant or tenant not active",
+        });
+      }
+      console.log(`✅ Found tenant: ${tenant.name} (${tenant._id})`);
+
+      // Find user within the specific tenant
+      console.log(`🔍 Looking for user with email: "${email}" in tenant: ${tenant._id}`);
+      const user = await User.findOne({ email, tenantId: tenant._id });
       if (!user) {
+        console.log(`❌ User not found with email: "${email}" in tenant: ${tenant._id}`);
+        // Check if user exists in other tenants
+        const userInOtherTenants = await User.findOne({ email }).select('tenantId email').lean();
+        if (userInOtherTenants) {
+          console.log(`⚠️  User exists in different tenant: ${userInOtherTenants.tenantId}`);
+        }
         return reply.status(401).send({
           success: false,
           message: "Invalid credentials",
         });
       }
+      console.log(`✅ Found user: ${user.email} (${user._id})`);
+    
 
       // Verify password
       const isValidPassword = await bcrypt.compare(password, user.password);
@@ -102,6 +128,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           userId: user._id,
           email: user.email,
           role: user.role || "admin",
+          tenantId: user.tenantId,
         },
         process.env.JWT_SECRET || "fallback-secret",
         { expiresIn: "7d" }
@@ -137,15 +164,25 @@ export async function authRoutes(fastify: FastifyInstance) {
         lastName,
         email,
         password,
+        tenantSlug,
         role = "admin",
       } = signUpSchema.parse(request.body);
 
-      // Check if user already exists
-      const existingUser = await User.findOne({ email });
+      // Find tenant by slug first
+      const tenant = await Tenant.findOne({ slug: tenantSlug, isActive: true });
+      if (!tenant) {
+        return reply.status(400).send({
+          success: false,
+          message: "Invalid tenant or tenant not active",
+        });
+      }
+
+      // Check if user already exists in this tenant
+      const existingUser = await User.findOne({ email, tenantId: tenant._id });
       if (existingUser) {
         return reply.status(400).send({
           success: false,
-          message: "User already exists",
+          message: "User already exists in this tenant",
         });
       }
 
@@ -159,7 +196,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         email,
         password: hashedPassword,
         role: role,
-        tenantId: "", // TODO: Get from context
+        tenantId: tenant._id,
         permissions: [],
         isActive: true,
       });
@@ -172,6 +209,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           userId: user._id,
           email: user.email,
           role: role,
+          tenantId: user.tenantId,
         },
         process.env.JWT_SECRET || "fallback-secret",
         { expiresIn: "7d" }
