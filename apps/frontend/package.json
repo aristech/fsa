@@ -71,6 +71,7 @@
     "autosuggest-highlight": "^3.3.4",
     "axios": "^1.11.0",
     "bcryptjs": "^3.0.2",
+    "date-fns": "^2.30.0",
     "dayjs": "^1.11.13",
     "embla-carousel": "^8.6.0",
     "embla-carousel-auto-scroll": "^8.6.0",

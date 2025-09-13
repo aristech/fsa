@@ -1,39 +1,49 @@
 'use client';
 
-import { useState } from 'react';
-import { usePathname } from 'next/navigation';
-import { Box, Container, useTheme } from '@mui/material';
-import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
-import { CalendarToday, Assignment, Inventory, Notifications, Person } from '@mui/icons-material';
-import { useAuth } from '@/auth/context/auth-provider';
+import { Box, useTheme, Container } from '@mui/material';
+
+import { Iconify } from 'src/components/iconify';
+import {
+  MobileHeader,
+  MobileBottomNavigation,
+  type MobileNavigationItem,
+} from 'src/components/mobile';
+
+import { useAuthContext } from 'src/auth/hooks/use-auth-context';
 
 interface FieldLayoutProps {
   children: React.ReactNode;
 }
 
-const navigationItems = [
-  { label: 'Calendar', icon: CalendarToday, path: '/field' },
-  { label: 'Tasks', icon: Assignment, path: '/field/tasks' },
-  { label: 'Materials', icon: Inventory, path: '/field/materials' },
-  { label: 'Notifications', icon: Notifications, path: '/field/notifications' },
-  { label: 'Profile', icon: Person, path: '/field/profile' },
+const navigationItems: MobileNavigationItem[] = [
+  {
+    label: 'Calendar',
+    icon: <Iconify icon="solar:calendar-bold" width={24} />,
+    path: '/field/calendar',
+  },
+  {
+    label: 'Tasks',
+    icon: <Iconify icon="solar:clipboard-list-bold" width={24} />,
+    path: '/field/tasks',
+    badge: 3,
+  },
+  {
+    label: 'Reports',
+    icon: <Iconify icon="solar:document-text-bold" width={24} />,
+    path: '/field/reports',
+  },
+  {
+    label: 'Notifications',
+    icon: <Iconify icon="solar:bell-bold" width={24} />,
+    path: '/field/notifications',
+    badge: 5,
+  },
+  { label: 'Profile', icon: <Iconify icon="solar:user-bold" width={24} />, path: '/field/profile' },
 ];
 
 export function FieldLayout({ children }: FieldLayoutProps) {
   const theme = useTheme();
-  const pathname = usePathname();
-  const { user } = useAuth();
-  const [value, setValue] = useState(0);
-
-  // Find current navigation index based on pathname
-  const currentIndex = navigationItems.findIndex(
-    (item) => pathname === item.path || pathname.startsWith(item.path + '/')
-  );
-
-  const handleNavigationChange = (event: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue);
-    // Navigation will be handled by Next.js Link components
-  };
+  const { user } = useAuthContext();
 
   return (
     <Box
@@ -46,107 +56,41 @@ export function FieldLayout({ children }: FieldLayoutProps) {
         paddingBottom: { xs: '80px', sm: '0px' }, // Space for bottom navigation on mobile
       }}
     >
-      {/* Header */}
-      <Paper
-        elevation={1}
-        sx={{
-          position: 'sticky',
-          top: 0,
-          zIndex: theme.zIndex.appBar,
-          backgroundColor: theme.palette.primary.main,
-          color: theme.palette.primary.contrastText,
-          padding: { xs: 2, sm: 3 },
-        }}
-      >
-        <Container maxWidth="lg">
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Box>
-              <h1
-                style={{
-                  margin: 0,
-                  fontSize: '1.5rem',
-                  fontWeight: 600,
-                }}
-              >
-                Field Operations
-              </h1>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: '0.875rem',
-                  opacity: 0.8,
-                }}
-              >
-                Welcome, {user?.name || 'Field Operator'}
-              </p>
-            </Box>
-
-            {/* Environment switcher for users with both access */}
-            <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-              {/* Will be implemented later */}
-            </Box>
-          </Box>
-        </Container>
-      </Paper>
+      {/* Mobile Header */}
+      <MobileHeader
+        title="Field Operations"
+        subtitle={`Welcome, ${user?.firstName || 'Field Operator'}`}
+        showNotifications
+        notificationCount={5}
+        sticky
+        collapsible
+      />
 
       {/* Main Content */}
       <Box
         component="main"
         sx={{
           flex: 1,
-          padding: { xs: 2, sm: 3 },
         }}
       >
-        <Container maxWidth="lg">{children}</Container>
+        <Container sx={{ padding: { xs: 0.5 } }} maxWidth="lg">
+          {children}
+        </Container>
       </Box>
 
       {/* Bottom Navigation (Mobile) */}
-      <Paper
+      <Box
         sx={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: theme.zIndex.appBar,
           display: { xs: 'block', sm: 'none' },
         }}
-        elevation={3}
       >
-        <BottomNavigation
-          value={currentIndex >= 0 ? currentIndex : 0}
-          onChange={handleNavigationChange}
+        <MobileBottomNavigation
+          items={navigationItems}
+          enableHapticFeedback
+          enableAnimations
           showLabels
-          sx={{
-            '& .MuiBottomNavigationAction-root': {
-              minWidth: 'auto',
-              padding: '6px 0',
-              '&.Mui-selected': {
-                color: theme.palette.primary.main,
-              },
-            },
-            '& .MuiBottomNavigationAction-label': {
-              fontSize: '0.75rem',
-              marginTop: '4px',
-            },
-          }}
-        >
-          {navigationItems.map((item, index) => (
-            <BottomNavigationAction
-              key={item.path}
-              label={item.label}
-              icon={<item.icon />}
-              href={item.path}
-              component="a"
-            />
-          ))}
-        </BottomNavigation>
-      </Paper>
+        />
+      </Box>
     </Box>
   );
 }

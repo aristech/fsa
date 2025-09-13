@@ -31,8 +31,8 @@ import { LanguagePopover } from '../components/language-popover';
 import { navData as dashboardNavData } from '../nav-config-dashboard';
 import { dashboardLayoutVars, dashboardNavColorVars } from './css-vars';
 import { NotificationsDrawer } from '../components/notifications-drawer';
+import { EnvironmentSwitcher } from '../../components/environment-switcher';
 import { EnhancedAccountDrawer } from '../components/enhanced-account-drawer';
-import { EnvironmentSwitcher } from '@/components/environment-switcher';
 import { MainSection, HeaderSection, layoutClasses, LayoutSection } from '../core';
 
 // ----------------------------------------------------------------------

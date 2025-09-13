@@ -2,24 +2,28 @@
 
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEnvironmentAccess } from '@/hooks/use-environment-access';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
-import { Smartphone, Monitor, ChevronDown, Check } from 'lucide-react';
+
+import { Box, Menu, Button, MenuItem, Typography } from '@mui/material';
+
+import { useEnvironmentAccess } from 'src/hooks/use-environment-access';
+
+import { Iconify } from 'src/components/iconify';
 
 export function EnvironmentSwitcher() {
   const router = useRouter();
   const pathname = usePathname();
   const { canAccessField, canAccessOffice, hasBothAccess } = useEnvironmentAccess();
-  const [isOpen, setIsOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const currentEnvironment = pathname.startsWith('/field') ? 'field' : 'office';
+
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
 
   const handleEnvironmentChange = (environment: 'field' | 'office') => {
     if (environment === 'field' && canAccessField) {
@@ -27,7 +31,7 @@ export function EnvironmentSwitcher() {
     } else if (environment === 'office' && canAccessOffice) {
       router.push('/dashboard');
     }
-    setIsOpen(false);
+    handleClose();
   };
 
   // Don't show switcher if user only has access to one environment
@@ -36,46 +40,78 @@ export function EnvironmentSwitcher() {
   }
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
-          {currentEnvironment === 'field' ? (
-            <Smartphone className="h-4 w-4" />
-          ) : (
-            <Monitor className="h-4 w-4" />
-          )}
-          <span className="hidden sm:inline">
-            {currentEnvironment === 'field' ? 'Field' : 'Office'}
-          </span>
-          <ChevronDown className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
+    <>
+      <Button
+        variant="outlined"
+        size="small"
+        onClick={handleClick}
+        startIcon={
+          <Iconify
+            icon={currentEnvironment === 'field' ? 'solar:smartphone-bold' : 'solar:monitor-bold'}
+            width={16}
+          />
+        }
+        endIcon={<Iconify icon="eva:arrow-ios-downward-fill" width={16} />}
+        sx={{ gap: 1 }}
+      >
+        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+          {currentEnvironment === 'field' ? 'Field' : 'Office'}
+        </Box>
+      </Button>
 
-      <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <MenuItem
           onClick={() => handleEnvironmentChange('office')}
           disabled={!canAccessOffice}
-          className="flex items-center justify-between"
+          sx={{ minWidth: 200 }}
         >
-          <div className="flex items-center gap-2">
-            <Monitor className="h-4 w-4" />
-            <span>Office Environment</span>
-          </div>
-          {currentEnvironment === 'office' && <Check className="h-4 w-4 text-primary" />}
-        </DropdownMenuItem>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Iconify icon="solar:monitor-bold" width={20} />
+              <Typography>Office Environment</Typography>
+            </Box>
+            {currentEnvironment === 'office' && (
+              <Iconify icon="eva:checkmark-fill" width={20} sx={{ color: 'primary.main' }} />
+            )}
+          </Box>
+        </MenuItem>
 
-        <DropdownMenuItem
+        <MenuItem
           onClick={() => handleEnvironmentChange('field')}
           disabled={!canAccessField}
-          className="flex items-center justify-between"
+          sx={{ minWidth: 200 }}
         >
-          <div className="flex items-center gap-2">
-            <Smartphone className="h-4 w-4" />
-            <span>Field Environment</span>
-          </div>
-          {currentEnvironment === 'field' && <Check className="h-4 w-4 text-primary" />}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Iconify icon="solar:smartphone-bold" width={20} />
+              <Typography>Field Environment</Typography>
+            </Box>
+            {currentEnvironment === 'field' && (
+              <Iconify icon="eva:checkmark-fill" width={20} sx={{ color: 'primary.main' }} />
+            )}
+          </Box>
+        </MenuItem>
+      </Menu>
+    </>
   );
 }

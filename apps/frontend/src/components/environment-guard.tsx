@@ -1,12 +1,12 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { useEnvironmentAccess } from '@/hooks/use-environment-access';
-import { LoadingScreen } from '@/components/loading-screen';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+import { Box, Alert, Button, AlertTitle, Typography } from '@mui/material';
+
+import { Iconify } from './iconify';
+import { useEnvironmentAccess } from '../hooks/use-environment-access';
 
 interface EnvironmentGuardProps {
   children: React.ReactNode;
@@ -52,23 +52,30 @@ export function EnvironmentGuard({
 
   if (!hasAccess) {
     return (
-      <div className="flex items-center justify-center min-h-screen p-4">
-        <Alert className="max-w-md">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription className="mt-2">
-            <div className="space-y-3">
-              <p>
-                You don't have access to this environment.
-                {isFieldOperator && ' Redirecting to field environment...'}
-                {isOfficeUser && ' Redirecting to office environment...'}
-              </p>
-              <Button onClick={() => router.push('/dashboard')} variant="outline" size="sm">
-                Go to Dashboard
-              </Button>
-            </div>
-          </AlertDescription>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          p: 4,
+        }}
+      >
+        <Alert severity="warning" sx={{ maxWidth: 'md' }}>
+          <Iconify icon="eva:alert-triangle-fill" width={24} />
+          <AlertTitle>Access Denied</AlertTitle>
+          <Typography variant="body2" sx={{ mt: 2 }}>
+            You don&apos;t have access to this environment.
+            {isFieldOperator && ' Redirecting to field environment...'}
+            {isOfficeUser && ' Redirecting to office environment...'}
+          </Typography>
+          <Box sx={{ mt: 2 }}>
+            <Button onClick={() => router.push('/dashboard')} variant="outlined" size="small">
+              Go to Dashboard
+            </Button>
+          </Box>
         </Alert>
-      </div>
+      </Box>
     );
   }
 

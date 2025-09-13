@@ -1,7 +1,8 @@
 'use client';
 
-import { EnvironmentGuard } from '@/components/environment-guard';
-import { FieldLayout } from '@/layouts/field/field-layout';
+import { FieldLayout } from 'src/layouts/field/field-layout';
+
+import { EnvironmentGuard } from '../../components/environment-guard';
 
 export default function FieldLayoutWrapper({ children }: { children: React.ReactNode }) {
   return (
