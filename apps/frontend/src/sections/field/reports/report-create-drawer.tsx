@@ -6,7 +6,17 @@ import useSWR from 'swr';
 import dayjs from 'dayjs';
 import { useMemo, useState, useEffect, useCallback } from 'react';
 
-import { Box, Drawer, useTheme, TextField, Typography, Autocomplete } from '@mui/material';
+import {
+  Box,
+  Chip,
+  alpha,
+  styled,
+  Drawer,
+  useTheme,
+  TextField,
+  Typography,
+  Autocomplete,
+} from '@mui/material';
 
 import axiosInstance, { endpoints } from 'src/lib/axios';
 import { ReportService } from 'src/lib/services/report-service';
@@ -26,6 +36,81 @@ import {
 import { useAuthContext } from 'src/auth/hooks';
 
 // ----------------------------------------------------------------------
+
+// Styled components matching Task Details drawer patterns
+const PriorityChip = styled(Chip, {
+  shouldForwardProp: (prop) => !['priority'].includes(prop as string),
+})<{ priority: string }>(({ theme, priority }) => {
+  const priorityColors = {
+    low: theme.palette.success.main,
+    medium: theme.palette.warning.main,
+    high: theme.palette.error.main,
+    urgent: theme.palette.error.dark,
+  };
+
+  return {
+    backgroundColor: alpha(
+      priorityColors[priority as keyof typeof priorityColors] || theme.palette.grey[400],
+      0.1
+    ),
+    color: priorityColors[priority as keyof typeof priorityColors] || theme.palette.grey[600],
+  };
+});
+
+const StatusChip = styled(Chip, {
+  shouldForwardProp: (prop) => !['status'].includes(prop as string),
+})<{ status: string }>(({ theme, status }) => {
+  const statusColors = {
+    pending: theme.palette.warning.main,
+    'in-progress': theme.palette.info.main,
+    completed: theme.palette.success.main,
+    overdue: theme.palette.error.main,
+    cancelled: theme.palette.grey[600],
+  };
+
+  return {
+    backgroundColor: alpha(
+      statusColors[status as keyof typeof statusColors] || theme.palette.grey[400],
+      0.1
+    ),
+    color: statusColors[status as keyof typeof statusColors] || theme.palette.grey[600],
+    fontWeight: 600,
+    textTransform: 'capitalize',
+  };
+});
+
+// Helper functions matching Task Details drawer patterns
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case 'pending':
+      return 'eva:clock-fill';
+    case 'in-progress':
+      return 'eva:arrow-forward-fill';
+    case 'completed':
+      return 'eva:checkmark-circle-fill';
+    case 'overdue':
+      return 'eva:alert-circle-fill';
+    case 'cancelled':
+      return 'eva:close-circle-fill';
+    default:
+      return 'eva:info-fill';
+  }
+};
+
+const getPriorityIcon = (priority: string) => {
+  switch (priority) {
+    case 'low':
+      return 'eva:arrow-downward-fill';
+    case 'medium':
+      return 'eva:minus-fill';
+    case 'high':
+      return 'eva:arrow-upward-fill';
+    case 'urgent':
+      return 'eva:flash-fill';
+    default:
+      return 'eva:info-fill';
+  }
+};
 
 const reportTypes = [
   { value: 'daily', label: 'Daily Report', icon: 'eva:calendar-fill', color: 'primary' },
@@ -71,7 +156,6 @@ export function ReportCreateDrawer({
 
   // Form state
   const [formData, setFormData] = useState<CreateReportData>({
-    title: initialData?.title || '',
     type: 'daily',
     location: '',
     weather: '',
@@ -81,7 +165,21 @@ export function ReportCreateDrawer({
     workOrderId: '',
     taskIds: [],
     customFields: {},
-    ...(initialData || {}),
+    ...(initialData
+      ? {
+          type: initialData.type,
+          clientId: initialData.clientId,
+          workOrderId: initialData.workOrderId,
+          taskIds: initialData.taskIds,
+          location: initialData.location,
+          weather: initialData.weather,
+          equipment: initialData.equipment,
+          reportDate: initialData.reportDate,
+          priority: initialData.priority,
+          tags: initialData.tags,
+          customFields: initialData.customFields,
+        }
+      : {}),
   });
 
   const [loading, setLoading] = useState(false);
@@ -97,9 +195,7 @@ export function ReportCreateDrawer({
   const { data: clientsData, error: clientsError } = useSWR(
     endpoints.fsa.clients.list,
     async (url) => {
-      console.log('Fetching clients from:', url);
       const response = await axiosInstance.get(url, { params: { limit: 100 } });
-      console.log('Clients response:', response.data);
       return response.data;
     }
   );
@@ -107,28 +203,19 @@ export function ReportCreateDrawer({
   const { data: workOrdersData, error: workOrdersError } = useSWR(
     endpoints.fsa.workOrders.list,
     async (url) => {
-      console.log('Fetching work orders from:', url);
       const response = await axiosInstance.get(url, { params: { limit: 100 } });
-      console.log('Work orders response:', response.data);
       return response.data;
     }
   );
 
   // Fetch current user's personnel information
-  const { data: personnelData, error: personnelError } = useSWR(
-    endpoints.fsa.personnel.list,
-    async (url) => {
-      console.log('Fetching personnel list:', url);
-      const response = await axiosInstance.get(url);
-      console.log('Personnel response:', response.data);
-      return response.data;
-    }
-  );
+  const { data: personnelData } = useSWR(endpoints.fsa.personnel.list, async (url) => {
+    const response = await axiosInstance.get(url);
+    return response.data;
+  });
 
   const { data: tasksData, error: tasksError } = useSWR(endpoints.kanban, async (url) => {
-    console.log('Fetching tasks from kanban:', url);
     const response = await axiosInstance.get(url);
-    console.log('Kanban response:', response.data);
     return response.data;
   });
 
@@ -139,8 +226,6 @@ export function ReportCreateDrawer({
 
   // Transform data for selects
   const clients = useMemo(() => {
-    console.log('Clients Data:', clientsData);
-
     if (clientsError) {
       console.error('Clients Error:', clientsError);
       return [];
@@ -157,9 +242,6 @@ export function ReportCreateDrawer({
   }, [clientsData, clientsError]);
 
   const workOrders = useMemo(() => {
-    console.log('Work Orders Raw Data:', workOrdersData);
-    console.log('Work Orders Error:', workOrdersError);
-
     if (workOrdersError) {
       console.error('Work Orders Error:', workOrdersError);
       return [];
@@ -180,8 +262,6 @@ export function ReportCreateDrawer({
       ordersArray = workOrdersData.workOrders;
     }
 
-    console.log('Work Orders Array:', ordersArray);
-
     return ordersArray.map((workOrder: any) => ({
       value: workOrder._id || workOrder.id,
       label: `${workOrder.number || workOrder.id || 'WO-' + (workOrder._id || workOrder.id)?.slice(-4)} - ${workOrder.title || workOrder.name || 'Untitled'}`,
@@ -190,11 +270,6 @@ export function ReportCreateDrawer({
   }, [workOrdersData, workOrdersError]);
 
   const allTasks = useMemo(() => {
-    console.log('Kanban Data:', tasksData);
-    console.log('Kanban Error:', tasksError);
-    console.log('Personnel Data:', personnelData);
-    console.log('Personnel Error:', personnelError);
-
     if (tasksError) {
       console.error('Kanban Error:', tasksError);
       return [];
@@ -206,11 +281,7 @@ export function ReportCreateDrawer({
 
     // Handle kanban structure - data is nested under data.board
     const board = tasksData.data?.board || tasksData.board;
-    console.log('Board data:', board);
-
     if (board?.tasks && Array.isArray(board.tasks)) {
-      console.log('Processing kanban tasks:', board.tasks.length);
-
       tasksArray = board.tasks.map((task: any) => ({
         value: task.id || task._id,
         label: task.name || task.title || `Task ${task.id || task._id}`,
@@ -246,9 +317,6 @@ export function ReportCreateDrawer({
       });
     }
 
-    console.log('All Tasks Processed:', tasksArray.length, 'tasks');
-    console.log('Sample task structure:', tasksArray[0]);
-
     // Debug: Check for duplicate labels
     const labels = tasksArray.map((task) => task.label);
     const uniqueLabels = new Set(labels);
@@ -260,26 +328,14 @@ export function ReportCreateDrawer({
     }
 
     return tasksArray;
-  }, [tasksData, tasksError, personnelData, personnelError]);
+  }, [tasksData, tasksError]);
 
   // Filter tasks based on user assignment and selected client
   const tasks = useMemo(() => {
-    console.log('=== TASK FILTERING ===');
-    console.log('Selected Client ID:', formData.clientId);
-    console.log('All Tasks Count:', allTasks.length);
-    console.log('Personnel Data:', personnelData);
-    console.log('All Tasks Sample:', allTasks.slice(0, 3));
-
     // Get current user's personnel ID from the personnel list
     const currentUserId = user?._id;
     const currentPersonnel = personnelData?.data?.find((p: any) => p.user?._id === currentUserId);
     const currentPersonnelId = currentPersonnel?._id;
-    console.log('Current User ID:', currentUserId);
-    console.log('Current Personnel ID:', currentPersonnelId);
-
-    // Show all unique client IDs in tasks for debugging
-    const taskClientIds = [...new Set(allTasks.map((task) => task.clientId))];
-    console.log('Unique Client IDs in tasks:', taskClientIds);
 
     // For now, let's be more permissive and show all tasks if no personnel data
     // or if the user has no assigned tasks, to help with debugging
@@ -289,53 +345,32 @@ export function ReportCreateDrawer({
         const isAssigned = task.assignees && task.assignees.includes(currentPersonnelId);
         if (allTasks.length < 10) {
           // Only log individual matches if there aren't too many tasks
-          console.log(
-            `Task "${task.label}" assignees: [${task.assignees?.join(', ')}] includes "${currentPersonnelId}": ${isAssigned}`
-          );
         }
         return isAssigned;
       });
-      console.log('User Assigned Tasks Count:', userAssignedTasks.length);
-
       // If no assigned tasks found, show all tasks for debugging
       if (userAssignedTasks.length === 0) {
-        console.log('No assigned tasks found, showing all tasks for debugging');
         userAssignedTasks = allTasks;
       }
-    } else {
-      console.log('No personnel data available, showing all tasks');
     }
 
     // Then filter by selected client (if a client is selected)
     if (!formData.clientId) {
-      console.log('No client selected, returning user assigned tasks');
       return userAssignedTasks;
     }
 
     const filteredTasks = userAssignedTasks.filter((task) => {
       const matches = task.clientId === formData.clientId;
-      if (userAssignedTasks.length < 10) {
-        // Only log individual matches if there aren't too many tasks
-        console.log(
-          `Task "${task.label}" clientId: "${task.clientId}" matches "${formData.clientId}": ${matches}`
-        );
-      }
       return matches;
     });
-
-    console.log('Final Filtered Tasks Count:', filteredTasks.length);
-    console.log('Final Filtered Tasks:', filteredTasks);
 
     return filteredTasks;
   }, [allTasks, formData.clientId, personnelData, user]);
 
   const materials = useMemo(() => {
-    console.log('Materials Data:', materialsData);
     const data = materialsData?.data?.materials || materialsData?.data || materialsData?.materials;
-    console.log('Materials Array:', data);
 
     if (!Array.isArray(data)) {
-      console.log('Materials data is not an array:', data);
       return [];
     }
 
@@ -345,7 +380,6 @@ export function ReportCreateDrawer({
       material,
     }));
 
-    console.log('Transformed Materials:', transformedMaterials);
     return transformedMaterials;
   }, [materialsData]);
 
@@ -393,15 +427,34 @@ export function ReportCreateDrawer({
                 selectedWorkOrder.address?.full ||
                 '';
 
+        // Extract client ID from work order - check multiple possible locations
+        let workOrderClientId =
+          selectedWorkOrder.clientId ||
+          selectedWorkOrder.client?._id ||
+          selectedWorkOrder.client?.id;
+
+        // Handle case where clientId is an object (populated client data)
+        if (workOrderClientId && typeof workOrderClientId === 'object' && workOrderClientId._id) {
+          workOrderClientId = workOrderClientId._id;
+        }
+
+        const newClientId =
+          workOrderClientId &&
+          typeof workOrderClientId === 'string' &&
+          workOrderClientId.trim() !== ''
+            ? workOrderClientId
+            : formData.clientId; // Keep current client if work order doesn't have one
+
         setFormData((prev) => ({
           ...prev,
-          clientId: selectedWorkOrder.clientId || prev.clientId,
+          // Only update clientId if work order has a valid clientId, otherwise preserve existing selection
+          clientId: newClientId,
           location: workOrderLocation || prev.location,
           priority: selectedWorkOrder.priority || prev.priority,
         }));
       }
     }
-  }, [formData.workOrderId, workOrders]);
+  }, [formData.workOrderId, formData.clientId, workOrders]);
 
   // Auto-fill from task selection
   useEffect(() => {
@@ -414,9 +467,26 @@ export function ReportCreateDrawer({
             ? selectedTask.task.location
             : selectedTask.task?.location?.street || selectedTask.task?.location?.full || '';
 
+        // Check if task has a work order ID
+        const taskWorkOrderId =
+          selectedTask.task?.workOrderId ||
+          selectedTask.task?.workOrder?._id ||
+          selectedTask.task?.workOrder?.id;
+
         setFormData((prev) => ({
           ...prev,
-          clientId: selectedTask.clientId || prev.clientId,
+          // Only update clientId if task has a valid clientId, otherwise preserve existing selection
+          clientId:
+            selectedTask.clientId &&
+            typeof selectedTask.clientId === 'string' &&
+            selectedTask.clientId.trim() !== ''
+              ? selectedTask.clientId
+              : prev.clientId,
+          // Auto-populate work order if task has one, otherwise preserve existing selection
+          workOrderId:
+            taskWorkOrderId && typeof taskWorkOrderId === 'string' && taskWorkOrderId.trim() !== ''
+              ? taskWorkOrderId
+              : prev.workOrderId,
           location: taskLocation || prev.location,
           priority: selectedTask.task?.priority || prev.priority,
         }));
@@ -439,7 +509,6 @@ export function ReportCreateDrawer({
     if (open) {
       setCurrentStep(1);
       setFormData({
-        title: initialData?.title || '',
         type: 'daily',
         location: '',
         weather: '',
@@ -449,7 +518,21 @@ export function ReportCreateDrawer({
         workOrderId: '',
         taskIds: [],
         customFields: {},
-        ...(initialData || {}),
+        ...(initialData
+          ? {
+              type: initialData.type,
+              clientId: initialData.clientId,
+              workOrderId: initialData.workOrderId,
+              taskIds: initialData.taskIds,
+              location: initialData.location,
+              weather: initialData.weather,
+              equipment: initialData.equipment,
+              reportDate: initialData.reportDate,
+              priority: initialData.priority,
+              tags: initialData.tags,
+              customFields: initialData.customFields,
+            }
+          : {}),
       });
       setSelectedMaterials([]);
       setReportNotes('');
@@ -778,9 +861,14 @@ export function ReportCreateDrawer({
         notes: reportNotes,
         materialsUsed: selectedMaterials.map((m) => ({
           materialId: m.value,
-          quantity: m.quantity,
-          unitCost: m.material?.unitPrice || 0,
-          totalCost: (m.material?.unitPrice || 0) * m.quantity,
+          material: {
+            name: m.material?.name || m.label || 'Unknown Material',
+            sku: m.material?.sku || '',
+            unit: m.material?.unit || 'each',
+          },
+          quantityUsed: m.quantity,
+          unitCost: m.material?.unitPrice || m.material?.unitCost || 0,
+          totalCost: (m.material?.unitPrice || m.material?.unitCost || 0) * m.quantity,
         })),
         signatures: signatures.map((s) => ({
           type: s.type,
@@ -888,7 +976,7 @@ export function ReportCreateDrawer({
   );
 
   const renderStep1 = () => (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, px: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4, px: 3 }}>
       <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'primary.main' }}>
         Report Details
       </Typography>
@@ -938,7 +1026,7 @@ export function ReportCreateDrawer({
       </Box>
 
       <MobileSelect
-        label="Client *"
+        label="Client"
         value={formData.clientId}
         onChange={(value) => handleFieldChange('clientId', value)}
         options={[{ value: '', label: 'Select Client...' }, ...clients]}
@@ -951,7 +1039,6 @@ export function ReportCreateDrawer({
         getOptionLabel={(option) => option?.label || ''}
         value={workOrders.find((wo: any) => wo.value === formData.workOrderId) || null}
         onChange={(event, newValue) => {
-          console.log('Work Order Selected:', newValue);
           handleFieldChange('workOrderId', newValue?.value || '');
         }}
         renderInput={(params) => (
@@ -962,8 +1049,11 @@ export function ReportCreateDrawer({
             helperText={`Optional: Link to a specific work order (${workOrders.length} available)`}
             fullWidth
             sx={{
+              mb: 2,
+              height: 60,
               '& .MuiOutlinedInput-root': {
                 borderRadius: '12px',
+                height: 60,
                 '& .MuiInputBase-input': {
                   fontSize: '16px',
                   padding: '16px 14px',
@@ -1004,7 +1094,6 @@ export function ReportCreateDrawer({
         isOptionEqualToValue={(option, value) => option?.value === value?.value}
         value={tasks.find((task) => task.value === formData.taskIds?.[0]) || null}
         onChange={(event, newValue) => {
-          console.log('Task Selected:', newValue);
           handleFieldChange('taskIds', newValue ? [newValue.value] : []);
         }}
         renderInput={(params) => (
@@ -1021,8 +1110,10 @@ export function ReportCreateDrawer({
             }
             fullWidth
             sx={{
+              height: 60,
               '& .MuiOutlinedInput-root': {
                 borderRadius: '12px',
+                height: 60,
                 '& .MuiInputBase-input': {
                   fontSize: '16px',
                   padding: '16px 14px',
@@ -1031,13 +1122,92 @@ export function ReportCreateDrawer({
             }}
           />
         )}
+        renderOption={(props, option) => (
+          <Box component="li" {...props}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+              {/* Task Icon - using priority-based colors like Task Details */}
+
+              <Iconify
+                icon={
+                  option.task?.completeStatus === true
+                    ? 'eva:checkmark-circle-2-fill'
+                    : 'eva:radio-button-off-outline'
+                }
+                width={20}
+              />
+
+              {/* Task Details */}
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  {option.label}
+                </Typography>
+
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.5 }}>
+                  {/* Priority Chip - using Task Details pattern */}
+                  {option.task?.priority && (
+                    <PriorityChip
+                      priority={option.task.priority}
+                      icon={<Iconify icon={getPriorityIcon(option.task.priority)} width={20} />}
+                      size="small"
+                    />
+                  )}
+
+                  {/* Status Chip - using Task Details pattern */}
+                  {option.task?.status && (
+                    <StatusChip
+                      status={option.task.status}
+                      icon={<Iconify icon={getStatusIcon(option.task.status)} width={16} />}
+                      label={option.task.status}
+                      size="small"
+                    />
+                  )}
+
+                  {/* Type */}
+                  {option.task?.type && (
+                    <Chip label={option.task.type} size="small" variant="outlined" />
+                  )}
+                </Box>
+
+                {/* Assignees */}
+                {option.task?.assignee && option.task.assignee.length > 0 && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                    <Iconify icon="eva:person-fill" width={12} sx={{ color: 'text.secondary' }} />
+                    <Typography variant="caption" color="text.secondary">
+                      {option.task.assignee
+                        .map((assignee: any) => assignee.name || assignee.email)
+                        .join(', ')}
+                    </Typography>
+                  </Box>
+                )}
+
+                {/* Due Date */}
+                {option.task?.dueDate && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                    <Iconify icon="eva:calendar-fill" width={12} sx={{ color: 'text.secondary' }} />
+                    <Typography variant="caption" color="text.secondary">
+                      Due: {new Date(option.task.dueDate).toLocaleDateString()}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+          </Box>
+        )}
         filterOptions={(options, { inputValue }) => {
           if (!inputValue) return options;
           return options.filter(
             (option) =>
               option.label?.toLowerCase().includes(inputValue.toLowerCase()) ||
               option.task?.name?.toLowerCase().includes(inputValue.toLowerCase()) ||
-              option.task?.title?.toLowerCase().includes(inputValue.toLowerCase())
+              option.task?.title?.toLowerCase().includes(inputValue.toLowerCase()) ||
+              option.task?.priority?.toLowerCase().includes(inputValue.toLowerCase()) ||
+              option.task?.status?.toLowerCase().includes(inputValue.toLowerCase()) ||
+              option.task?.type?.toLowerCase().includes(inputValue.toLowerCase()) ||
+              option.task?.assignee?.some(
+                (assignee: any) =>
+                  assignee.name?.toLowerCase().includes(inputValue.toLowerCase()) ||
+                  assignee.email?.toLowerCase().includes(inputValue.toLowerCase())
+              )
           );
         }}
         noOptionsText={
@@ -1062,7 +1232,7 @@ export function ReportCreateDrawer({
       />
 
       <MobileInput
-        label="Location *"
+        label="Location"
         value={formData.location}
         onChange={(e) => handleFieldChange('location', e.target.value)}
         placeholder="Work site address or location..."
@@ -1091,7 +1261,7 @@ export function ReportCreateDrawer({
   );
 
   const renderStep2 = () => (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, px: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4, px: 3 }}>
       <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'primary.main' }}>
         Materials & Documentation
       </Typography>
@@ -1118,7 +1288,7 @@ export function ReportCreateDrawer({
               placeholder="Search for materials..."
               helperText={`Select materials used in this report (${materials.length} available)`}
               fullWidth
-              sx={{ mb: 2 }}
+              sx={{ mb: 2, height: 60 }}
             />
           )}
           renderOption={(props, option) => (
@@ -1168,14 +1338,14 @@ export function ReportCreateDrawer({
         />
 
         {selectedMaterials.length > 0 && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mb: 3 }}>
             {selectedMaterials.map((material) => (
               <Box
                 key={material.value}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 2,
+                  gap: 3,
                   p: 2,
                   border: '1px solid',
                   borderColor: 'divider',
@@ -1214,7 +1384,7 @@ export function ReportCreateDrawer({
                       handleMaterialQuantityChange(material.value, 0);
                     }
                   }}
-                  sx={{ width: 100 }}
+                  sx={{ width: 100, height: 60 }}
                   inputProps={{ min: 0, max: 100, step: 1 }}
                   helperText="Max: 100"
                 />
@@ -1238,12 +1408,12 @@ export function ReportCreateDrawer({
           Photos & Files
         </Typography>
 
-        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+        <Box sx={{ display: 'flex', gap: 3, mb: 3 }}>
           <MobileButton
             variant="outline"
             startIcon={<Iconify icon="eva:camera-fill" width={16} />}
             onClick={handleCameraCapture}
-            sx={{ flex: 1 }}
+            sx={{ flex: 1, height: 60 }}
           >
             Take Photo
           </MobileButton>
@@ -1252,7 +1422,7 @@ export function ReportCreateDrawer({
             variant="outline"
             component="label"
             startIcon={<Iconify icon="eva:attach-fill" width={16} />}
-            sx={{ flex: 1 }}
+            sx={{ flex: 1, height: 60 }}
           >
             Upload Files
             <input
@@ -1266,7 +1436,7 @@ export function ReportCreateDrawer({
         </Box>
 
         {attachments.length > 0 && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mb: 3 }}>
             {attachments.map((file, index) => {
               const isImage = file.type.startsWith('image/');
               const previewUrl = previewUrls.get(index);
@@ -1277,7 +1447,7 @@ export function ReportCreateDrawer({
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 2,
+                    gap: 3,
                     p: 2,
                     border: '1px solid',
                     borderColor: 'divider',
@@ -1381,6 +1551,7 @@ export function ReportCreateDrawer({
                     onClick={() => handleRemoveFile(index)}
                     icon={<Iconify icon="eva:close-fill" width={16} />}
                     sx={{
+                      height: 60,
                       color: 'error.main',
                       '&:hover': {
                         backgroundColor: 'error.lighter',
@@ -1395,20 +1566,26 @@ export function ReportCreateDrawer({
       </Box>
 
       {/* Notes Section */}
-      <MobileInput
+      <TextField
         label="Additional Notes"
         value={reportNotes}
         onChange={(e) => setReportNotes(e.target.value)}
-        placeholder="Add any additional notes about the work performed..."
+        placeholder="Notes..."
         multiline
         rows={4}
         helperText="Optional: Provide any additional context or observations"
+        fullWidth
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            borderRadius: '12px',
+          },
+        }}
       />
     </Box>
   );
 
   const renderStep3 = () => (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, px: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4, px: 3 }}>
       <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'primary.main' }}>
         Signatures & Status
       </Typography>
@@ -1483,7 +1660,7 @@ export function ReportCreateDrawer({
     <Box
       sx={{
         display: 'flex',
-        gap: 2,
+        gap: 3,
         p: 3,
         borderTop: 1,
         borderColor: 'divider',
@@ -1495,14 +1672,11 @@ export function ReportCreateDrawer({
           variant="outline"
           onClick={handlePrevious}
           startIcon={<Iconify icon="eva:arrow-left-fill" width={16} />}
+          sx={{ height: 80 }}
         >
           Previous
         </MobileButton>
       )}
-
-      <MobileButton variant="outline" onClick={onClose} sx={{ flex: currentStep === 1 ? 1 : 0 }}>
-        Cancel
-      </MobileButton>
 
       {currentStep < 3 ? (
         <MobileButton
@@ -1510,7 +1684,7 @@ export function ReportCreateDrawer({
           onClick={handleNext}
           disabled={!validateStep(currentStep)}
           endIcon={<Iconify icon="eva:arrow-right-fill" width={16} />}
-          sx={{ flex: 1 }}
+          sx={{ flex: 1, height: 80 }}
         >
           Next
         </MobileButton>
@@ -1521,7 +1695,7 @@ export function ReportCreateDrawer({
           loading={loading}
           disabled={!validateStep(1)}
           startIcon={<Iconify icon="eva:save-fill" width={16} />}
-          sx={{ flex: 1 }}
+          sx={{ flex: 1, height: 80 }}
         >
           Create Report
         </MobileButton>

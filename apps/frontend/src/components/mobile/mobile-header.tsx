@@ -315,9 +315,7 @@ export function MobileHeader({
 
         {/* Title Container */}
         <TitleContainer>
-          <MainTitle variant="h6" component="h1">
-            {title}
-          </MainTitle>
+          <MainTitle variant="h6">{title}</MainTitle>
           {subtitle && <Subtitle variant="body2">{subtitle}</Subtitle>}
         </TitleContainer>
 

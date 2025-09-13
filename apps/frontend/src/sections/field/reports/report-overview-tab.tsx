@@ -44,7 +44,7 @@ export function ReportOverviewTab({ report }: ReportOverviewTabProps) {
           Description
         </Typography>
         <Typography variant="body1" sx={{ lineHeight: 1.6 }}>
-          {report.description}
+          {report.location || 'No location specified'}
         </Typography>
       </Box>
 
@@ -56,9 +56,21 @@ export function ReportOverviewTab({ report }: ReportOverviewTabProps) {
           Report Information
         </Typography>
 
-        {renderInfoRow('Report Date', dayjs(report.reportDate).format('MMMM DD, YYYY'), 'eva:calendar-fill')}
-        {renderInfoRow('Type', report.type.charAt(0).toUpperCase() + report.type.slice(1), 'eva:file-text-fill')}
-        {renderInfoRow('Priority', report.priority.charAt(0).toUpperCase() + report.priority.slice(1), 'eva:flag-fill')}
+        {renderInfoRow(
+          'Report Date',
+          dayjs(report.reportDate).format('MMMM DD, YYYY'),
+          'eva:calendar-fill'
+        )}
+        {renderInfoRow(
+          'Type',
+          report.type.charAt(0).toUpperCase() + report.type.slice(1),
+          'eva:file-text-fill'
+        )}
+        {renderInfoRow(
+          'Priority',
+          report.priority.charAt(0).toUpperCase() + report.priority.slice(1),
+          'eva:flag-fill'
+        )}
         {renderInfoRow('Location', report.location, 'eva:pin-fill')}
         {renderInfoRow('Weather', report.weather, 'eva:cloud-fill')}
       </Box>
@@ -167,13 +179,7 @@ export function ReportOverviewTab({ report }: ReportOverviewTabProps) {
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               {report.tags.map((tag, index) => (
-                <Chip
-                  key={index}
-                  label={tag}
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                />
+                <Chip key={index} label={tag} size="small" color="primary" variant="outlined" />
               ))}
             </Box>
           </Box>
@@ -227,15 +233,15 @@ export function ReportOverviewTab({ report }: ReportOverviewTabProps) {
                       check.status === 'pass'
                         ? 'eva:checkmark-circle-fill'
                         : check.status === 'fail'
-                        ? 'eva:close-circle-fill'
-                        : 'eva:minus-circle-fill'
+                          ? 'eva:close-circle-fill'
+                          : 'eva:minus-circle-fill'
                     }
                     color={
                       check.status === 'pass'
                         ? 'success.main'
                         : check.status === 'fail'
-                        ? 'error.main'
-                        : 'grey.500'
+                          ? 'error.main'
+                          : 'grey.500'
                     }
                     width={20}
                   />
@@ -254,8 +260,8 @@ export function ReportOverviewTab({ report }: ReportOverviewTabProps) {
                       check.status === 'pass'
                         ? 'success'
                         : check.status === 'fail'
-                        ? 'error'
-                        : 'default'
+                          ? 'error'
+                          : 'default'
                     }
                   />
                 </Box>
@@ -285,14 +291,27 @@ export function ReportOverviewTab({ report }: ReportOverviewTabProps) {
                     bgcolor: 'error.lighter',
                   }}
                 >
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      mb: 1,
+                    }}
+                  >
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                       {incident.type}
                     </Typography>
                     <Chip
                       label={incident.severity}
                       size="small"
-                      color={incident.severity === 'high' ? 'error' : incident.severity === 'medium' ? 'warning' : 'default'}
+                      color={
+                        incident.severity === 'high'
+                          ? 'error'
+                          : incident.severity === 'medium'
+                            ? 'warning'
+                            : 'default'
+                      }
                     />
                   </Box>
                   <Typography variant="body2" sx={{ mb: 1 }}>
@@ -358,7 +377,8 @@ export function ReportOverviewTab({ report }: ReportOverviewTabProps) {
         {renderInfoRow('Created', formatDateTime(report.createdAt), 'eva:plus-circle-fill')}
         {renderInfoRow('Last Updated', formatDateTime(report.updatedAt), 'eva:edit-fill')}
 
-        {report.submittedAt && renderInfoRow('Submitted', formatDateTime(report.submittedAt), 'eva:paper-plane-fill')}
+        {report.submittedAt &&
+          renderInfoRow('Submitted', formatDateTime(report.submittedAt), 'eva:paper-plane-fill')}
 
         {report.approvedAt && report.approvedBy && (
           <Box sx={{ mb: 2 }}>
@@ -386,7 +406,11 @@ export function ReportOverviewTab({ report }: ReportOverviewTabProps) {
               {formatDateTime(report.rejectedAt)} by {report.rejectedBy.name}
             </Typography>
             {report.rejectionReason && (
-              <Typography variant="caption" color="error.main" sx={{ ml: 3, display: 'block', mt: 0.5 }}>
+              <Typography
+                variant="caption"
+                color="error.main"
+                sx={{ ml: 3, display: 'block', mt: 0.5 }}
+              >
                 Reason: {report.rejectionReason}
               </Typography>
             )}

@@ -1,19 +1,11 @@
 'use client';
 
-import type {
-  TextFieldProps} from '@mui/material';
+import type { TextFieldProps } from '@mui/material';
 
 import React, { useRef, useState } from 'react';
 
 import { styled } from '@mui/material/styles';
-import {
-  Box,
-  alpha,
-  TextField,
-  IconButton,
-  Typography,
-  InputAdornment,
-} from '@mui/material';
+import { Box, alpha, TextField, IconButton, Typography, InputAdornment } from '@mui/material';
 
 import { Iconify } from '../iconify';
 
@@ -309,7 +301,6 @@ export function MobileInput({
       showClearButton={showClearButton}
       showPasswordToggle={showPasswordToggle}
       label={label}
-      placeholder={placeholder}
       {...inputProps}
     />
   );

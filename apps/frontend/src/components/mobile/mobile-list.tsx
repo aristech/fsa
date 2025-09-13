@@ -377,10 +377,10 @@ export function MobileList({
       {React.Children.map(children, (child, index) => {
         if (React.isValidElement(child)) {
           return React.cloneElement(child, {
-            ...child.props,
+            ...(child.props as any),
             onClick: () => handleItemPress(index),
             onTouchStart: (e: React.TouchEvent) => {
-              child.props.onTouchStart?.(e);
+              (child.props as any).onTouchStart?.(e);
               // Long press detection
               const timer = setTimeout(() => {
                 handleItemLongPress(index);

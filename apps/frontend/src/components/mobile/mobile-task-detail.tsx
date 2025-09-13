@@ -115,13 +115,15 @@ export function MobileTaskDetail({
 
   if (!task) return null;
 
-  const formatTime = (date: Date) => date.toLocaleTimeString('en-US', {
+  const formatTime = (date: Date) =>
+    date.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
     });
 
-  const formatDate = (date: Date) => date.toLocaleDateString('en-US', {
+  const formatDate = (date: Date) =>
+    date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',

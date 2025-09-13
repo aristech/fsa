@@ -140,7 +140,7 @@ export function MobileFormWizard({
   };
 
   const updateFormData = (data: any) => {
-    setFormData((prev) => ({ ...prev, ...data }));
+    setFormData((prev: any) => ({ ...prev, ...data }));
   };
 
   return (
@@ -173,7 +173,7 @@ export function MobileFormWizard({
 
         {/* Step Content */}
         <StepContentContainer>
-          {React.cloneElement(currentStep.component as React.ReactElement, {
+          {React.cloneElement(currentStep.component as React.ReactElement<any>, {
             data: formData,
             updateData: updateFormData,
           })}
@@ -260,15 +260,16 @@ export function MobileDatePicker({
         open={open}
         onOpen={() => setOpen(true)}
         onClose={() => setOpen(false)}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            fullWidth
-            required={required}
-            error={error}
-            helperText={helperText}
-            InputProps={{
-              ...params.InputProps,
+        slots={{
+          textField: TextField,
+        }}
+        slotProps={{
+          textField: {
+            fullWidth: true,
+            required,
+            error,
+            helperText,
+            InputProps: {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton onClick={() => setOpen(true)} edge="end" disabled={disabled}>
@@ -276,17 +277,15 @@ export function MobileDatePicker({
                   </IconButton>
                 </InputAdornment>
               ),
-            }}
-            onClick={() => setOpen(true)}
-            sx={{
+            },
+            onClick: () => setOpen(true),
+            sx: {
               '& .MuiInputBase-input': {
                 fontSize: '16px', // Prevent zoom on iOS
                 padding: '16px 14px',
               },
-            }}
-          />
-        )}
-        componentsProps={{
+            },
+          },
           actionBar: {
             actions: ['clear', 'today', 'cancel', 'accept'],
           },
@@ -320,21 +319,25 @@ export function MobileTimePicker({
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <TimePicker
         label={label}
+        sx={{
+          mt: 2,
+        }}
         value={value}
         onChange={onChange}
         disabled={disabled}
         open={open}
         onOpen={() => setOpen(true)}
         onClose={() => setOpen(false)}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            fullWidth
-            required={required}
-            error={error}
-            helperText={helperText}
-            InputProps={{
-              ...params.InputProps,
+        slots={{
+          textField: TextField,
+        }}
+        slotProps={{
+          textField: {
+            fullWidth: true,
+            required,
+            error,
+            helperText,
+            InputProps: {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton onClick={() => setOpen(true)} edge="end" disabled={disabled}>
@@ -342,17 +345,15 @@ export function MobileTimePicker({
                   </IconButton>
                 </InputAdornment>
               ),
-            }}
-            onClick={() => setOpen(true)}
-            sx={{
+            },
+            onClick: () => setOpen(true),
+            sx: {
               '& .MuiInputBase-input': {
                 fontSize: '16px', // Prevent zoom on iOS
                 padding: '16px 14px',
               },
-            }}
-          />
-        )}
-        componentsProps={{
+            },
+          },
           actionBar: {
             actions: ['clear', 'cancel', 'accept'],
           },

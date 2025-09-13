@@ -6,16 +6,7 @@ import dayjs from 'dayjs';
 import { useState, useCallback } from 'react';
 import { useTabs } from 'minimal-shared/hooks';
 
-import {
-  Box,
-  Tab,
-  Tabs,
-  Chip,
-  Avatar,
-  Drawer,
-  useTheme,
-  Typography,
-} from '@mui/material';
+import { Box, Tab, Tabs, Chip, Avatar, Drawer, useTheme, Typography } from '@mui/material';
 
 import { ReportService } from 'src/lib/services/report-service';
 
@@ -48,27 +39,43 @@ export function ReportDetailsDrawer({ open, onClose, report, onUpdate }: ReportD
   // Status color helper
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft': return 'default';
-      case 'submitted': return 'info';
-      case 'under_review': return 'warning';
-      case 'approved': return 'success';
-      case 'rejected': return 'error';
-      case 'published': return 'primary';
-      default: return 'default';
+      case 'draft':
+        return 'default';
+      case 'submitted':
+        return 'info';
+      case 'under_review':
+        return 'warning';
+      case 'approved':
+        return 'success';
+      case 'rejected':
+        return 'error';
+      case 'published':
+        return 'primary';
+      default:
+        return 'default';
     }
   };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'daily': return 'eva:calendar-fill';
-      case 'weekly': return 'eva:clock-fill';
-      case 'monthly': return 'eva:calendar-outline';
-      case 'incident': return 'eva:alert-triangle-fill';
-      case 'maintenance': return 'eva:settings-fill';
-      case 'inspection': return 'eva:search-fill';
-      case 'completion': return 'eva:checkmark-circle-fill';
-      case 'safety': return 'eva:shield-fill';
-      default: return 'eva:file-text-fill';
+      case 'daily':
+        return 'eva:calendar-fill';
+      case 'weekly':
+        return 'eva:clock-fill';
+      case 'monthly':
+        return 'eva:calendar-outline';
+      case 'incident':
+        return 'eva:alert-triangle-fill';
+      case 'maintenance':
+        return 'eva:settings-fill';
+      case 'inspection':
+        return 'eva:search-fill';
+      case 'completion':
+        return 'eva:checkmark-circle-fill';
+      case 'safety':
+        return 'eva:shield-fill';
+      default:
+        return 'eva:file-text-fill';
     }
   };
 
@@ -139,7 +146,9 @@ export function ReportDetailsDrawer({ open, onClose, report, onUpdate }: ReportD
       }}
     >
       {/* Header Row */}
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+      <Box
+        sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, flex: 1, minWidth: 0 }}>
           <Avatar
             sx={{
@@ -163,15 +172,11 @@ export function ReportDetailsDrawer({ open, onClose, report, onUpdate }: ReportD
                 whiteSpace: 'nowrap',
               }}
             >
-              {report.title}
+              {report.type.charAt(0).toUpperCase() + report.type.slice(1)} Report
             </Typography>
 
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
-              <Chip
-                label={report.type}
-                size="small"
-                sx={{ textTransform: 'capitalize' }}
-              />
+              <Chip label={report.type} size="small" sx={{ textTransform: 'capitalize' }} />
               <Chip
                 label={report.status.replace('_', ' ')}
                 color={getStatusColor(report.status) as any}
@@ -180,7 +185,9 @@ export function ReportDetailsDrawer({ open, onClose, report, onUpdate }: ReportD
               />
               <Chip
                 label={report.priority}
-                color={report.priority === 'high' || report.priority === 'urgent' ? 'error' : 'default'}
+                color={
+                  report.priority === 'high' || report.priority === 'urgent' ? 'error' : 'default'
+                }
                 size="small"
                 sx={{ textTransform: 'capitalize' }}
               />
@@ -193,7 +200,7 @@ export function ReportDetailsDrawer({ open, onClose, report, onUpdate }: ReportD
         </Box>
 
         <MobileButton
-          variant="ghost"
+          variant="secondary"
           size="small"
           onClick={onClose}
           icon={<Iconify icon="eva:close-fill" width={20} />}
@@ -255,14 +262,8 @@ export function ReportDetailsDrawer({ open, onClose, report, onUpdate }: ReportD
         }}
       >
         <Tab value="overview" label="Overview" />
-        <Tab
-          value="materials"
-          label={`Materials (${report.materialsUsed?.length || 0})`}
-        />
-        <Tab
-          value="time"
-          label={`Time (${report.timeEntries?.length || 0})`}
-        />
+        <Tab value="materials" label={`Materials (${report.materialsUsed?.length || 0})`} />
+        <Tab value="time" label={`Time (${report.timeEntries?.length || 0})`} />
         <Tab
           value="attachments"
           label={`Files (${(report.attachments?.length || 0) + (report.photos?.length || 0)})`}
@@ -352,9 +353,7 @@ export function ReportDetailsDrawer({ open, onClose, report, onUpdate }: ReportD
       {renderTabs()}
 
       <Scrollbar fillContent sx={{ flex: 1 }}>
-        <Box sx={{ p: 3 }}>
-          {renderTabContent()}
-        </Box>
+        <Box sx={{ p: 3 }}>{renderTabContent()}</Box>
       </Scrollbar>
 
       {renderActions()}

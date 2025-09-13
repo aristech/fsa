@@ -1,7 +1,6 @@
 'use client';
 
-import type {
-  CardProps} from '@mui/material';
+import type { CardProps } from '@mui/material';
 
 import React, { useRef, useState } from 'react';
 
@@ -105,13 +104,13 @@ const StyledMobileCard = styled(Card, {
     borderRadius: sizeConfig.borderRadius,
     cursor: swipeable ? 'grab' : 'pointer',
     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-    position: 'relative',
+    position: 'relative' as const,
     overflow: 'hidden',
     // Ensure proper touch targets
     touchAction: swipeable ? 'pan-y' : 'manipulation',
     WebkitTapHighlightColor: 'transparent',
-    userSelect: 'none',
-    WebkitUserSelect: 'none',
+    userSelect: 'none' as const,
+    WebkitUserSelect: 'none' as const,
 
     '&:active': {
       transform: swipeable ? 'none' : 'scale(0.98)',
@@ -157,7 +156,7 @@ const StyledMobileCard = styled(Card, {
   const loadingStyles = loading
     ? {
         opacity: 0.7,
-        pointerEvents: 'none',
+        pointerEvents: 'none' as const,
       }
     : {};
 
@@ -187,7 +186,8 @@ const ProgressBar = styled(Box)<{ progress: number; color: string }>(
     height: '4px',
     width: `${progress}%`,
     backgroundColor:
-      theme.palette[color as keyof typeof theme.palette]?.main || theme.palette.primary.main,
+      (theme.palette[color as keyof typeof theme.palette] as any)?.main ||
+      theme.palette.primary.main,
     borderRadius: '0 0 12px 12px',
     transition: 'width 0.3s ease',
   })
@@ -305,12 +305,14 @@ export function MobileCard({
   return (
     <StyledMobileCard
       ref={cardRef}
-      mobileSize={size}
-      mobileVariant={variant}
-      swipeable={swipeable}
-      selected={selected}
-      loading={loading}
-      error={error}
+      {...({
+        mobileSize: size,
+        mobileVariant: variant,
+        swipeable,
+        selected,
+        loading,
+        error,
+      } as any)}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -320,9 +322,9 @@ export function MobileCard({
       {/* Swipe indicators */}
       {swipeable && (
         <SwipeIndicator direction={swipeDirection}>
-            {swipeDirection === 'left' && <Iconify icon="eva:more-vertical-fill" width={24} />}
-            {swipeDirection === 'right' && <Iconify icon="eva:checkmark-circle-fill" width={24} />}
-          </SwipeIndicator>
+          {swipeDirection === 'left' && <Iconify icon="eva:more-vertical-fill" width={24} />}
+          {swipeDirection === 'right' && <Iconify icon="eva:checkmark-circle-fill" width={24} />}
+        </SwipeIndicator>
       )}
 
       {/* Progress bar */}

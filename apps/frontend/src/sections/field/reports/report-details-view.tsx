@@ -52,15 +52,36 @@ interface AddTimeEntryDialogProps {
     description: string;
     startTime: Date;
     endTime: Date;
-    category: string;
+    category: 'labor' | 'travel' | 'waiting' | 'equipment' | 'other';
   }) => void;
 }
 
 // Mock materials data
 const mockMaterials = [
-  { _id: 'mat-1', name: 'Steel Pipe 50mm', sku: 'SP-50-001', unit: 'pcs', unitCost: 25.50, quantity: 100 },
-  { _id: 'mat-2', name: 'PVC Elbow 90°', sku: 'PVC-E90-001', unit: 'pcs', unitCost: 5.25, quantity: 250 },
-  { _id: 'mat-3', name: 'Copper Wire 2.5mm²', sku: 'CW-25-001', unit: 'm', unitCost: 2.75, quantity: 1000 },
+  {
+    _id: 'mat-1',
+    name: 'Steel Pipe 50mm',
+    sku: 'SP-50-001',
+    unit: 'pcs',
+    unitCost: 25.5,
+    quantity: 100,
+  },
+  {
+    _id: 'mat-2',
+    name: 'PVC Elbow 90°',
+    sku: 'PVC-E90-001',
+    unit: 'pcs',
+    unitCost: 5.25,
+    quantity: 250,
+  },
+  {
+    _id: 'mat-3',
+    name: 'Copper Wire 2.5mm²',
+    sku: 'CW-25-001',
+    unit: 'm',
+    unitCost: 2.75,
+    quantity: 1000,
+  },
 ];
 
 const timeCategories = [
@@ -86,7 +107,7 @@ function AddMaterialDialog({ open, onClose, onAdd }: AddMaterialDialogProps) {
     }
   }, [selectedMaterial, quantity, notes, onAdd, onClose]);
 
-  const selectedMaterialData = mockMaterials.find(m => m._id === selectedMaterial);
+  const selectedMaterialData = mockMaterials.find((m) => m._id === selectedMaterial);
 
   return (
     <MobileModal
@@ -116,10 +137,10 @@ function AddMaterialDialog({ open, onClose, onAdd }: AddMaterialDialogProps) {
           onChange={setSelectedMaterial}
           options={[
             { value: '', label: 'Select material...' },
-            ...mockMaterials.map(m => ({
+            ...mockMaterials.map((m) => ({
               value: m._id,
-              label: `${m.name} (${m.sku}) - $${m.unitCost}/${m.unit}`
-            }))
+              label: `${m.name} (${m.sku}) - $${m.unitCost}/${m.unit}`,
+            })),
           ]}
         />
 
@@ -132,7 +153,8 @@ function AddMaterialDialog({ open, onClose, onAdd }: AddMaterialDialogProps) {
               <Box sx={{ flex: 1 }}>
                 <Typography variant="subtitle2">{selectedMaterialData.name}</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  ${selectedMaterialData.unitCost} per {selectedMaterialData.unit} • Stock: {selectedMaterialData.quantity}
+                  ${selectedMaterialData.unitCost} per {selectedMaterialData.unit} • Stock:{' '}
+                  {selectedMaterialData.quantity}
                 </Typography>
               </Box>
             </Box>
@@ -187,7 +209,7 @@ function AddTimeEntryDialog({ open, onClose, onAdd }: AddTimeEntryDialogProps) {
         description: description.trim(),
         startTime: startTime.toDate(),
         endTime: endTime.toDate(),
-        category,
+        category: category as 'labor' | 'travel' | 'waiting' | 'equipment' | 'other',
       });
       setDescription('');
       setStartTime(dayjs());
@@ -197,9 +219,8 @@ function AddTimeEntryDialog({ open, onClose, onAdd }: AddTimeEntryDialogProps) {
     }
   }, [description, startTime, endTime, category, onAdd, onClose]);
 
-  const duration = startTime && endTime && endTime.isAfter(startTime)
-    ? endTime.diff(startTime, 'minute')
-    : 0;
+  const duration =
+    startTime && endTime && endTime.isAfter(startTime) ? endTime.diff(startTime, 'minute') : 0;
 
   return (
     <MobileModal
@@ -239,19 +260,9 @@ function AddTimeEntryDialog({ open, onClose, onAdd }: AddTimeEntryDialogProps) {
           options={timeCategories}
         />
 
-        <MobileDatePicker
-          label="Start Time"
-          value={startTime}
-          onChange={setStartTime}
-          enableTime
-        />
+        <MobileDatePicker label="Start Time" value={startTime} onChange={setStartTime} />
 
-        <MobileDatePicker
-          label="End Time"
-          value={endTime}
-          onChange={setEndTime}
-          enableTime
-        />
+        <MobileDatePicker label="End Time" value={endTime} onChange={setEndTime} />
 
         {duration > 0 && (
           <Box sx={{ p: 2, bgcolor: 'info.lighter', borderRadius: 1 }}>
@@ -269,58 +280,71 @@ export function ReportDetailsView({ report, onUpdate }: ReportDetailsViewProps) 
   const [addMaterialOpen, setAddMaterialOpen] = useState(false);
   const [addTimeEntryOpen, setAddTimeEntryOpen] = useState(false);
 
-  const handleAddMaterial = useCallback(async (materialId: string, quantityUsed: number, notes?: string) => {
-    try {
-      const response = await ReportService.addMaterialUsage(report._id, {
-        materialId,
-        quantityUsed,
-        notes,
-      });
+  const handleAddMaterial = useCallback(
+    async (materialId: string, quantityUsed: number, notes?: string) => {
+      try {
+        const response = await ReportService.addMaterialUsage(report._id, {
+          materialId,
+          quantityUsed,
+          notes,
+        });
 
-      if (response.success) {
-        toast.success('Material added to report');
-        // In a real app, refetch the report data
-        // onUpdate(updatedReport);
-      } else {
+        if (response.success) {
+          toast.success('Material added to report');
+          // In a real app, refetch the report data
+          // onUpdate(updatedReport);
+        } else {
+          toast.error('Failed to add material');
+        }
+      } catch (error) {
+        console.error('Error adding material:', error);
         toast.error('Failed to add material');
       }
-    } catch (error) {
-      console.error('Error adding material:', error);
-      toast.error('Failed to add material');
-    }
-  }, [report._id]);
+    },
+    [report._id]
+  );
 
-  const handleAddTimeEntry = useCallback(async (data: {
-    description: string;
-    startTime: Date;
-    endTime: Date;
-    category: string;
-  }) => {
-    try {
-      const response = await ReportService.addTimeEntry(report._id, data);
+  const handleAddTimeEntry = useCallback(
+    async (data: {
+      description: string;
+      startTime: Date;
+      endTime: Date;
+      category: 'labor' | 'travel' | 'waiting' | 'equipment' | 'other';
+    }) => {
+      try {
+        const response = await ReportService.addTimeEntry(report._id, data);
 
-      if (response.success) {
-        toast.success('Time entry added to report');
-        // In a real app, refetch the report data
-        // onUpdate(updatedReport);
-      } else {
+        if (response.success) {
+          toast.success('Time entry added to report');
+          // In a real app, refetch the report data
+          // onUpdate(updatedReport);
+        } else {
+          toast.error('Failed to add time entry');
+        }
+      } catch (error) {
+        console.error('Error adding time entry:', error);
         toast.error('Failed to add time entry');
       }
-    } catch (error) {
-      console.error('Error adding time entry:', error);
-      toast.error('Failed to add time entry');
-    }
-  }, [report._id]);
+    },
+    [report._id]
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft': return 'default';
-      case 'submitted': return 'info';
-      case 'under_review': return 'warning';
-      case 'approved': return 'success';
-      case 'rejected': return 'error';
-      case 'published': return 'primary';
-      default: return 'default';
+      case 'draft':
+        return 'default';
+      case 'submitted':
+        return 'info';
+      case 'under_review':
+        return 'warning';
+      case 'approved':
+        return 'success';
+      case 'rejected':
+        return 'error';
+      case 'published':
+        return 'primary';
+      default:
+        return 'default';
     }
   };
 
@@ -337,14 +361,10 @@ export function ReportDetailsView({ report, onUpdate }: ReportDetailsViewProps) 
           </Avatar>
           <Box sx={{ flex: 1 }}>
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-              {report.title}
+              {report.type.charAt(0).toUpperCase() + report.type.slice(1)} Report
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-              <Chip
-                label={report.type}
-                size="small"
-                sx={{ textTransform: 'capitalize' }}
-              />
+              <Chip label={report.type} size="small" sx={{ textTransform: 'capitalize' }} />
               <Chip
                 label={report.status}
                 color={getStatusColor(report.status) as any}
@@ -353,7 +373,9 @@ export function ReportDetailsView({ report, onUpdate }: ReportDetailsViewProps) 
               />
               <Chip
                 label={report.priority}
-                color={report.priority === 'high' || report.priority === 'urgent' ? 'error' : 'default'}
+                color={
+                  report.priority === 'high' || report.priority === 'urgent' ? 'error' : 'default'
+                }
                 size="small"
                 sx={{ textTransform: 'capitalize' }}
               />
@@ -365,7 +387,7 @@ export function ReportDetailsView({ report, onUpdate }: ReportDetailsViewProps) 
         </Box>
 
         <Typography variant="body1" sx={{ mb: 2 }}>
-          {report.description}
+          {report.location || 'No location specified'}
         </Typography>
 
         {report.location && (
@@ -496,7 +518,14 @@ export function ReportDetailsView({ report, onUpdate }: ReportDetailsViewProps) 
                   borderRadius: 1,
                 }}
               >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    mb: 1,
+                  }}
+                >
                   <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                     {entry.description}
                   </Typography>
@@ -510,7 +539,15 @@ export function ReportDetailsView({ report, onUpdate }: ReportDetailsViewProps) 
                 </Typography>
               </Box>
             ))}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                pt: 1,
+                borderTop: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
               <Typography variant="subtitle2">Total Hours</Typography>
               <Typography variant="subtitle2" color="primary">
                 {report.totalHours ? `${report.totalHours.toFixed(1)}h` : '0h'}
@@ -519,7 +556,11 @@ export function ReportDetailsView({ report, onUpdate }: ReportDetailsViewProps) 
           </Box>
         ) : (
           <Box sx={{ textAlign: 'center', py: 3 }}>
-            <Iconify icon="solar:clock-circle-outline" width={48} sx={{ color: 'text.disabled', mb: 1 }} />
+            <Iconify
+              icon="solar:clock-circle-outline"
+              width={48}
+              sx={{ color: 'text.disabled', mb: 1 }}
+            />
             <Typography variant="body2" color="text.secondary">
               No time entries yet
             </Typography>
@@ -542,8 +583,18 @@ export function ReportDetailsView({ report, onUpdate }: ReportDetailsViewProps) 
               <Typography variant="body2">Labor Cost</Typography>
               <Typography variant="body2">{formatCurrency(report.totalLaborCost)}</Typography>
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Total Cost</Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                pt: 1,
+                borderTop: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                Total Cost
+              </Typography>
               <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600 }}>
                 {formatCurrency(report.totalCost)}
               </Typography>

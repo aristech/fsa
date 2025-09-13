@@ -71,11 +71,11 @@ const slideOut = keyframes`
 
 // Styled Toast Container
 const ToastContainer = styled(Box, {
-  shouldForwardProp: (prop) => !['position', 'isExiting'].includes(prop as string),
+  shouldForwardProp: (prop) => !['toastPosition', 'isExiting'].includes(prop as string),
 })<{
-  position: ToastPosition;
+  toastPosition: ToastPosition;
   isExiting: boolean;
-}>(({ theme, position, isExiting }) => {
+}>(({ theme, toastPosition, isExiting }) => {
   const positionStyles = {
     top: { top: theme.spacing(2), left: '50%', transform: 'translateX(-50%)' },
     bottom: { bottom: theme.spacing(2), left: '50%', transform: 'translateX(-50%)' },
@@ -90,7 +90,7 @@ const ToastContainer = styled(Box, {
     zIndex: theme.zIndex.snackbar,
     maxWidth: '400px',
     width: 'calc(100% - 32px)',
-    ...positionStyles[position],
+    ...positionStyles[toastPosition as keyof typeof positionStyles],
     animation: isExiting
       ? `${slideOut} 0.3s ease-in-out forwards`
       : `${slideIn} 0.3s ease-in-out forwards`,
@@ -145,7 +145,7 @@ function Toast({ toast, onClose }: { toast: ToastProps; onClose: () => void }) {
   };
 
   return (
-    <ToastContainer position={toast.position || 'top'} isExiting={isExiting}>
+    <ToastContainer toastPosition={toast.position || 'top'} isExiting={isExiting}>
       <StyledToast
         severity={toast.type}
         onClose={handleClose}
@@ -292,7 +292,7 @@ export function MobileModal({
       case 'large':
         return { maxWidth: 'md', fullWidth: true };
       case 'full':
-        return { maxWidth: false, fullWidth: true };
+        return { fullWidth: true };
       default:
         return { maxWidth: 'sm', fullWidth: true };
     }
@@ -309,7 +309,7 @@ export function MobileModal({
       open={open}
       onClose={onClose}
       fullScreen={fullScreen}
-      {...getSizeProps()}
+      {...(getSizeProps() as any)}
       BackdropProps={{
         onClick: handleBackdropClick,
         sx: {

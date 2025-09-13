@@ -66,9 +66,7 @@ interface ReportCreateFormProps {
 
 export function ReportCreateForm({ onSuccess, onCancel, initialData }: ReportCreateFormProps) {
   const [formData, setFormData] = useState<CreateReportData>({
-    title: '',
     type: 'daily',
-    description: '',
     location: '',
     weather: '',
     equipment: [],
@@ -88,66 +86,69 @@ export function ReportCreateForm({ onSuccess, onCancel, initialData }: ReportCre
   const [tagInput, setTagInput] = useState('');
 
   const handleFieldChange = useCallback((field: keyof CreateReportData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
   const handleAddEquipment = useCallback(() => {
     if (equipmentInput.trim()) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        equipment: [...(prev.equipment || []), equipmentInput.trim()]
+        equipment: [...(prev.equipment || []), equipmentInput.trim()],
       }));
       setEquipmentInput('');
     }
   }, [equipmentInput]);
 
   const handleRemoveEquipment = useCallback((index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      equipment: prev.equipment?.filter((_, i) => i !== index) || []
+      equipment: prev.equipment?.filter((_, i) => i !== index) || [],
     }));
   }, []);
 
   const handleAddTag = useCallback(() => {
     if (tagInput.trim() && !formData.tags?.includes(tagInput.trim())) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        tags: [...(prev.tags || []), tagInput.trim()]
+        tags: [...(prev.tags || []), tagInput.trim()],
       }));
       setTagInput('');
     }
   }, [tagInput, formData.tags]);
 
   const handleRemoveTag = useCallback((index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      tags: prev.tags?.filter((_, i) => i !== index) || []
+      tags: prev.tags?.filter((_, i) => i !== index) || [],
     }));
   }, []);
 
-  const validateStep = useCallback((step: number) => {
-    switch (step) {
-      case 1:
-        return !!(formData.title?.trim() && formData.type && formData.description?.trim());
-      case 2:
-        return true; // Optional fields
-      case 3:
-        return true; // Optional fields
-      default:
-        return false;
-    }
-  }, [formData]);
+  const validateStep = useCallback(
+    (step: number) => {
+      switch (step) {
+        case 1:
+          return !!(formData.type && formData.location?.trim());
+        case 2:
+          return true; // Optional fields
+        case 3:
+          return true; // Optional fields
+        default:
+          return false;
+      }
+    },
+    [formData]
+  );
 
   const handleNext = useCallback(() => {
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, 3));
+      setCurrentStep((prev) => Math.min(prev + 1, 3));
     } else {
       toast.error('Please fill in all required fields');
     }
   }, [currentStep, validateStep]);
 
   const handlePrevious = useCallback(() => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
   }, []);
 
   const handleSubmit = useCallback(async () => {
@@ -179,14 +180,6 @@ export function ReportCreateForm({ onSuccess, onCancel, initialData }: ReportCre
         Basic Information
       </Typography>
 
-      <MobileInput
-        label="Report Title *"
-        value={formData.title}
-        onChange={(e) => handleFieldChange('title', e.target.value)}
-        placeholder="Enter report title..."
-        required
-      />
-
       <MobileSelect
         label="Report Type *"
         value={formData.type}
@@ -206,16 +199,6 @@ export function ReportCreateForm({ onSuccess, onCancel, initialData }: ReportCre
         label="Report Date *"
         value={formData.reportDate ? dayjs(formData.reportDate) : dayjs()}
         onChange={(date) => handleFieldChange('reportDate', date?.toDate())}
-        required
-      />
-
-      <MobileInput
-        label="Description *"
-        value={formData.description}
-        onChange={(e) => handleFieldChange('description', e.target.value)}
-        placeholder="Describe the work performed, findings, or incident..."
-        multiline
-        rows={4}
         required
       />
 
@@ -390,9 +373,7 @@ export function ReportCreateForm({ onSuccess, onCancel, initialData }: ReportCre
     <MobileCard sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {renderStepIndicator()}
 
-      <Box sx={{ flex: 1, mb: 3 }}>
-        {renderStepContent()}
-      </Box>
+      <Box sx={{ flex: 1, mb: 3 }}>{renderStepContent()}</Box>
 
       <Divider sx={{ my: 2 }} />
 
@@ -418,7 +399,6 @@ export function ReportCreateForm({ onSuccess, onCancel, initialData }: ReportCre
             onClick={handleNext}
             disabled={!validateStep(currentStep)}
             icon={<Iconify icon="eva:arrow-right-fill" width={16} />}
-            iconPosition="right"
           >
             Next
           </MobileButton>

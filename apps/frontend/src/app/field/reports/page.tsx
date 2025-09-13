@@ -2,10 +2,11 @@
 
 import type { IReport, ReportSearchParams } from 'src/lib/models/Report';
 
+import dayjs from 'dayjs';
 import useSWR, { mutate } from 'swr';
 import { useState, useCallback } from 'react';
 
-import { Box, Fab, Chip, alpha, useTheme, Typography } from '@mui/material';
+import { Box, Fab, Chip, alpha, useTheme, Typography, InputAdornment } from '@mui/material';
 
 import { endpoints } from 'src/lib/axios';
 import { ReportService } from 'src/lib/services/report-service';
@@ -70,7 +71,11 @@ export default function FieldReportsPage() {
   });
 
   // Data fetching
-  const { data: reportsData, error, isLoading } = useSWR(
+  const {
+    data: reportsData,
+    error,
+    isLoading,
+  } = useSWR(
     [endpoints.fsa.reports.list, filters],
     ([url]) => ReportService.getAllReports(filters),
     {
@@ -84,7 +89,7 @@ export default function FieldReportsPage() {
 
   // Handlers
   const handleFilterChange = useCallback((key: keyof ReportSearchParams, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value, page: 1 }));
+    setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
   }, []);
 
   const handleClearFilters = useCallback(() => {
@@ -110,42 +115,56 @@ export default function FieldReportsPage() {
     setCreateDrawerOpen(true);
   }, []);
 
-  const handleReportCreated = useCallback((newReport: IReport) => {
-    setCreateDrawerOpen(false);
-    mutate([endpoints.fsa.reports.list, filters]);
-    toast.success('Report created successfully');
-  }, [filters]);
+  const handleReportCreated = useCallback(
+    (newReport: IReport) => {
+      setCreateDrawerOpen(false);
+      mutate([endpoints.fsa.reports.list, filters]);
+      toast.success('Report created successfully');
+    },
+    [filters]
+  );
 
-  const handleReportUpdated = useCallback((updatedReport: IReport) => {
-    setSelectedReport(updatedReport);
-    mutate([endpoints.fsa.reports.list, filters]);
-  }, [filters]);
+  const handleReportUpdated = useCallback(
+    (updatedReport: IReport) => {
+      setSelectedReport(updatedReport);
+      mutate([endpoints.fsa.reports.list, filters]);
+    },
+    [filters]
+  );
 
   const handleLoadMore = useCallback(() => {
     if (pagination.page < pagination.pages) {
-      setFilters(prev => ({ ...prev, page: prev.page! + 1 }));
+      setFilters((prev) => ({ ...prev, page: prev.page! + 1 }));
     }
   }, [pagination]);
 
   // Utility functions
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft': return 'default';
-      case 'submitted': return 'info';
-      case 'under_review': return 'warning';
-      case 'approved': return 'success';
-      case 'rejected': return 'error';
-      case 'published': return 'primary';
-      default: return 'default';
+      case 'draft':
+        return 'default';
+      case 'submitted':
+        return 'info';
+      case 'under_review':
+        return 'warning';
+      case 'approved':
+        return 'success';
+      case 'rejected':
+        return 'error';
+      case 'published':
+        return 'primary';
+      default:
+        return 'default';
     }
   };
 
   const getTypeIcon = (type: string) => {
-    const typeConfig = reportTypes.find(t => t.value === type);
+    const typeConfig = reportTypes.find((t) => t.value === type);
     return typeConfig?.icon || 'eva:file-text-fill';
   };
 
-  const formatDate = (date: string | Date) => new Date(date).toLocaleDateString('en-US', {
+  const formatDate = (date: string | Date) =>
+    new Date(date).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -218,8 +237,13 @@ export default function FieldReportsPage() {
               value={filters.search || ''}
               onChange={(e) => handleFilterChange('search', e.target.value)}
               placeholder="Search reports..."
-              startAdornment={<Iconify icon="eva:search-fill" />}
-              clearable
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Iconify icon="eva:search-fill" />
+                  </InputAdornment>
+                ),
+              }}
             />
 
             <Box sx={{ display: 'flex', gap: 2 }}>
@@ -245,14 +269,14 @@ export default function FieldReportsPage() {
               <Box sx={{ flex: 1 }}>
                 <MobileDatePicker
                   label="From Date"
-                  value={filters.dateFrom}
+                  value={filters.dateFrom ? dayjs(filters.dateFrom) : null}
                   onChange={(date) => handleFilterChange('dateFrom', date?.toDate())}
                 />
               </Box>
               <Box sx={{ flex: 1 }}>
                 <MobileDatePicker
                   label="To Date"
-                  value={filters.dateTo}
+                  value={filters.dateTo ? dayjs(filters.dateTo) : null}
                   onChange={(date) => handleFilterChange('dateTo', date?.toDate())}
                 />
               </Box>
@@ -267,11 +291,7 @@ export default function FieldReportsPage() {
               >
                 Apply Filters
               </MobileButton>
-              <MobileButton
-                variant="outline"
-                onClick={handleClearFilters}
-                sx={{ flex: 1 }}
-              >
+              <MobileButton variant="outline" onClick={handleClearFilters} sx={{ flex: 1 }}>
                 Clear
               </MobileButton>
             </Box>
@@ -298,8 +318,23 @@ export default function FieldReportsPage() {
                   />
                   <Box sx={{ flex: 1 }}>
                     <Box sx={{ height: 20, backgroundColor: 'grey.200', borderRadius: 1, mb: 1 }} />
-                    <Box sx={{ height: 16, backgroundColor: 'grey.100', borderRadius: 1, mb: 1, width: '60%' }} />
-                    <Box sx={{ height: 14, backgroundColor: 'grey.100', borderRadius: 1, width: '40%' }} />
+                    <Box
+                      sx={{
+                        height: 16,
+                        backgroundColor: 'grey.100',
+                        borderRadius: 1,
+                        mb: 1,
+                        width: '60%',
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        height: 14,
+                        backgroundColor: 'grey.100',
+                        borderRadius: 1,
+                        width: '40%',
+                      }}
+                    />
                   </Box>
                 </Box>
               </MobileCard>
@@ -345,7 +380,7 @@ export default function FieldReportsPage() {
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {report.title}
+                        {report.type.charAt(0).toUpperCase() + report.type.slice(1)} Report
                       </Typography>
                       <Chip
                         label={report.status.replace('_', ' ')}
@@ -373,10 +408,16 @@ export default function FieldReportsPage() {
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      {report.description}
+                      {report.location || 'No location specified'}
                     </Typography>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           <Iconify icon="eva:calendar-fill" width={14} />
@@ -438,12 +479,7 @@ export default function FieldReportsPage() {
 
           {/* Load More Button */}
           {reports.length > 0 && pagination.page < pagination.pages && (
-            <MobileButton
-              variant="outline"
-              onClick={handleLoadMore}
-              fullWidth
-              sx={{ mt: 2 }}
-            >
+            <MobileButton variant="outline" onClick={handleLoadMore} fullWidth sx={{ mt: 2 }}>
               Load More ({pagination.total - reports.length} remaining)
             </MobileButton>
           )}

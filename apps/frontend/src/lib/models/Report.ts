@@ -85,8 +85,15 @@ export interface IReport {
   tenantId: string;
 
   // Basic Info
-  title: string;
-  type: 'daily' | 'weekly' | 'monthly' | 'incident' | 'maintenance' | 'inspection' | 'completion' | 'safety';
+  type:
+    | 'daily'
+    | 'weekly'
+    | 'monthly'
+    | 'incident'
+    | 'maintenance'
+    | 'inspection'
+    | 'completion'
+    | 'safety';
   status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'published';
   priority: 'low' | 'medium' | 'high' | 'urgent';
 
@@ -125,7 +132,6 @@ export interface IReport {
   }[];
 
   // Content
-  description: string;
   location?: string;
   weather?: string;
   equipment: string[];
@@ -197,9 +203,7 @@ export interface IReport {
 
 // DTOs for API requests
 export interface CreateReportData {
-  title: string;
   type: IReport['type'];
-  description: string;
   clientId?: string;
   workOrderId?: string;
   taskIds?: string[];

@@ -335,13 +335,20 @@ export function PersonnelCreateView({
               render={({ field }) => (
                 <Autocomplete
                   value={field.value || 'office'}
-                  options={[
-                    { value: 'office', label: 'Office Environment Only' },
-                    { value: 'field', label: 'Field Environment Only' },
-                    { value: 'both', label: 'Both Environments' },
-                  ]}
-                  getOptionLabel={(option) => option.label}
-                  onChange={(_, val) => field.onChange(val?.value)}
+                  options={['office', 'field', 'both']}
+                  getOptionLabel={(option) => {
+                    switch (option) {
+                      case 'office':
+                        return 'Office Environment Only';
+                      case 'field':
+                        return 'Field Environment Only';
+                      case 'both':
+                        return 'Both Environments';
+                      default:
+                        return option;
+                    }
+                  }}
+                  onChange={(_, val) => field.onChange(val)}
                   renderInput={(params) => <TextField {...params} label="Environment Access" />}
                 />
               )}
