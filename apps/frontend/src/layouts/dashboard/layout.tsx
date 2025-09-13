@@ -32,6 +32,7 @@ import { navData as dashboardNavData } from '../nav-config-dashboard';
 import { dashboardLayoutVars, dashboardNavColorVars } from './css-vars';
 import { NotificationsDrawer } from '../components/notifications-drawer';
 import { EnhancedAccountDrawer } from '../components/enhanced-account-drawer';
+import { EnvironmentSwitcher } from '@/components/environment-switcher';
 import { MainSection, HeaderSection, layoutClasses, LayoutSection } from '../core';
 
 // ----------------------------------------------------------------------
@@ -132,6 +133,9 @@ export function DashboardLayout({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0, sm: 0.75 } }}>
           {/** @slot Searchbar */}
           <Searchbar data={navData} />
+
+          {/** @slot Environment switcher */}
+          <EnvironmentSwitcher />
 
           {/** @slot Language popover */}
           <LanguagePopover data={allLangs} />

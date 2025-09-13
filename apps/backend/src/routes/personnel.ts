@@ -21,6 +21,7 @@ const createPersonnelSchema = z.object({
   certifications: z.array(z.string()).optional(),
   hourlyRate: z.number().min(0, "Hourly rate must be positive"),
   notes: z.string().optional(),
+  environmentAccess: z.enum(["office", "field", "both"]).optional(),
   availability: z
     .object({
       monday: z.object({

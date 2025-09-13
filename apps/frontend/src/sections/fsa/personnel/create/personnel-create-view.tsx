@@ -49,6 +49,7 @@ const schema = zod.object({
   skills: zod.array(zod.string()).optional(),
   certifications: zod.array(zod.string()).optional(),
   sendInvitation: zod.boolean().optional(),
+  environmentAccess: zod.enum(['office', 'field', 'both']).optional(),
   availability: zod
     .object({
       monday: zod.object({ start: zod.string(), end: zod.string(), available: zod.boolean() }),
@@ -96,6 +97,7 @@ export function PersonnelCreateView({
       skills: [],
       certifications: [],
       sendInvitation: false,
+      environmentAccess: 'office',
       availability: {
         monday: { start: '09:00', end: '17:00', available: true },
         tuesday: { start: '09:00', end: '17:00', available: true },
@@ -323,6 +325,24 @@ export function PersonnelCreateView({
                   getOptionLabel={(o) => o.label}
                   onChange={(_, val) => field.onChange(val?.id)}
                   renderInput={(params) => <TextField {...params} label="Role" />}
+                />
+              )}
+            />
+
+            <Controller
+              name="environmentAccess"
+              control={control}
+              render={({ field }) => (
+                <Autocomplete
+                  value={field.value || 'office'}
+                  options={[
+                    { value: 'office', label: 'Office Environment Only' },
+                    { value: 'field', label: 'Field Environment Only' },
+                    { value: 'both', label: 'Both Environments' },
+                  ]}
+                  getOptionLabel={(option) => option.label}
+                  onChange={(_, val) => field.onChange(val?.value)}
+                  renderInput={(params) => <TextField {...params} label="Environment Access" />}
                 />
               )}
             />

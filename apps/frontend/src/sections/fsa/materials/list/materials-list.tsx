@@ -134,7 +134,7 @@ export function MaterialsList({ filters, onFilters, onImport, onCreate }: Materi
     } finally {
       setDeleteLoading(false);
     }
-  }, [table.selected, fetchMaterials, table]);
+  }, [fetchMaterials, table]);
 
   const handleExport = useCallback(() => {
     // Convert materials to CSV

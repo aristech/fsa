@@ -1,8 +1,8 @@
-import type { Document } from 'mongoose';
-import type { IRole } from './Role';
-import type { ITenant } from './Tenant';
+import type { Document } from "mongoose";
+import type { IRole } from "./Role";
+import type { ITenant } from "./Tenant";
 
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Schema } from "mongoose";
 
 // ----------------------------------------------------------------------
 
@@ -32,7 +32,9 @@ export interface IPersonnel extends Document {
   };
   notes?: string;
   isActive: boolean;
-  status: 'active' | 'pending' | 'inactive' | 'banned';
+  status: "active" | "pending" | "inactive" | "banned";
+  environmentAccess: "office" | "field" | "both";
+  mobileOptimized: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,24 +45,24 @@ const PersonnelSchema: Schema = new Schema(
   {
     tenantId: {
       type: Schema.Types.ObjectId,
-      ref: 'Tenant',
+      ref: "Tenant",
       required: true,
       index: true,
     },
     userId: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
     },
     employeeId: {
       type: String,
-      required: [true, 'Employee ID is required'],
+      required: [true, "Employee ID is required"],
       unique: true,
       trim: true,
     },
     roleId: {
       type: Schema.Types.ObjectId,
-      ref: 'Role',
+      ref: "Role",
       required: false, // Allow personnel without roles
     },
     skills: {
@@ -73,43 +75,43 @@ const PersonnelSchema: Schema = new Schema(
     },
     hourlyRate: {
       type: Number,
-      required: [true, 'Hourly rate is required'],
+      required: [true, "Hourly rate is required"],
       min: 0,
     },
     availability: {
       monday: {
-        start: { type: String, default: '09:00' },
-        end: { type: String, default: '17:00' },
+        start: { type: String, default: "09:00" },
+        end: { type: String, default: "17:00" },
         available: { type: Boolean, default: true },
       },
       tuesday: {
-        start: { type: String, default: '09:00' },
-        end: { type: String, default: '17:00' },
+        start: { type: String, default: "09:00" },
+        end: { type: String, default: "17:00" },
         available: { type: Boolean, default: true },
       },
       wednesday: {
-        start: { type: String, default: '09:00' },
-        end: { type: String, default: '17:00' },
+        start: { type: String, default: "09:00" },
+        end: { type: String, default: "17:00" },
         available: { type: Boolean, default: true },
       },
       thursday: {
-        start: { type: String, default: '09:00' },
-        end: { type: String, default: '17:00' },
+        start: { type: String, default: "09:00" },
+        end: { type: String, default: "17:00" },
         available: { type: Boolean, default: true },
       },
       friday: {
-        start: { type: String, default: '09:00' },
-        end: { type: String, default: '17:00' },
+        start: { type: String, default: "09:00" },
+        end: { type: String, default: "17:00" },
         available: { type: Boolean, default: true },
       },
       saturday: {
-        start: { type: String, default: '09:00' },
-        end: { type: String, default: '17:00' },
+        start: { type: String, default: "09:00" },
+        end: { type: String, default: "17:00" },
         available: { type: Boolean, default: false },
       },
       sunday: {
-        start: { type: String, default: '09:00' },
-        end: { type: String, default: '17:00' },
+        start: { type: String, default: "09:00" },
+        end: { type: String, default: "17:00" },
         available: { type: Boolean, default: false },
       },
     },
@@ -121,7 +123,7 @@ const PersonnelSchema: Schema = new Schema(
     },
     notes: {
       type: String,
-      default: '',
+      default: "",
       trim: true,
     },
     isActive: {
@@ -130,24 +132,44 @@ const PersonnelSchema: Schema = new Schema(
     },
     status: {
       type: String,
-      enum: ['active', 'pending', 'inactive', 'banned'],
-      default: 'pending',
+      enum: ["active", "pending", "inactive", "banned"],
+      default: "pending",
       index: true,
+    },
+    environmentAccess: {
+      type: String,
+      enum: ["office", "field", "both"],
+      default: "office",
+      index: true,
+    },
+    mobileOptimized: {
+      type: Boolean,
+      default: false,
     },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // ----------------------------------------------------------------------
+
+// Pre-save hook to set mobileOptimized based on environmentAccess
+PersonnelSchema.pre("save", function (next) {
+  if (this.environmentAccess === "field" || this.environmentAccess === "both") {
+    this.mobileOptimized = true;
+  }
+  next();
+});
 
 // Indexes for better performance
 PersonnelSchema.index({ tenantId: 1, userId: 1 });
 PersonnelSchema.index({ tenantId: 1, employeeId: 1 });
 PersonnelSchema.index({ tenantId: 1, roleId: 1 });
 PersonnelSchema.index({ tenantId: 1, isActive: 1 });
-PersonnelSchema.index({ 'location.latitude': 1, 'location.longitude': 1 });
+PersonnelSchema.index({ tenantId: 1, environmentAccess: 1 });
+PersonnelSchema.index({ "location.latitude": 1, "location.longitude": 1 });
 
 export const Personnel =
-  mongoose.models.Personnel || mongoose.model<IPersonnel>('Personnel', PersonnelSchema);
+  mongoose.models.Personnel ||
+  mongoose.model<IPersonnel>("Personnel", PersonnelSchema);
