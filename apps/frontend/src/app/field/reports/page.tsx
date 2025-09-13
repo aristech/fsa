@@ -1,212 +1,172 @@
 'use client';
 
-import dayjs from 'dayjs';
-import { Iconify } from '@/components/iconify';
-import React, { useState, useCallback } from 'react';
+import type { IReport, ReportSearchParams } from 'src/lib/models/Report';
+
+import useSWR, { mutate } from 'swr';
+import { useState, useCallback } from 'react';
+
+import { Box, Fab, Chip, alpha, useTheme, Typography } from '@mui/material';
+
+import { endpoints } from 'src/lib/axios';
+import { ReportService } from 'src/lib/services/report-service';
+
+import { toast } from 'src/components/snackbar';
+import { Iconify } from 'src/components/iconify';
 import {
   MobileCard,
-  MobileModal,
   MobileInput,
   MobileButton,
   MobileSelect,
   MobileDatePicker,
-} from '@/components/mobile';
+} from 'src/components/mobile';
 
-import { Box, Fab, Chip, alpha, Divider, useTheme, Typography } from '@mui/material';
+import { ReportCreateDrawer } from '../../../sections/field/reports/report-create-drawer';
+import { ReportDetailsDrawer } from '../../../sections/field/reports/report-details-drawer';
 
-// Mock data for reports
-interface MockReport {
-  id: string;
-  title: string;
-  type: 'daily' | 'weekly' | 'incident' | 'maintenance' | 'inspection';
-  client: string;
-  project: string;
-  date: Date;
-  status: 'draft' | 'submitted' | 'approved' | 'rejected';
-  createdBy: string;
-  description: string;
-  attachments: number;
-}
-
-const mockReports: MockReport[] = [
-  {
-    id: '1',
-    title: 'Daily Work Report - Building A',
-    type: 'daily',
-    client: 'ABC Corporation',
-    project: 'HVAC Installation',
-    date: new Date(2024, 0, 15),
-    status: 'submitted',
-    createdBy: 'John Smith',
-    description: 'Completed installation of main HVAC unit and tested all systems.',
-    attachments: 3,
-  },
-  {
-    id: '2',
-    title: 'Incident Report - Electrical Issue',
-    type: 'incident',
-    client: 'XYZ Industries',
-    project: 'Electrical Maintenance',
-    date: new Date(2024, 0, 14),
-    status: 'approved',
-    createdBy: 'Mike Johnson',
-    description: 'Reported and resolved electrical panel malfunction in Building B.',
-    attachments: 5,
-  },
-  {
-    id: '3',
-    title: 'Weekly Progress Report',
-    type: 'weekly',
-    client: 'DEF Construction',
-    project: 'Plumbing Renovation',
-    date: new Date(2024, 0, 12),
-    status: 'draft',
-    createdBy: 'Sarah Wilson',
-    description: 'Weekly progress update on plumbing renovation project.',
-    attachments: 2,
-  },
-  {
-    id: '4',
-    title: 'Safety Inspection Report',
-    type: 'inspection',
-    client: 'GHI Manufacturing',
-    project: 'Safety Compliance',
-    date: new Date(2024, 0, 10),
-    status: 'submitted',
-    createdBy: 'David Brown',
-    description: 'Monthly safety inspection completed for all equipment.',
-    attachments: 8,
-  },
-];
+// ----------------------------------------------------------------------
 
 const reportTypes = [
-  { value: 'daily', label: 'Daily Report' },
-  { value: 'weekly', label: 'Weekly Report' },
-  { value: 'incident', label: 'Incident Report' },
-  { value: 'maintenance', label: 'Maintenance Report' },
-  { value: 'inspection', label: 'Inspection Report' },
+  { value: '', label: 'All Types' },
+  { value: 'daily', label: 'Daily Report', icon: 'eva:calendar-fill' },
+  { value: 'weekly', label: 'Weekly Report', icon: 'eva:clock-fill' },
+  { value: 'monthly', label: 'Monthly Report', icon: 'eva:calendar-outline' },
+  { value: 'incident', label: 'Incident Report', icon: 'eva:alert-triangle-fill' },
+  { value: 'maintenance', label: 'Maintenance Report', icon: 'eva:settings-fill' },
+  { value: 'inspection', label: 'Inspection Report', icon: 'eva:search-fill' },
+  { value: 'completion', label: 'Completion Report', icon: 'eva:checkmark-circle-fill' },
+  { value: 'safety', label: 'Safety Report', icon: 'eva:shield-fill' },
 ];
 
 const reportStatuses = [
+  { value: '', label: 'All Status' },
   { value: 'draft', label: 'Draft' },
   { value: 'submitted', label: 'Submitted' },
+  { value: 'under_review', label: 'Under Review' },
   { value: 'approved', label: 'Approved' },
   { value: 'rejected', label: 'Rejected' },
-];
-
-const clients = [
-  { value: 'abc-corp', label: 'ABC Corporation' },
-  { value: 'xyz-industries', label: 'XYZ Industries' },
-  { value: 'def-construction', label: 'DEF Construction' },
-  { value: 'ghi-manufacturing', label: 'GHI Manufacturing' },
+  { value: 'published', label: 'Published' },
 ];
 
 export default function FieldReportsPage() {
   const theme = useTheme();
-  const [reports] = useState<MockReport[]>(mockReports);
-  const [filteredReports, setFilteredReports] = useState<MockReport[]>(mockReports);
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [selectedReport, setSelectedReport] = useState<MockReport | null>(null);
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
+
+  // State management
+  const [selectedReport, setSelectedReport] = useState<IReport | null>(null);
+  const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
+  const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Filter states
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<ReportSearchParams>({
+    page: 1,
+    limit: 20,
     type: '',
     status: '',
-    client: '',
-    dateFrom: null as Date | null,
-    dateTo: null as Date | null,
+    search: '',
+    dateFrom: undefined,
+    dateTo: undefined,
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
   });
 
-  const handleFilterChange = useCallback((key: string, value: any) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+  // Data fetching
+  const { data: reportsData, error, isLoading } = useSWR(
+    [endpoints.fsa.reports.list, filters],
+    ([url]) => ReportService.getAllReports(filters),
+    {
+      refreshInterval: 30000, // Refresh every 30 seconds
+      revalidateOnFocus: true,
+    }
+  );
+
+  const reports = reportsData?.data || [];
+  const pagination = reportsData?.pagination || { total: 0, pages: 1, page: 1 };
+
+  // Handlers
+  const handleFilterChange = useCallback((key: keyof ReportSearchParams, value: any) => {
+    setFilters(prev => ({ ...prev, [key]: value, page: 1 }));
   }, []);
 
-  const applyFilters = useCallback(() => {
-    let filtered = reports;
-
-    if (filters.type) {
-      filtered = filtered.filter((report) => report.type === filters.type);
-    }
-
-    if (filters.status) {
-      filtered = filtered.filter((report) => report.status === filters.status);
-    }
-
-    if (filters.client) {
-      filtered = filtered.filter((report) =>
-        report.client.toLowerCase().includes(filters.client.toLowerCase())
-      );
-    }
-
-    if (filters.dateFrom) {
-      filtered = filtered.filter((report) => report.date >= filters.dateFrom!);
-    }
-
-    if (filters.dateTo) {
-      filtered = filtered.filter((report) => report.date <= filters.dateTo!);
-    }
-
-    setFilteredReports(filtered);
-  }, [reports, filters]);
-
-  const clearFilters = useCallback(() => {
+  const handleClearFilters = useCallback(() => {
     setFilters({
+      page: 1,
+      limit: 20,
       type: '',
       status: '',
-      client: '',
-      dateFrom: null,
-      dateTo: null,
+      search: '',
+      dateFrom: undefined,
+      dateTo: undefined,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
     });
-    setFilteredReports(reports);
-  }, [reports]);
+  }, []);
 
-  const handleReportSelect = useCallback((report: MockReport) => {
+  const handleReportSelect = useCallback((report: IReport) => {
     setSelectedReport(report);
-    setDetailModalOpen(true);
+    setDetailsDrawerOpen(true);
   }, []);
 
   const handleCreateReport = useCallback(() => {
-    setCreateModalOpen(true);
+    setCreateDrawerOpen(true);
   }, []);
 
+  const handleReportCreated = useCallback((newReport: IReport) => {
+    setCreateDrawerOpen(false);
+    mutate([endpoints.fsa.reports.list, filters]);
+    toast.success('Report created successfully');
+  }, [filters]);
+
+  const handleReportUpdated = useCallback((updatedReport: IReport) => {
+    setSelectedReport(updatedReport);
+    mutate([endpoints.fsa.reports.list, filters]);
+  }, [filters]);
+
+  const handleLoadMore = useCallback(() => {
+    if (pagination.page < pagination.pages) {
+      setFilters(prev => ({ ...prev, page: prev.page! + 1 }));
+    }
+  }, [pagination]);
+
+  // Utility functions
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft':
-        return 'default';
-      case 'submitted':
-        return 'info';
-      case 'approved':
-        return 'success';
-      case 'rejected':
-        return 'error';
-      default:
-        return 'default';
+      case 'draft': return 'default';
+      case 'submitted': return 'info';
+      case 'under_review': return 'warning';
+      case 'approved': return 'success';
+      case 'rejected': return 'error';
+      case 'published': return 'primary';
+      default: return 'default';
     }
   };
 
   const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'daily':
-        return 'eva:calendar-fill';
-      case 'weekly':
-        return 'eva:clock-fill';
-      case 'incident':
-        return 'eva:alert-triangle-fill';
-      case 'maintenance':
-        return 'eva:settings-fill';
-      case 'inspection':
-        return 'eva:search-fill';
-      default:
-        return 'eva:file-text-fill';
-    }
+    const typeConfig = reportTypes.find(t => t.value === type);
+    return typeConfig?.icon || 'eva:file-text-fill';
   };
 
-  const formatDate = (date: Date) => date.toLocaleDateString('en-US', {
+  const formatDate = (date: string | Date) => new Date(date).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
     });
+
+  const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography color="error">Failed to load reports</Typography>
+        <MobileButton
+          variant="outline"
+          onClick={() => mutate([endpoints.fsa.reports.list, filters])}
+          sx={{ mt: 2 }}
+        >
+          Retry
+        </MobileButton>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -225,170 +185,224 @@ export default function FieldReportsPage() {
           borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
         }}
       >
-        <Typography variant="h5" component="h1" sx={{ fontWeight: 600 }}>
-          Reports
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Typography variant="h5" component="h1" sx={{ fontWeight: 600 }}>
+            Reports
+          </Typography>
+          <MobileButton
+            variant="outline"
+            size="small"
+            onClick={() => setShowFilters(!showFilters)}
+            startIcon={<Iconify icon="eva:funnel-fill" width={16} />}
+          >
+            Filters
+          </MobileButton>
+        </Box>
         <Typography variant="body2" color="text.secondary">
-          View and create field reports
+          {pagination.total} report{pagination.total !== 1 ? 's' : ''} found
         </Typography>
       </Box>
 
       {/* Filters */}
-      <Box
-        sx={{
-          padding: theme.spacing(2, 3),
-          backgroundColor: theme.palette.background.paper,
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-        }}
-      >
-        <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-          Filters
-        </Typography>
+      {showFilters && (
+        <Box
+          sx={{
+            padding: theme.spacing(2, 3),
+            backgroundColor: theme.palette.background.paper,
+            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          }}
+        >
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <MobileInput
+              label="Search"
+              value={filters.search || ''}
+              onChange={(e) => handleFilterChange('search', e.target.value)}
+              placeholder="Search reports..."
+              startAdornment={<Iconify icon="eva:search-fill" />}
+              clearable
+            />
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Box sx={{ flex: 1, minWidth: '120px' }}>
-              <MobileSelect
-                label="Report Type"
-                value={filters.type}
-                onChange={(value) => handleFilterChange('type', value)}
-                options={[{ value: '', label: 'All Types' }, ...reportTypes]}
-              />
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <MobileSelect
+                  label="Type"
+                  value={filters.type || ''}
+                  onChange={(value) => handleFilterChange('type', value)}
+                  options={reportTypes}
+                />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <MobileSelect
+                  label="Status"
+                  value={filters.status || ''}
+                  onChange={(value) => handleFilterChange('status', value)}
+                  options={reportStatuses}
+                />
+              </Box>
             </Box>
-            <Box sx={{ flex: 1, minWidth: '120px' }}>
-              <MobileSelect
-                label="Status"
-                value={filters.status}
-                onChange={(value) => handleFilterChange('status', value)}
-                options={[{ value: '', label: 'All Status' }, ...reportStatuses]}
-              />
-            </Box>
-          </Box>
 
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Box sx={{ flex: 1, minWidth: '120px' }}>
-              <MobileInput
-                label="Client"
-                value={filters.client}
-                onChange={(e) => handleFilterChange('client', e.target.value)}
-                placeholder="Search client..."
-              />
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <MobileDatePicker
+                  label="From Date"
+                  value={filters.dateFrom}
+                  onChange={(date) => handleFilterChange('dateFrom', date?.toDate())}
+                />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <MobileDatePicker
+                  label="To Date"
+                  value={filters.dateTo}
+                  onChange={(date) => handleFilterChange('dateTo', date?.toDate())}
+                />
+              </Box>
             </Box>
-            <Box sx={{ flex: 1, minWidth: '120px' }}>
-              <MobileDatePicker
-                label="From Date"
-                value={filters.dateFrom ? dayjs(filters.dateFrom) : null}
-                onChange={(date) => handleFilterChange('dateFrom', date?.toDate() || null)}
-              />
-            </Box>
-          </Box>
 
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Box sx={{ flex: 1, minWidth: '120px' }}>
-              <MobileDatePicker
-                label="To Date"
-                value={filters.dateTo ? dayjs(filters.dateTo) : null}
-                onChange={(date) => handleFilterChange('dateTo', date?.toDate() || null)}
-              />
-            </Box>
-            <Box sx={{ flex: 1, minWidth: '120px' }}>
-              <MobileButton variant="outline" onClick={clearFilters} fullWidth>
-                Clear Filters
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <MobileButton
+                variant="primary"
+                onClick={() => setShowFilters(false)}
+                icon={<Iconify icon="eva:search-fill" width={16} />}
+                sx={{ flex: 1 }}
+              >
+                Apply Filters
+              </MobileButton>
+              <MobileButton
+                variant="outline"
+                onClick={handleClearFilters}
+                sx={{ flex: 1 }}
+              >
+                Clear
               </MobileButton>
             </Box>
           </Box>
-
-          <MobileButton
-            variant="primary"
-            onClick={applyFilters}
-            fullWidth
-            icon={<Iconify icon="eva:search-fill" width={16} />}
-          >
-            Apply Filters
-          </MobileButton>
         </Box>
-      </Box>
+      )}
 
       {/* Reports List */}
       <Box sx={{ flex: 1, overflow: 'auto', padding: theme.spacing(2, 3) }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {filteredReports.map((report) => (
-            <MobileCard
-              key={report.id}
-              variant="outlined"
-              size="medium"
-              onTap={() => handleReportSelect(report)}
-              sx={{ cursor: 'pointer' }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                <Box
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <Iconify
-                    icon={getTypeIcon(report.type)}
-                    width={24}
-                    sx={{ color: theme.palette.primary.main }}
+          {isLoading ? (
+            // Loading skeleton
+            Array.from({ length: 3 }).map((_, index) => (
+              <MobileCard key={index} sx={{ opacity: 0.6 }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 2,
+                      backgroundColor: 'grey.200',
+                      flexShrink: 0,
+                    }}
                   />
+                  <Box sx={{ flex: 1 }}>
+                    <Box sx={{ height: 20, backgroundColor: 'grey.200', borderRadius: 1, mb: 1 }} />
+                    <Box sx={{ height: 16, backgroundColor: 'grey.100', borderRadius: 1, mb: 1, width: '60%' }} />
+                    <Box sx={{ height: 14, backgroundColor: 'grey.100', borderRadius: 1, width: '40%' }} />
+                  </Box>
                 </Box>
-
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, flex: 1 }}>
-                      {report.title}
-                    </Typography>
-                    <Chip
-                      label={report.status}
-                      color={getStatusColor(report.status) as any}
-                      size="small"
-                      sx={{ textTransform: 'capitalize' }}
+              </MobileCard>
+            ))
+          ) : reports.length > 0 ? (
+            reports.map((report: IReport) => (
+              <MobileCard
+                key={report._id}
+                variant="outlined"
+                size="medium"
+                onTap={() => handleReportSelect(report)}
+                sx={{ cursor: 'pointer' }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 2,
+                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Iconify
+                      icon={getTypeIcon(report.type)}
+                      width={24}
+                      sx={{ color: theme.palette.primary.main }}
                     />
                   </Box>
 
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    {report.client} • {report.project}
-                  </Typography>
-
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    {report.description}
-                  </Typography>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Iconify icon="eva:calendar-fill" width={14} />
-                      <Typography variant="caption" color="text.secondary">
-                        {formatDate(report.date)}
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Typography
+                        variant="subtitle1"
+                        sx={{
+                          fontWeight: 600,
+                          flex: 1,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {report.title}
                       </Typography>
+                      <Chip
+                        label={report.status.replace('_', ' ')}
+                        color={getStatusColor(report.status) as any}
+                        size="small"
+                        sx={{ textTransform: 'capitalize' }}
+                      />
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Iconify icon="eva:person-fill" width={14} />
-                      <Typography variant="caption" color="text.secondary">
-                        {report.createdBy}
+
+                    {(report.client?.name || report.workOrder?.number) && (
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        {report.client?.name}
+                        {report.client?.name && report.workOrder?.number && ' • '}
+                        {report.workOrder?.number}
                       </Typography>
-                    </Box>
-                    {report.attachments > 0 && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Iconify icon="eva:paperclip-fill" width={14} />
-                        <Typography variant="caption" color="text.secondary">
-                          {report.attachments} files
-                        </Typography>
-                      </Box>
                     )}
+
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        mb: 1,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {report.description}
+                    </Typography>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Iconify icon="eva:calendar-fill" width={14} />
+                          <Typography variant="caption" color="text.secondary">
+                            {formatDate(report.reportDate)}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Iconify icon="eva:person-fill" width={14} />
+                          <Typography variant="caption" color="text.secondary">
+                            {report.createdBy.name}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      {report.totalCost > 0 && (
+                        <Typography variant="caption" color="primary" sx={{ fontWeight: 600 }}>
+                          {formatCurrency(report.totalCost)}
+                        </Typography>
+                      )}
+                    </Box>
                   </Box>
                 </Box>
-              </Box>
-            </MobileCard>
-          ))}
-
-          {filteredReports.length === 0 && (
+              </MobileCard>
+            ))
+          ) : (
             <Box
               sx={{
                 display: 'flex',
@@ -407,10 +421,31 @@ export default function FieldReportsPage() {
               <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
                 No Reports Found
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Try adjusting your filters or create a new report
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                {filters.search || filters.type || filters.status
+                  ? 'Try adjusting your filters'
+                  : 'Create your first report to get started'}
               </Typography>
+              <MobileButton
+                variant="primary"
+                onClick={handleCreateReport}
+                startIcon={<Iconify icon="eva:plus-fill" width={16} />}
+              >
+                Create First Report
+              </MobileButton>
             </Box>
+          )}
+
+          {/* Load More Button */}
+          {reports.length > 0 && pagination.page < pagination.pages && (
+            <MobileButton
+              variant="outline"
+              onClick={handleLoadMore}
+              fullWidth
+              sx={{ mt: 2 }}
+            >
+              Load More ({pagination.total - reports.length} remaining)
+            </MobileButton>
           )}
         </Box>
       </Box>
@@ -436,160 +471,22 @@ export default function FieldReportsPage() {
         <Iconify icon="eva:plus-fill" width={24} />
       </Fab>
 
-      {/* Report Detail Modal */}
-      <MobileModal
-        open={detailModalOpen}
-        onClose={() => setDetailModalOpen(false)}
-        title="Report Details"
-        size="large"
-        actions={
-          <Box sx={{ display: 'flex', gap: 1, width: '100%' }}>
-            <MobileButton
-              variant="outline"
-              size="medium"
-              icon={<Iconify icon="eva:edit-fill" width={16} />}
-              onClick={() => console.log('Edit report')}
-            >
-              Edit
-            </MobileButton>
-            <MobileButton
-              variant="primary"
-              size="medium"
-              icon={<Iconify icon="eva:download-fill" width={16} />}
-              onClick={() => console.log('Download report')}
-            >
-              Download
-            </MobileButton>
-          </Box>
-        }
-      >
-        {selectedReport && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Box
-                sx={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 2,
-                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Iconify
-                  icon={getTypeIcon(selectedReport.type)}
-                  width={28}
-                  sx={{ color: theme.palette.primary.main }}
-                />
-              </Box>
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                  {selectedReport.title}
-                </Typography>
-                <Chip
-                  label={selectedReport.status}
-                  color={getStatusColor(selectedReport.status) as any}
-                  size="small"
-                  sx={{ textTransform: 'capitalize' }}
-                />
-              </Box>
-            </Box>
+      {/* Create Report Drawer */}
+      <ReportCreateDrawer
+        open={createDrawerOpen}
+        onClose={() => setCreateDrawerOpen(false)}
+        onSuccess={handleReportCreated}
+      />
 
-            <Divider />
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  Client
-                </Typography>
-                <Typography variant="body1">{selectedReport.client}</Typography>
-              </Box>
-
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  Project
-                </Typography>
-                <Typography variant="body1">{selectedReport.project}</Typography>
-              </Box>
-
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  Date
-                </Typography>
-                <Typography variant="body1">{formatDate(selectedReport.date)}</Typography>
-              </Box>
-
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  Created By
-                </Typography>
-                <Typography variant="body1">{selectedReport.createdBy}</Typography>
-              </Box>
-
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  Description
-                </Typography>
-                <Typography variant="body1">{selectedReport.description}</Typography>
-              </Box>
-
-              {selectedReport.attachments > 0 && (
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
-                    Attachments
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedReport.attachments} file{selectedReport.attachments > 1 ? 's' : ''}
-                  </Typography>
-                </Box>
-              )}
-            </Box>
-          </Box>
-        )}
-      </MobileModal>
-
-      {/* Create Report Modal */}
-      <MobileModal
-        open={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        title="Create New Report"
-        size="large"
-        actions={
-          <Box sx={{ display: 'flex', gap: 1, width: '100%' }}>
-            <MobileButton variant="outline" size="medium" onClick={() => setCreateModalOpen(false)}>
-              Cancel
-            </MobileButton>
-            <MobileButton
-              variant="primary"
-              size="medium"
-              icon={<Iconify icon="eva:save-fill" width={16} />}
-              onClick={() => console.log('Create report')}
-            >
-              Create Report
-            </MobileButton>
-          </Box>
-        }
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <MobileInput label="Report Title" placeholder="Enter report title..." />
-
-          <MobileSelect label="Report Type" value="" onChange={() => {}} options={reportTypes} />
-
-          <MobileSelect label="Client" value="" onChange={() => {}} options={clients} />
-
-          <MobileInput label="Project" placeholder="Enter project name..." />
-
-          <MobileDatePicker label="Report Date" value={null} onChange={() => {}} />
-
-          <MobileInput
-            label="Description"
-            placeholder="Enter report description..."
-            multiline
-            rows={4}
-          />
-        </Box>
-      </MobileModal>
+      {/* Report Details Drawer */}
+      {selectedReport && (
+        <ReportDetailsDrawer
+          open={detailsDrawerOpen}
+          onClose={() => setDetailsDrawerOpen(false)}
+          report={selectedReport}
+          onUpdate={handleReportUpdated}
+        />
+      )}
     </Box>
   );
 }

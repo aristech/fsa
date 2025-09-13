@@ -38,8 +38,9 @@ import { useDateRangePicker, CustomDateRangePicker } from 'src/components/custom
 
 import { KanbanDetailsTime } from './kanban-details-time';
 import { KanbanDetailsToolbar } from './kanban-details-toolbar';
-import { KanbanInputName } from '../components/kanban-input-name';
 import { KanbanDetailsPriority } from './kanban-details-priority';
+import { KanbanInputName } from '../components/kanban-input-name';
+import { KanbanDetailsMaterials } from './kanban-details-materials';
 import { KanbanDetailsAttachments } from './kanban-details-attachments';
 import { KanbanDetailsCommentList } from './kanban-details-comment-list';
 import { KanbanDetailsCommentInput } from './kanban-details-comment-input';
@@ -465,6 +466,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         { value: 'overview', label: 'Overview' },
         { value: 'time', label: 'Time' },
         { value: 'subTasks', label: `Subtasks (${subtasks.length})` },
+        { value: 'materials', label: 'Materials' },
         { value: 'comments', label: `Comments (${comments.length})` },
       ].map((tab) => (
         <Tab key={tab.value} value={tab.value} label={tab.label} />
@@ -839,6 +841,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           <KanbanDetailsTime taskId={task.id} workOrderId={(task as any)?.workOrderId} />
         )}
         {tabs.value === 'subTasks' && renderTabSubtasks()}
+        {tabs.value === 'materials' && <KanbanDetailsMaterials taskId={task.id} />}
         {tabs.value === 'comments' && renderTabComments()}
       </Scrollbar>
 

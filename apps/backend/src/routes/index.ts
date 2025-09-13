@@ -16,6 +16,8 @@ import { commentsRoutes } from "./comments";
 import { timeEntryRoutes } from "./time-entries";
 import { notificationRoutes } from "./notifications";
 import { materialsRoutes } from "./materials";
+import { taskMaterialsRoutes } from "./task-materials";
+import { reportsRoutes } from "./reports";
 
 export async function registerRoutes(fastify: FastifyInstance) {
   // Health check
@@ -40,4 +42,6 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(timeEntryRoutes, { prefix: "/api/v1/time-entries" });
   await fastify.register(notificationRoutes, { prefix: "/api/v1/notifications" });
   await fastify.register(materialsRoutes, { prefix: "/api/v1/materials" });
+  await fastify.register(taskMaterialsRoutes, { prefix: "/api/v1/tasks" });
+  await fastify.register(reportsRoutes, { prefix: "/api/v1/reports" });
 }

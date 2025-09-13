@@ -42,12 +42,12 @@ const ICONS = {
   analytics: icon('ic-analytics'),
   dashboard: icon('ic-dashboard'),
   // FSA Icons
-  workOrder: icon('ic-order'),
-  customer: icon('ic-user'),
+  workOrder: icon('ic-course'),
+  customer: icon('ic-banking'),
   technician: icon('ic-user'),
   scheduling: icon('ic-calendar'),
   reports: icon('ic-analytics'),
-  materials: icon('ic-product'),
+  materials: icon('ic-job'),
 };
 
 // ----------------------------------------------------------------------

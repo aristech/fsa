@@ -21,3 +21,5 @@ export { TimeEntry, type ITimeEntry } from "./TimeEntry";
 export { Notification, type INotification } from "./Notification";
 export { CalendarEvent, type ICalendarEvent } from "./CalendarEvent";
 export { Material, type IMaterial } from "./Material";
+export { TaskMaterial, type ITaskMaterial } from "./TaskMaterial";
+export { Report, type IReport } from "./Report";
