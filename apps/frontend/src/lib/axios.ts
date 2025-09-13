@@ -112,6 +112,14 @@ export const endpoints = {
       list: '/api/v1/personnel',
       details: (id: string) => `/api/v1/personnel/${id}`,
     },
+    materials: {
+      list: '/api/v1/materials',
+      details: (id: string) => `/api/v1/materials/${id}`,
+      categories: '/api/v1/materials/categories',
+      deleteCategory: (categoryName: string) => `/api/v1/materials/categories/${encodeURIComponent(categoryName)}`,
+      bulkImport: '/api/v1/materials/bulk-import',
+      toggleActive: (id: string) => `/api/v1/materials/${id}/toggle-active`,
+    },
     roles: {
       list: '/api/v1/roles',
       details: (id: string) => `/api/v1/roles/${id}`,

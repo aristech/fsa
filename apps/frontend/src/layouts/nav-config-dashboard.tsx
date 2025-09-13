@@ -47,6 +47,7 @@ const ICONS = {
   technician: icon('ic-user'),
   scheduling: icon('ic-calendar'),
   reports: icon('ic-analytics'),
+  materials: icon('ic-product'),
 };
 
 // ----------------------------------------------------------------------
@@ -150,6 +151,19 @@ export const navData: NavSectionProps['data'] = [
             title: 'Roles',
             path: '/dashboard/personnel/roles',
             requiredPermissions: 'roles.manage',
+          },
+        ],
+      },
+      {
+        title: 'Materials',
+        path: paths.dashboard.fsa.materials.root,
+        icon: ICONS.materials,
+        requiredPermissions: 'materials.view',
+        children: [
+          {
+            title: 'List',
+            path: paths.dashboard.fsa.materials.root,
+            requiredPermissions: 'materials.view',
           },
         ],
       },

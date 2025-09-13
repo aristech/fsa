@@ -172,6 +172,12 @@ export const paths = {
         details: (id: string) => `${ROOTS.DASHBOARD}/personnel/${id}`,
         edit: (id: string) => `${ROOTS.DASHBOARD}/personnel/${id}/edit`,
       },
+      materials: {
+        root: `${ROOTS.DASHBOARD}/materials`,
+        new: `${ROOTS.DASHBOARD}/materials/new`,
+        details: (id: string) => `${ROOTS.DASHBOARD}/materials/${id}`,
+        edit: (id: string) => `${ROOTS.DASHBOARD}/materials/${id}/edit`,
+      },
       technicians: {
         root: `${ROOTS.DASHBOARD}/technicians`,
         new: `${ROOTS.DASHBOARD}/technicians/new`,

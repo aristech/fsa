@@ -11,29 +11,33 @@ import { realtimeService } from "../services/realtime-service";
 import { NotificationService } from "../services/notification-service";
 
 // Helper function to check if a user can access time entries for a specific task
-async function canUserAccessTaskTimeEntry(userId: string, taskId: string): Promise<boolean> {
+async function canUserAccessTaskTimeEntry(
+  userId: string,
+  taskId: string,
+): Promise<boolean> {
   try {
     // Find the task
-    const task = await Task.findOne({ _id: taskId }).lean() as any;
+    const task = (await Task.findOne({ _id: taskId }).lean()) as any;
     if (!task) {
       return false;
     }
 
     // Get personnel record for the current user
-    const personnel = await Personnel.findOne({ 
+    const personnel = (await Personnel.findOne({
       userId: userId,
       tenantId: task.tenantId,
-      isActive: true 
-    }).lean() as any;
-    
+      isActive: true,
+    }).lean()) as any;
+
     if (!personnel) {
       return false;
     }
 
     // Check if this personnel is assigned to the task
     // The frontend stores Personnel IDs in task.assignees, not Technician IDs
-    const isAssigned = task.assignees?.includes(personnel._id.toString()) || false;
-    
+    const isAssigned =
+      task.assignees?.includes(personnel._id.toString()) || false;
+
     return isAssigned;
   } catch (error) {
     console.error("Error checking task assignment:", error);
@@ -149,20 +153,29 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
         action: "create",
         customCheck: async (userId: string, request: FastifyRequest) => {
           // First check if user has explicit time-entry.create permission
-          const { PermissionService } = await import("../services/permission-service");
+          const { PermissionService } = await import(
+            "../services/permission-service"
+          );
           const explicitPermission = await PermissionService.canAccessResource(
             userId,
             "time-entry",
-            "create"
+            "create",
           );
           if (explicitPermission.hasPermission) {
+            return true;
+          }
+
+          // Check if user is admin - admins can log time for any task
+          const { User } = await import("../models");
+          const user = (await User.findById(userId).lean()) as any;
+          if (user && (user.role === "admin" || user.role === "superuser")) {
             return true;
           }
 
           // Check if user is assigned to the task they're trying to log time for
           const body = request.body as CreateTimeEntryBody;
           const taskId = body.taskId;
-          
+
           if (!taskId) {
             return false;
           }
@@ -197,22 +210,47 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
       // Auto-determine personnelId from authenticated user if not provided
       let personnelId = body.personnelId;
       if (!personnelId) {
-        const personnel = await Personnel.findOne({ 
+        // First, try to find personnel record for the current user
+        let personnel = (await Personnel.findOne({
           userId: userId,
           tenantId: tenantId,
-          isActive: true 
-        }).lean() as any;
-        
+          isActive: true,
+        }).lean()) as any;
+
         if (!personnel) {
-          return reply
-            .code(404)
-            .send({ success: false, message: "Personnel record not found for current user" });
+          // If user doesn't have a personnel record, check if they're admin
+          const { User } = await import("../models");
+          const user = (await User.findById(userId).lean()) as any;
+
+          if (user && (user.role === "admin" || user.role === "superuser")) {
+            // Admin users can log time for the first assigned personnel of the task
+            const task = (await Task.findById(body.taskId).lean()) as any;
+            if (task && task.assignees && task.assignees.length > 0) {
+              // Use the first assigned personnel
+              personnelId = task.assignees[0];
+            } else {
+              return reply.code(400).send({
+                success: false,
+                message:
+                  "No personnel assigned to this task. Please assign personnel first or specify a personnelId.",
+              });
+            }
+          } else {
+            return reply.code(404).send({
+              success: false,
+              message:
+                "Personnel record not found for current user. Only admins can log time for other personnel.",
+            });
+          }
+        } else {
+          personnelId = personnel._id.toString();
         }
-        personnelId = personnel._id.toString();
       }
 
       // Validate the personnel record exists
-      if (!(await TenantValidation.validatePersonnelAccess(personnelId, tenantId))) {
+      if (
+        !(await TenantValidation.validatePersonnelAccess(personnelId, tenantId))
+      ) {
         return reply
           .code(404)
           .send({ success: false, message: "Personnel not found" });
@@ -252,20 +290,23 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
         const task = await Task.findById(body.taskId);
         if (task && task.createdBy && task.createdBy !== user.id) {
           // Get personnel info for the notification
-          const personnel = await Personnel.findById(personnelId).populate('userId', 'firstName lastName email');
-          const personnelName = personnel?.userId ? 
-            `${(personnel.userId as any).firstName} ${(personnel.userId as any).lastName}`.trim() : 
-            'Someone';
+          const personnel = await Personnel.findById(personnelId).populate(
+            "userId",
+            "firstName lastName email",
+          );
+          const personnelName = personnel?.userId
+            ? `${(personnel.userId as any).firstName} ${(personnel.userId as any).lastName}`.trim()
+            : "Someone";
 
           await NotificationService.createNotification({
             tenantId,
             userId: task.createdBy,
-            type: 'time_logged',
+            type: "time_logged",
             title: `Time logged on: ${task.title}`,
             message: `${personnelName} logged ${hours} hours on "${task.title}".`,
-            category: 'task',
+            category: "task",
             relatedEntity: {
-              entityType: 'task',
+              entityType: "task",
               entityId: task._id.toString(),
               entityTitle: task.title,
             },
@@ -273,13 +314,13 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
               taskId: task._id.toString(),
               workOrderId: task.workOrderId,
               reporterId: task.createdBy,
-              changes: ['actualHours'],
+              changes: ["actualHours"],
             },
             createdBy: user.id,
           });
         }
       } catch (error) {
-        console.error('Error sending time entry notification:', error);
+        console.error("Error sending time entry notification:", error);
       }
 
       // Realtime notify task room
@@ -302,22 +343,33 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
         action: "edit",
         customCheck: async (userId: string, request: FastifyRequest) => {
           // First check if user has explicit time-entry.edit permission
-          const { PermissionService } = await import("../services/permission-service");
+          const { PermissionService } = await import(
+            "../services/permission-service"
+          );
           const explicitPermission = await PermissionService.canAccessResource(
             userId,
             "time-entry",
-            "edit"
+            "edit",
           );
           if (explicitPermission.hasPermission) {
             return true;
           }
 
+          // Check if user is admin - admins can edit time entries for any task
+          const { User } = await import("../models");
+          const user = (await User.findById(userId).lean()) as any;
+          if (user && (user.role === "admin" || user.role === "superuser")) {
+            return true;
+          }
+
           // Check if user is assigned to the task for this time entry
           const { id } = request.params as any;
-          
+
           try {
             // Find the time entry and get the associated task
-            const timeEntry = await TimeEntry.findOne({ _id: id }).lean() as any;
+            const timeEntry = (await TimeEntry.findOne({
+              _id: id,
+            }).lean()) as any;
             if (!timeEntry) {
               return false;
             }
@@ -366,20 +418,22 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
         const task = await Task.findById(existing.taskId);
         if (task && task.createdBy && task.createdBy !== user.id) {
           // Get personnel info for the notification
-          const personnel = await Personnel.findById(existing.personnelId).populate('userId', 'firstName lastName email');
-          const personnelName = personnel?.userId ? 
-            `${(personnel.userId as any).firstName} ${(personnel.userId as any).lastName}`.trim() : 
-            'Someone';
+          const personnel = await Personnel.findById(
+            existing.personnelId,
+          ).populate("userId", "firstName lastName email");
+          const personnelName = personnel?.userId
+            ? `${(personnel.userId as any).firstName} ${(personnel.userId as any).lastName}`.trim()
+            : "Someone";
 
           await NotificationService.createNotification({
             tenantId,
             userId: task.createdBy,
-            type: 'time_updated',
+            type: "time_updated",
             title: `Time updated on: ${task.title}`,
             message: `${personnelName} updated their time entry to ${normalized.hours} hours on "${task.title}".`,
-            category: 'task',
+            category: "task",
             relatedEntity: {
-              entityType: 'task',
+              entityType: "task",
               entityId: task._id.toString(),
               entityTitle: task.title,
             },
@@ -387,13 +441,13 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
               taskId: task._id.toString(),
               workOrderId: task.workOrderId,
               reporterId: task.createdBy,
-              changes: ['actualHours'],
+              changes: ["actualHours"],
             },
             createdBy: user.id,
           });
         }
       } catch (error) {
-        console.error('Error sending time entry update notification:', error);
+        console.error("Error sending time entry update notification:", error);
       }
 
       realtimeService.emitToTask(existing.taskId, "notification", {
@@ -415,22 +469,33 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
         action: "delete",
         customCheck: async (userId: string, request: FastifyRequest) => {
           // First check if user has explicit time-entry.delete permission
-          const { PermissionService } = await import("../services/permission-service");
+          const { PermissionService } = await import(
+            "../services/permission-service"
+          );
           const explicitPermission = await PermissionService.canAccessResource(
             userId,
             "time-entry",
-            "delete"
+            "delete",
           );
           if (explicitPermission.hasPermission) {
             return true;
           }
 
+          // Check if user is admin - admins can delete time entries for any task
+          const { User } = await import("../models");
+          const user = (await User.findById(userId).lean()) as any;
+          if (user && (user.role === "admin" || user.role === "superuser")) {
+            return true;
+          }
+
           // Check if user is assigned to the task for this time entry
           const { id } = request.params as any;
-          
+
           try {
             // Find the time entry and get the associated task
-            const timeEntry = await TimeEntry.findOne({ _id: id }).lean() as any;
+            const timeEntry = (await TimeEntry.findOne({
+              _id: id,
+            }).lean()) as any;
             if (!timeEntry) {
               return false;
             }
