@@ -9,9 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Alert from '@mui/material/Alert';
-import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
-import Tooltip from '@mui/material/Tooltip';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 
@@ -37,12 +35,6 @@ export const SignInSchema = z.object({
     .string()
     .min(1, { error: 'Password is required!' })
     .min(6, { error: 'Password must be at least 6 characters!' }),
-  tenantSlug: z
-    .string()
-    .min(1, { error: 'Tenant slug is required!' })
-    .regex(/^[a-z0-9-]+$/, {
-      error: 'Tenant slug must contain only lowercase letters, numbers, and hyphen!',
-    }),
   rememberMe: z.boolean().optional().default(false),
 });
 
@@ -64,7 +56,6 @@ export function JwtSignInView() {
   const defaultValues: SignInSchemaType = {
     email: '',
     password: '',
-    tenantSlug: '',
     rememberMe: false,
   };
 
@@ -82,11 +73,8 @@ export function JwtSignInView() {
 
   // Prefill from localStorage if available
   const savedEmail = typeof window !== 'undefined' ? localStorage.getItem('auth_email') : null;
-  const savedTenant =
-    typeof window !== 'undefined' ? localStorage.getItem('auth_tenantSlug') : null;
-  if (savedEmail && savedTenant && !watch('email') && !watch('tenantSlug')) {
+  if (savedEmail && !watch('email')) {
     setValue('email', savedEmail);
-    setValue('tenantSlug', savedTenant);
     setValue('rememberMe', true);
   }
 
@@ -95,17 +83,14 @@ export function JwtSignInView() {
       await signInWithPassword({
         email: data.email,
         password: data.password,
-        tenantSlug: data.tenantSlug,
         rememberMe: !!data.rememberMe,
       });
 
       // Persist based on rememberMe
       if (data.rememberMe) {
         localStorage.setItem('auth_email', data.email);
-        localStorage.setItem('auth_tenantSlug', data.tenantSlug);
       } else {
         localStorage.removeItem('auth_email');
-        localStorage.removeItem('auth_tenantSlug');
       }
       await checkUserSession?.();
 
@@ -122,24 +107,6 @@ export function JwtSignInView() {
 
   const renderForm = () => (
     <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
-      <Stack direction="row" spacing={1} alignItems="center">
-        <Box sx={{ flex: 1 }}>
-          <Field.Text
-            name="tenantSlug"
-            label="Tenant Slug"
-            slotProps={{ inputLabel: { shrink: true } }}
-          />
-        </Box>
-        <Tooltip
-          title="Your organization identifier. Find it in your invitation email, labeled as Tenant Slug."
-          placement="top"
-        >
-          <IconButton edge="end">
-            <Iconify icon="solar:info-circle-bold" />
-          </IconButton>
-        </Tooltip>
-      </Stack>
-
       <Field.Text name="email" label="Email address" slotProps={{ inputLabel: { shrink: true } }} />
 
       <Box sx={{ gap: 1.5, display: 'flex', flexDirection: 'column' }}>

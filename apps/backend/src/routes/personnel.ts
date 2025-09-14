@@ -21,7 +21,7 @@ const createPersonnelSchema = z.object({
   certifications: z.array(z.string()).optional(),
   hourlyRate: z.number().min(0, "Hourly rate must be positive"),
   notes: z.string().optional(),
-  environmentAccess: z.enum(["office", "field", "both"]).optional(),
+  environmentAccess: z.enum(["dashboard", "field", "all"]).optional(),
   availability: z
     .object({
       monday: z.object({
@@ -78,6 +78,249 @@ const updatePersonnelSchema = createPersonnelSchema.partial();
 export async function personnelRoutes(fastify: FastifyInstance) {
   // Add authentication middleware to all routes
   fastify.addHook("preHandler", authenticate);
+
+  // DEBUG ENDPOINT - Get debug info about current user and personnel
+  fastify.get("/debug", async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const req = request as AuthenticatedRequest;
+      const { tenant, user } = req.context!;
+
+      // Get all personnel records for this user (across all tenants)
+      const allPersonnel = await Personnel.find({ userId: user.id });
+
+      // Get the specific personnel for this tenant
+      const currentPersonnel = await Personnel.findOne({
+        userId: user.id,
+        tenantId: tenant._id,
+      });
+
+      // Get user data
+      const userData = await User.findById(user.id);
+
+      return reply.send({
+        success: true,
+        debug: {
+          contextUser: user,
+          currentTenant: tenant,
+          userData: userData,
+          allPersonnelCount: allPersonnel.length,
+          allPersonnel: allPersonnel,
+          currentPersonnel: currentPersonnel,
+        },
+      });
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({
+        success: false,
+        message: "Debug endpoint failed",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  // POST /api/v1/personnel/setup - Auto-create personnel record for current user
+  fastify.post("/setup", async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const req = request as AuthenticatedRequest;
+      const { tenant, user } = req.context!;
+
+      // Check if personnel record already exists
+      const existingPersonnel = await Personnel.findOne({
+        userId: user.id,
+        tenantId: tenant._id,
+      });
+
+      if (existingPersonnel) {
+        return reply.status(400).send({
+          success: false,
+          message: "Personnel record already exists",
+        });
+      }
+
+      // Get user data to create personnel record
+      const userData = await User.findById(user.id);
+      if (!userData) {
+        return reply.status(404).send({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      // Generate unique employee ID
+      let employeeId: string;
+      let unique = false;
+      while (!unique) {
+        const idCandidate = `EMP-${Math.floor(Math.random() * 900000 + 100000)}`;
+        const exists = await Personnel.findOne({
+          tenantId: tenant._id,
+          employeeId: idCandidate,
+        });
+        if (!exists) {
+          employeeId = idCandidate;
+          unique = true;
+        }
+      }
+
+      // Get default role for field users
+      const defaultRole = await Role.findOne({
+        tenantId: tenant._id,
+        slug: "technician", // Default to technician role
+        isActive: true,
+      });
+
+      // Create personnel record with default values
+      const personnel = new Personnel({
+        userId: user.id,
+        tenantId: tenant._id,
+        employeeId: employeeId,
+        roleId: defaultRole?._id,
+        skills: [],
+        certifications: [],
+        hourlyRate: 25, // Default hourly rate
+        environmentAccess: "field", // Default to field access since they're using field app
+        availability: {
+          monday: { start: "09:00", end: "17:00", available: true },
+          tuesday: { start: "09:00", end: "17:00", available: true },
+          wednesday: { start: "09:00", end: "17:00", available: true },
+          thursday: { start: "09:00", end: "17:00", available: true },
+          friday: { start: "09:00", end: "17:00", available: true },
+          saturday: { start: "09:00", end: "17:00", available: false },
+          sunday: { start: "09:00", end: "17:00", available: false },
+        },
+        notes: "Auto-created personnel record",
+        isActive: true,
+      });
+
+      await personnel.save();
+
+      // Update user role if we found a default role
+      if (defaultRole) {
+        await User.findByIdAndUpdate(user.id, {
+          role: defaultRole.slug,
+          permissions: defaultRole.permissions || [],
+        });
+      }
+
+      fastify.log.info(`✅ Auto-created personnel record for user ${user.id} with employeeId: ${employeeId}`);
+
+      // Return the created personnel record
+      const populatedPersonnel = await Personnel.findById(personnel._id)
+        .populate("userId", "firstName lastName email phone")
+        .populate("roleId", "name color");
+
+      // Transform the response
+      const obj: any = populatedPersonnel!.toObject();
+      if (obj.userId && typeof obj.userId === "object") {
+        const first = obj.userId.firstName || "";
+        const last = obj.userId.lastName || "";
+        const full = `${first} ${last}`.trim();
+        obj.user = {
+          _id: obj.userId._id,
+          name: full,
+          email: obj.userId.email,
+          phone: obj.userId.phone,
+        };
+        obj.name = full || obj.userId.email || "Unknown Personnel";
+        delete obj.userId;
+      } else {
+        obj.name = "Unknown Personnel";
+      }
+      if (obj.roleId && typeof obj.roleId === "object") {
+        obj.role = {
+          _id: obj.roleId._id,
+          name: obj.roleId.name,
+          color: obj.roleId.color,
+        };
+        delete obj.roleId;
+      }
+
+      return reply.status(201).send({
+        success: true,
+        data: obj,
+        message: "Personnel record created successfully",
+      });
+
+    } catch (error) {
+      fastify.log.error(error as Error, "Error creating personnel record");
+      return reply.status(500).send({
+        success: false,
+        message: "Failed to create personnel record",
+      });
+    }
+  });
+
+  // GET /api/v1/personnel/me - Get current user's personnel data
+  fastify.get("/me", async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const req = request as AuthenticatedRequest;
+      const { tenant, user } = req.context!;
+
+      fastify.log.info(`🔍 Looking for personnel with userId: ${user.id} in tenant: ${tenant._id}`);
+
+      // Check if Personnel record exists for this user
+      const personnel = await Personnel.findOne({
+        userId: user.id,
+        tenantId: tenant._id,
+      })
+        .populate("userId", "firstName lastName email phone")
+        .populate("roleId", "name color");
+
+      if (!personnel) {
+        fastify.log.error(`❌ Personnel not found for userId: ${user.id} in tenant: ${tenant._id}`);
+
+        // Debug: Check if personnel exists with this userId in any tenant
+        const debugPersonnel = await Personnel.findOne({ userId: user.id });
+        if (debugPersonnel) {
+          fastify.log.info(`🔍 Personnel found in different tenant: ${debugPersonnel.tenantId}`);
+        } else {
+          fastify.log.info(`🔍 No personnel record found for userId: ${user.id} at all`);
+        }
+
+        return reply.status(404).send({
+          success: false,
+          message: "Personnel record not found",
+        });
+      }
+
+      // Transform the response
+      const obj: any = personnel.toObject();
+      if (obj.userId && typeof obj.userId === "object") {
+        const first = obj.userId.firstName || "";
+        const last = obj.userId.lastName || "";
+        const full = `${first} ${last}`.trim();
+        obj.user = {
+          _id: obj.userId._id,
+          name: full,
+          email: obj.userId.email,
+          phone: obj.userId.phone,
+        };
+        obj.name = full || obj.userId.email || "Unknown Personnel";
+        delete obj.userId;
+      } else {
+        obj.name = "Unknown Personnel";
+      }
+      if (obj.roleId && typeof obj.roleId === "object") {
+        obj.role = {
+          _id: obj.roleId._id,
+          name: obj.roleId.name,
+          color: obj.roleId.color,
+        };
+        delete obj.roleId;
+      }
+
+      return reply.send({
+        success: true,
+        data: obj,
+        message: "Personnel data fetched successfully",
+      });
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({
+        success: false,
+        message: "Failed to fetch personnel data",
+      });
+    }
+  });
 
   // GET /api/v1/personnel - Get all personnel
   fastify.get("/", async (request: FastifyRequest, reply: FastifyReply) => {
@@ -406,7 +649,6 @@ export async function personnelRoutes(fastify: FastifyInstance) {
                 companyName: tenant.name,
                 magicLink: magicLinkResult.magicLink,
                 expirationHours: 24,
-                tenantSlug: (tenant as any).slug,
               });
 
               fastify.log.info(
@@ -482,6 +724,58 @@ export async function personnelRoutes(fastify: FastifyInstance) {
         message: "Failed to create personnel",
         error: error instanceof Error ? error.message : "Unknown error",
         stack: error instanceof Error ? error.stack : undefined,
+      });
+    }
+  });
+
+  // PUT /api/v1/personnel/me - Update current user's personnel data
+  fastify.put("/me", async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const req = request as AuthenticatedRequest;
+      const { tenant, user } = req.context!;
+      const validatedData = updatePersonnelSchema.parse(request.body);
+
+      const personnel = await Personnel.findOne({
+        userId: user.id,
+        tenantId: tenant._id,
+      });
+      if (!personnel) {
+        return reply.status(404).send({
+          success: false,
+          message: "Personnel record not found",
+        });
+      }
+
+      // Update personnel
+      Object.assign(personnel, validatedData);
+      await personnel.save();
+
+      // If phone was updated, also update the User's phone
+      if (validatedData.phone) {
+        await User.findOneAndUpdate(
+          { _id: user.id, tenantId: tenant._id },
+          { phone: validatedData.phone },
+        );
+      }
+
+      return reply.send({
+        success: true,
+        data: personnel,
+        message: "Profile updated successfully",
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({
+          success: false,
+          message: "Validation error",
+          errors: error.issues,
+        });
+      }
+
+      fastify.log.error(error as Error, "Error updating profile");
+      return reply.status(500).send({
+        success: false,
+        message: "Failed to update profile",
       });
     }
   });

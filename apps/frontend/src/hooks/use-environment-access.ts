@@ -1,37 +1,32 @@
-// import { useAuthContext } from '../auth/hooks/use-auth-context'; // TODO: Use when needed
+import { useAuthContext } from '../auth/hooks/use-auth-context';
 
 export interface EnvironmentAccess {
   canAccessField: boolean;
-  canAccessOffice: boolean;
-  isFieldOperator: boolean;
-  isOfficeUser: boolean;
-  hasBothAccess: boolean;
+  canAccessDashboard: boolean;
+  isFieldOnly: boolean;
+  isDashboardOnly: boolean;
+  hasAllAccess: boolean;
+  environmentAccess: 'dashboard' | 'field' | 'all' | null;
 }
 
 export function useEnvironmentAccess(): EnvironmentAccess {
-  // const { user } = useAuthContext(); // TODO: Use user data when needed
+  const { user } = useAuthContext();
 
-  // For now, we'll use mock data since personnel is not in the auth context
-  // TODO: Add personnel to auth context or fetch separately
-  const mockPersonnel: { environmentAccess: 'office' | 'field' | 'both' } = {
-    environmentAccess: 'both', // Default to both for testing
-  };
+  const environmentAccess = user?.environmentAccess || null;
 
-  const canAccessField =
-    mockPersonnel?.environmentAccess === 'field' || mockPersonnel?.environmentAccess === 'both';
+  const canAccessField = environmentAccess === 'field' || environmentAccess === 'all';
+  const canAccessDashboard = environmentAccess === 'dashboard' || environmentAccess === 'all' || environmentAccess === null;
 
-  const canAccessOffice =
-    mockPersonnel?.environmentAccess === 'office' || mockPersonnel?.environmentAccess === 'both';
-
-  const isFieldOperator = mockPersonnel?.environmentAccess === 'field';
-  const isOfficeUser = mockPersonnel?.environmentAccess === 'office';
-  const hasBothAccess = mockPersonnel?.environmentAccess === 'both';
+  const isFieldOnly = environmentAccess === 'field';
+  const isDashboardOnly = environmentAccess === 'dashboard';
+  const hasAllAccess = environmentAccess === 'all';
 
   return {
     canAccessField,
-    canAccessOffice,
-    isFieldOperator,
-    isOfficeUser,
-    hasBothAccess,
+    canAccessDashboard,
+    isFieldOnly,
+    isDashboardOnly,
+    hasAllAccess,
+    environmentAccess,
   };
 }

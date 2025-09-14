@@ -558,8 +558,76 @@ export function MobileCalendar({
     );
   };
 
+  const renderDayView = () => {
+    const dayTasks = getTasksForDate(currentDate);
+    const isToday = currentDate.toDateString() === new Date().toDateString();
+
+    return (
+      <WeekView>
+        <WeekHeader>
+          <DayHeader isToday={isToday} isSelected>
+            <Typography variant="caption" color="text.secondary">
+              {currentDate.toLocaleDateString('en-US', { weekday: 'long' })}
+            </Typography>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: isToday ? 'bold' : 'normal',
+                color: isToday ? 'primary.main' : 'text.primary',
+              }}
+            >
+              {currentDate.getDate()}
+            </Typography>
+            {dayTasks.length > 0 && (
+              <Chip
+                size="small"
+                label={dayTasks.length}
+                sx={{
+                  height: '16px',
+                  fontSize: '10px',
+                  backgroundColor: 'primary.main',
+                  color: 'white',
+                }}
+              />
+            )}
+          </DayHeader>
+        </WeekHeader>
+
+        <WeekGrid>
+          <DayColumn
+            isToday={isToday}
+            isSelected
+            onClick={() => onDateSelect(currentDate)}
+            sx={{ flex: 1 }}
+          >
+            {dayTasks.map((task) => (
+              <TaskItem
+                key={task.id}
+                priority={task.priority}
+                status={task.status}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTaskSelect(task);
+                }}
+              >
+                <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                  {formatTime(task.startTime)}
+                </Typography>
+                <Typography variant="body2" sx={{ fontSize: '12px' }}>
+                  {task.title}
+                </Typography>
+              </TaskItem>
+            ))}
+          </DayColumn>
+        </WeekGrid>
+      </WeekView>
+    );
+  };
+
   const renderCurrentView = () => {
     switch (view) {
+      case 'day':
+        return renderDayView();
       case 'week':
         return renderWeekView();
       case 'month':
@@ -584,6 +652,12 @@ export function MobileCalendar({
               month: 'long',
               year: 'numeric',
               ...(view === 'week' && { day: 'numeric' }),
+              ...(view === 'day' && {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              }),
             })}
           </Typography>
 
@@ -597,6 +671,14 @@ export function MobileCalendar({
         </Box>
 
         <ViewSelector>
+          <ViewButton active={view === 'day'} onClick={() => onViewChange('day')} title="Day View">
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+              <Iconify icon="eva:clock-fill" width={20} />
+              <Typography variant="caption" sx={{ fontSize: '10px', lineHeight: 1 }}>
+                Day
+              </Typography>
+            </Box>
+          </ViewButton>
           <ViewButton
             active={view === 'week'}
             onClick={() => onViewChange('week')}

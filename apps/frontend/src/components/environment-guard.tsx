@@ -10,7 +10,7 @@ import { useEnvironmentAccess } from '../hooks/use-environment-access';
 
 interface EnvironmentGuardProps {
   children: React.ReactNode;
-  requiredAccess: 'field' | 'office' | 'both';
+  requiredAccess: 'field' | 'dashboard' | 'all';
   fallbackPath?: string;
 }
 
@@ -20,16 +20,16 @@ export function EnvironmentGuard({
   fallbackPath,
 }: EnvironmentGuardProps) {
   const router = useRouter();
-  const { canAccessField, canAccessOffice, isFieldOperator, isOfficeUser } = useEnvironmentAccess();
+  const { canAccessField, canAccessDashboard, isFieldOnly, isDashboardOnly, hasAllAccess } = useEnvironmentAccess();
 
   const hasAccess = (() => {
     switch (requiredAccess) {
       case 'field':
         return canAccessField;
-      case 'office':
-        return canAccessOffice;
-      case 'both':
-        return canAccessField && canAccessOffice;
+      case 'dashboard':
+        return canAccessDashboard;
+      case 'all':
+        return hasAllAccess;
       default:
         return false;
     }
@@ -38,9 +38,9 @@ export function EnvironmentGuard({
   useEffect(() => {
     if (!hasAccess) {
       // Redirect to appropriate environment based on user's access
-      if (isFieldOperator && fallbackPath !== '/field') {
+      if (isFieldOnly && fallbackPath !== '/field') {
         router.push('/field');
-      } else if (isOfficeUser && fallbackPath !== '/dashboard') {
+      } else if (isDashboardOnly && fallbackPath !== '/dashboard') {
         router.push('/dashboard');
       } else if (fallbackPath) {
         router.push(fallbackPath);
@@ -48,7 +48,7 @@ export function EnvironmentGuard({
         router.push('/dashboard');
       }
     }
-  }, [hasAccess, isFieldOperator, isOfficeUser, fallbackPath, router]);
+  }, [hasAccess, isFieldOnly, isDashboardOnly, fallbackPath, router]);
 
   if (!hasAccess) {
     return (
@@ -66,8 +66,8 @@ export function EnvironmentGuard({
           <AlertTitle>Access Denied</AlertTitle>
           <Typography variant="body2" sx={{ mt: 2 }}>
             You don&apos;t have access to this environment.
-            {isFieldOperator && ' Redirecting to field environment...'}
-            {isOfficeUser && ' Redirecting to office environment...'}
+            {isFieldOnly && ' Redirecting to field environment...'}
+            {isDashboardOnly && ' Redirecting to dashboard environment...'}
           </Typography>
           <Box sx={{ mt: 2 }}>
             <Button onClick={() => router.push('/dashboard')} variant="outlined" size="small">

@@ -1,5 +1,70 @@
 // ----------------------------------------------------------------------
 
+// Embedded data interfaces for historical preservation
+export interface IEmbeddedUser {
+  _id: string;
+  name: string;
+  email: string;
+  role?: string;
+  department?: string;
+  phone?: string;
+}
+
+export interface IEmbeddedClient {
+  _id: string;
+  name: string;
+  company?: string;
+  email?: string;
+  phone?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  };
+  contactPerson?: string;
+  billingAddress?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  };
+}
+
+export interface IEmbeddedWorkOrder {
+  _id: string;
+  number: string;
+  title: string;
+  description?: string;
+  status: string;
+  priority: string;
+  startDate?: Date;
+  dueDate?: Date;
+  estimatedHours?: number;
+  actualHours?: number;
+  location?: string;
+  clientId: string;
+  assignedTo?: string;
+  createdBy: string;
+}
+
+export interface IEmbeddedTask {
+  _id: string;
+  name: string;
+  description?: string;
+  status: string;
+  priority: string;
+  estimatedHours?: number;
+  actualHours?: number;
+  startDate?: Date;
+  dueDate?: Date;
+  assignedTo?: string;
+  workOrderId?: string;
+  createdBy: string;
+}
+
 export interface IReportAttachment {
   _id: string;
   filename: string;
@@ -13,6 +78,8 @@ export interface IReportAttachment {
     name: string;
     email?: string;
   };
+  // Embedded user data for historical purposes
+  uploadedByData?: IEmbeddedUser;
 }
 
 export interface IReportTimeEntry {
@@ -22,16 +89,25 @@ export interface IReportTimeEntry {
   endTime: Date;
   duration: number; // in minutes
   taskId?: string;
+  // Embedded task data for historical purposes
+  taskData?: IEmbeddedTask;
   category: 'labor' | 'travel' | 'waiting' | 'equipment' | 'other';
 }
 
 export interface IReportMaterialUsage {
   _id: string;
   materialId: string;
+  // Enhanced material data for historical purposes
   material: {
+    _id: string;
     name: string;
     sku: string;
     unit: string;
+    description?: string;
+    category?: string;
+    supplier?: string;
+    // Store the cost at the time of report creation
+    unitCostAtTime: number;
   };
   quantityUsed: number;
   unitCost: number;
@@ -97,7 +173,7 @@ export interface IReport {
   status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'published';
   priority: 'low' | 'medium' | 'high' | 'urgent';
 
-  // Relations
+  // Relations (keep references for active data)
   createdBy: {
     _id: string;
     name: string;
@@ -130,6 +206,13 @@ export interface IReport {
     status: string;
     priority: string;
   }[];
+
+  // Embedded data for historical preservation (immutable once set)
+  createdByData?: IEmbeddedUser;
+  assignedToData?: IEmbeddedUser;
+  clientData?: IEmbeddedClient;
+  workOrderData?: IEmbeddedWorkOrder;
+  tasksData?: IEmbeddedTask[];
 
   // Content
   location?: string;
@@ -230,6 +313,7 @@ export interface UpdateReportData extends Partial<CreateReportData> {
 export interface ReportFilters {
   type?: string;
   status?: string;
+  priority?: string;
   clientId?: string;
   workOrderId?: string;
   createdBy?: string;

@@ -76,6 +76,7 @@ export const navData: NavSectionProps['data'] = [
     items: [
       { title: 'App', path: paths.dashboard.root, icon: ICONS.dashboard },
       { title: 'Analytics', path: paths.dashboard.general.analytics, icon: ICONS.analytics },
+      { title: 'Reports', path: '/dashboard/analytics/reports', icon: ICONS.reports },
     ],
   },
   /**

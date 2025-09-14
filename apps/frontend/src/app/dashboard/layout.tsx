@@ -1,7 +1,9 @@
 import { CONFIG } from 'src/global-config';
 import { DashboardLayout } from 'src/layouts/dashboard';
 
-import { AuthGuard } from 'src/auth/guard';
+import { EnvironmentGuard } from 'src/components/environment-guard';
+
+import { EnvironmentAuthGuard } from 'src/auth/guard/environment-auth-guard';
 
 // ----------------------------------------------------------------------
 
@@ -15,8 +17,10 @@ export default function Layout({ children }: Props) {
   }
 
   return (
-    <AuthGuard>
-      <DashboardLayout>{children}</DashboardLayout>
-    </AuthGuard>
+    <EnvironmentAuthGuard>
+      <EnvironmentGuard requiredAccess="dashboard" fallbackPath="/field">
+        <DashboardLayout>{children}</DashboardLayout>
+      </EnvironmentGuard>
+    </EnvironmentAuthGuard>
   );
 }

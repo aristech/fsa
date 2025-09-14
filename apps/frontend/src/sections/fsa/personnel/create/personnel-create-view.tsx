@@ -49,7 +49,7 @@ const schema = zod.object({
   skills: zod.array(zod.string()).optional(),
   certifications: zod.array(zod.string()).optional(),
   sendInvitation: zod.boolean().optional(),
-  environmentAccess: zod.enum(['office', 'field', 'both']).optional(),
+  environmentAccess: zod.enum(['dashboard', 'field', 'all']).optional(),
   availability: zod
     .object({
       monday: zod.object({ start: zod.string(), end: zod.string(), available: zod.boolean() }),
@@ -97,7 +97,7 @@ export function PersonnelCreateView({
       skills: [],
       certifications: [],
       sendInvitation: false,
-      environmentAccess: 'office',
+      environmentAccess: 'dashboard',
       availability: {
         monday: { start: '09:00', end: '17:00', available: true },
         tuesday: { start: '09:00', end: '17:00', available: true },
@@ -132,6 +132,7 @@ export function PersonnelCreateView({
           skills: [],
           certifications: [],
           sendInvitation: false,
+          environmentAccess: 'dashboard',
           availability: {
             monday: { start: '09:00', end: '17:00', available: true },
             tuesday: { start: '09:00', end: '17:00', available: true },
@@ -203,6 +204,7 @@ export function PersonnelCreateView({
             notes: p.notes || '',
             skills: p.skills || [],
             certifications: p.certifications || [],
+            environmentAccess: p.environmentAccess || 'dashboard',
             availability: p.availability || {
               monday: { start: '09:00', end: '17:00', available: true },
               tuesday: { start: '09:00', end: '17:00', available: true },
@@ -251,6 +253,7 @@ export function PersonnelCreateView({
       email: data.email,
       phone: data.phone,
       userId: data.userId || undefined,
+      environmentAccess: data.environmentAccess,
       ...(!isEdit && data.sendInvitation ? { sendInvitation: true } : {}),
     };
 
@@ -334,16 +337,16 @@ export function PersonnelCreateView({
               control={control}
               render={({ field }) => (
                 <Autocomplete
-                  value={field.value || 'office'}
-                  options={['office', 'field', 'both']}
+                  value={field.value || 'dashboard'}
+                  options={['dashboard', 'field', 'all']}
                   getOptionLabel={(option) => {
                     switch (option) {
-                      case 'office':
-                        return 'Office Environment Only';
+                      case 'dashboard':
+                        return 'Dashboard Environment Only';
                       case 'field':
                         return 'Field Environment Only';
-                      case 'both':
-                        return 'Both Environments';
+                      case 'all':
+                        return 'All Environments';
                       default:
                         return option;
                     }

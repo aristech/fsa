@@ -52,8 +52,8 @@ export function FieldLayout({ children }: FieldLayoutProps) {
         flexDirection: 'column',
         minHeight: '100vh',
         backgroundColor: theme.palette.background.default,
-        // Mobile-first design
-        paddingBottom: { xs: '80px', sm: '0px' }, // Space for bottom navigation on mobile
+        // Bottom navigation on all screen sizes
+        paddingBottom: '80px', // Space for bottom navigation on all screen sizes
       }}
     >
       {/* Mobile Header */}
@@ -78,12 +78,8 @@ export function FieldLayout({ children }: FieldLayoutProps) {
         </Container>
       </Box>
 
-      {/* Bottom Navigation (Mobile) */}
-      <Box
-        sx={{
-          display: { xs: 'block', sm: 'none' },
-        }}
-      >
+      {/* Bottom Navigation (All Screen Sizes) */}
+      <Box>
         <MobileBottomNavigation
           items={navigationItems}
           enableHapticFeedback

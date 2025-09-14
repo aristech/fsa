@@ -1,14 +1,79 @@
-import type { Document } from 'mongoose';
-import type { ITenant } from './Tenant';
-import type { IUser } from './User';
-import type { IClient } from './Client';
-import type { ITask } from './Task';
-import type { IWorkOrder } from './WorkOrder';
-import type { IMaterial } from './Material';
+import type { Document } from "mongoose";
+import type { ITenant } from "./Tenant";
+import type { IUser } from "./User";
+import type { IClient } from "./Client";
+import type { ITask } from "./Task";
+import type { IWorkOrder } from "./WorkOrder";
+import type { IMaterial } from "./Material";
 
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Schema } from "mongoose";
 
 // ----------------------------------------------------------------------
+
+// Embedded data interfaces for historical preservation
+export interface IEmbeddedUser {
+  _id: string;
+  name: string;
+  email: string;
+  role?: string;
+  department?: string;
+  phone?: string;
+}
+
+export interface IEmbeddedClient {
+  _id: string;
+  name: string;
+  company?: string;
+  email?: string;
+  phone?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  };
+  contactPerson?: string;
+  billingAddress?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  };
+}
+
+export interface IEmbeddedWorkOrder {
+  _id: string;
+  number: string;
+  title: string;
+  description?: string;
+  status: string;
+  priority: string;
+  startDate?: Date;
+  dueDate?: Date;
+  estimatedHours?: number;
+  actualHours?: number;
+  location?: string;
+  clientId: string;
+  assignedTo?: string;
+  createdBy: string;
+}
+
+export interface IEmbeddedTask {
+  _id: string;
+  name: string;
+  description?: string;
+  status: string;
+  priority: string;
+  estimatedHours?: number;
+  actualHours?: number;
+  startDate?: Date;
+  dueDate?: Date;
+  assignedTo?: string;
+  workOrderId?: string;
+  createdBy: string;
+}
 
 export interface IReportAttachment {
   _id: string;
@@ -19,6 +84,12 @@ export interface IReportAttachment {
   url: string;
   uploadedAt: Date;
   uploadedBy: mongoose.Types.ObjectId | IUser;
+  // Embedded user data for historical purposes
+  uploadedByData?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
 }
 
 export interface IReportTimeEntry {
@@ -28,16 +99,31 @@ export interface IReportTimeEntry {
   endTime: Date;
   duration: number; // in minutes
   taskId?: mongoose.Types.ObjectId | ITask;
-  category: 'labor' | 'travel' | 'waiting' | 'equipment' | 'other';
+  // Embedded task data for historical purposes
+  taskData?: {
+    _id: string;
+    name: string;
+    description?: string;
+    status: string;
+    priority: string;
+  };
+  category: "labor" | "travel" | "waiting" | "equipment" | "other";
 }
 
 export interface IReportMaterialUsage {
   _id: string;
   materialId: mongoose.Types.ObjectId | IMaterial;
+  // Enhanced material data for historical purposes
   material: {
+    _id: string;
     name: string;
     sku: string;
     unit: string;
+    description?: string;
+    category?: string;
+    supplier?: string;
+    // Store the cost at the time of report creation
+    unitCostAtTime: number;
   };
   quantityUsed: number;
   unitCost: number;
@@ -47,7 +133,7 @@ export interface IReportMaterialUsage {
 
 export interface IReportSignature {
   _id: string;
-  type: 'technician' | 'customer' | 'supervisor' | 'inspector';
+  type: "technician" | "customer" | "supervisor" | "inspector";
   signatureData: string; // Base64 encoded signature image
   signerName: string;
   signerTitle?: string;
@@ -61,20 +147,39 @@ export interface IReport extends Document {
   tenantId: mongoose.Types.ObjectId | ITenant;
 
   // Basic Info
-  title: string;
-  type: 'daily' | 'weekly' | 'monthly' | 'incident' | 'maintenance' | 'inspection' | 'completion' | 'safety';
-  status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'published';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  type:
+    | "daily"
+    | "weekly"
+    | "monthly"
+    | "incident"
+    | "maintenance"
+    | "inspection"
+    | "completion"
+    | "safety";
+  status:
+    | "draft"
+    | "submitted"
+    | "under_review"
+    | "approved"
+    | "rejected"
+    | "published";
+  priority: "low" | "medium" | "high" | "urgent";
 
-  // Relations
+  // Relations (keep references for active data)
   createdBy: mongoose.Types.ObjectId | IUser;
   assignedTo: mongoose.Types.ObjectId | IUser;
   clientId?: mongoose.Types.ObjectId | IClient;
   workOrderId?: mongoose.Types.ObjectId | IWorkOrder;
   taskIds: (mongoose.Types.ObjectId | ITask)[];
 
+  // Embedded data for historical preservation (immutable once set)
+  createdByData?: IEmbeddedUser;
+  assignedToData?: IEmbeddedUser;
+  clientData?: IEmbeddedClient;
+  workOrderData?: IEmbeddedWorkOrder;
+  tasksData?: IEmbeddedTask[];
+
   // Content
-  description: string;
   location?: string;
   weather?: string;
   equipment?: string[];
@@ -100,14 +205,14 @@ export interface IReport extends Document {
   // Quality & Safety
   qualityChecks: {
     item: string;
-    status: 'pass' | 'fail' | 'n/a';
+    status: "pass" | "fail" | "n/a";
     notes?: string;
   }[];
 
   safetyIncidents: {
     type: string;
     description: string;
-    severity: 'low' | 'medium' | 'high';
+    severity: "low" | "medium" | "high";
     actionTaken: string;
     reportedAt: Date;
   }[];
@@ -163,7 +268,13 @@ const ReportAttachmentSchema: Schema = new Schema({
   size: { type: Number, required: true },
   url: { type: String, required: true },
   uploadedAt: { type: Date, default: Date.now },
-  uploadedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  uploadedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  // Embedded user data for historical purposes
+  uploadedByData: {
+    _id: { type: String },
+    name: { type: String },
+    email: { type: String },
+  },
 });
 
 const ReportTimeEntrySchema: Schema = new Schema({
@@ -171,20 +282,35 @@ const ReportTimeEntrySchema: Schema = new Schema({
   startTime: { type: Date, required: true },
   endTime: { type: Date, required: true },
   duration: { type: Number, required: true }, // calculated in minutes
-  taskId: { type: Schema.Types.ObjectId, ref: 'Task' },
+  taskId: { type: Schema.Types.ObjectId, ref: "Task" },
+  // Embedded task data for historical purposes
+  taskData: {
+    _id: { type: String },
+    name: { type: String },
+    description: { type: String },
+    status: { type: String },
+    priority: { type: String },
+  },
   category: {
     type: String,
-    enum: ['labor', 'travel', 'waiting', 'equipment', 'other'],
-    default: 'labor'
+    enum: ["labor", "travel", "waiting", "equipment", "other"],
+    default: "labor",
   },
 });
 
 const ReportMaterialUsageSchema: Schema = new Schema({
-  materialId: { type: Schema.Types.ObjectId, ref: 'Material', required: true },
+  materialId: { type: Schema.Types.ObjectId, ref: "Material", required: true },
+  // Enhanced material data for historical purposes
   material: {
+    _id: { type: String },
     name: { type: String, required: true },
     sku: { type: String },
     unit: { type: String, required: true },
+    description: { type: String },
+    category: { type: String },
+    supplier: { type: String },
+    // Store the cost at the time of report creation
+    unitCostAtTime: { type: Number, required: true },
   },
   quantityUsed: { type: Number, required: true, min: 0 },
   unitCost: { type: Number, required: true, min: 0 },
@@ -195,8 +321,8 @@ const ReportMaterialUsageSchema: Schema = new Schema({
 const ReportSignatureSchema: Schema = new Schema({
   type: {
     type: String,
-    enum: ['technician', 'customer', 'supervisor', 'inspector'],
-    required: true
+    enum: ["technician", "customer", "supervisor", "inspector"],
+    required: true,
   },
   signatureData: { type: String, required: true }, // Base64 encoded
   signerName: { type: String, required: true },
@@ -206,87 +332,185 @@ const ReportSignatureSchema: Schema = new Schema({
   ipAddress: { type: String },
 });
 
-const QualityCheckSchema: Schema = new Schema({
-  item: { type: String, required: true },
-  status: { type: String, enum: ['pass', 'fail', 'n/a'], required: true },
-  notes: { type: String },
-}, { _id: true });
+const QualityCheckSchema: Schema = new Schema(
+  {
+    item: { type: String, required: true },
+    status: { type: String, enum: ["pass", "fail", "n/a"], required: true },
+    notes: { type: String },
+  },
+  { _id: true },
+);
 
-const SafetyIncidentSchema: Schema = new Schema({
-  type: { type: String, required: true },
-  description: { type: String, required: true },
-  severity: { type: String, enum: ['low', 'medium', 'high'], required: true },
-  actionTaken: { type: String, required: true },
-  reportedAt: { type: Date, default: Date.now },
-}, { _id: true });
+const SafetyIncidentSchema: Schema = new Schema(
+  {
+    type: { type: String, required: true },
+    description: { type: String, required: true },
+    severity: { type: String, enum: ["low", "medium", "high"], required: true },
+    actionTaken: { type: String, required: true },
+    reportedAt: { type: Date, default: Date.now },
+  },
+  { _id: true },
+);
+
+// Embedded data schemas for historical preservation
+const EmbeddedUserSchema: Schema = new Schema(
+  {
+    _id: { type: String, required: true },
+    name: { type: String, required: true },
+    email: { type: String, required: true },
+    role: { type: String },
+    department: { type: String },
+    phone: { type: String },
+  },
+  { _id: false },
+);
+
+const EmbeddedClientSchema: Schema = new Schema(
+  {
+    _id: { type: String, required: true },
+    name: { type: String, required: true },
+    company: { type: String },
+    email: { type: String },
+    phone: { type: String },
+    address: {
+      street: { type: String },
+      city: { type: String },
+      state: { type: String },
+      zipCode: { type: String },
+      country: { type: String },
+    },
+    contactPerson: { type: String },
+    billingAddress: {
+      street: { type: String },
+      city: { type: String },
+      state: { type: String },
+      zipCode: { type: String },
+      country: { type: String },
+    },
+  },
+  { _id: false },
+);
+
+const EmbeddedWorkOrderSchema: Schema = new Schema(
+  {
+    _id: { type: String, required: true },
+    number: { type: String, required: true },
+    title: { type: String, required: true },
+    description: { type: String },
+    status: { type: String, required: true },
+    priority: { type: String, required: true },
+    startDate: { type: Date },
+    dueDate: { type: Date },
+    estimatedHours: { type: Number },
+    actualHours: { type: Number },
+    location: { type: String },
+    clientId: { type: String, required: true },
+    assignedTo: { type: String },
+    createdBy: { type: String, required: true },
+  },
+  { _id: false },
+);
+
+const EmbeddedTaskSchema: Schema = new Schema(
+  {
+    _id: { type: String, required: true },
+    name: { type: String, required: true },
+    description: { type: String },
+    status: { type: String, required: true },
+    priority: { type: String, required: true },
+    estimatedHours: { type: Number },
+    actualHours: { type: Number },
+    startDate: { type: Date },
+    dueDate: { type: Date },
+    assignedTo: { type: String },
+    workOrderId: { type: String },
+    createdBy: { type: String, required: true },
+  },
+  { _id: false },
+);
 
 const ReportSchema: Schema = new Schema(
   {
     tenantId: {
       type: Schema.Types.ObjectId,
-      ref: 'Tenant',
+      ref: "Tenant",
       required: true,
       index: true,
     },
 
     // Basic Info
-    title: {
-      type: String,
-      required: [true, 'Report title is required'],
-      trim: true,
-      index: true,
-    },
     type: {
       type: String,
-      enum: ['daily', 'weekly', 'monthly', 'incident', 'maintenance', 'inspection', 'completion', 'safety'],
+      enum: [
+        "daily",
+        "weekly",
+        "monthly",
+        "incident",
+        "maintenance",
+        "inspection",
+        "completion",
+        "safety",
+      ],
       required: true,
       index: true,
     },
     status: {
       type: String,
-      enum: ['draft', 'submitted', 'under_review', 'approved', 'rejected', 'published'],
-      default: 'draft',
+      enum: [
+        "draft",
+        "submitted",
+        "under_review",
+        "approved",
+        "rejected",
+        "published",
+      ],
+      default: "draft",
       index: true,
     },
     priority: {
       type: String,
-      enum: ['low', 'medium', 'high', 'urgent'],
-      default: 'medium',
+      enum: ["low", "medium", "high", "urgent"],
+      default: "medium",
       index: true,
     },
 
     // Relations
     createdBy: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
       index: true,
     },
     assignedTo: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       index: true,
     },
     clientId: {
       type: Schema.Types.ObjectId,
-      ref: 'Client',
+      ref: "Client",
       index: true,
     },
     workOrderId: {
       type: Schema.Types.ObjectId,
-      ref: 'WorkOrder',
+      ref: "WorkOrder",
       index: true,
     },
-    taskIds: [{
-      type: Schema.Types.ObjectId,
-      ref: 'Task',
-    }],
+    taskIds: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Task",
+      },
+    ],
+
+    // Embedded data for historical preservation (immutable once set)
+    createdByData: { type: EmbeddedUserSchema },
+    assignedToData: { type: EmbeddedUserSchema },
+    clientData: { type: EmbeddedClientSchema },
+    workOrderData: { type: EmbeddedWorkOrderSchema },
+    tasksData: [EmbeddedTaskSchema],
 
     // Content
-    description: {
-      type: String,
-      required: [true, 'Report description is required'],
-    },
     location: { type: String, trim: true },
     weather: { type: String, trim: true },
     equipment: [{ type: String, trim: true }],
@@ -331,20 +555,20 @@ const ReportSchema: Schema = new Schema(
     // System Fields
     submittedAt: { type: Date },
     approvedAt: { type: Date },
-    approvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    approvedBy: { type: Schema.Types.ObjectId, ref: "User" },
     rejectedAt: { type: Date },
-    rejectedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    rejectedBy: { type: Schema.Types.ObjectId, ref: "User" },
     rejectionReason: { type: String },
 
     // Workflow
-    reviewers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    reviewers: [{ type: Schema.Types.ObjectId, ref: "User" }],
     approvalRequired: { type: Boolean, default: true },
     clientVisible: { type: Boolean, default: true },
 
     // Template & Automation
     templateId: { type: String },
     autoGenerated: { type: Boolean, default: false },
-    parentReportId: { type: Schema.Types.ObjectId, ref: 'Report' },
+    parentReportId: { type: Schema.Types.ObjectId, ref: "Report" },
 
     // Metadata
     tags: [{ type: String, trim: true }],
@@ -353,7 +577,7 @@ const ReportSchema: Schema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // ----------------------------------------------------------------------
@@ -370,19 +594,23 @@ ReportSchema.index({ reportDate: 1, createdAt: 1 });
 
 // Text index for search functionality
 ReportSchema.index({
-  title: 'text',
-  description: 'text',
-  location: 'text',
-  tags: 'text',
+  location: "text",
+  tags: "text",
 });
 
 // Pre-save middleware to calculate costs
-ReportSchema.pre('save', function (this: IReport) {
+ReportSchema.pre("save", function (this: IReport) {
   // Calculate total material cost
-  this.totalMaterialCost = this.materialsUsed.reduce((sum, material) => sum + material.totalCost, 0);
+  this.totalMaterialCost = this.materialsUsed.reduce(
+    (sum, material) => sum + material.totalCost,
+    0,
+  );
 
   // Calculate total hours from time entries
-  this.totalHours = this.timeEntries.reduce((sum, entry) => sum + (entry.duration / 60), 0);
+  this.totalHours = this.timeEntries.reduce(
+    (sum, entry) => sum + entry.duration / 60,
+    0,
+  );
 
   // Calculate total cost (materials + labor + other costs)
   this.totalCost = this.totalMaterialCost + this.totalLaborCost;
@@ -394,15 +622,220 @@ ReportSchema.pre('save', function (this: IReport) {
 });
 
 // Virtual for formatted total cost
-ReportSchema.virtual('formattedTotalCost').get(function (this: IReport) {
+ReportSchema.virtual("formattedTotalCost").get(function (this: IReport) {
   return `$${this.totalCost.toFixed(2)}`;
 });
 
 // Virtual for report age
-ReportSchema.virtual('ageInDays').get(function (this: IReport) {
+ReportSchema.virtual("ageInDays").get(function (this: IReport) {
   const now = new Date();
   const created = new Date(this.createdAt);
-  return Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.floor(
+    (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24),
+  );
 });
 
-export const Report = mongoose.models.Report || mongoose.model<IReport>('Report', ReportSchema);
+// Middleware to populate embedded data before saving
+ReportSchema.pre("save", async function (this: IReport) {
+  // Only populate embedded data if it's not already set (immutable once set)
+  if (this.isNew || this.isModified("createdBy")) {
+    if (!this.createdByData && this.createdBy) {
+      try {
+        const User = mongoose.model("User");
+        const user = await User.findById(this.createdBy).select(
+          "name email role department phone",
+        );
+        if (user) {
+          this.createdByData = {
+            _id: user._id.toString(),
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            department: user.department,
+            phone: user.phone,
+          };
+        }
+      } catch (error) {
+        console.error("Error populating createdByData:", error);
+      }
+    }
+  }
+
+  if (this.isNew || this.isModified("assignedTo")) {
+    if (!this.assignedToData && this.assignedTo) {
+      try {
+        const User = mongoose.model("User");
+        const user = await User.findById(this.assignedTo).select(
+          "name email role department phone",
+        );
+        if (user) {
+          this.assignedToData = {
+            _id: user._id.toString(),
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            department: user.department,
+            phone: user.phone,
+          };
+        }
+      } catch (error) {
+        console.error("Error populating assignedToData:", error);
+      }
+    }
+  }
+
+  if (this.isNew || this.isModified("clientId")) {
+    if (!this.clientData && this.clientId) {
+      try {
+        const Client = mongoose.model("Client");
+        const client = await Client.findById(this.clientId);
+        if (client) {
+          this.clientData = {
+            _id: client._id.toString(),
+            name: client.name,
+            company: client.company,
+            email: client.email,
+            phone: client.phone,
+            address: client.address,
+            contactPerson: client.contactPerson,
+            billingAddress: client.billingAddress,
+          };
+        }
+      } catch (error) {
+        console.error("Error populating clientData:", error);
+      }
+    }
+  }
+
+  if (this.isNew || this.isModified("workOrderId")) {
+    if (!this.workOrderData && this.workOrderId) {
+      try {
+        const WorkOrder = mongoose.model("WorkOrder");
+        const workOrder = await WorkOrder.findById(this.workOrderId);
+        if (workOrder) {
+          this.workOrderData = {
+            _id: workOrder._id.toString(),
+            number: workOrder.number,
+            title: workOrder.title,
+            description: workOrder.description,
+            status: workOrder.status,
+            priority: workOrder.priority,
+            startDate: workOrder.startDate,
+            dueDate: workOrder.dueDate,
+            estimatedHours: workOrder.estimatedHours,
+            actualHours: workOrder.actualHours,
+            location: workOrder.location,
+            clientId: workOrder.clientId.toString(),
+            assignedTo: workOrder.assignedTo?.toString(),
+            createdBy: workOrder.createdBy.toString(),
+          };
+        }
+      } catch (error) {
+        console.error("Error populating workOrderData:", error);
+      }
+    }
+  }
+
+  if (this.isNew || this.isModified("taskIds")) {
+    if (!this.tasksData || this.tasksData.length === 0) {
+      if (this.taskIds && this.taskIds.length > 0) {
+        try {
+          const Task = mongoose.model("Task");
+          const tasks = await Task.find({ _id: { $in: this.taskIds } });
+          this.tasksData = tasks.map((task) => ({
+            _id: task._id.toString(),
+            name: task.name,
+            description: task.description,
+            status: task.status,
+            priority: task.priority,
+            estimatedHours: task.estimatedHours,
+            actualHours: task.actualHours,
+            startDate: task.startDate,
+            dueDate: task.dueDate,
+            assignedTo: task.assignedTo?.toString(),
+            workOrderId: task.workOrderId?.toString(),
+            createdBy: task.createdBy.toString(),
+          }));
+        } catch (error) {
+          console.error("Error populating tasksData:", error);
+        }
+      }
+    }
+  }
+
+  // Populate embedded data for materials
+  if (this.isNew || this.isModified("materialsUsed")) {
+    for (const materialUsage of this.materialsUsed) {
+      if (
+        !materialUsage.material._id ||
+        !materialUsage.material.unitCostAtTime
+      ) {
+        try {
+          const Material = mongoose.model("Material");
+          const material = await Material.findById(materialUsage.materialId);
+          if (material) {
+            materialUsage.material._id = material._id.toString();
+            materialUsage.material.name = material.name;
+            materialUsage.material.sku = material.sku;
+            materialUsage.material.unit = material.unit;
+            materialUsage.material.description = material.description;
+            materialUsage.material.category = material.category;
+            materialUsage.material.supplier = material.supplier;
+            materialUsage.material.unitCostAtTime = material.unitCost || 0;
+          }
+        } catch (error) {
+          console.error("Error populating material data:", error);
+        }
+      }
+    }
+  }
+
+  // Populate embedded data for time entries
+  if (this.isNew || this.isModified("timeEntries")) {
+    for (const timeEntry of this.timeEntries) {
+      if (timeEntry.taskId && !timeEntry.taskData) {
+        try {
+          const Task = mongoose.model("Task");
+          const task = await Task.findById(timeEntry.taskId);
+          if (task) {
+            timeEntry.taskData = {
+              _id: task._id.toString(),
+              name: task.name,
+              description: task.description,
+              status: task.status,
+              priority: task.priority,
+            };
+          }
+        } catch (error) {
+          console.error("Error populating task data for time entry:", error);
+        }
+      }
+    }
+  }
+
+  // Populate embedded data for attachments
+  if (this.isNew || this.isModified("attachments")) {
+    for (const attachment of this.attachments) {
+      if (attachment.uploadedBy && !attachment.uploadedByData) {
+        try {
+          const User = mongoose.model("User");
+          const user = await User.findById(attachment.uploadedBy).select(
+            "name email",
+          );
+          if (user) {
+            attachment.uploadedByData = {
+              _id: user._id.toString(),
+              name: user.name,
+              email: user.email,
+            };
+          }
+        } catch (error) {
+          console.error("Error populating uploadedByData:", error);
+        }
+      }
+    }
+  }
+});
+
+export const Report =
+  mongoose.models.Report || mongoose.model<IReport>("Report", ReportSchema);

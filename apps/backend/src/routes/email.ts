@@ -82,7 +82,6 @@ interface PersonnelInvitationEmailData {
   companyName: string;
   loginUrl: string;
   temporaryPassword: string;
-  tenantSlug?: string;
 }
 
 // Magic link email data interfaces
@@ -92,7 +91,6 @@ interface MagicLinkEmailData {
   companyName: string;
   magicLink: string;
   expirationHours?: number;
-  tenantSlug?: string;
 }
 
 interface TenantActivationEmailData {
@@ -101,7 +99,6 @@ interface TenantActivationEmailData {
   companyName: string;
   magicLink: string;
   expirationHours?: number;
-  tenantSlug?: string;
 }
 
 // Send personnel invitation email
@@ -188,18 +185,6 @@ export async function sendPersonnelInvitation(
 
               <a href="${data.loginUrl}" class="button">Login to Platform</a>
 
-              ${
-                data.tenantSlug
-                  ? `
-              <div class="credentials" style="background-color: #fff9c4;">
-                <h3>About your Tenant Slug</h3>
-                <p>Your tenant slug is <strong>${data.tenantSlug}</strong>.</p>
-                <p>On the sign-in page, enter this value in the <em>Tenant Slug</em> field along with your email and password.</p>
-              </div>
-              `
-                  : ""
-              }
-
               <h3>What you can do:</h3>
               <ul>
                 <li>View and manage your assigned tasks</li>
@@ -234,16 +219,6 @@ export async function sendPersonnelInvitation(
       Important: Please change your password after your first login for security purposes.
 
       Login URL: ${data.loginUrl}
-
-      ${
-        data.tenantSlug
-          ? `
-      Tenant slug: ${data.tenantSlug}
-
-      Use this in the "Tenant Slug" field on the sign-in page.
-      `
-          : ""
-      }
 
       What you can do:
       - View and manage your assigned tasks
@@ -406,17 +381,6 @@ export async function sendPersonnelMagicLink(data: MagicLinkEmailData) {
                 <li>If you didn't expect this invitation, please ignore this email</li>
               </ul>
             </div>
-
-            ${
-              data.tenantSlug
-                ? `
-            <div class="info">
-              <strong>ℹ️ Your Tenant Slug</strong>
-              <p>Your tenant slug is <strong>${data.tenantSlug}</strong>. You will need this on the sign-in page. Enter it in the <em>Tenant Slug</em> field together with your email.</p>
-            </div>
-            `
-                : ""
-            }
 
             <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
             <p style="background: #f1f1f1; padding: 10px; border-radius: 5px; word-break: break-all; font-family: monospace;">
@@ -583,16 +547,6 @@ export async function sendTenantActivationMagicLink(
                 <li>If you didn't create this account, please ignore this email</li>
               </ul>
             </div>
-            ${
-              data.tenantSlug
-                ? `
-            <div class="info">
-              <strong>ℹ️ Your Tenant Slug</strong>
-              <p>Your tenant slug is <strong>${data.tenantSlug}</strong>. You will use this on the sign-in page in the <em>Tenant Slug</em> field to access your workspace.</p>
-            </div>
-            `
-                : ""
-            }
 
 
             <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
@@ -795,7 +749,6 @@ export async function emailRoutes(fastify: FastifyInstance) {
           companyName,
           loginUrl,
           temporaryPassword,
-          tenantSlug,
         } = request.body as PersonnelInvitationEmailData;
 
         if (
@@ -817,7 +770,6 @@ export async function emailRoutes(fastify: FastifyInstance) {
           companyName,
           loginUrl,
           temporaryPassword,
-          tenantSlug,
         });
 
         return reply.send(result);

@@ -12,7 +12,6 @@ import { TenantSetupService } from "../services/tenant-setup";
 const signInSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
-  tenantSlug: z.string().min(1),
 });
 
 const signUpSchema = z.object({
@@ -20,7 +19,6 @@ const signUpSchema = z.object({
   lastName: z.string().min(1),
   email: z.string().email(),
   password: z.string().min(6),
-  tenantSlug: z.string().min(1),
   role: z
     .enum(["admin", "manager", "technician", "dispatcher", "customer"])
     .optional(),
@@ -55,40 +53,30 @@ export async function authRoutes(fastify: FastifyInstance) {
   // Sign in
   fastify.post("/sign-in", async (request, reply) => {
     try {
-      const { email, password, tenantSlug } = signInSchema.parse(request.body);
+      const { email, password } = signInSchema.parse(request.body);
 
-      // Find tenant by slug first
-      console.log(`🔍 Looking for tenant with slug: "${tenantSlug}"`);
-      const tenant = await Tenant.findOne({ slug: tenantSlug, isActive: true });
-      if (!tenant) {
-        console.log(`❌ Tenant not found or not active for slug: "${tenantSlug}"`);
-        // Get available tenants for debugging
-        const availableTenants = await Tenant.find({ isActive: true }).select('slug name').lean();
-        console.log('Available tenants:', availableTenants.map(t => ({ slug: t.slug, name: t.name })));
-        return reply.status(401).send({
-          success: false,
-          message: "Invalid tenant or tenant not active",
-        });
-      }
-      console.log(`✅ Found tenant: ${tenant.name} (${tenant._id})`);
-
-      // Find user within the specific tenant
-      console.log(`🔍 Looking for user with email: "${email}" in tenant: ${tenant._id}`);
-      const user = await User.findOne({ email, tenantId: tenant._id });
+      // Find user by email first
+      console.log(`🔍 Looking for user with email: "${email}"`);
+      const user = await User.findOne({ email, isActive: true });
       if (!user) {
-        console.log(`❌ User not found with email: "${email}" in tenant: ${tenant._id}`);
-        // Check if user exists in other tenants
-        const userInOtherTenants = await User.findOne({ email }).select('tenantId email').lean();
-        if (userInOtherTenants) {
-          console.log(`⚠️  User exists in different tenant: ${userInOtherTenants.tenantId}`);
-        }
+        console.log(`❌ User not found with email: "${email}"`);
         return reply.status(401).send({
           success: false,
           message: "Invalid credentials",
         });
       }
-      console.log(`✅ Found user: ${user.email} (${user._id})`);
-    
+      console.log(`✅ Found user: ${user.email} (${user._id}) in tenant: ${user.tenantId}`);
+
+      // Get the user's tenant
+      const tenant = await Tenant.findOne({ _id: user.tenantId, isActive: true });
+      if (!tenant) {
+        console.log(`❌ Tenant not found or not active for user's tenant: ${user.tenantId}`);
+        return reply.status(401).send({
+          success: false,
+          message: "Your tenant is not active. Please contact support.",
+        });
+      }
+      console.log(`✅ Found tenant: ${tenant.name} (${tenant._id})`);
 
       // Verify password
       const isValidPassword = await bcrypt.compare(password, user.password);
@@ -164,69 +152,23 @@ export async function authRoutes(fastify: FastifyInstance) {
         lastName,
         email,
         password,
-        tenantSlug,
         role = "admin",
       } = signUpSchema.parse(request.body);
 
-      // Find tenant by slug first
-      const tenant = await Tenant.findOne({ slug: tenantSlug, isActive: true });
-      if (!tenant) {
-        return reply.status(400).send({
-          success: false,
-          message: "Invalid tenant or tenant not active",
-        });
-      }
-
-      // Check if user already exists in this tenant
-      const existingUser = await User.findOne({ email, tenantId: tenant._id });
+      // Check if user already exists
+      const existingUser = await User.findOne({ email });
       if (existingUser) {
         return reply.status(400).send({
           success: false,
-          message: "User already exists in this tenant",
+          message: "User already exists",
         });
       }
 
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 12);
-
-      // Create user
-      const user = new User({
-        firstName,
-        lastName,
-        email,
-        password: hashedPassword,
-        role: role,
-        tenantId: tenant._id,
-        permissions: [],
-        isActive: true,
-      });
-
-      await user.save();
-
-      // Generate JWT token
-      const token = jwt.sign(
-        {
-          userId: user._id,
-          email: user.email,
-          role: role,
-          tenantId: user.tenantId,
-        },
-        process.env.JWT_SECRET || "fallback-secret",
-        { expiresIn: "7d" }
-      );
-
-      return reply.status(201).send({
-        success: true,
-        data: {
-          user: {
-            id: user._id,
-            name: `${user.firstName} ${user.lastName}`,
-            email: user.email,
-            role: role,
-            avatarUrl: user.avatar,
-          },
-          token,
-        },
+      // For sign-up without tenant slug, we disable direct sign-up
+      // Users should be invited through the invitation flow instead
+      return reply.status(400).send({
+        success: false,
+        message: "Direct sign-up is not supported. Please use the invitation link provided by your organization.",
       });
     } catch (error) {
       fastify.log.error(error);
@@ -261,6 +203,9 @@ export async function authRoutes(fastify: FastifyInstance) {
           message: "Invalid token",
         });
       }
+
+      // Get personnel data for environment access
+      const personnel = await Personnel.findOne({ userId: user._id, tenantId: user.tenantId });
 
       // Get user's role and permissions
       let permissions: string[] = [];
@@ -326,6 +271,7 @@ export async function authRoutes(fastify: FastifyInstance) {
             phone: user.phone,
             avatar: user.avatar,
             lastLoginAt: user.lastLoginAt,
+            environmentAccess: personnel?.environmentAccess || null,
           },
         },
         message: "User verified successfully",

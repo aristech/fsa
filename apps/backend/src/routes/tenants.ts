@@ -173,7 +173,6 @@ export async function tenantRoutes(fastify: FastifyInstance) {
           companyName: validatedData.companyName,
           magicLink: magicLinkResult.magicLink,
           expirationHours: 48,
-          tenantSlug: slug,
         });
 
         if (!emailResult.success) {
@@ -338,7 +337,6 @@ export async function tenantRoutes(fastify: FastifyInstance) {
             companyName: validatedData.name,
             magicLink: magicLinkResult.magicLink,
             expirationHours: 72,
-            tenantSlug: tenant.slug,
           });
 
           if (emailResult.success) {

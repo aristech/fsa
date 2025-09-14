@@ -5,7 +5,6 @@ import axiosInstance, { endpoints } from 'src/lib/axios';
 export interface SignInRequest {
   email: string;
   password: string;
-  tenantSlug: string;
 }
 
 export interface SignUpRequest {
@@ -14,7 +13,6 @@ export interface SignUpRequest {
   firstName: string;
   lastName: string;
   phone?: string;
-  tenantSlug: string;
 }
 
 export interface AuthResponse {

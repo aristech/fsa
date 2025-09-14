@@ -13,7 +13,6 @@ import {
   alpha,
   Button,
   Select,
-  useTheme,
   MenuItem,
   TextField,
   Typography,
@@ -102,7 +101,6 @@ export function MobileFormWizard({
   allowSkip = false,
   orientation = 'vertical',
 }: MobileFormWizardProps) {
-  const theme = useTheme();
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState(initialData);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
@@ -246,8 +244,6 @@ export function MobileDatePicker({
   error?: boolean;
   helperText?: string;
 }) {
-  const [open, setOpen] = useState(false);
-
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <DatePicker
@@ -257,12 +253,6 @@ export function MobileDatePicker({
         minDate={minDate}
         maxDate={maxDate}
         disabled={disabled}
-        open={open}
-        onOpen={() => setOpen(true)}
-        onClose={() => setOpen(false)}
-        slots={{
-          textField: TextField,
-        }}
         slotProps={{
           textField: {
             fullWidth: true,
@@ -272,13 +262,12 @@ export function MobileDatePicker({
             InputProps: {
               endAdornment: (
                 <InputAdornment position="end">
-                  <IconButton onClick={() => setOpen(true)} edge="end" disabled={disabled}>
+                  <IconButton edge="end" disabled={disabled}>
                     <Iconify icon="eva:calendar-fill" width={20} />
                   </IconButton>
                 </InputAdornment>
               ),
             },
-            onClick: () => setOpen(true),
             sx: {
               '& .MuiInputBase-input': {
                 fontSize: '16px', // Prevent zoom on iOS
@@ -295,6 +284,76 @@ export function MobileDatePicker({
   );
 }
 
+// Internal TimePicker component that's completely isolated from external props
+function IsolatedTimePicker({
+  label,
+  value,
+  onChange,
+  disabled,
+  required,
+  error,
+  helperText,
+  open,
+  onOpen,
+  onClose,
+}: {
+  label: string;
+  value: Dayjs | null;
+  onChange: (date: Dayjs | null) => void;
+  disabled?: boolean;
+  required?: boolean;
+  error?: boolean;
+  helperText?: string;
+  open: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <TimePicker
+      label={label}
+      sx={{
+        mt: 2,
+      }}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      open={open}
+      onOpen={onOpen}
+      onClose={onClose}
+      slots={{
+        textField: TextField,
+      }}
+      slotProps={{
+        textField: {
+          fullWidth: true,
+          required,
+          error,
+          helperText,
+          InputProps: {
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={onOpen} edge="end" disabled={disabled}>
+                  <Iconify icon="eva:clock-fill" width={20} />
+                </IconButton>
+              </InputAdornment>
+            ),
+          },
+          onClick: onOpen,
+          sx: {
+            '& .MuiInputBase-input': {
+              fontSize: '16px', // Prevent zoom on iOS
+              padding: '16px 14px',
+            },
+          },
+        },
+        actionBar: {
+          actions: ['clear', 'cancel', 'accept'],
+        },
+      }}
+    />
+  );
+}
+
 // Mobile Time Picker Component
 export function MobileTimePicker({
   label,
@@ -304,6 +363,7 @@ export function MobileTimePicker({
   required,
   error,
   helperText,
+  ...otherProps
 }: {
   label: string;
   value: Dayjs | null;
@@ -312,52 +372,32 @@ export function MobileTimePicker({
   required?: boolean;
   error?: boolean;
   helperText?: string;
+  [key: string]: any; // Allow other props but filter them out
 }) {
   const [open, setOpen] = useState(false);
 
+  // Filter out problematic props that shouldn't be passed to DOM
+  const { sectionListRef, ref, key, ..._filteredProps } = otherProps;
+
+  // Suppress unused variable warnings - we're intentionally filtering out these props
+  void sectionListRef;
+  void ref;
+  void key;
+  void _filteredProps;
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <TimePicker
+      <IsolatedTimePicker
         label={label}
-        sx={{
-          mt: 2,
-        }}
         value={value}
         onChange={onChange}
         disabled={disabled}
+        required={required}
+        error={error}
+        helperText={helperText}
         open={open}
         onOpen={() => setOpen(true)}
         onClose={() => setOpen(false)}
-        slots={{
-          textField: TextField,
-        }}
-        slotProps={{
-          textField: {
-            fullWidth: true,
-            required,
-            error,
-            helperText,
-            InputProps: {
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton onClick={() => setOpen(true)} edge="end" disabled={disabled}>
-                    <Iconify icon="eva:clock-fill" width={20} />
-                  </IconButton>
-                </InputAdornment>
-              ),
-            },
-            onClick: () => setOpen(true),
-            sx: {
-              '& .MuiInputBase-input': {
-                fontSize: '16px', // Prevent zoom on iOS
-                padding: '16px 14px',
-              },
-            },
-          },
-          actionBar: {
-            actions: ['clear', 'cancel', 'accept'],
-          },
-        }}
       />
     </LocalizationProvider>
   );

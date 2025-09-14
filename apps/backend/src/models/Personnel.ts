@@ -33,7 +33,7 @@ export interface IPersonnel extends Document {
   notes?: string;
   isActive: boolean;
   status: "active" | "pending" | "inactive" | "banned";
-  environmentAccess: "office" | "field" | "both";
+  environmentAccess: "dashboard" | "field" | "all";
   mobileOptimized: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -138,8 +138,8 @@ const PersonnelSchema: Schema = new Schema(
     },
     environmentAccess: {
       type: String,
-      enum: ["office", "field", "both"],
-      default: "office",
+      enum: ["dashboard", "field", "all"],
+      default: "dashboard",
       index: true,
     },
     mobileOptimized: {
@@ -156,7 +156,7 @@ const PersonnelSchema: Schema = new Schema(
 
 // Pre-save hook to set mobileOptimized based on environmentAccess
 PersonnelSchema.pre("save", function (next) {
-  if (this.environmentAccess === "field" || this.environmentAccess === "both") {
+  if (this.environmentAccess === "field" || this.environmentAccess === "all") {
     this.mobileOptimized = true;
   }
   next();

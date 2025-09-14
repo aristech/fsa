@@ -493,7 +493,7 @@ export default function FieldReportsPage() {
         onClick={handleCreateReport}
         sx={{
           position: 'fixed',
-          bottom: { xs: '100px', sm: '24px' },
+          bottom: '100px', // Account for bottom navigation on all screen sizes
           right: '24px',
           zIndex: theme.zIndex.speedDial,
           boxShadow: theme.shadows[8],
