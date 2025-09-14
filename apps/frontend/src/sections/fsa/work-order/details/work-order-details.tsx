@@ -310,8 +310,8 @@ export function WorkOrderDetails({ id }: Props) {
                         </Typography>
                         <Typography variant="body2">
                           {(workOrder as any)?.cost?.labor
-                            ? `$${(workOrder as any).cost.labor.toFixed(2)}`
-                            : '$0.00'}
+                            ? `${(workOrder as any).cost.labor.toFixed(2)}€`
+                            : '0.00€'}
                         </Typography>
                       </Stack>
                     </Grid>

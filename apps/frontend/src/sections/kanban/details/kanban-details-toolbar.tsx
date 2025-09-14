@@ -34,6 +34,7 @@ type Props = BoxProps & {
   // onChangeStatus removed from toolbar per latest requirements
   completeStatus?: boolean;
   onToggleComplete?: (newValue: boolean) => void;
+  onCreateReport?: () => void;
 };
 
 export function KanbanDetailsToolbar({
@@ -45,9 +46,9 @@ export function KanbanDetailsToolbar({
   workOrderNumber,
   onCloseDetails,
   onChangeWorkOrder,
-
   completeStatus,
   onToggleComplete,
+  onCreateReport,
   ...other
 }: Props) {
   const smUp = useMediaQuery((theme) => theme.breakpoints.up('sm'));
@@ -187,7 +188,12 @@ export function KanbanDetailsToolbar({
 
         <Box component="span" sx={{ flexGrow: 1 }} />
 
-        <Box sx={{ display: 'flex' }}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Tooltip title="Create report from task">
+            <IconButton onClick={onCreateReport} color="primary">
+              <Iconify icon="eva:file-text-fill" />
+            </IconButton>
+          </Tooltip>
           <Button
             size="small"
             variant="soft"

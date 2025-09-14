@@ -1,6 +1,6 @@
 'use client';
 
-import type { IReport, ReportStats, ReportSearchParams } from 'src/lib/models/Report';
+import type { IReport, ReportSearchParams } from 'src/lib/models/Report';
 
 import { useBoolean } from 'minimal-shared/hooks';
 import { useState, useEffect, useCallback } from 'react';
@@ -22,18 +22,18 @@ import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { EmptyContent } from 'src/components/empty-content';
 import { LoadingScreen } from 'src/components/loading-screen';
+import { ConfirmationDialog } from 'src/components/confirmation-dialog';
+
+import { ReportCreateDrawer } from 'src/sections/field/reports/report-create-drawer';
 
 import { ReportsTable } from '../components/reports-table';
-import { ReportsStats } from '../components/reports-stats';
 import { ReportsFilters } from '../components/reports-filters';
-import { ReportCreateDrawer } from '../components/report-create-drawer';
 import { ReportDetailsDrawer } from '../components/report-details-drawer';
 
 // ----------------------------------------------------------------------
 
 export function ReportsView() {
   const [reports, setReports] = useState<IReport[]>([]);
-  const [stats, setStats] = useState<ReportStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<ReportSearchParams>({
     page: 1,
@@ -47,21 +47,19 @@ export function ReportsView() {
   const createDrawer = useBoolean();
   const [selectedReport, setSelectedReport] = useState<IReport | null>(null);
 
+  // Delete confirmation states
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState<IReport | null>(null);
+
   // Load reports data
   const loadReports = useCallback(async () => {
     try {
       setLoading(true);
-      const [reportsResponse, statsResponse] = await Promise.all([
-        ReportService.getAllReports(filters),
-        ReportService.getDashboardStats('30'),
-      ]);
+      const reportsResponse = await ReportService.getAllReports(filters);
 
       if (reportsResponse.success) {
         setReports(reportsResponse.data);
-      }
-
-      if (statsResponse.success) {
-        setStats(statsResponse.data);
       }
     } catch (error) {
       console.error('Error loading reports:', error);
@@ -102,6 +100,36 @@ export function ReportsView() {
     },
     [createDrawer]
   );
+
+  // Handle report deletion
+  const handleReportDelete = useCallback((report: IReport) => {
+    setReportToDelete(report);
+    setDeleteConfirmOpen(true);
+  }, []);
+
+  // Handle confirm delete
+  const handleConfirmDelete = useCallback(async () => {
+    if (!reportToDelete) return;
+
+    setDeleteLoading(true);
+    try {
+      const response = await ReportService.deleteReport(reportToDelete._id);
+
+      if (response.success) {
+        setReports((prev) => prev.filter((report) => report._id !== reportToDelete._id));
+        setDeleteConfirmOpen(false);
+        setReportToDelete(null);
+        toast.success('Report deleted successfully');
+      } else {
+        toast.error(response.message || 'Failed to delete report');
+      }
+    } catch (error) {
+      console.error('Error deleting report:', error);
+      toast.error('Failed to delete report');
+    } finally {
+      setDeleteLoading(false);
+    }
+  }, [reportToDelete]);
 
   // Handle filters change
   const handleFiltersChange = useCallback((newFilters: Partial<ReportSearchParams>) => {
@@ -222,7 +250,6 @@ export function ReportsView() {
         </Box>
 
         {/* Stats Cards */}
-        {stats && <ReportsStats stats={stats} />}
 
         {/* Filters */}
         <Card>
@@ -236,6 +263,7 @@ export function ReportsView() {
               reports={reports}
               onReportSelect={handleReportSelect}
               onReportUpdate={handleReportUpdate}
+              onReportDelete={handleReportDelete}
             />
           ) : (
             <EmptyContent
@@ -270,6 +298,23 @@ export function ReportsView() {
         open={createDrawer.value}
         onClose={createDrawer.onFalse}
         onSuccess={handleReportCreate}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={deleteConfirmOpen}
+        title="Delete Report"
+        message={`Are you sure you want to delete this ${reportToDelete?.type} report? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmColor="error"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setDeleteConfirmOpen(false);
+          setReportToDelete(null);
+        }}
+        loading={deleteLoading}
+        icon="solar:trash-bin-trash-bold"
       />
     </Container>
   );

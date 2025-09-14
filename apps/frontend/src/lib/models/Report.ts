@@ -117,7 +117,7 @@ export interface IReportMaterialUsage {
 
 export interface IReportSignature {
   _id: string;
-  type: 'technician' | 'customer' | 'supervisor' | 'inspector';
+  type: 'technician' | 'client' | 'supervisor' | 'inspector';
   signatureData: string; // Base64 encoded signature image
   signerName: string;
   signerTitle?: string;

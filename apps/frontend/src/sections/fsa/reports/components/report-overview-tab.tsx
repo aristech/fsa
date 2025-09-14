@@ -84,7 +84,6 @@ export function ReportOverviewTab({ report, onUpdate }: ReportOverviewTabProps) 
           </Grid>
         </CardContent>
       </Card>
-
       {/* Related Information */}
       <Card>
         <CardContent>
@@ -146,7 +145,6 @@ export function ReportOverviewTab({ report, onUpdate }: ReportOverviewTabProps) 
           </Grid>
         </CardContent>
       </Card>
-
       {/* Cost Summary */}
       <Card>
         <CardContent>
@@ -189,7 +187,7 @@ export function ReportOverviewTab({ report, onUpdate }: ReportOverviewTabProps) 
       </Card>
 
       {/* Time Summary */}
-      {report.totalHours && report.totalHours > 0 && (
+      {report?.totalHours !== undefined && report.totalHours > 0 && (
         <Card>
           <CardContent>
             <Typography variant="h6" sx={{ mb: 2 }}>
@@ -206,7 +204,6 @@ export function ReportOverviewTab({ report, onUpdate }: ReportOverviewTabProps) 
           </CardContent>
         </Card>
       )}
-
       {/* Equipment */}
       {report.equipment && report.equipment.length > 0 && (
         <Card>
@@ -227,7 +224,6 @@ export function ReportOverviewTab({ report, onUpdate }: ReportOverviewTabProps) 
           </CardContent>
         </Card>
       )}
-
       {/* Tags */}
       {report.tags && report.tags.length > 0 && (
         <Card>
@@ -243,7 +239,6 @@ export function ReportOverviewTab({ report, onUpdate }: ReportOverviewTabProps) 
           </CardContent>
         </Card>
       )}
-
       {/* System Information */}
       <Card>
         <CardContent>

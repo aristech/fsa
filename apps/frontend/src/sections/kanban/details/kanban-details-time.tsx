@@ -130,7 +130,7 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
           <Typography variant="subtitle2">Time entries</Typography>
           <Typography variant="body2" color="text.secondary">
-            Total: {totals.hours.toFixed(2)}h • Cost: {totals.cost.toFixed(2)}
+            Total: {totals.hours.toFixed(2)}h • Cost: {totals.cost.toFixed(2)}€
           </Typography>
         </Stack>
 
@@ -164,7 +164,7 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
                   {e.notes || ''}
                 </Typography>
                 <Typography variant="body2" sx={{ minWidth: 100, textAlign: 'right' }}>
-                  {typeof e.cost === 'number' ? e.cost.toFixed(2) : '-'}
+                  {typeof e.cost === 'number' ? `${e.cost.toFixed(2)}€` : '-'}
                 </Typography>
                 <IconButton color="error" onClick={() => handleDelete(e._id)}>
                   <Iconify icon="mingcute:delete-2-line" />

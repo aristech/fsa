@@ -35,9 +35,15 @@ interface ReportsTableProps {
   reports: IReport[];
   onReportSelect: (report: IReport) => void;
   onReportUpdate: (report: IReport) => void;
+  onReportDelete: (report: IReport) => void;
 }
 
-export function ReportsTable({ reports, onReportSelect, onReportUpdate }: ReportsTableProps) {
+export function ReportsTable({
+  reports,
+  onReportSelect,
+  onReportUpdate,
+  onReportDelete,
+}: ReportsTableProps) {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -225,28 +231,54 @@ export function ReportsTable({ reports, onReportSelect, onReportUpdate }: Report
 
                   <TableCell>
                     <Typography variant="body2">
-                      {report.client?.name || report.clientData?.name || '-'}
+                      {report.client?.name ||
+                        report.clientData?.name ||
+                        report.clientId?.name ||
+                        '-'}
                     </Typography>
-                    {(report.client?.company || report.clientData?.company) && (
+                    {(report.client?.company ||
+                      report.clientData?.company ||
+                      report.clientId?.company) && (
                       <Typography variant="caption" color="text.secondary">
-                        {report.client?.company || report.clientData?.company}
+                        {report.client?.company ||
+                          report.clientData?.company ||
+                          report.clientId?.company}
                       </Typography>
                     )}
                   </TableCell>
 
                   <TableCell>
                     <Typography variant="body2">
-                      {dayjs(report.reportDate).format('MMM DD, YYYY')}
+                      {dayjs(report.reportDate).format('MMM DD, YYYY HH:mm')}
                     </Typography>
                   </TableCell>
 
                   <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Tooltip
+                      title={
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                            {report.createdBy?.name ||
+                              report.createdByData?.name ||
+                              report.createdBy?.email ||
+                              report.createdByData?.email ||
+                              'Unknown User'}
+                          </Typography>
+                          {(report.createdBy?.email || report.createdByData?.email) && (
+                            <Typography variant="caption" color="text.secondary">
+                              {report.createdBy?.email || report.createdByData?.email}
+                            </Typography>
+                          )}
+                        </Box>
+                      }
+                      arrow
+                    >
                       <Avatar
                         sx={{
-                          width: 24,
-                          height: 24,
-                          fontSize: '0.75rem',
+                          width: 32,
+                          height: 32,
+                          fontSize: '0.875rem',
+                          cursor: 'pointer',
                         }}
                       >
                         {report.createdBy?.name?.charAt(0)?.toUpperCase() ||
@@ -254,14 +286,7 @@ export function ReportsTable({ reports, onReportSelect, onReportUpdate }: Report
                           report.createdBy?.email?.charAt(0)?.toUpperCase() ||
                           'U'}
                       </Avatar>
-                      <Typography variant="body2">
-                        {report.createdBy?.name ||
-                          report.createdByData?.name ||
-                          report.createdBy?.email ||
-                          report.createdByData?.email ||
-                          'Unknown User'}
-                      </Typography>
-                    </Box>
+                    </Tooltip>
                   </TableCell>
 
                   <TableCell>
@@ -344,6 +369,21 @@ export function ReportsTable({ reports, onReportSelect, onReportUpdate }: Report
             <Iconify icon="eva:download-fill" />
           </ListItemIcon>
           <ListItemText>Export PDF</ListItemText>
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
+            if (selectedReport) {
+              onReportDelete(selectedReport);
+            }
+            handleMenuClose();
+          }}
+          sx={{ color: 'error.main' }}
+        >
+          <ListItemIcon>
+            <Iconify icon="eva:trash-2-fill" sx={{ color: 'error.main' }} />
+          </ListItemIcon>
+          <ListItemText>Delete Report</ListItemText>
         </MenuItem>
       </Menu>
     </>

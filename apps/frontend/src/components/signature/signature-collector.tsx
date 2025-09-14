@@ -42,6 +42,7 @@ interface SignatureCollectorProps {
   onRemoveSignature: (id: string) => void;
   onUpdateSignature: (id: string, updates: Partial<SignatureData>) => void;
   disabled?: boolean;
+  getInitialFormData?: (type: SignatureData['type']) => Partial<SignatureData> | undefined;
 }
 
 const signatureTypes = [
@@ -58,6 +59,7 @@ export function SignatureCollector({
   onRemoveSignature,
   onUpdateSignature,
   disabled = false,
+  getInitialFormData,
 }: SignatureCollectorProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [currentSignature, setCurrentSignature] = useState<Partial<SignatureData>>({});
@@ -87,11 +89,14 @@ export function SignatureCollector({
 
   const handleOpenDialog = useCallback(
     (type?: SignatureData['type']) => {
+      const signatureType = type || 'technician';
+      const initialData = getInitialFormData?.(signatureType);
+
       setCurrentSignature({
-        type: type || 'technician',
-        signerName: '',
-        signerTitle: '',
-        signerEmail: '',
+        type: signatureType,
+        signerName: initialData?.signerName || '',
+        signerTitle: initialData?.signerTitle || '',
+        signerEmail: initialData?.signerEmail || '',
         signatureData: '',
         notes: '',
       });
@@ -125,7 +130,7 @@ export function SignatureCollector({
         }
       }, 100);
     },
-    [isMobile]
+    [isMobile, getInitialFormData]
   );
 
   const handleCloseDialog = useCallback(() => {
@@ -501,18 +506,31 @@ export function SignatureCollector({
             backgroundColor: 'white',
             mb: 2,
             minHeight: isMobile ? 100 : 80,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          <img
-            src={signature.signatureData}
-            alt={`Signature of ${signature.signerName}`}
-            style={{
-              width: '100%',
-              height: 'auto',
-              maxHeight: isMobile ? 120 : 80,
-              objectFit: 'contain',
-            }}
-          />
+          {signature.signatureData ? (
+            <img
+              src={signature.signatureData}
+              alt={`Signature of ${signature.signerName}`}
+              style={{
+                width: '100%',
+                height: 'auto',
+                maxHeight: isMobile ? 120 : 80,
+                objectFit: 'contain',
+              }}
+            />
+          ) : (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ textAlign: 'center', fontStyle: 'italic' }}
+            >
+              No signature captured yet
+            </Typography>
+          )}
         </Box>
 
         {/* Signature Details */}

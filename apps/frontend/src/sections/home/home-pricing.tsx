@@ -194,7 +194,7 @@ function PlanCard({ plan, sx, ...other }: PlanCardProps) {
 
           <m.div variants={varFade('inLeft', { distance: 24 })}>
             <Box component="span" sx={{ typography: 'h3' }}>
-              ${plan.price}
+              {plan.price}€
             </Box>
           </m.div>
         </Box>

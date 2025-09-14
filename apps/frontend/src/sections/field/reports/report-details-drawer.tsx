@@ -239,7 +239,7 @@ export function ReportDetailsDrawer({ open, onClose, report, onUpdate }: ReportD
             Total Cost:
           </Typography>
           <Typography variant="h6" color="primary" sx={{ fontWeight: 600 }}>
-            ${report.totalCost.toFixed(2)}
+            {report.totalCost.toFixed(2)}€
           </Typography>
         </Box>
       )}

@@ -165,7 +165,7 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
     <Box sx={{ p: 3 }}>
       <Stack spacing={3}>
         {/* Search and Quick Actions */}
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+        {/* <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
           <TextField
             fullWidth
             placeholder="Search reports by location, client, or content..."
@@ -198,7 +198,7 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
               Clear Filters ({activeFiltersCount})
             </Button>
           )}
-        </Box>
+        </Box> */}
 
         {/* Filters Grid */}
         <Grid container spacing={3}>

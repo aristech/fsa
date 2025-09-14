@@ -142,7 +142,7 @@ interface ReportCreateDrawerProps {
   open: boolean;
   onClose: () => void;
   onSuccess: (report: IReport) => void;
-  initialData?: Partial<CreateReportData>;
+  initialData?: Partial<CreateReportData> | (() => Partial<CreateReportData>);
 }
 
 export function ReportCreateDrawer({
@@ -165,21 +165,7 @@ export function ReportCreateDrawer({
     workOrderId: '',
     taskIds: [],
     customFields: {},
-    ...(initialData
-      ? {
-          type: initialData.type,
-          clientId: initialData.clientId,
-          workOrderId: initialData.workOrderId,
-          taskIds: initialData.taskIds,
-          location: initialData.location,
-          weather: initialData.weather,
-          equipment: initialData.equipment,
-          reportDate: initialData.reportDate,
-          priority: initialData.priority,
-          tags: initialData.tags,
-          customFields: initialData.customFields,
-        }
-      : {}),
+    ...(initialData ? (typeof initialData === 'function' ? initialData() : initialData) : {}),
   });
 
   const [loading, setLoading] = useState(false);
@@ -376,7 +362,7 @@ export function ReportCreateDrawer({
 
     const transformedMaterials = data.map((material: any) => ({
       value: material._id,
-      label: `${material.name} - $${material.unitCost?.toFixed(2) || material.unitPrice?.toFixed(2) || '0.00'}/${material.unit || 'unit'}`,
+      label: `${material.name} - ${material.unitCost?.toFixed(2) || material.unitPrice?.toFixed(2) || '0.00'}€/${material.unit || 'unit'}`,
       material,
     }));
 
@@ -494,6 +480,129 @@ export function ReportCreateDrawer({
     }
   }, [formData.taskIds, allTasks]);
 
+  // Auto-populate materials from selected task
+  useEffect(() => {
+    const fetchTaskMaterials = async () => {
+      if (formData.taskIds?.[0]) {
+        console.log('Materials available:', materials.length);
+
+        if (materials.length === 0) {
+          console.log('Materials not yet loaded, will retry when available');
+          return;
+        }
+        try {
+          const taskId = formData.taskIds[0];
+          console.log('Fetching materials for task:', taskId);
+          const response = await axiosInstance.get(endpoints.fsa.tasks.materials.list(taskId));
+          const taskMaterials = response.data?.data || response.data || [];
+
+          console.log('Task materials received:', taskMaterials);
+          console.log('Available materials to match against:', materials.slice(0, 3)); // First 3 for debugging
+
+          if (Array.isArray(taskMaterials) && taskMaterials.length > 0) {
+            // Map task materials to the format expected by selectedMaterials
+            const materialsToAdd = taskMaterials
+              .map((taskMaterial: any) => {
+                console.log('Processing task material:', taskMaterial);
+
+                // Try different possible material ID fields
+                const possibleIds = [
+                  taskMaterial.materialId,
+                  taskMaterial._id,
+                  taskMaterial.id,
+                  taskMaterial.material?._id,
+                  taskMaterial.material?.id,
+                ].filter(Boolean);
+
+                console.log('Looking for material with IDs:', possibleIds);
+
+                // Find the material in our materials list
+                const materialInfo = materials.find((m) =>
+                  possibleIds.some((id) => m.value === id)
+                );
+
+                console.log('Found material info:', materialInfo);
+
+                if (materialInfo) {
+                  return {
+                    ...materialInfo,
+                    quantity: taskMaterial.quantity || taskMaterial.plannedQuantity || 1,
+                  };
+                }
+                return null;
+              })
+              .filter(Boolean);
+
+            console.log('Materials to add:', materialsToAdd);
+
+            // Only set if we haven't already populated materials (avoid overriding manual selections)
+            setSelectedMaterials((prev) => {
+              if (prev.length === 0 && materialsToAdd.length > 0) {
+                console.log('Setting selected materials:', materialsToAdd);
+                return materialsToAdd;
+              }
+              console.log('Keeping existing materials:', prev);
+              return prev;
+            });
+          } else {
+            console.log('No task materials found or invalid format');
+          }
+        } catch (error) {
+          console.error('Error fetching task materials:', error);
+
+          // Fallback: check if the task itself has materials embedded
+          const selectedTask = allTasks.find((t) => t.value === formData.taskIds?.[0]);
+          if (selectedTask?.task?.materials) {
+            console.log(
+              'Trying fallback - task has embedded materials:',
+              selectedTask.task.materials
+            );
+
+            const embeddedMaterials = Array.isArray(selectedTask.task.materials)
+              ? selectedTask.task.materials
+              : [];
+
+            const materialsToAdd = embeddedMaterials
+              .map((taskMaterial: any) => {
+                const possibleIds = [
+                  taskMaterial.materialId,
+                  taskMaterial._id,
+                  taskMaterial.id,
+                  taskMaterial.material?._id,
+                  taskMaterial.material?.id,
+                ].filter(Boolean);
+
+                const materialInfo = materials.find((m) =>
+                  possibleIds.some((id) => m.value === id)
+                );
+
+                if (materialInfo) {
+                  return {
+                    ...materialInfo,
+                    quantity: taskMaterial.quantity || taskMaterial.plannedQuantity || 1,
+                  };
+                }
+                return null;
+              })
+              .filter(Boolean);
+
+            if (materialsToAdd.length > 0) {
+              console.log('Setting materials from task fallback:', materialsToAdd);
+              setSelectedMaterials((prev) => (prev.length === 0 ? materialsToAdd : prev));
+            }
+          }
+        }
+      }
+    };
+
+    fetchTaskMaterials();
+  }, [formData.taskIds, materials]);
+
+  // Debug selectedMaterials changes
+  useEffect(() => {
+    console.log('selectedMaterials changed:', selectedMaterials);
+  }, [selectedMaterials]);
+
   // Set report date with current time when drawer opens
   useEffect(() => {
     if (open) {
@@ -518,21 +627,7 @@ export function ReportCreateDrawer({
         workOrderId: '',
         taskIds: [],
         customFields: {},
-        ...(initialData
-          ? {
-              type: initialData.type,
-              clientId: initialData.clientId,
-              workOrderId: initialData.workOrderId,
-              taskIds: initialData.taskIds,
-              location: initialData.location,
-              weather: initialData.weather,
-              equipment: initialData.equipment,
-              reportDate: initialData.reportDate,
-              priority: initialData.priority,
-              tags: initialData.tags,
-              customFields: initialData.customFields,
-            }
-          : {}),
+        ...(initialData ? (typeof initialData === 'function' ? initialData() : initialData) : {}),
       });
       setSelectedMaterials([]);
       setReportNotes('');
@@ -540,7 +635,7 @@ export function ReportCreateDrawer({
       setSignatures([]);
       setReportStatus('draft');
     }
-  }, [open, initialData]);
+  }, [open]);
 
   const handleFieldChange = useCallback((field: keyof CreateReportData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -568,24 +663,70 @@ export function ReportCreateDrawer({
     );
   }, []);
 
-  const handleFileUpload = useCallback((files: FileList | null) => {
-    if (files) {
-      setAttachments((prev) => [...prev, ...Array.from(files)]);
-    }
-  }, []);
+  const handleFileUpload = useCallback(
+    (files: FileList | null) => {
+      if (files) {
+        // Store current step to preserve it during file upload
+        const currentStepValue = currentStep;
+
+        const fileArray = Array.from(files);
+
+        // Validate file sizes (limit to 10MB per file)
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        const validFiles = fileArray.filter((file) => {
+          if (file.size > maxSize) {
+            toast.error(`File "${file.name}" is too large. Maximum size is 10MB.`);
+            return false;
+          }
+          return true;
+        });
+
+        if (validFiles.length > 0) {
+          // Use requestAnimationFrame to ensure it runs after current render cycle
+          requestAnimationFrame(() => {
+            setAttachments((prev) => [...prev, ...validFiles]);
+            // Restore the step if it was reset
+            setTimeout(() => {
+              setCurrentStep(currentStepValue);
+            }, 50);
+          });
+        }
+      }
+    },
+    [currentStep]
+  );
 
   // Manage preview URLs for images
   useEffect(() => {
     const newPreviewUrls = new Map<number, string>();
 
-    attachments.forEach((file, index) => {
-      if (file.type.startsWith('image/')) {
-        const url = URL.createObjectURL(file);
-        newPreviewUrls.set(index, url);
+    // Process files asynchronously to avoid blocking UI
+    const processFiles = async () => {
+      for (let index = 0; index < attachments.length; index++) {
+        const file = attachments[index];
+        if (file.type.startsWith('image/')) {
+          // Use requestIdleCallback or setTimeout to yield control back to the browser
+          await new Promise((resolve) => {
+            if (window.requestIdleCallback) {
+              window.requestIdleCallback(() => {
+                const url = URL.createObjectURL(file);
+                newPreviewUrls.set(index, url);
+                resolve(undefined);
+              });
+            } else {
+              setTimeout(() => {
+                const url = URL.createObjectURL(file);
+                newPreviewUrls.set(index, url);
+                resolve(undefined);
+              }, 0);
+            }
+          });
+        }
       }
-    });
+      setPreviewUrls(new Map(newPreviewUrls));
+    };
 
-    setPreviewUrls(newPreviewUrls);
+    processFiles();
 
     // Cleanup function to revoke URLs
     return () => {
@@ -622,6 +763,38 @@ export function ReportCreateDrawer({
     setSignatures((prev) => prev.map((sig) => (sig.id === id ? { ...sig, ...updates } : sig)));
     toast.success('Signature updated');
   }, []);
+
+  // Get initial form data for signature collection
+  const getInitialSignatureFormData = useCallback(
+    (type: SignatureData['type']) => {
+      if (type === 'technician' && user) {
+        return {
+          type: 'technician' as const,
+          signerName: `${user.firstName} ${user.lastName}`,
+          signerTitle: user.role || 'Technician',
+          signerEmail: user.email,
+        };
+      }
+
+      if (type === 'client' && formData.clientId && clientsData?.data?.clients) {
+        const selectedClient = clientsData.data.clients.find(
+          (client: any) => client._id === formData.clientId
+        );
+
+        if (selectedClient?.contactPerson?.name) {
+          return {
+            type: 'client' as const,
+            signerName: selectedClient.contactPerson.name,
+            signerTitle: 'Client Representative',
+            signerEmail: selectedClient.contactPerson.email || selectedClient.email || '',
+          };
+        }
+      }
+
+      return undefined;
+    },
+    [user, formData.clientId, clientsData]
+  );
 
   const handleCameraCapture = useCallback(() => {
     // Check if getUserMedia is supported (for desktop/laptop cameras)
@@ -865,6 +1038,7 @@ export function ReportCreateDrawer({
             name: m.material?.name || m.label || 'Unknown Material',
             sku: m.material?.sku || '',
             unit: m.material?.unit || 'each',
+            unitCostAtTime: m.material?.unitPrice || m.material?.unitCost || 0,
           },
           quantityUsed: m.quantity,
           unitCost: m.material?.unitPrice || m.material?.unitCost || 0,
@@ -874,6 +1048,7 @@ export function ReportCreateDrawer({
           type: s.type,
           signerName: s.signerName,
           signerTitle: s.signerTitle,
+          signerEmail: s.signerEmail,
           signedAt: s.signedAt,
           signatureData: s.signatureData,
         })),
@@ -883,6 +1058,62 @@ export function ReportCreateDrawer({
 
       const response = await ReportService.createReport(reportData);
       if (response.success) {
+        const reportId = response.data._id;
+
+        // Upload files after report creation
+        if (attachments.length > 0 && reportId) {
+          try {
+            const form = new FormData();
+            form.append('scope', 'report');
+            form.append('reportId', reportId);
+            attachments.forEach((file: File) => {
+              form.append('files', file);
+            });
+
+            const uploadResponse = await axiosInstance.post('/api/v1/uploads', form, {
+              headers: {
+                'Content-Type': undefined, // Let browser set multipart boundary
+              },
+            });
+
+            const uploadedFiles = uploadResponse.data?.data || [];
+            const userId = user?._id;
+
+            if (!userId) {
+              throw new Error('User ID is required for file uploads');
+            }
+
+            const attachmentData = uploadedFiles.map((f: any) => ({
+              filename: f.name || 'Unknown',
+              originalName: f.name || 'Unknown',
+              mimetype: f.mime || 'application/octet-stream',
+              size: f.size || 0,
+              url: f.url,
+              uploadedAt: new Date(),
+              uploadedBy: userId,
+              // Add embedded user data for historical purposes
+              uploadedByData: {
+                _id: userId,
+                name:
+                  `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+                  user.email ||
+                  'Unknown User',
+                email: user.email || '',
+              },
+            }));
+
+            // Update report with attachment data
+            if (attachmentData.length > 0) {
+              await ReportService.updateReport(reportId, {
+                attachments: attachmentData,
+              });
+            }
+          } catch (uploadError) {
+            console.error('File upload failed:', uploadError);
+            toast.warning('Report saved, but file upload failed. You can add attachments later.');
+          }
+        }
+
         toast.success(
           reportStatus === 'draft' ? 'Report saved as draft' : 'Report submitted for review'
         );
@@ -1291,33 +1522,36 @@ export function ReportCreateDrawer({
               sx={{ mb: 2, height: 60 }}
             />
           )}
-          renderOption={(props, option) => (
-            <Box component="li" {...props}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-                <Box
-                  sx={{
-                    width: 40,
-                    height: 40,
-                    bgcolor: 'primary.light',
-                    borderRadius: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Iconify icon="solar:box-bold" width={20} />
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle2">{option.material?.name}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {option.material?.sku && `SKU: ${option.material.sku} • `}$
-                    {option.material?.unitCost?.toFixed(2) || '0.00'} per{' '}
-                    {option.material?.unit || 'unit'}
-                  </Typography>
+          renderOption={(props, option) => {
+            const { key, ...otherProps } = props;
+            return (
+              <Box component="li" key={key} {...otherProps}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      bgcolor: 'primary.light',
+                      borderRadius: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Iconify icon="solar:box-bold" width={20} />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="subtitle2">{option.material?.name}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {option.material?.sku && `SKU: ${option.material.sku} • `}
+                      {option.material?.unitCost?.toFixed(2) || '0.00'}€ per{' '}
+                      {option.material?.unit || 'unit'}
+                    </Typography>
+                  </Box>
                 </Box>
               </Box>
-            </Box>
-          )}
+            );
+          }}
           filterOptions={(options, { inputValue }) => {
             if (!inputValue) return options;
             return options.filter(
@@ -1358,8 +1592,10 @@ export function ReportCreateDrawer({
                     {material.material?.name}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    ${material.material?.unitPrice?.toFixed(2) || '0.00'} per{' '}
-                    {material.material?.unit || 'unit'}
+                    {material.material?.unitCost?.toFixed(2) ||
+                      material.material?.unitPrice?.toFixed(2) ||
+                      '0.00'}
+                    € per {material.material?.unit || 'unit'}
                   </Typography>
                 </Box>
 
@@ -1610,6 +1846,7 @@ export function ReportCreateDrawer({
         onRemoveSignature={handleRemoveSignature}
         onUpdateSignature={handleUpdateSignature}
         disabled={false}
+        getInitialFormData={getInitialSignatureFormData}
       />
 
       {/* Summary */}

@@ -143,27 +143,30 @@ function AddMaterialDialog({ open, onClose, onAdd }: AddMaterialDialogProps) {
                 }}
               />
             )}
-            renderOption={(props, option) => (
-              <Box component="li" {...props}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-                  <Avatar sx={{ width: 40, height: 40, bgcolor: 'primary.light' }}>
-                    <Iconify icon="solar:box-bold" />
-                  </Avatar>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="subtitle2">{option.name}</Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {option.sku && <Chip label={option.sku} size="small" />}
-                      {option.category && (
-                        <Chip label={option.category} size="small" variant="outlined" />
-                      )}
+            renderOption={(props, option) => {
+              const { key, ...otherProps } = props;
+              return (
+                <Box component="li" key={key} {...otherProps}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+                    <Avatar sx={{ width: 40, height: 40, bgcolor: 'primary.light' }}>
+                      <Iconify icon="solar:box-bold" />
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle2">{option.name}</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {option.sku && <Chip label={option.sku} size="small" />}
+                        {option.category && (
+                          <Chip label={option.category} size="small" variant="outlined" />
+                        )}
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {option.unitCost}€ per {option.unit} • Stock: {option.quantity}
+                      </Typography>
                     </Box>
-                    <Typography variant="caption" color="text.secondary">
-                      ${option.unitCost} per {option.unit} • Stock: {option.quantity}
-                    </Typography>
                   </Box>
                 </Box>
-              </Box>
-            )}
+              );
+            }}
             loading={loading}
             noOptionsText={searchTerm ? 'No materials found' : 'Start typing to search materials'}
           />
@@ -177,7 +180,7 @@ function AddMaterialDialog({ open, onClose, onAdd }: AddMaterialDialogProps) {
                 <Box sx={{ flex: 1 }}>
                   <Typography variant="subtitle2">{selectedMaterial.name}</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    ${selectedMaterial.unitCost} per {selectedMaterial.unit}
+                    {selectedMaterial.unitCost}€ per {selectedMaterial.unit}
                   </Typography>
                 </Box>
               </Box>
@@ -203,7 +206,7 @@ function AddMaterialDialog({ open, onClose, onAdd }: AddMaterialDialogProps) {
           {selectedMaterial && quantity > 0 && (
             <Box sx={{ p: 2, bgcolor: 'success.lighter', borderRadius: 1 }}>
               <Typography variant="body2" color="success.darker">
-                Total Cost: ${(selectedMaterial.unitCost * quantity).toFixed(2)}
+                Total Cost: {(selectedMaterial.unitCost * quantity).toFixed(2)}€
               </Typography>
             </Box>
           )}
@@ -312,7 +315,7 @@ export function KanbanDetailsMaterials({ taskId }: KanbanDetailsMaterialsProps) 
         <Typography variant="h6">Materials ({taskMaterials.length})</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           {taskMaterials.length > 0 && (
-            <Chip label={`Total: $${totalCost.toFixed(2)}`} color="primary" variant="outlined" />
+            <Chip label={`Total: ${totalCost.toFixed(2)}€`} color="primary" variant="outlined" />
           )}
           <Button
             variant="outlined"
@@ -387,14 +390,14 @@ export function KanbanDetailsMaterials({ taskId }: KanbanDetailsMaterialsProps) 
                       />
                     </TableCell>
                     <TableCell align="right">
-                      <Typography variant="body2">${item.unitCost.toFixed(2)}</Typography>
+                      <Typography variant="body2">{item.unitCost.toFixed(2)}€</Typography>
                       <Typography variant="caption" color="text.secondary">
                         per {item.material.unit}
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="subtitle2" color="primary">
-                        ${item.totalCost.toFixed(2)}
+                        {item.totalCost.toFixed(2)}€
                       </Typography>
                     </TableCell>
                     <TableCell align="center">

@@ -36,6 +36,8 @@ import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 import { useDateRangePicker, CustomDateRangePicker } from 'src/components/custom-date-range-picker';
 
+import { ReportCreateDrawer } from 'src/sections/field/reports/report-create-drawer';
+
 import { KanbanDetailsTime } from './kanban-details-time';
 import { KanbanDetailsToolbar } from './kanban-details-toolbar';
 import { KanbanDetailsPriority } from './kanban-details-priority';
@@ -89,6 +91,24 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
   const tabs = useTabs('overview');
 
   const contactsDialog = useBoolean();
+  const reportCreateDrawer = useBoolean();
+
+  // Function to map task data to report initial data
+  const getReportInitialData = useCallback(
+    () => ({
+      type: 'completion' as const,
+      clientId: task.clientId || '',
+      location: (task as any)?.location || '',
+      reportDate: new Date(),
+      priority: (task.priority || 'medium') as 'low' | 'medium' | 'high' | 'urgent',
+      workOrderId: (task as any)?.workOrderId || '',
+      taskIds: [task.id],
+      description: `Report for task: ${task.name}`,
+      equipment: (task as any)?.equipment || [],
+      tags: task.tags || task.labels || [],
+    }),
+    [task]
+  );
 
   const [taskName, setTaskName] = useState(task.name);
   const [priority, setPriority] = useState(task.priority);
@@ -451,6 +471,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         }
       }}
       onCloseDetails={onClose}
+      onCreateReport={reportCreateDrawer.onTrue}
     />
   );
 
@@ -853,6 +874,17 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           onCommentSent={scrollCommentsToBottom}
         />
       )}
+
+      {/* Report Create Drawer */}
+      <ReportCreateDrawer
+        open={reportCreateDrawer.value}
+        onClose={reportCreateDrawer.onFalse}
+        onSuccess={(report) => {
+          toast.success('Report created successfully');
+          reportCreateDrawer.onFalse();
+        }}
+        initialData={getReportInitialData}
+      />
     </Drawer>
   );
 }

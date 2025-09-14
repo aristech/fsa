@@ -85,33 +85,35 @@ export class ReportService {
     const formData = new FormData();
     formData.append('photo', file);
 
-    const response = await axiosInstance.post(
-      endpoints.fsa.reports.photos(reportId),
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-    );
+    const response = await axiosInstance.post(endpoints.fsa.reports.photos(reportId), formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   }
 
-  static async addSignature(reportId: string, signatureData: {
-    type: 'technician' | 'customer' | 'supervisor' | 'inspector';
-    signatureData: string;
-    signerName: string;
-    signerTitle?: string;
-    signerEmail?: string;
-  }) {
-    const response = await axiosInstance.post(endpoints.fsa.reports.signatures(reportId), signatureData);
+  static async addSignature(
+    reportId: string,
+    signatureData: {
+      type: 'technician' | 'client' | 'supervisor' | 'inspector';
+      signatureData: string;
+      signerName: string;
+      signerTitle?: string;
+      signerEmail?: string;
+    }
+  ) {
+    const response = await axiosInstance.post(
+      endpoints.fsa.reports.signatures(reportId),
+      signatureData
+    );
     return response.data;
   }
 
   // Dashboard and analytics
   static async getDashboardStats(period?: string) {
     const response = await axiosInstance.get(endpoints.fsa.reports.dashboardStats, {
-      params: { period }
+      params: { period },
     });
     return response.data;
   }
@@ -119,7 +121,7 @@ export class ReportService {
   // Client features
   static async getClientReports(clientId: string, params?: ReportSearchParams) {
     const response = await axiosInstance.get(endpoints.fsa.reports.clientReports(clientId), {
-      params
+      params,
     });
     return response.data;
   }
@@ -133,9 +135,12 @@ export class ReportService {
 
     // Create download link
     const blob = new Blob([response.data], {
-      type: format === 'pdf' ? 'application/pdf' :
-           format === 'excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' :
-           'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      type:
+        format === 'pdf'
+          ? 'application/pdf'
+          : format === 'excel'
+            ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     });
 
     const url = window.URL.createObjectURL(blob);
@@ -168,7 +173,9 @@ export class ReportService {
   }
 
   static async generateReportFromWorkOrder(workOrderId: string) {
-    const response = await axiosInstance.post(endpoints.fsa.reports.generateFromWorkOrder(workOrderId));
+    const response = await axiosInstance.post(
+      endpoints.fsa.reports.generateFromWorkOrder(workOrderId)
+    );
     return response.data;
   }
 
@@ -176,22 +183,29 @@ export class ReportService {
   static async bulkUpdateReports(reportIds: string[], updateData: Partial<UpdateReportData>) {
     const response = await axiosInstance.put(endpoints.fsa.reports.bulkUpdate, {
       reportIds,
-      updateData
+      updateData,
     });
     return response.data;
   }
 
   static async bulkExportReports(reportIds: string[], format: 'pdf' | 'excel' = 'pdf') {
-    const response = await axiosInstance.post(endpoints.fsa.reports.bulkExport, {
-      reportIds,
-      format
-    }, {
-      responseType: 'blob'
-    });
+    const response = await axiosInstance.post(
+      endpoints.fsa.reports.bulkExport,
+      {
+        reportIds,
+        format,
+      },
+      {
+        responseType: 'blob',
+      }
+    );
 
     // Create download link
     const blob = new Blob([response.data], {
-      type: format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      type:
+        format === 'pdf'
+          ? 'application/pdf'
+          : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
 
     const url = window.URL.createObjectURL(blob);

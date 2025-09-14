@@ -133,7 +133,7 @@ export interface IReportMaterialUsage {
 
 export interface IReportSignature {
   _id: string;
-  type: "technician" | "customer" | "supervisor" | "inspector";
+  type: "technician" | "client" | "supervisor" | "inspector";
   signatureData: string; // Base64 encoded signature image
   signerName: string;
   signerTitle?: string;
@@ -321,7 +321,7 @@ const ReportMaterialUsageSchema: Schema = new Schema({
 const ReportSignatureSchema: Schema = new Schema({
   type: {
     type: String,
-    enum: ["technician", "customer", "supervisor", "inspector"],
+    enum: ["technician", "client", "supervisor", "inspector"],
     required: true,
   },
   signatureData: { type: String, required: true }, // Base64 encoded
@@ -599,7 +599,7 @@ ReportSchema.index({
 });
 
 // Pre-save middleware to calculate costs
-ReportSchema.pre("save", function (this: IReport) {
+ReportSchema.pre("save", async function (this: IReport) {
   // Calculate total material cost
   this.totalMaterialCost = this.materialsUsed.reduce(
     (sum, material) => sum + material.totalCost,
@@ -611,6 +611,14 @@ ReportSchema.pre("save", function (this: IReport) {
     (sum, entry) => sum + entry.duration / 60,
     0,
   );
+
+  // Calculate total labor cost from time entries
+  // If totalLaborCost is not already set (e.g., from report creation), calculate it
+  if (this.totalLaborCost === 0 && this.timeEntries.length > 0) {
+    // Use a default hourly rate as fallback
+    const defaultHourlyRate = 50; // Default rate per hour
+    this.totalLaborCost = this.totalHours * defaultHourlyRate;
+  }
 
   // Calculate total cost (materials + labor + other costs)
   this.totalCost = this.totalMaterialCost + this.totalLaborCost;
@@ -643,15 +651,15 @@ ReportSchema.pre("save", async function (this: IReport) {
       try {
         const User = mongoose.model("User");
         const user = await User.findById(this.createdBy).select(
-          "name email role department phone",
+          "firstName lastName email role phone",
         );
         if (user) {
           this.createdByData = {
             _id: user._id.toString(),
-            name: user.name,
+            name: `${user.firstName} ${user.lastName}`.trim(),
             email: user.email,
             role: user.role,
-            department: user.department,
+            department: user.department || "",
             phone: user.phone,
           };
         }
@@ -666,15 +674,15 @@ ReportSchema.pre("save", async function (this: IReport) {
       try {
         const User = mongoose.model("User");
         const user = await User.findById(this.assignedTo).select(
-          "name email role department phone",
+          "firstName lastName email role phone",
         );
         if (user) {
           this.assignedToData = {
             _id: user._id.toString(),
-            name: user.name,
+            name: `${user.firstName} ${user.lastName}`.trim(),
             email: user.email,
             role: user.role,
-            department: user.department,
+            department: user.department || "",
             phone: user.phone,
           };
         }
@@ -744,15 +752,15 @@ ReportSchema.pre("save", async function (this: IReport) {
           const tasks = await Task.find({ _id: { $in: this.taskIds } });
           this.tasksData = tasks.map((task) => ({
             _id: task._id.toString(),
-            name: task.name,
+            name: task.title, // Use title field from Task model
             description: task.description,
-            status: task.status,
+            status: task.status || task.columnId,
             priority: task.priority,
             estimatedHours: task.estimatedHours,
             actualHours: task.actualHours,
             startDate: task.startDate,
             dueDate: task.dueDate,
-            assignedTo: task.assignedTo?.toString(),
+            assignedTo: task.assignees?.join(",") || "",
             workOrderId: task.workOrderId?.toString(),
             createdBy: task.createdBy.toString(),
           }));

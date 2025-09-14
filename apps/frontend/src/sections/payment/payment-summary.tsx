@@ -80,7 +80,7 @@ export function PaymentSummary({ sx, ...other }: BoxProps) {
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography variant="subtitle1">Total billed</Typography>
 
-          <Typography variant="subtitle1">$9.99*</Typography>
+          <Typography variant="subtitle1">9.99€*</Typography>
         </Box>
 
         <Divider sx={{ borderStyle: 'dashed' }} />

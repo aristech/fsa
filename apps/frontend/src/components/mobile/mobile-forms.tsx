@@ -1,10 +1,10 @@
 'use client';
 
-import { type Dayjs } from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 import React, { useRef, useState } from 'react';
 
 import { styled } from '@mui/material/styles';
-import { DatePicker, TimePicker } from '@mui/x-date-pickers';
+import { DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import {
@@ -284,8 +284,8 @@ export function MobileDatePicker({
   );
 }
 
-// Internal TimePicker component that's completely isolated from external props
-function IsolatedTimePicker({
+// Simple time input component using HTML time input
+function SimpleTimeInput({
   label,
   value,
   onChange,
@@ -293,9 +293,6 @@ function IsolatedTimePicker({
   required,
   error,
   helperText,
-  open,
-  onOpen,
-  onClose,
 }: {
   label: string;
   value: Dayjs | null;
@@ -304,50 +301,42 @@ function IsolatedTimePicker({
   required?: boolean;
   error?: boolean;
   helperText?: string;
-  open: boolean;
-  onOpen: () => void;
-  onClose: () => void;
 }) {
+  const timeValue = value ? value.format('HH:mm') : '';
+
+  const handleTimeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const timeString = event.target.value;
+    if (timeString) {
+      const [hours, minutes] = timeString.split(':').map(Number);
+      const newTime = dayjs().hour(hours).minute(minutes).second(0);
+      onChange(newTime);
+    } else {
+      onChange(null);
+    }
+  };
+
   return (
-    <TimePicker
+    <TextField
       label={label}
+      type="time"
+      value={timeValue}
+      onChange={handleTimeChange}
+      disabled={disabled}
+      required={required}
+      error={error}
+      helperText={helperText}
+      fullWidth
+      InputLabelProps={{
+        shrink: true,
+      }}
+      inputProps={{
+        step: 300, // 5 minute intervals
+      }}
       sx={{
         mt: 2,
-      }}
-      value={value}
-      onChange={onChange}
-      disabled={disabled}
-      open={open}
-      onOpen={onOpen}
-      onClose={onClose}
-      slots={{
-        textField: TextField,
-      }}
-      slotProps={{
-        textField: {
-          fullWidth: true,
-          required,
-          error,
-          helperText,
-          InputProps: {
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton onClick={onOpen} edge="end" disabled={disabled}>
-                  <Iconify icon="eva:clock-fill" width={20} />
-                </IconButton>
-              </InputAdornment>
-            ),
-          },
-          onClick: onOpen,
-          sx: {
-            '& .MuiInputBase-input': {
-              fontSize: '16px', // Prevent zoom on iOS
-              padding: '16px 14px',
-            },
-          },
-        },
-        actionBar: {
-          actions: ['clear', 'cancel', 'accept'],
+        '& .MuiInputBase-input': {
+          fontSize: '16px', // Prevent zoom on iOS
+          padding: '16px 14px',
         },
       }}
     />
@@ -363,7 +352,6 @@ export function MobileTimePicker({
   required,
   error,
   helperText,
-  ...otherProps
 }: {
   label: string;
   value: Dayjs | null;
@@ -372,34 +360,17 @@ export function MobileTimePicker({
   required?: boolean;
   error?: boolean;
   helperText?: string;
-  [key: string]: any; // Allow other props but filter them out
 }) {
-  const [open, setOpen] = useState(false);
-
-  // Filter out problematic props that shouldn't be passed to DOM
-  const { sectionListRef, ref, key, ..._filteredProps } = otherProps;
-
-  // Suppress unused variable warnings - we're intentionally filtering out these props
-  void sectionListRef;
-  void ref;
-  void key;
-  void _filteredProps;
-
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <IsolatedTimePicker
-        label={label}
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        required={required}
-        error={error}
-        helperText={helperText}
-        open={open}
-        onOpen={() => setOpen(true)}
-        onClose={() => setOpen(false)}
-      />
-    </LocalizationProvider>
+    <SimpleTimeInput
+      label={label}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      required={required}
+      error={error}
+      helperText={helperText}
+    />
   );
 }
 

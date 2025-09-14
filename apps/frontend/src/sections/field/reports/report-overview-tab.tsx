@@ -197,11 +197,11 @@ export function ReportOverviewTab({ report }: ReportOverviewTabProps) {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Typography variant="body2">Material Cost:</Typography>
-                <Typography variant="body2">${report.totalMaterialCost.toFixed(2)}</Typography>
+                <Typography variant="body2">{report.totalMaterialCost.toFixed(2)}€</Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Typography variant="body2">Labor Cost:</Typography>
-                <Typography variant="body2">${report.totalLaborCost.toFixed(2)}</Typography>
+                <Typography variant="body2">{report.totalLaborCost.toFixed(2)}€</Typography>
               </Box>
               <Divider />
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -209,7 +209,7 @@ export function ReportOverviewTab({ report }: ReportOverviewTabProps) {
                   Total Cost:
                 </Typography>
                 <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600 }}>
-                  ${report.totalCost.toFixed(2)}
+                  {report.totalCost.toFixed(2)}€
                 </Typography>
               </Box>
             </Box>
