@@ -42,8 +42,9 @@ export function AuthProvider({ children }: Props) {
 
         // Handle our API response format
         const user = res.data.data?.user || res.data.user;
+        const tenant = res.data.data?.tenant || res.data.tenant;
 
-        setState({ user: { ...user, accessToken }, loading: false });
+        setState({ user: { ...user, accessToken, tenant }, loading: false });
       } else {
         setState({ user: null, loading: false });
       }

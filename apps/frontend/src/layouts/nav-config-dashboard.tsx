@@ -87,16 +87,16 @@ export const navData: NavSectionProps['data'] = [
     items: [
       { title: 'Projects & Tasks', path: paths.dashboard.kanban, icon: ICONS.kanban },
       { title: 'Calendar', path: paths.dashboard.calendar, icon: ICONS.calendar },
-      {
-        title: 'Chat',
-        path: paths.dashboard.chat,
-        icon: ICONS.chat,
-        info: (
-          <Label color="error" variant="inverted">
-            +32
-          </Label>
-        ),
-      },
+      // {
+      //   title: 'Chat',
+      //   path: paths.dashboard.chat,
+      //   icon: ICONS.chat,
+      //   info: (
+      //     <Label color="error" variant="inverted">
+      //       +32
+      //     </Label>
+      //   ),
+      // },
     ],
   },
   /**

@@ -28,26 +28,32 @@ const magicLinkValidationSchema = z.object({
   token: z.string().min(1),
 });
 
-const setupAccountSchema = z.object({
-  token: z.string().min(1),
-  password: z.string().min(8).refine(
-    (password) => {
-      // Password validation: min 8 chars, mixed case, symbols, numbers
-      const hasLowerCase = /[a-z]/.test(password);
-      const hasUpperCase = /[A-Z]/.test(password);
-      const hasNumbers = /\d/.test(password);
-      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-      return hasLowerCase && hasUpperCase && hasNumbers && hasSpecialChar;
-    },
-    {
-      message: "Password must contain at least 8 characters with uppercase, lowercase, numbers, and special characters",
-    }
-  ),
-  confirmPassword: z.string().min(1),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+const setupAccountSchema = z
+  .object({
+    token: z.string().min(1),
+    password: z
+      .string()
+      .min(8)
+      .refine(
+        (password) => {
+          // Password validation: min 8 chars, mixed case, symbols, numbers
+          const hasLowerCase = /[a-z]/.test(password);
+          const hasUpperCase = /[A-Z]/.test(password);
+          const hasNumbers = /\d/.test(password);
+          const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+          return hasLowerCase && hasUpperCase && hasNumbers && hasSpecialChar;
+        },
+        {
+          message:
+            "Password must contain at least 8 characters with uppercase, lowercase, numbers, and special characters",
+        },
+      ),
+    confirmPassword: z.string().min(1),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 export async function authRoutes(fastify: FastifyInstance) {
   // Sign in
@@ -65,7 +71,10 @@ export async function authRoutes(fastify: FastifyInstance) {
       }
 
       // Get the user's tenant
-      const tenant = await Tenant.findOne({ _id: user.tenantId, isActive: true });
+      const tenant = await Tenant.findOne({
+        _id: user.tenantId,
+        isActive: true,
+      });
       if (!tenant) {
         return reply.status(401).send({
           success: false,
@@ -98,11 +107,13 @@ export async function authRoutes(fastify: FastifyInstance) {
       try {
         await Personnel.findOneAndUpdate(
           { userId: user._id },
-          { $set: { status: 'active', isActive: true } },
-          { new: true }
+          { $set: { status: "active", isActive: true } },
+          { new: true },
         );
       } catch (e) {
-        fastify.log.warn(`Could not update personnel status on sign-in: ${String(e)}`);
+        fastify.log.warn(
+          `Could not update personnel status on sign-in: ${String(e)}`,
+        );
       }
 
       // Generate JWT token
@@ -114,7 +125,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           tenantId: user.tenantId,
         },
         process.env.JWT_SECRET || "fallback-secret",
-        { expiresIn: "7d" }
+        { expiresIn: "7d" },
       );
 
       return reply.send({
@@ -163,7 +174,8 @@ export async function authRoutes(fastify: FastifyInstance) {
       // Users should be invited through the invitation flow instead
       return reply.status(400).send({
         success: false,
-        message: "Direct sign-up is not supported. Please use the invitation link provided by your organization.",
+        message:
+          "Direct sign-up is not supported. Please use the invitation link provided by your organization.",
       });
     } catch (error) {
       fastify.log.error(error);
@@ -188,7 +200,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       const decoded = jwt.verify(
         token,
-        process.env.JWT_SECRET || "fallback-secret"
+        process.env.JWT_SECRET || "fallback-secret",
       ) as any;
 
       const user = await User.findById(decoded.userId);
@@ -200,11 +212,17 @@ export async function authRoutes(fastify: FastifyInstance) {
       }
 
       // Get personnel data for environment access
-      const personnel = await Personnel.findOne({ userId: user._id, tenantId: user.tenantId });
+      const personnel = await Personnel.findOne({
+        userId: user._id,
+        tenantId: user.tenantId,
+      });
+
+      // Get tenant information
+      const tenant = await Tenant.findById(user.tenantId);
 
       // Get user's role and permissions
       let permissions: string[] = [];
-      if (user.role === 'superuser') {
+      if (user.role === "superuser") {
         permissions = [];
       } else if (user.isTenantOwner) {
         // Tenant owner has all permissions
@@ -268,6 +286,15 @@ export async function authRoutes(fastify: FastifyInstance) {
             lastLoginAt: user.lastLoginAt,
             environmentAccess: personnel?.environmentAccess || null,
           },
+          tenant: tenant
+            ? {
+                _id: tenant._id,
+                name: tenant.name,
+                slug: tenant.slug,
+                email: tenant.email,
+                isActive: tenant.isActive,
+              }
+            : null,
         },
         message: "User verified successfully",
       });
@@ -326,7 +353,9 @@ export async function authRoutes(fastify: FastifyInstance) {
   // Setup account with magic link (POST - complete account setup)
   fastify.post("/setup-account", async (request, reply) => {
     try {
-      const { token, password, confirmPassword } = setupAccountSchema.parse(request.body);
+      const { token, password, confirmPassword } = setupAccountSchema.parse(
+        request.body,
+      );
 
       // Validate and consume the magic link
       const result = await MagicLinkService.validateAndConsumeMagicLink(token);
@@ -355,11 +384,11 @@ export async function authRoutes(fastify: FastifyInstance) {
         // User already exists, just update password
         user = await User.findOneAndUpdate(
           { _id: userId, tenantId },
-          { 
+          {
             password: await bcrypt.hash(password, 12),
             isActive: true,
           },
-          { new: true }
+          { new: true },
         );
 
         if (!user) {
@@ -372,15 +401,17 @@ export async function authRoutes(fastify: FastifyInstance) {
         try {
           await Personnel.findOneAndUpdate(
             { userId: user._id, tenantId },
-            { $set: { isActive: true, status: 'active' } }
+            { $set: { isActive: true, status: "active" } },
           );
         } catch (e) {
-          fastify.log.warn(`Could not set personnel active during setup-account: ${String(e)}`);
+          fastify.log.warn(
+            `Could not set personnel active during setup-account: ${String(e)}`,
+          );
         }
       } else {
         // Create new user
         const hashedPassword = await bcrypt.hash(password, 12);
-        
+
         user = new User({
           email: email.toLowerCase(),
           password: hashedPassword,
@@ -395,40 +426,40 @@ export async function authRoutes(fastify: FastifyInstance) {
         await user.save();
 
         // If this is a personnel invitation, create personnel record
-        if (type === 'personnel_invitation' && metadata?.roleId) {
+        if (type === "personnel_invitation" && metadata?.roleId) {
           const personnel = new Personnel({
             userId: user._id,
             tenantId,
             roleId: metadata.roleId,
             isActive: true,
-            status: 'active',
+            status: "active",
           });
           await personnel.save();
         }
 
         // If this is a tenant activation, complete tenant setup
-        if (type === 'tenant_activation') {
+        if (type === "tenant_activation") {
           // Activate the tenant
-          await Tenant.findByIdAndUpdate(tenantId, { 
+          await Tenant.findByIdAndUpdate(tenantId, {
             isActive: true,
             ownerId: user._id,
           });
 
           // Create default roles for the tenant
           await TenantSetupService.createDefaultRoles(tenantId);
-          
+
           // Get the created roles
           const roles = await Role.find({ tenantId });
-          
+
           // Find supervisor role (admin equivalent) and create personnel record
-          const adminRole = roles.find(role => role.name === 'Supervisor');
+          const adminRole = roles.find((role) => role.name === "Supervisor");
           if (adminRole) {
             const personnel = new Personnel({
               userId: user._id,
               tenantId,
               roleId: adminRole._id,
               isActive: true,
-              status: 'active',
+              status: "active",
             });
             await personnel.save();
           }
@@ -438,23 +469,23 @@ export async function authRoutes(fastify: FastifyInstance) {
       // Generate JWT token
       const jwtSecret = process.env.JWT_SECRET || "fallback-secret";
       const jwtToken = jwt.sign(
-        { 
+        {
           userId: user._id,
           tenantId: user.tenantId,
           email: user.email,
         },
         jwtSecret,
-        { expiresIn: "24h" }
+        { expiresIn: "24h" },
       );
 
       // Get role information if available
       let roleInfo = null;
-      if (type === 'personnel_invitation' || type === 'tenant_activation') {
-        const personnel = await Personnel.findOne({ 
-          userId: user._id, 
-          tenantId 
-        }).populate('roleId', 'name color permissions');
-        
+      if (type === "personnel_invitation" || type === "tenant_activation") {
+        const personnel = await Personnel.findOne({
+          userId: user._id,
+          tenantId,
+        }).populate("roleId", "name color permissions");
+
         if (personnel && personnel.roleId) {
           roleInfo = personnel.roleId;
         }
