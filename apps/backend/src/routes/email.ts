@@ -21,11 +21,7 @@ function getEmailConfig(): EmailConfig {
     from: process.env.SMTP_FROM || "noreply@example.com",
   };
 
-  console.log("📧 Email configuration:");
-  console.log("  SMTP_HOST:", config.host);
-  console.log("  SMTP_PORT:", config.port);
-  console.log("  SMTP_USER:", config.user);
-  console.log("  SMTP_FROM:", config.from);
+
 
   return config;
 }
@@ -35,7 +31,6 @@ export async function createEmailTransporter() {
   const config = getEmailConfig();
   const requestId = Math.random().toString(36).substr(2, 9);
 
-  console.log(`🔧 [${requestId}] Creating email transporter...`);
 
   const transporter = nodemailer.createTransport({
     host: config.host,
@@ -51,16 +46,14 @@ export async function createEmailTransporter() {
     socketTimeout: 60000, // 60 seconds
   });
 
-  console.log(`🔧 [${requestId}] Transporter created, verifying connection...`);
+ 
 
   // Verify connection configuration
   try {
     const startTime = Date.now();
     await transporter.verify();
     const duration = Date.now() - startTime;
-    console.log(
-      `✅ [${requestId}] Email server connection verified in ${duration}ms`,
-    );
+
   } catch (error: any) {
     console.error(`❌ [${requestId}] Email server connection failed:`, {
       error: error.message,
@@ -108,10 +101,7 @@ export async function sendPersonnelInvitation(
   const startTime = Date.now();
   const requestId = Math.random().toString(36).substr(2, 9);
 
-  console.log(`📧 [${requestId}] Starting personnel invitation email process`);
-  console.log(`📧 [${requestId}] Recipient: ${data.to}`);
-  console.log(`📧 [${requestId}] Personnel: ${data.personnelName}`);
-  console.log(`📧 [${requestId}] Company: ${data.companyName}`);
+ 
 
   // Validate required fields
   const requiredFields = {
@@ -128,7 +118,7 @@ export async function sendPersonnelInvitation(
 
   if (missingFields.length > 0) {
     const error = `Missing required fields: ${missingFields.join(", ")}`;
-    console.error(`❌ [${requestId}] ${error}`);
+
     return { success: false, error };
   }
 
@@ -136,15 +126,15 @@ export async function sendPersonnelInvitation(
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(data.to)) {
     const error = `Invalid email format: ${data.to}`;
-    console.error(`❌ [${requestId}] ${error}`);
+
     return { success: false, error };
   }
 
-  console.log(`📧 [${requestId}] Creating email transporter...`);
+
   const transporter = await createEmailTransporter();
   const config = getEmailConfig();
 
-  console.log(`📧 [${requestId}] Preparing mail options...`);
+
   const mailOptions = {
     from: config.from,
     to: data.to,
@@ -237,23 +227,12 @@ export async function sendPersonnelInvitation(
     `,
   };
 
-  console.log(`📧 [${requestId}] Mail options prepared:`, {
-    from: mailOptions.from,
-    to: mailOptions.to,
-    subject: mailOptions.subject,
-    textLength: mailOptions.text.length,
-  });
+
 
   try {
-    console.log(`📧 [${requestId}] Attempting to send email...`);
     const result = await transporter.sendMail(mailOptions);
     const duration = Date.now() - startTime;
 
-    console.log(
-      `✅ [${requestId}] Personnel invitation email sent successfully in ${duration}ms`,
-    );
-    console.log(`📧 [${requestId}] Message ID: ${result.messageId}`);
-    console.log(`📧 [${requestId}] Response: ${result.response}`);
 
     return {
       success: true,
@@ -263,16 +242,7 @@ export async function sendPersonnelInvitation(
     };
   } catch (error: any) {
     const duration = Date.now() - startTime;
-    console.error(
-      `❌ [${requestId}] Failed to send personnel invitation email after ${duration}ms:`,
-      {
-        error: error.message,
-        code: error.code,
-        command: error.command,
-        response: error.response,
-        responseCode: error.responseCode,
-      },
-    );
+   
 
     // Enhanced error handling
     let errorMessage = error.message;
@@ -301,10 +271,6 @@ export async function sendPersonnelMagicLink(data: MagicLinkEmailData) {
   const startTime = Date.now();
   const requestId = Math.random().toString(36).substr(2, 9);
 
-  console.log(`📧 [${requestId}] Starting personnel magic link email process`);
-  console.log(`📧 [${requestId}] Recipient: ${data.to}`);
-  console.log(`📧 [${requestId}] Personnel: ${data.name}`);
-  console.log(`📧 [${requestId}] Company: ${data.companyName}`);
 
   // Validate required fields
   const requiredFields = {
@@ -320,7 +286,6 @@ export async function sendPersonnelMagicLink(data: MagicLinkEmailData) {
 
   if (missingFields.length > 0) {
     const error = `Missing required fields: ${missingFields.join(", ")}`;
-    console.error(`❌ [${requestId}] ${error}`);
     return { success: false, error };
   }
 
@@ -328,12 +293,10 @@ export async function sendPersonnelMagicLink(data: MagicLinkEmailData) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(data.to)) {
     const error = `Invalid email format: ${data.to}`;
-    console.error(`❌ [${requestId}] ${error}`);
     return { success: false, error };
   }
 
   try {
-    console.log(`📧 [${requestId}] Creating email transporter...`);
     const transporter = await createEmailTransporter();
 
     const expirationHours = data.expirationHours || 24;
@@ -406,7 +369,6 @@ export async function sendPersonnelMagicLink(data: MagicLinkEmailData) {
       </html>
     `;
 
-    console.log(`📧 [${requestId}] Sending email...`);
     const mailOptions = {
       from: process.env.SMTP_FROM,
       to: data.to,
@@ -417,10 +379,6 @@ export async function sendPersonnelMagicLink(data: MagicLinkEmailData) {
     const result = await transporter.sendMail(mailOptions);
     const duration = Date.now() - startTime;
 
-    console.log(
-      `✅ [${requestId}] Personnel magic link email sent successfully in ${duration}ms`,
-    );
-    console.log(`📧 [${requestId}] Message ID: ${result.messageId}`);
 
     return {
       success: true,
@@ -430,13 +388,7 @@ export async function sendPersonnelMagicLink(data: MagicLinkEmailData) {
     };
   } catch (error: any) {
     const duration = Date.now() - startTime;
-    console.error(
-      `❌ [${requestId}] Failed to send personnel magic link email after ${duration}ms:`,
-      {
-        error: error.message,
-        code: error.code,
-      },
-    );
+   
 
     let errorMessage = error.message;
     if (error.code === "EAUTH") {
@@ -466,11 +418,7 @@ export async function sendTenantActivationMagicLink(
   const startTime = Date.now();
   const requestId = Math.random().toString(36).substr(2, 9);
 
-  console.log(
-    `📧 [${requestId}] Starting tenant activation magic link email process`,
-  );
-  console.log(`📧 [${requestId}] Recipient: ${data.to}`);
-  console.log(`📧 [${requestId}] Tenant: ${data.tenantName}`);
+ 
 
   // Validate required fields
   const requiredFields = {
@@ -486,7 +434,7 @@ export async function sendTenantActivationMagicLink(
 
   if (missingFields.length > 0) {
     const error = `Missing required fields: ${missingFields.join(", ")}`;
-    console.error(`❌ [${requestId}] ${error}`);
+   
     return { success: false, error };
   }
 
@@ -494,12 +442,11 @@ export async function sendTenantActivationMagicLink(
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(data.to)) {
     const error = `Invalid email format: ${data.to}`;
-    console.error(`❌ [${requestId}] ${error}`);
+   
     return { success: false, error };
   }
 
   try {
-    console.log(`📧 [${requestId}] Creating email transporter...`);
     const transporter = await createEmailTransporter();
 
     const expirationHours = data.expirationHours || 24;
@@ -574,7 +521,6 @@ export async function sendTenantActivationMagicLink(
       </html>
     `;
 
-    console.log(`📧 [${requestId}] Sending email...`);
     const mailOptions = {
       from: process.env.SMTP_FROM,
       to: data.to,
@@ -585,10 +531,6 @@ export async function sendTenantActivationMagicLink(
     const result = await transporter.sendMail(mailOptions);
     const duration = Date.now() - startTime;
 
-    console.log(
-      `✅ [${requestId}] Tenant activation magic link email sent successfully in ${duration}ms`,
-    );
-    console.log(`📧 [${requestId}] Message ID: ${result.messageId}`);
 
     return {
       success: true,
@@ -598,13 +540,7 @@ export async function sendTenantActivationMagicLink(
     };
   } catch (error: any) {
     const duration = Date.now() - startTime;
-    console.error(
-      `❌ [${requestId}] Failed to send tenant activation magic link email after ${duration}ms:`,
-      {
-        error: error.message,
-        code: error.code,
-      },
-    );
+    
 
     let errorMessage = error.message;
     if (error.code === "EAUTH") {

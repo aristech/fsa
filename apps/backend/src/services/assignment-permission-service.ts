@@ -160,7 +160,6 @@ export class AssignmentPermissionService {
           { permissions: newPermissions }
         );
 
-        console.log(`Added permissions [${permissions.join(', ')}] to user ${user.email}`);
       }
     } catch (error) {
       console.error(`Error adding permissions to user ${userId}:`, error);
@@ -203,7 +202,6 @@ export class AssignmentPermissionService {
         );
 
         const removedPermissions = currentPermissions.filter((p: string) => !updatedPermissions.includes(p));
-        console.log(`Removed permissions [${removedPermissions.join(', ')}] from user ${user.email}`);
       }
     } catch (error) {
       console.error(`Error cleaning up permissions for user ${userId}:`, error);
@@ -215,7 +213,6 @@ export class AssignmentPermissionService {
    * Useful for one-time migrations or data fixes
    */
   static async syncAllAssignmentPermissions(tenantId: string): Promise<void> {
-    console.log(`Starting permission sync for tenant ${tenantId}`);
     
     try {
       // Get all personnel in the tenant
@@ -229,7 +226,6 @@ export class AssignmentPermissionService {
         }
       }
 
-      console.log(`Completed permission sync for tenant ${tenantId}`);
     } catch (error) {
       console.error(`Error syncing permissions for tenant ${tenantId}:`, error);
     }

@@ -12,6 +12,8 @@ import Chip from '@mui/material/Chip';
 
 import { deleteTask, updateTask } from 'src/actions/kanban';
 
+import { TimeTrackingIndicator } from 'src/components/time-tracking/time-tracking-indicator';
+
 import { kanbanClasses } from '../classes';
 import { KanbanDetails } from '../details/kanban-details';
 import { useTaskItemDnd } from '../hooks/use-task-item-dnd';
@@ -159,11 +161,19 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
             )}
           </Box>
         )}
-        <ItemInfo
-          comments={task.comments}
-          assignee={task.assignee}
-          attachments={task.attachments}
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+          <ItemInfo
+            comments={task.comments}
+            assignee={task.assignee}
+            attachments={task.attachments}
+          />
+          <TimeTrackingIndicator
+            taskId={task.id}
+            variant="compact"
+            showPersonnel
+            showDuration={false}
+          />
+        </Box>
       </ItemContent>
     </ItemRoot>
   );

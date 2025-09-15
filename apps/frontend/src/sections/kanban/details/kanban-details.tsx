@@ -34,6 +34,7 @@ import axiosInstance, { endpoints } from 'src/lib/axios';
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
+import { KanbanCheckInOut } from 'src/components/kanban/kanban-check-in-out';
 import { useDateRangePicker, CustomDateRangePicker } from 'src/components/custom-date-range-picker';
 
 import { ReportCreateDrawer } from 'src/sections/field/reports/report-create-drawer';
@@ -854,6 +855,22 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       }}
     >
       {renderToolbar()}
+
+      {/* CheckIn/CheckOut Header */}
+      <Box sx={{ px: 2.5, pt: 2 }}>
+        <KanbanCheckInOut
+          taskId={task.id}
+          workOrderId={(task as any)?.workOrderId}
+          onTimeEntryCreated={() => {
+            // Refresh time entries when a new one is created
+            if (tabs.value === 'time') {
+              // This will trigger a refresh of the time tab
+              window.dispatchEvent(new CustomEvent('timeEntryCreated'));
+            }
+          }}
+        />
+      </Box>
+
       {renderTabs()}
 
       <Scrollbar fillContent sx={{ py: 3, px: 2.5 }}>

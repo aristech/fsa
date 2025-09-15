@@ -55,7 +55,6 @@ export class EntityCleanupService {
     };
 
     try {
-      console.log(`🗑️ Starting client cleanup: ${clientId} in tenant: ${tenantId}`);
 
       // Check if client exists
       const client = await Client.findOne({ _id: clientId, tenantId });
@@ -116,7 +115,6 @@ export class EntityCleanupService {
       result.success = true;
       result.message = `Client deleted successfully. Work orders updated: ${taskUpdate.modifiedCount + result.details.dependentEntitiesDeleted}, Tasks updated: ${taskUpdate.modifiedCount}`;
 
-      console.log(`✅ Client cleanup completed: ${JSON.stringify(result.details)}`);
       return result;
     } catch (error) {
       console.error(`❌ Client cleanup failed:`, error);
@@ -156,7 +154,6 @@ export class EntityCleanupService {
     };
 
     try {
-      console.log(`🗑️ Starting work order cleanup: ${workOrderId} in tenant: ${tenantId}`);
 
       // Check if work order exists
       const workOrder = await WorkOrder.findOne({ _id: workOrderId, tenantId });
@@ -214,7 +211,6 @@ export class EntityCleanupService {
         ? `Work order and ${result.details.dependentEntitiesDeleted} related tasks deleted successfully`
         : `Work order deleted successfully. ${result.details.dependentEntitiesDeleted} tasks unlinked`;
 
-      console.log(`✅ Work order cleanup completed: ${JSON.stringify(result.details)}`);
       return result;
     } catch (error) {
       console.error(`❌ Work order cleanup failed:`, error);
@@ -254,7 +250,6 @@ export class EntityCleanupService {
     };
 
     try {
-      console.log(`🗑️ Starting task cleanup: ${taskId} in tenant: ${tenantId}`);
 
       // Check if task exists
       const task = await Task.findOne({ _id: taskId, tenantId });
@@ -291,7 +286,6 @@ export class EntityCleanupService {
       result.success = true;
       result.message = `Task deleted successfully with ${result.details.subtasksDeleted} subtasks, ${result.details.commentsDeleted} comments, and ${result.details.filesDeleted} files`;
 
-      console.log(`✅ Task cleanup completed: ${JSON.stringify(result.details)}`);
       return result;
     } catch (error) {
       console.error(`❌ Task cleanup failed:`, error);
@@ -319,7 +313,6 @@ export class EntityCleanupService {
           const files = await fs.readdir(clientFilesPath);
           result.details.filesDeleted = files.length;
           await fs.rm(clientFilesPath, { recursive: true, force: true });
-          console.log(`📁 Deleted ${files.length} client files`);
         }
       } catch (error) {
         // Directory doesn't exist, which is fine
@@ -349,7 +342,6 @@ export class EntityCleanupService {
           const files = await fs.readdir(workOrderFilesPath);
           result.details.filesDeleted = files.length;
           await fs.rm(workOrderFilesPath, { recursive: true, force: true });
-          console.log(`📁 Deleted ${files.length} work order files`);
         }
       } catch (error) {
         console.log(`📁 No work order files directory found: ${workOrderFilesPath}`);
@@ -387,7 +379,6 @@ export class EntityCleanupService {
         }
         
         result.details.filesDeleted += filesDeleted;
-        console.log(`📁 Deleted ${filesDeleted} task files from misc folder`);
       } catch (error) {
         console.log(`📁 No task misc files directory found`);
       }
@@ -400,7 +391,6 @@ export class EntityCleanupService {
           const files = await fs.readdir(dedicatedTaskPath);
           result.details.filesDeleted += files.length;
           await fs.rm(dedicatedTaskPath, { recursive: true, force: true });
-          console.log(`📁 Deleted ${files.length} files from dedicated task folder`);
         }
       } catch (error) {
         console.log(`📁 No dedicated task files directory found: ${taskId}`);
@@ -436,7 +426,6 @@ export class EntityCleanupService {
       }
 
       result.details.commentsDeleted = commentDeleteResult.deletedCount;
-      console.log(`💬 Deleted ${commentDeleteResult.deletedCount} ${entityType} comments`);
     } catch (error) {
       console.error(`Error deleting ${entityType} comments:`, error);
       result.details.errors.push(`Failed to delete ${entityType} comments: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -468,7 +457,6 @@ export class EntityCleanupService {
       }
 
       result.details.assignmentsDeleted = assignmentDeleteResult.deletedCount;
-      console.log(`📋 Deleted ${assignmentDeleteResult.deletedCount} ${entityType} assignments`);
     } catch (error) {
       console.error(`Error deleting ${entityType} assignments:`, error);
       result.details.errors.push(`Failed to delete ${entityType} assignments: ${error instanceof Error ? error.message : 'Unknown error'}`);

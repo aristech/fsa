@@ -56,27 +56,22 @@ export async function authRoutes(fastify: FastifyInstance) {
       const { email, password } = signInSchema.parse(request.body);
 
       // Find user by email first
-      console.log(`🔍 Looking for user with email: "${email}"`);
       const user = await User.findOne({ email, isActive: true });
       if (!user) {
-        console.log(`❌ User not found with email: "${email}"`);
         return reply.status(401).send({
           success: false,
           message: "Invalid credentials",
         });
       }
-      console.log(`✅ Found user: ${user.email} (${user._id}) in tenant: ${user.tenantId}`);
 
       // Get the user's tenant
       const tenant = await Tenant.findOne({ _id: user.tenantId, isActive: true });
       if (!tenant) {
-        console.log(`❌ Tenant not found or not active for user's tenant: ${user.tenantId}`);
         return reply.status(401).send({
           success: false,
           message: "Your tenant is not active. Please contact support.",
         });
       }
-      console.log(`✅ Found tenant: ${tenant.name} (${tenant._id})`);
 
       // Verify password
       const isValidPassword = await bcrypt.compare(password, user.password);

@@ -6,6 +6,7 @@ import { styled } from '@mui/material/styles';
 import { Box, Chip, alpha, useTheme, keyframes, Typography, IconButton } from '@mui/material';
 
 import { Iconify } from '../iconify';
+import { TimeTrackingIndicator } from '../time-tracking/time-tracking-indicator';
 
 export type CalendarView = 'week' | 'month' | 'day' | 'agenda';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
@@ -542,15 +543,23 @@ export function MobileCalendar({
                   </Typography>
                 )}
               </Box>
-              <Chip
-                size="small"
-                label={task.status}
-                sx={{
-                  backgroundColor: getStatusColor(task.status, theme),
-                  color: 'white',
-                  fontSize: '10px',
-                }}
-              />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TimeTrackingIndicator
+                  taskId={task.id}
+                  variant="compact"
+                  showPersonnel={false}
+                  showDuration={false}
+                />
+                <Chip
+                  size="small"
+                  label={task.status}
+                  sx={{
+                    backgroundColor: getStatusColor(task.status, theme),
+                    color: 'white',
+                    fontSize: '10px',
+                  }}
+                />
+              </Box>
             </Box>
           </AgendaItem>
         ))}

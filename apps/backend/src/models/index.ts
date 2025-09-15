@@ -18,6 +18,7 @@ export { Comment, type IComment } from "./Comment";
 export { MagicLink, type IMagicLink } from "./MagicLink";
 export { Counter, type ICounter } from "./counter";
 export { TimeEntry, type ITimeEntry } from "./TimeEntry";
+export { CheckInSession, type ICheckInSession } from "./CheckInSession";
 export { Notification, type INotification } from "./Notification";
 export { CalendarEvent, type ICalendarEvent } from "./CalendarEvent";
 export { Material, type IMaterial } from "./Material";

@@ -10,7 +10,6 @@ import { log } from "node:console";
 export async function uploadsRoutes(fastify: FastifyInstance) {
   // Auth required only for POST uploads; GET uses token or auth header
   fastify.post("/", { preHandler: authenticate }, async (request, reply) => {
-    console.log("🔧 UPLOAD REQUEST - NEW VERSION WITH FIX LOADED");
     fastify.log.info("uploads: start parsing multipart");
 
     try {
@@ -26,7 +25,7 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
       for await (const part of parts) {
         if (part.file) {
           // This is a file part
-          console.log("🔧 Found file part:", part.fieldname);
+          
           const buf = await part.toBuffer();
           files.push({
             fieldname: part.fieldname,
@@ -38,7 +37,7 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
         } else {
           // This is a form field
           const value = part.value as string;
-          console.log(`🔧 Found form field: ${part.fieldname} = ${value}`);
+          
           
           if (part.fieldname === "scope") {
             scope = value.trim();
@@ -52,13 +51,7 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
         }
       }
 
-      console.log("🔧 UPLOAD DEBUG:");
-      console.log("  - Files found:", files.length);
-      console.log("  - Scope:", scope);
-      console.log("  - WorkOrderId:", workOrderId);
-      console.log("  - TaskId:", taskId);
-      console.log("  - ReportId:", reportId);
-      console.log("  - Final path will be:", scope === "workOrder" ? "work_orders" : scope === "report" ? "reports" : "tasks");
+      
 
       fastify.log.info(
         {

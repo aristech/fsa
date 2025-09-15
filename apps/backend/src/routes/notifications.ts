@@ -20,12 +20,7 @@ export async function notificationRoutes(fastify: FastifyInstance) {
       const tenantId = tenant._id;
       const { isRead, isArchived, limit = '50', skip = '0' } = request.query as any;
 
-      console.log('📨 Notification API called with:', {
-        userId: user.id,
-        userName: `${user.email}`,
-        tenantId,
-        queryParams: { isRead, isArchived, limit, skip }
-      });
+      
 
       const options = {
         isRead: isRead === 'true' ? true : isRead === 'false' ? false : undefined,
@@ -34,7 +29,7 @@ export async function notificationRoutes(fastify: FastifyInstance) {
         skip: parseInt(skip as string, 10),
       };
 
-      console.log('🔍 Query options:', options);
+    
 
       const notifications = await NotificationService.getUserNotifications(
         tenantId,
@@ -42,18 +37,7 @@ export async function notificationRoutes(fastify: FastifyInstance) {
         options
       );
 
-      console.log(`📨 Query result: ${notifications.length} notifications found for user ${user.id}`);
-      if (notifications.length > 0) {
-        console.log('📋 Sample notifications:', notifications.slice(0, 2).map(n => ({
-          id: n._id,
-          type: n.type,
-          title: n.title,
-          userId: n.userId,
-          isRead: n.isRead,
-          isArchived: n.isArchived,
-          createdAt: n.createdAt
-        })));
-      }
+      
 
       return {
         success: true,

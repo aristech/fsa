@@ -24,6 +24,7 @@ import { useGetFieldBoard } from 'src/actions/field-kanban';
 import { Iconify } from 'src/components/iconify';
 import { FieldTaskDetails } from 'src/components/field/field-task-details';
 import { MobileCard, MobileButton, MobileSelect } from 'src/components/mobile';
+import { TimeTrackingIndicator } from 'src/components/time-tracking/time-tracking-indicator';
 
 import { KanbanTaskCreateDialog } from 'src/sections/kanban/components/kanban-task-create-dialog';
 
@@ -392,6 +393,12 @@ export default function FieldTasksPage() {
                     <Typography variant="subtitle1" sx={{ fontWeight: 600, flex: 1 }}>
                       {task.name}
                     </Typography>
+                    <TimeTrackingIndicator
+                      taskId={task.id}
+                      variant="compact"
+                      showPersonnel={false}
+                      showDuration={false}
+                    />
                     <Chip
                       label={getTaskStatus(task)}
                       color={getStatusColor(getTaskStatus(task)) as any}

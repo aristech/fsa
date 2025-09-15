@@ -93,6 +93,12 @@ export const endpoints = {
       create: '/api/v1/time-entries',
       update: (id: string) => `/api/v1/time-entries/${id}`,
       delete: (id: string) => `/api/v1/time-entries/${id}`,
+      checkin: '/api/v1/time-entries/checkin',
+      checkout: '/api/v1/time-entries/checkout',
+      heartbeat: '/api/v1/time-entries/heartbeat',
+      activeSessions: '/api/v1/time-entries/sessions/active',
+      emergencyCheckout: '/api/v1/time-entries/emergency-checkout',
+      cleanupStaleSessions: '/api/v1/time-entries/cleanup-stale-sessions',
     },
     workOrders: {
       list: '/api/v1/work-orders',

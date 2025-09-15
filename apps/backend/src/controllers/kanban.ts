@@ -29,10 +29,6 @@ export async function getKanbanData(
     const { tenant, user } = req.context!;
     const { clientId } = request.query as { clientId?: string };
 
-    console.log("GET Kanban request received");
-    console.log("Tenant:", tenant._id);
-    console.log("User:", user.id);
-    console.log("Client ID:", clientId);
 
     // Ensure at least one active column exists; create default 'Todo' if none
     await ensureAtLeastOneColumn(tenant._id.toString());
@@ -117,7 +113,7 @@ export async function getKanbanData(
       };
     });
 
-    console.log(`Found ${projects.length} projects and ${tasks.length} tasks`);
+ 
 
     // Filter by client if specified
     let filteredProjects = projects;
@@ -146,9 +142,7 @@ export async function getKanbanData(
         return matchesByClient || matchesByWO;
       });
 
-      console.log(
-        `After client filter: ${filteredProjects.length} projects, ${filteredTasks.length} tasks`,
-      );
+   
     }
 
     // Load dynamic statuses for tenant (fallback to defaults)
@@ -265,9 +259,7 @@ export async function handleKanbanPost(
     const body = request.body as any;
     const endpoint = (request.query as any)?.endpoint || "create-task";
 
-    console.log("POST request received");
-    console.log("Endpoint:", endpoint);
-    console.log("Request body:", JSON.stringify(body, null, 2));
+ 
 
     switch (endpoint) {
       case "create-task":
@@ -394,12 +386,7 @@ async function handleCreateTask(
           .map((p: any) => p._id.toString());
         validatedAssignees = eligible;
         
-        console.log('👥 Personnel validation results:', {
-          inputAssignees: list,
-          foundPersonnel: personnelDocs.length,
-          eligiblePersonnel: eligible.length,
-          validatedAssignees: eligible
-        });
+    
       }
     } catch (error) {
       console.error('Error validating assignees:', error);
@@ -493,13 +480,7 @@ async function handleCreateTask(
     }),
   });
 
-  console.log('💾 Saving task with final data:', {
-    taskId: newTask._id,
-    title: newTask.title,
-    assignees: newTask.assignees,
-    createdBy: newTask.createdBy,
-    tenantId: newTask.tenantId
-  });
+ 
 
   await newTask.save();
 
@@ -535,12 +516,7 @@ async function handleCreateTask(
   // Send notifications for task assignment (including inherited ones)
   const finalAssignees = newTask.assignees || [];
   if (finalAssignees.length > 0) {
-    console.log('📋 Sending task assignment notifications:', {
-      taskId: newTask._id,
-      taskTitle: newTask.title,
-      finalAssignees,
-      assignedBy: user.id
-    });
+ 
     try {
       await NotificationService.notifyTaskAssigned(
         newTask,
@@ -667,7 +643,7 @@ async function handleDeleteTask(
   }
 
   // Log cleanup details
-  console.log(`🧹 Task cleanup completed:`, cleanupResult.details);
+ 
 
   return reply.send({
     success: true,
@@ -840,13 +816,7 @@ async function handleUpdateTask(
     try {
       // Handle assignment notifications separately
       if (changes.includes('assignees') && assignees !== undefined) {
-        console.log('📋 Sending task assignment update notifications:', {
-          taskId: updatedTask._id,
-          taskTitle: updatedTask.title,
-          newAssignees: updateData.assignees || [],
-          previousAssignees,
-          assignedBy: user.id
-        });
+     
         await NotificationService.notifyTaskAssigned(
           updatedTask,
           updateData.assignees || [],

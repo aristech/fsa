@@ -1,7 +1,7 @@
 import type { ITimeEntry } from 'src/types/kanban';
 
 import useSWR, { mutate } from 'swr';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
@@ -26,6 +26,18 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
     () => [endpoints.fsa.timeEntries.list, { params: { taskId, limit: 100 } }] as const,
     [taskId]
   );
+
+  // Listen for time entry created events
+  useEffect(() => {
+    const handleTimeEntryCreated = () => {
+      mutate(listKey);
+    };
+
+    window.addEventListener('timeEntryCreated', handleTimeEntryCreated);
+    return () => {
+      window.removeEventListener('timeEntryCreated', handleTimeEntryCreated);
+    };
+  }, [listKey]);
 
   const { data, isLoading } = useSWR<{ success: boolean; data: ITimeEntry[] }>(
     listKey,
@@ -154,11 +166,11 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
                   justifyContent: 'space-between',
                 }}
               >
-                <Typography variant="body2" sx={{ minWidth: 140 }}>
+                <Typography variant="body2" sx={{ minWidth: 80 }}>
                   {new Date(e.date).toLocaleDateString()}
                 </Typography>
-                <Typography variant="body2" sx={{ minWidth: 100 }}>
-                  {e.hours?.toFixed(2)} h{e.days ? ` (${e.days.toFixed(2)} d)` : ''}
+                <Typography variant="body2" sx={{ minWidth: 80 }}>
+                  {e.hours?.toFixed(2)}h
                 </Typography>
                 <Typography variant="body2" sx={{ flexGrow: 1 }} color="text.secondary">
                   {e.notes || ''}

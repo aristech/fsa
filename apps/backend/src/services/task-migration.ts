@@ -5,18 +5,16 @@ export class TaskMigrationService {
    * Migrate existing tasks from status-based to columnId-based architecture
    */
   static async migrateTasksToColumnIds(): Promise<void> {
-    console.log("🔄 Starting task migration to columnId architecture...");
 
     try {
       // Get all tenants that have tasks
       const distinctTenants = await Task.distinct("tenantId");
-      console.log(`Found ${distinctTenants.length} tenants with tasks`);
+    
 
       for (const tenantId of distinctTenants) {
         await this.migrateTenantTasks(tenantId);
       }
 
-      console.log("✅ Task migration completed successfully");
     } catch (error) {
       console.error("❌ Task migration failed:", error);
       throw error;
@@ -24,7 +22,6 @@ export class TaskMigrationService {
   }
 
   private static async migrateTenantTasks(tenantId: string): Promise<void> {
-    console.log(`📋 Migrating tasks for tenant: ${tenantId}`);
 
     // Get all active statuses for this tenant
     const statuses = await Status.find({
@@ -33,9 +30,7 @@ export class TaskMigrationService {
     }).lean();
 
     if (statuses.length === 0) {
-      console.log(
-        `⚠️  No active columns found for tenant ${tenantId}, creating default columns...`,
-      );
+    
 
       // Create default columns if none exist
       const defaults = [
@@ -56,9 +51,7 @@ export class TaskMigrationService {
         })),
       );
 
-      console.log(
-        `✅ Created ${createdStatuses.length} default columns for tenant ${tenantId}`,
-      );
+    
       statuses.push(...createdStatuses);
     }
 
@@ -98,9 +91,7 @@ export class TaskMigrationService {
       ],
     });
 
-    console.log(
-      `📦 Found ${tasksToMigrate.length} tasks to migrate for tenant ${tenantId}`,
-    );
+ 
 
     if (tasksToMigrate.length === 0) {
       console.log(`✅ No tasks need migration for tenant ${tenantId}`);
@@ -134,9 +125,6 @@ export class TaskMigrationService {
       }
     }
 
-    console.log(
-      `✅ Migrated ${migratedCount}/${tasksToMigrate.length} tasks for tenant ${tenantId}`,
-    );
   }
 
   /**

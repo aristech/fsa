@@ -22,6 +22,8 @@ import { useGetEvents } from 'src/actions/calendar';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { deleteTask, updateTaskDates } from 'src/actions/kanban';
 
+import { TimeTrackingIndicator } from 'src/components/time-tracking/time-tracking-indicator';
+
 import { KanbanDetails } from 'src/sections/kanban/details/kanban-details';
 import { CALENDAR_COLOR_OPTIONS } from 'src/sections/calendar/hooks/use-event';
 import { KanbanTaskCreateDialog } from 'src/sections/kanban/components/kanban-task-create-dialog';
@@ -126,6 +128,63 @@ export function CalendarView() {
   const handleCreateTaskSuccess = (task: any) => {
     handleCloseCreateTask();
     // Task events will be refreshed automatically through SWR
+  };
+
+  // Custom event content renderer to add tracking indicators
+  const renderEventContent = (eventInfo: any) => {
+    const event = eventInfo.event;
+    const isTask = event.extendedProps?.type === 'task';
+    const taskId = event.extendedProps?.task?.id || event.id;
+
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.5,
+          height: '100%',
+          minHeight: 'inherit',
+          px: 0.5,
+        }}
+      >
+        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: 600,
+              display: 'block',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              lineHeight: 1.2,
+            }}
+          >
+            {event.title}
+          </Typography>
+          {eventInfo.timeText && (
+            <Typography
+              variant="caption"
+              sx={{
+                fontSize: '0.7rem',
+                opacity: 0.8,
+                display: 'block',
+                lineHeight: 1,
+              }}
+            >
+              {eventInfo.timeText}
+            </Typography>
+          )}
+        </Box>
+        {isTask && (
+          <TimeTrackingIndicator
+            taskId={taskId}
+            variant="compact"
+            showPersonnel={false}
+            showDuration={false}
+          />
+        )}
+      </Box>
+    );
   };
 
   // Custom update function for task dates (used in drag/drop)
@@ -240,6 +299,7 @@ export function CalendarView() {
               events={dataFiltered}
               select={handleSelectRange}
               eventClick={handleClickEvent}
+              eventContent={renderEventContent}
               businessHours={{
                 daysOfWeek: [1, 2, 3, 4, 5], // Mon-Fri
               }}

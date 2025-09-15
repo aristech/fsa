@@ -60,7 +60,6 @@ class RealtimeService {
     this.setupAuthentication();
     this.setupConnectionHandlers();
     
-    console.log('🔌 Real-time service initialized');
   }
 
   private setupAuthentication() {
@@ -109,7 +108,7 @@ class RealtimeService {
     this.io.on('connection', (socket: any) => {
       const authenticatedSocket = socket as AuthenticatedSocket;
       
-      console.log(`👤 User connected: ${socket.userEmail} (${socket.userId})`);
+     
       
       // Store user connection
       this.connectedUsers.set(socket.id, {
@@ -130,12 +129,12 @@ class RealtimeService {
       // Handle task room joining
       socket.on('join:task', (taskId: string) => {
         socket.join(`task:${taskId}`);
-        console.log(`📝 User ${socket.userEmail} joined task room: ${taskId}`);
+       
       });
 
       socket.on('leave:task', (taskId: string) => {
         socket.leave(`task:${taskId}`);
-        console.log(`📝 User ${socket.userEmail} left task room: ${taskId}`);
+       
       });
 
       // Handle typing indicators
@@ -157,7 +156,7 @@ class RealtimeService {
 
       // Handle disconnection
       socket.on('disconnect', (reason: string) => {
-        console.log(`👤 User disconnected: ${socket.userEmail} (${reason})`);
+       
         
         // Remove from connected users
         this.connectedUsers.delete(socket.id);
@@ -254,7 +253,7 @@ class RealtimeService {
   // Graceful shutdown
   shutdown() {
     if (this.io) {
-      console.log('🔌 Shutting down real-time service...');
+     
       this.io.close();
       this.io = null;
       this.connectedUsers.clear();

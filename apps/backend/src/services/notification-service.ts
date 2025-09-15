@@ -58,7 +58,6 @@ export class NotificationService {
       });
 
       const savedNotification = await notification.save();
-      console.log(`✅ Created ${params.type} notification for user ${params.userId}: "${params.title}"`);
       
       // Get updated unread count and emit real-time notification
       const unreadCount = await this.getUnreadCount(params.tenantId, params.userId);
@@ -153,21 +152,14 @@ export class NotificationService {
     previousAssignees: string[] = [],
     assignedBy: string
   ): Promise<void> {
-    console.log('🔔 notifyTaskAssigned called with:', {
-      taskId: task._id,
-      taskTitle: task.title,
-      newAssignees,
-      previousAssignees,
-      assignedBy,
-      tenantId: task.tenantId
-    });
+
     const addedAssignees = newAssignees.filter(id => !previousAssignees.includes(id));
     const removedAssignees = previousAssignees.filter(id => !newAssignees.includes(id));
 
     // Convert Personnel IDs to User IDs for newly assigned personnel
     let addedUserIds: string[] = [];
     if (addedAssignees.length > 0) {
-      console.log('🔍 Looking up personnel for IDs:', addedAssignees);
+      
       try {
         const personnel = await Personnel.find({
           _id: { $in: addedAssignees },
