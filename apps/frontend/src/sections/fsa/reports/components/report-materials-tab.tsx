@@ -33,7 +33,6 @@ export function ReportMaterialsTab({ report, onUpdate, canEdit }: ReportMaterial
       <EmptyContent
         title="No materials used"
         description="No materials have been added to this report yet"
-        imgUrl="/assets/illustrations/illustration_empty_content.svg"
       />
     );
   }

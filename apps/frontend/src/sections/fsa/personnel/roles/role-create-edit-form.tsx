@@ -59,13 +59,13 @@ interface RoleCreateEditFormProps {
 // Available permissions organized by category
 const PERMISSION_CATEGORIES = {
   'Work Orders': [
-    'work_orders.view',
-    'work_orders.create',
-    'work_orders.edit',
-    'work_orders.delete',
-    'work_orders.assign',
-    'work_orders.view_own',
-    'work_orders.edit_own',
+    'workOrders.view',
+    'workOrders.create',
+    'workOrders.edit',
+    'workOrders.delete',
+    'workOrders.assign',
+    'workOrders.viewOwn',
+    'workOrders.editOwn',
   ],
   Projects: ['projects.view', 'projects.create', 'projects.edit', 'projects.delete'],
   Tasks: [
@@ -73,13 +73,14 @@ const PERMISSION_CATEGORIES = {
     'tasks.create',
     'tasks.edit',
     'tasks.delete',
-    'tasks.view_own',
-    'tasks.edit_own',
+    'tasks.viewOwn',
+    'tasks.editOwn',
   ],
   Clients: ['clients.view', 'clients.create', 'clients.edit', 'clients.delete'],
   Personnel: ['personnel.view', 'personnel.create', 'personnel.edit', 'personnel.delete'],
-  Calendar: ['calendar.view', 'calendar.edit', 'calendar.view_own', 'calendar.edit_own'],
-  Reports: ['reports.view', 'reports.export'],
+  Calendar: ['calendar.view', 'calendar.edit', 'calendar.viewOwn', 'calendar.editOwn'],
+  Reports: ['reports.view', 'reports.create', 'reports.edit', 'reports.delete', 'reports.export'],
+  Analytics: ['analytics.view', 'analytics.export', 'analytics.dashboard'],
   'System Management': ['roles.manage', 'statuses.manage', 'settings.manage', 'tenant.manage'],
   Admin: ['admin.access'],
 };
@@ -101,7 +102,7 @@ export function RoleCreateEditForm({ role, onSuccess, onCancel }: RoleCreateEdit
     },
   });
 
-  const { handleSubmit, setValue, watch } = methods;
+  const { handleSubmit, setValue, watch, reset } = methods;
 
   // Watch permissions to sync with local state
   const watchedPermissions = watch('permissions');
@@ -109,6 +110,25 @@ export function RoleCreateEditForm({ role, onSuccess, onCancel }: RoleCreateEdit
   useEffect(() => {
     setSelectedPermissions(watchedPermissions);
   }, [watchedPermissions]);
+
+  // Reset form when role changes
+  useEffect(() => {
+    if (role) {
+      reset({
+        name: role.name || '',
+        description: role.description || '',
+        permissions: role.permissions || [],
+      });
+      setSelectedPermissions(role.permissions || []);
+    } else {
+      reset({
+        name: '',
+        description: '',
+        permissions: [],
+      });
+      setSelectedPermissions([]);
+    }
+  }, [role, reset]);
 
   const onSubmit = async (data: RoleFormValues) => {
     try {

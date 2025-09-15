@@ -150,9 +150,9 @@ export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttach
                   {formatFileSize(attachment.size)} • Uploaded {dayjs(attachment.uploadedAt).format('MMM DD, YYYY')}
                 </Typography>
 
-                {attachment.uploadedBy && (
+                {attachment.uploadedByData && (
                   <Typography variant="caption" color="text.secondary">
-                    by {attachment.uploadedBy.name}
+                    by {attachment.uploadedByData.name}
                   </Typography>
                 )}
               </Box>

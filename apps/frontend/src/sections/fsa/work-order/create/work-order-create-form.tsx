@@ -190,7 +190,6 @@ export function WorkOrderCreateForm({ id }: Props) {
       delete workOrderData.estimatedDurationValue;
       delete workOrderData.estimatedDurationUnit;
 
-      console.log('Creating work order:', workOrderData);
 
       let response;
       if (id) {
@@ -211,6 +210,12 @@ export function WorkOrderCreateForm({ id }: Props) {
             filesToUpload.forEach((file: File) => {
               form.append('files', file);
             });
+
+            console.log('🔧 WORK ORDER FORM: Uploading with scope:', 'workOrder', 'workOrderId:', workOrderId);
+            console.log('🔧 WORK ORDER FORM: FormData entries:');
+            for (const [key, value] of form.entries()) {
+              console.log(`  ${key}:`, value instanceof File ? `File(${value.name})` : value);
+            }
 
             const uploadResponse = await axiosInstance.post('/api/v1/uploads', form, {
               headers: {

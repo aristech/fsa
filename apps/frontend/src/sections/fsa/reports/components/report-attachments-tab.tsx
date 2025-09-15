@@ -40,7 +40,6 @@ export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttach
       <EmptyContent
         title="No attachments"
         description="No files have been attached to this report yet"
-        imgUrl="/assets/illustrations/illustration_empty_content.svg"
       />
     );
   }
@@ -106,7 +105,7 @@ export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttach
                           </Typography>
                           <br />
                           <Typography variant="caption" color="text.secondary">
-                            by {photo.uploadedBy.name}
+                            by {photo.uploadedByData?.name || 'Unknown User'}
                           </Typography>
                         </Box>
                       }
@@ -154,7 +153,7 @@ export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttach
                           </Typography>
                           <br />
                           <Typography variant="caption" color="text.secondary">
-                            by {attachment.uploadedBy.name}
+                            by {attachment.uploadedByData?.name || 'Unknown User'}
                           </Typography>
                         </Box>
                       }

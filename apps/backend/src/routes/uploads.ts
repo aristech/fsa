@@ -10,66 +10,70 @@ import { log } from "node:console";
 export async function uploadsRoutes(fastify: FastifyInstance) {
   // Auth required only for POST uploads; GET uses token or auth header
   fastify.post("/", { preHandler: authenticate }, async (request, reply) => {
+    console.log("🔧 UPLOAD REQUEST - NEW VERSION WITH FIX LOADED");
     fastify.log.info("uploads: start parsing multipart");
 
     try {
-      // Use Fastify's built-in saveRequestFiles for robust multipart handling
-      const parts = await (request as any).saveRequestFiles();
-
-      // Extract form fields from multipart data
-      const body = request.body as any;
+      // Use multipart iterator instead of saveRequestFiles to get both fields and files
+      const parts = request.parts();
+      const files: any[] = [];
       let scope = "task";
       let taskId = "";
       let workOrderId = "";
       let reportId = "";
 
-      // Extract form fields from body (available in some versions)
-      if (body?.scope) {
-        scope = body.scope;
-      }
-      if (body?.taskId) {
-        taskId = body.taskId;
-      }
-      if (body?.workOrderId) {
-        workOrderId = body.workOrderId;
-      }
-      if (body?.reportId) {
-        reportId = body.reportId;
-      }
-
-      // Fallback: look for form fields in parts if not in body
-      if (!body?.scope && parts.length > 0) {
-        // Check if any parts contain form field data
-        for (const part of parts) {
+      // Process all multipart parts
+      for await (const part of parts) {
+        if (part.file) {
+          // This is a file part
+          console.log("🔧 Found file part:", part.fieldname);
+          const buf = await part.toBuffer();
+          files.push({
+            fieldname: part.fieldname,
+            filename: part.filename,
+            encoding: part.encoding,
+            mimetype: part.mimetype,
+            buffer: buf,
+          });
+        } else {
+          // This is a form field
+          const value = part.value as string;
+          console.log(`🔧 Found form field: ${part.fieldname} = ${value}`);
+          
           if (part.fieldname === "scope") {
-            const fieldData = await fs.readFile(part.filepath, "utf-8");
-            scope = fieldData;
+            scope = value.trim();
           } else if (part.fieldname === "taskId") {
-            const fieldData = await fs.readFile(part.filepath, "utf-8");
-            taskId = fieldData;
+            taskId = value.trim();
           } else if (part.fieldname === "workOrderId") {
-            const fieldData = await fs.readFile(part.filepath, "utf-8");
-            workOrderId = fieldData;
+            workOrderId = value.trim();
           } else if (part.fieldname === "reportId") {
-            const fieldData = await fs.readFile(part.filepath, "utf-8");
-            reportId = fieldData;
+            reportId = value.trim();
           }
         }
       }
 
+      console.log("🔧 UPLOAD DEBUG:");
+      console.log("  - Files found:", files.length);
+      console.log("  - Scope:", scope);
+      console.log("  - WorkOrderId:", workOrderId);
+      console.log("  - TaskId:", taskId);
+      console.log("  - ReportId:", reportId);
+      console.log("  - Final path will be:", scope === "workOrder" ? "work_orders" : scope === "report" ? "reports" : "tasks");
+
       fastify.log.info(
         {
-          partsCount: parts.length,
+          filesCount: files.length,
           scope,
           taskId,
           workOrderId,
           reportId,
-          body,
+          finalScopeDir: scope === "workOrder" ? "work_orders" : scope === "report" ? "reports" : "tasks",
+          finalOwnerId: taskId || workOrderId || reportId || "misc",
         },
         "uploads: parsed multipart data",
       );
 
-      if (parts.length === 0) {
+      if (files.length === 0) {
         fastify.log.error("uploads: no file parts found");
         return reply
           .code(400)
@@ -108,29 +112,17 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
         mime: string;
       }> = [];
 
-      // Filter out form field parts, only process file parts
-      const fileParts = parts.filter(
-        (part: any) =>
-          part.fieldname === "files" ||
-          (part.filename &&
-            !["scope", "taskId", "workOrderId", "reportId"].includes(
-              part.fieldname,
-            )),
-      );
-
       fastify.log.info(
-        { totalParts: parts.length, fileParts: fileParts.length },
-        "uploads: filtered file parts",
+        { fileCount: files.length },
+        "uploads: processing files",
       );
 
-      for (const part of fileParts) {
-        const filename = `${Date.now()}-${part.filename}`;
+      for (const file of files) {
+        const filename = `${Date.now()}-${file.filename}`;
         const destPath = path.join(baseDir, filename);
 
-        // Copy the temp file to final destination (handles cross-device)
-        await fs.copyFile(part.filepath, destPath);
-        // Clean up the temp file
-        await fs.unlink(part.filepath);
+        // Write buffer to final destination
+        await fs.writeFile(destPath, file.buffer);
 
         const st = await fs.stat(destPath);
         const rel = `/api/v1/uploads/${tenantId}/${scopeDir}/${ownerId}/${filename}`;
@@ -147,9 +139,9 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
         saved.push({
           url: absWithToken,
           path: rel,
-          name: part.filename,
+          name: file.filename,
           size: st.size,
-          mime: part.mimetype,
+          mime: file.mimetype,
         });
       }
 

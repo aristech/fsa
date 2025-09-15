@@ -91,7 +91,15 @@ const RoleSchema: Schema = new Schema(
 
           // Reports
           "reports.view",
+          "reports.create",
+          "reports.edit",
+          "reports.delete",
           "reports.export",
+
+          // Analytics
+          "analytics.view",
+          "analytics.export",
+          "analytics.dashboard",
 
           // System Management
           "roles.manage",

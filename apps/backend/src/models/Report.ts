@@ -268,7 +268,7 @@ const ReportAttachmentSchema: Schema = new Schema({
   size: { type: Number, required: true },
   url: { type: String, required: true },
   uploadedAt: { type: Date, default: Date.now },
-  uploadedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  uploadedBy: { type: Schema.Types.ObjectId, ref: "User", required: false },
   // Embedded user data for historical purposes
   uploadedByData: {
     _id: { type: String },

@@ -230,6 +230,9 @@ export class PermissionService {
    * Get all available permissions in the system
    */
   static getAllPermissions(): string[] {
+    // IMPORTANT: This list must align with the Role model enum (apps/backend/src/models/Role.ts)
+    // Only include permissions that can be stored on a Role. Dynamic/user-level permissions
+    // (e.g., timeEntries.*) are granted elsewhere and should not appear here.
     return [
       // Work Orders
       "workOrders.view",
@@ -265,44 +268,33 @@ export class PermissionService {
       "personnel.create",
       "personnel.edit",
       "personnel.delete",
-      "personnel.viewOwn",
-      "personnel.editOwn",
 
-      // Roles
-      "roles.view",
-      "roles.create",
-      "roles.edit",
-      "roles.delete",
-
-      // Scheduling
-      "scheduling.view",
-      "scheduling.create",
-      "scheduling.edit",
-      "scheduling.delete",
+      // Calendar
+      "calendar.view",
+      "calendar.edit",
+      "calendar.viewOwn",
+      "calendar.editOwn",
 
       // Reports
       "reports.view",
       "reports.create",
       "reports.edit",
       "reports.delete",
+      "reports.export",
 
-      // Settings
-      "settings.view",
-      "settings.edit",
+      // Analytics
+      "analytics.view",
+      "analytics.export",
+      "analytics.dashboard",
+
+      // System Management
+      "roles.manage",
+      "statuses.manage",
+      "settings.manage",
+      "tenant.manage",
 
       // Admin
       "admin.access",
-      "admin.manageUsers",
-      "admin.manageTenants",
-
-      // Time Entries
-      "timeEntries.view",
-      "timeEntries.create",
-      "timeEntries.edit",
-      "timeEntries.delete",
-      "timeEntries.viewOwn",
-      "timeEntries.editOwn",
-      "timeEntries.deleteOwn",
     ];
   }
 
@@ -410,33 +402,32 @@ export class PermissionService {
         "personnel.create",
         "personnel.edit",
         "personnel.delete",
-        "personnel.viewOwn",
-        "personnel.editOwn",
       ],
-      Roles: ["roles.view", "roles.create", "roles.edit", "roles.delete"],
-      Scheduling: [
-        "scheduling.view",
-        "scheduling.create",
-        "scheduling.edit",
-        "scheduling.delete",
+      Calendar: [
+        "calendar.view",
+        "calendar.edit",
+        "calendar.viewOwn",
+        "calendar.editOwn",
       ],
       Reports: [
         "reports.view",
         "reports.create",
         "reports.edit",
         "reports.delete",
+        "reports.export",
       ],
-      Settings: ["settings.view", "settings.edit"],
-      Admin: ["admin.access", "admin.manageUsers", "admin.manageTenants"],
-      "Time Entries": [
-        "timeEntries.view",
-        "timeEntries.create",
-        "timeEntries.edit",
-        "timeEntries.delete",
-        "timeEntries.viewOwn",
-        "timeEntries.editOwn",
-        "timeEntries.deleteOwn",
+      Analytics: [
+        "analytics.view",
+        "analytics.export",
+        "analytics.dashboard",
       ],
+      "System Management": [
+        "roles.manage",
+        "statuses.manage",
+        "settings.manage",
+        "tenant.manage",
+      ],
+      Admin: ["admin.access"],
     };
   }
 

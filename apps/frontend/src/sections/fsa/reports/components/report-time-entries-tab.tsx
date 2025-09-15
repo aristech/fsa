@@ -36,7 +36,6 @@ export function ReportTimeEntriesTab({ report, onUpdate, canEdit }: ReportTimeEn
       <EmptyContent
         title="No time entries"
         description="No time entries have been added to this report yet"
-        imgUrl="/assets/illustrations/illustration_empty_content.svg"
       />
     );
   }

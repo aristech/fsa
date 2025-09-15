@@ -1060,58 +1060,138 @@ export function ReportCreateDrawer({
       if (response.success) {
         const reportId = response.data._id;
 
-        // Upload files after report creation
+        // Upload files and signatures after report creation
+        const allUploadPromises = [];
+        
+        // Upload regular attachments
         if (attachments.length > 0 && reportId) {
-          try {
-            const form = new FormData();
-            form.append('scope', 'report');
-            form.append('reportId', reportId);
-            attachments.forEach((file: File) => {
-              form.append('files', file);
-            });
-
-            const uploadResponse = await axiosInstance.post('/api/v1/uploads', form, {
-              headers: {
-                'Content-Type': undefined, // Let browser set multipart boundary
-              },
-            });
-
-            const uploadedFiles = uploadResponse.data?.data || [];
-            const userId = user?._id;
-
-            if (!userId) {
-              throw new Error('User ID is required for file uploads');
-            }
-
-            const attachmentData = uploadedFiles.map((f: any) => ({
-              filename: f.name || 'Unknown',
-              originalName: f.name || 'Unknown',
-              mimetype: f.mime || 'application/octet-stream',
-              size: f.size || 0,
-              url: f.url,
-              uploadedAt: new Date(),
-              uploadedBy: userId,
-              // Add embedded user data for historical purposes
-              uploadedByData: {
-                _id: userId,
-                name:
-                  `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
-                  user.email ||
-                  'Unknown User',
-                email: user.email || '',
-              },
-            }));
-
-            // Update report with attachment data
-            if (attachmentData.length > 0) {
-              await ReportService.updateReport(reportId, {
-                attachments: attachmentData,
+          const attachmentUpload = (async () => {
+            try {
+              const form = new FormData();
+              form.append('scope', 'report');
+              form.append('reportId', reportId);
+              attachments.forEach((file: File) => {
+                form.append('files', file);
               });
+
+              const uploadResponse = await axiosInstance.post('/api/v1/uploads', form, {
+                headers: {
+                  'Content-Type': undefined, // Let browser set multipart boundary
+                },
+              });
+
+              const uploadedFiles = uploadResponse.data?.data || [];
+              const userId = user?._id;
+
+              const attachmentData = uploadedFiles.map((f: any) => ({
+                filename: f.name || 'Unknown',
+                originalName: f.name || 'Unknown',
+                mimetype: f.mime || 'application/octet-stream',
+                size: f.size || 0,
+                url: f.url,
+                uploadedAt: new Date(),
+                uploadedBy: userId,
+                // Add embedded user data for historical purposes
+                uploadedByData: userId ? {
+                  _id: userId,
+                  name:
+                    `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+                    user.email ||
+                    'Unknown User',
+                  email: user.email || '',
+                } : null,
+              }));
+
+              // Update report with attachment data
+              if (attachmentData.length > 0) {
+                await ReportService.updateReport(reportId, {
+                  attachments: attachmentData,
+                });
+              }
+            } catch (uploadError) {
+              console.error('Attachment upload failed:', uploadError);
+              toast.warning('Report saved, but attachment upload failed.');
             }
-          } catch (uploadError) {
-            console.error('File upload failed:', uploadError);
-            toast.warning('Report saved, but file upload failed. You can add attachments later.');
-          }
+          })();
+          allUploadPromises.push(attachmentUpload);
+        }
+
+        // Upload signatures as files
+        if (signatures.length > 0 && reportId) {
+          const signatureUpload = (async () => {
+            try {
+              const form = new FormData();
+              form.append('scope', 'report');
+              form.append('reportId', reportId);
+              
+              // Convert base64 signatures to files
+              signatures.forEach((signature, index) => {
+                if (signature.signatureData) {
+                  // Remove data:image/png;base64, prefix if present
+                  const base64Data = signature.signatureData.replace(/^data:image\/[a-z]+;base64,/, '');
+                  const byteCharacters = atob(base64Data);
+                  const byteNumbers = new Array(byteCharacters.length);
+                  for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                  }
+                  const byteArray = new Uint8Array(byteNumbers);
+                  const blob = new Blob([byteArray], { type: 'image/png' });
+                  const fileName = `signature-${signature.type}-${signature.signerName.replace(/\s+/g, '-')}-${index}.png`;
+                  const file = new File([blob], fileName, { type: 'image/png' });
+                  form.append('files', file);
+                }
+              });
+
+              const uploadResponse = await axiosInstance.post('/api/v1/uploads', form, {
+                headers: {
+                  'Content-Type': undefined, // Let browser set multipart boundary
+                },
+              });
+
+              const uploadedFiles = uploadResponse.data?.data || [];
+              const userId = user?._id;
+
+              // Map uploaded signature files back to signature data
+              const signatureAttachments = uploadedFiles.map((f: any, index: number) => ({
+                filename: f.name || 'Unknown',
+                originalName: f.name || 'Unknown',
+                mimetype: f.mime || 'image/png',
+                size: f.size || 0,
+                url: f.url,
+                uploadedAt: new Date(),
+                uploadedBy: userId,
+                signatureType: signatures[index]?.type,
+                signerName: signatures[index]?.signerName,
+                // Add embedded user data for historical purposes
+                uploadedByData: userId ? {
+                  _id: userId,
+                  name:
+                    `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+                    user.email ||
+                    'Unknown User',
+                  email: user.email || '',
+                } : null,
+              }));
+
+              // Update report with signature attachments
+              if (signatureAttachments.length > 0) {
+                const currentReport = await ReportService.getReport(reportId);
+                const existingAttachments = currentReport.data?.attachments || [];
+                await ReportService.updateReport(reportId, {
+                  attachments: [...existingAttachments, ...signatureAttachments],
+                });
+              }
+            } catch (uploadError) {
+              console.error('Signature upload failed:', uploadError);
+              toast.warning('Report saved, but signature upload failed.');
+            }
+          })();
+          allUploadPromises.push(signatureUpload);
+        }
+
+        // Wait for all uploads to complete
+        if (allUploadPromises.length > 0) {
+          await Promise.all(allUploadPromises);
         }
 
         toast.success(

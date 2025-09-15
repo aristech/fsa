@@ -269,7 +269,7 @@ export function ReportsView() {
             <EmptyContent
               title="No reports found"
               description="Get started by creating your first report"
-              imgUrl="/assets/illustrations/illustration_empty_content.svg"
+          
               action={
                 <Button
                   variant="contained"
