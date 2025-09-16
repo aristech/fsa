@@ -43,7 +43,7 @@ const navigationItems: MobileNavigationItem[] = [
 
 export function FieldLayout({ children }: FieldLayoutProps) {
   const theme = useTheme();
-  const { user } = useAuthContext();
+  const { user, authenticated } = useAuthContext();
 
   return (
     <Box
@@ -53,18 +53,20 @@ export function FieldLayout({ children }: FieldLayoutProps) {
         minHeight: '100vh',
         backgroundColor: theme.palette.background.default,
         // Bottom navigation on all screen sizes
-        paddingBottom: '80px', // Space for bottom navigation on all screen sizes
+        paddingBottom: authenticated ? '80px' : 0, // Space for bottom navigation only when authenticated
       }}
     >
-      {/* Mobile Header */}
-      <MobileHeader
-        title="Field Operations"
-        subtitle={`Welcome, ${user?.firstName || 'Field Operator'}`}
-        showNotifications
-        notificationCount={5}
-        sticky
-        collapsible
-      />
+      {/* Mobile Header - Only show when authenticated */}
+      {authenticated && (
+        <MobileHeader
+          title="Field Operations"
+          subtitle={`Welcome, ${user?.firstName || 'Field Operator'}`}
+          showNotifications
+          notificationCount={5}
+          sticky
+          collapsible
+        />
+      )}
 
       {/* Main Content */}
       <Box
@@ -78,15 +80,17 @@ export function FieldLayout({ children }: FieldLayoutProps) {
         </Container>
       </Box>
 
-      {/* Bottom Navigation (All Screen Sizes) */}
-      <Box>
-        <MobileBottomNavigation
-          items={navigationItems}
-          enableHapticFeedback
-          enableAnimations
-          showLabels
-        />
-      </Box>
+      {/* Bottom Navigation (All Screen Sizes) - Only show when authenticated */}
+      {authenticated && (
+        <Box>
+          <MobileBottomNavigation
+            items={navigationItems}
+            enableHapticFeedback
+            enableAnimations
+            showLabels
+          />
+        </Box>
+      )}
     </Box>
   );
 }

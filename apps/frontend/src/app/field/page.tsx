@@ -121,13 +121,7 @@ export default function FieldDashboard() {
 
   if (!authenticated) {
     return (
-      <Box sx={{ maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Field Portal
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Please sign in to view your schedule and tasks.
-        </Typography>
+      <Box sx={{ p: 3 }}>
         <MobileButton
           variant="primary"
           size="large"
@@ -152,7 +146,7 @@ export default function FieldDashboard() {
           Here is your schedule for today
         </Typography>
       </Box>
-        {/* Action Buttons */}
+      {/* Action Buttons */}
       <Box sx={{ m: 3, display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
         <MobileButton
           variant="primary"
@@ -351,7 +345,7 @@ export default function FieldDashboard() {
               onTap={() => router.push('/field/calendar')}
               sx={{ textAlign: 'center', cursor: 'pointer' }}
             />
-             <MobileCard
+            <MobileCard
               size="small"
               variant="outlined"
               title="View Tasks"
@@ -367,12 +361,11 @@ export default function FieldDashboard() {
               onTap={() => router.push('/field/reports')}
               sx={{ textAlign: 'center', cursor: 'pointer' }}
             />
-           
           </Box>
         </CardContent>
       </Card>
 
-    
+      
     </Box>
   );
 }

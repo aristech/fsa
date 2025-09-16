@@ -70,7 +70,7 @@ export default function FieldProfilePage() {
   // Fetch personnel data
   useEffect(() => {
     const fetchPersonnelData = async () => {
-      if (!user?.id) return;
+      if (!user?._id) return;
 
       try {
         setLoading(true);
@@ -97,7 +97,7 @@ export default function FieldProfilePage() {
     };
 
     fetchPersonnelData();
-  }, [user?.id]);
+  }, [user?._id]);
 
   const handleSaveProfile = async () => {
     if (!personnel) return;
@@ -126,7 +126,7 @@ export default function FieldProfilePage() {
   const handleLogout = async () => {
     try {
       await signOut();
-      router.replace('/auth/jwt/sign-in');
+      router.replace('/');
       toast.success('Logged out successfully');
     } catch (error) {
       console.error('Error logging out:', error);
