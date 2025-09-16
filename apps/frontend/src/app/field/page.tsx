@@ -1,140 +1,145 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { Box, Card, Typography, CardContent } from '@mui/material';
+import { Box, Card, Typography, CardContent, Avatar, AvatarGroup, Chip, Stack } from '@mui/material';
 
 import { Iconify } from 'src/components/iconify';
 import { MobileCard, MobileButton } from 'src/components/mobile';
-
-// Mock data based on backend models
-interface MockTask {
-  _id: string;
-  title: string;
-  description: string;
-  status: 'pending' | 'in-progress' | 'completed' | 'cancelled';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  dueDate: string;
-  estimatedHours: number;
-  actualHours?: number;
-  location: string;
-  assignees: string[];
-  projectId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface MockMaterial {
-  _id: string;
-  name: string;
-  description: string;
-  category: string;
-  sku: string;
-  barcode: string;
-  unit: string;
-  unitCost: number;
-  quantity: number;
-  minimumStock: number;
-  location: string;
-  supplier: string;
-  status: 'active' | 'inactive' | 'discontinued';
-  createdAt: string;
-  updatedAt: string;
-}
+import axios, { endpoints } from 'src/lib/axios';
+import { useAuthContext } from 'src/auth/hooks/use-auth-context';
 
 export default function FieldDashboard() {
   const router = useRouter();
+  const { authenticated, loading } = useAuthContext();
 
-  // Mock data based on backend models
-  const stats = [
-    { label: 'Today&apos;s Tasks', value: 8, icon: 'solar:clipboard-list-bold', color: 'primary' },
-    { label: 'Completed', value: 5, icon: 'solar:check-circle-bold', color: 'success' },
-    { label: 'Pending', value: 3, icon: 'solar:clock-circle-bold', color: 'warning' },
-    { label: 'This Week', value: 24, icon: 'solar:chart-bold', color: 'info' },
-  ];
+  // Real data
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [materials, setMaterials] = useState<any[]>([]);
 
-  const upcomingTasks: MockTask[] = [
-    {
-      _id: '1',
-      title: 'Install HVAC System',
-      description: 'Complete installation of the new HVAC system in Building A',
-      status: 'in-progress',
-      priority: 'high',
-      dueDate: '2024-01-15T09:00:00Z',
-      estimatedHours: 8,
-      actualHours: 4,
-      location: 'Building A - Floor 2',
-      assignees: ['personnel1'],
-      projectId: 'project1',
-      createdAt: '2024-01-10T08:00:00Z',
-      updatedAt: '2024-01-14T10:30:00Z',
-    },
-    {
-      _id: '2',
-      title: 'Electrical Inspection',
-      description: 'Perform electrical safety inspection and testing',
-      status: 'pending',
-      priority: 'medium',
-      dueDate: '2024-01-15T11:30:00Z',
-      estimatedHours: 4,
-      location: 'Building B - Basement',
-      assignees: ['personnel2'],
-      projectId: 'project2',
-      createdAt: '2024-01-12T09:00:00Z',
-      updatedAt: '2024-01-14T14:20:00Z',
-    },
-    {
-      _id: '3',
-      title: 'Material Pickup',
-      description: 'Pick up materials from supplier warehouse',
-      status: 'pending',
-      priority: 'low',
-      dueDate: '2024-01-15T14:00:00Z',
-      estimatedHours: 2,
-      location: 'Supplier Warehouse - Downtown',
-      assignees: ['personnel1'],
-      projectId: 'project1',
-      createdAt: '2024-01-13T16:00:00Z',
-      updatedAt: '2024-01-14T16:00:00Z',
-    },
-  ];
+  useEffect(() => {
+    if (!authenticated) return;
 
-  const lowStockMaterials: MockMaterial[] = [
-    {
-      _id: '1',
-      name: 'Steel Bolts M8x20',
-      description: 'Stainless steel bolts for structural connections',
-      category: 'Hardware',
-      sku: 'SB-M8-20',
-      barcode: '1234567890123',
-      unit: 'pcs',
-      unitCost: 0.25,
-      quantity: 15,
-      minimumStock: 50,
-      location: 'Warehouse A - Shelf 3',
-      supplier: 'SteelCorp Inc.',
-      status: 'active',
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-14T12:00:00Z',
-    },
-    {
-      _id: '2',
-      name: 'Electrical Wire 12AWG',
-      description: 'Copper electrical wire for installations',
-      category: 'Electrical',
-      sku: 'EW-12AWG-100',
-      barcode: '1234567890124',
-      unit: 'ft',
-      unitCost: 1.5,
-      quantity: 25,
-      minimumStock: 100,
-      location: 'Warehouse B - Rack 2',
-      supplier: 'WireWorks Ltd.',
-      status: 'active',
-      createdAt: '2024-01-02T00:00:00Z',
-      updatedAt: '2024-01-14T15:30:00Z',
-    },
-  ];
+    let active = true;
+    const load = async () => {
+      try {
+        const [kanbanRes, materialsRes] = await Promise.all([
+          axios.get(endpoints.kanban),
+          axios.get(endpoints.fsa.materials.list),
+        ]);
+        if (!active) return;
+        const board = kanbanRes.data?.data?.board || kanbanRes.data?.board || null;
+        const boardTasks = board?.tasks || [];
+        setTasks(Array.isArray(boardTasks) ? boardTasks : []);
+        setMaterials(
+          Array.isArray(materialsRes.data?.data) ? materialsRes.data.data : materialsRes.data || []
+        );
+      } catch (e) {
+        // Soft-fail to empty lists
+        setTasks([]);
+        setMaterials([]);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [authenticated]);
+
+  const stats = useMemo(() => {
+    const total = tasks.length;
+    const completed = tasks.filter((t) => {
+      const s = (t?.status?.slug || t?.status || t?.columnSlug || '').toString().toLowerCase();
+      return s.includes('done') || s.includes('complete');
+    }).length;
+    const pending = tasks.filter((t) => {
+      const s = (t?.status?.slug || t?.status || t?.columnSlug || '').toString().toLowerCase();
+      return s.includes('pending') || s.includes('todo') || s.includes('backlog') || s === '';
+    }).length;
+    return [
+      { label: "Today's Tasks", value: total, icon: 'solar:clipboard-list-bold', color: 'primary' },
+      { label: 'Completed', value: completed, icon: 'solar:check-circle-bold', color: 'success' },
+      { label: 'Pending', value: pending, icon: 'solar:clock-circle-bold', color: 'warning' },
+      { label: 'This Week', value: Math.max(total, completed + pending), icon: 'solar:chart-bold', color: 'info' },
+    ];
+  }, [tasks]);
+
+  const formatTime = (iso?: string) => {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    } catch {
+      return '';
+    }
+  };
+
+  const upcomingTasks = useMemo(() => {
+    return tasks.slice(0, 5).map((t) => {
+      const start = Array.isArray(t.due) ? t.due[0] : undefined;
+      const end = Array.isArray(t.due) ? t.due[1] : undefined;
+      const attachmentsCount = Array.isArray(t.attachments) ? t.attachments.length : 0;
+      return {
+        _id: t.id || t._id || t.uid || String(t.taskId || ''),
+        title: t.name || t.title || 'Untitled Task',
+        description: t.description || '',
+        status: (t?.status?.slug || t?.status || t?.columnSlug || 'pending').toString().toLowerCase(),
+        priority: (t?.priority?.slug || t?.priority || 'medium').toString().toLowerCase(),
+        startDate: start,
+        dueDate: end || new Date().toISOString(),
+        estimatedHours: t.estimatedHours || t.estimated_hours || 0,
+        actualHours: t.actualHours || t.actual_hours || 0,
+        location: t.location || t.site || '—',
+        clientName: t.clientName || t.clientCompany || undefined,
+        workOrderNumber: t.workOrderNumber || undefined,
+        workOrderTitle: t.workOrderTitle || undefined,
+        attachmentsCount,
+        assignees: Array.isArray(t.assignee) ? t.assignee : [],
+        completeStatus: !!t.completeStatus,
+      };
+    });
+  }, [tasks]);
+
+  const lowStockMaterials = useMemo(() => {
+    return materials
+      .filter((m) => (m.quantity ?? 0) <= (m.minimumStock ?? m.minimum_stock ?? 0))
+      .slice(0, 5)
+      .map((m) => ({
+        _id: m.id || m._id,
+        name: m.name,
+        sku: m.sku || '—',
+        unit: m.unit || '',
+        quantity: m.quantity ?? 0,
+        minimumStock: m.minimumStock ?? m.minimum_stock ?? 0,
+        location: m.location || '—',
+      }));
+  }, [materials]);
+
+  if (loading) {
+    return <Box sx={{ p: 3 }} />;
+  }
+
+  if (!authenticated) {
+    return (
+      <Box sx={{ maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Field Portal
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Please sign in to view your schedule and tasks.
+        </Typography>
+        <MobileButton
+          variant="primary"
+          size="large"
+          fullWidth
+          icon={<Iconify icon="solar:login-2-bold" width={20} />}
+          onClick={() => router.push('/auth/jwt/sign-in?returnTo=/field')}
+        >
+          Sign in
+        </MobileButton>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ maxWidth: '100%' }}>
@@ -146,6 +151,36 @@ export default function FieldDashboard() {
         <Typography variant="body1" color="text.secondary">
           Here is your schedule for today
         </Typography>
+      </Box>
+        {/* Action Buttons */}
+      <Box sx={{ m: 3, display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+        <MobileButton
+          variant="primary"
+          size="large"
+          fullWidth
+          icon={<Iconify icon="solar:calendar-bold" width={20} />}
+          onClick={() => router.push('/field/calendar')}
+        >
+          View Calendar
+        </MobileButton>
+        <MobileButton
+          variant="secondary"
+          size="large"
+          fullWidth
+          icon={<Iconify icon="solar:clipboard-list-bold" width={20} />}
+          onClick={() => router.push('/field/tasks')}
+        >
+          View Tasks
+        </MobileButton>
+        <MobileButton
+          variant="outline"
+          size="large"
+          fullWidth
+          icon={<Iconify icon="solar:document-text-bold" width={20} />}
+          onClick={() => router.push('/field/reports')}
+        >
+          Create Report
+        </MobileButton>
       </Box>
 
       {/* Stats Cards */}
@@ -222,31 +257,47 @@ export default function FieldDashboard() {
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {upcomingTasks.map((task) => {
-              const dueTime = new Date(task.dueDate).toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-              });
-              const progress =
-                task.actualHours && task.estimatedHours
-                  ? Math.round((task.actualHours / task.estimatedHours) * 100)
-                  : 0;
+              const dueTime = formatTime(task.dueDate);
+              const startTime = formatTime(task.startDate);
+              const subtitleParts = [task.clientName, task.workOrderNumber && `${task.workOrderNumber}`].filter(Boolean);
 
               return (
                 <MobileCard
                   key={task._id}
                   title={task.title}
-                  subtitle={task.location}
+                  subtitle={subtitleParts.join(' • ') || undefined}
                   description={task.description}
                   status={task.status}
                   priority={task.priority}
-                  progress={progress}
+                  progress={task.actualHours && task.estimatedHours ? Math.round((task.actualHours / task.estimatedHours) * 100) : 0}
                   timestamp={dueTime}
+                  badge={task.attachmentsCount > 0 ? task.attachmentsCount : undefined}
                   onTap={() => console.log('Navigate to task:', task._id)}
                   swipeable
                   onSwipeRight={() => console.log('Start task:', task._id)}
                   onSwipeLeft={() => console.log('Complete task:', task._id)}
-                />
+                >
+                  <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 1 }}>
+                    {/* Assignees */}
+                    <AvatarGroup max={4} sx={{ '& .MuiAvatar-root': { width: 24, height: 24, fontSize: 12 } }}>
+                      {task.assignees?.map((a: any) => (
+                        <Avatar key={a.id} src={a.avatarUrl || ''}>{a.initials || a.name?.[0] || 'A'}</Avatar>
+                      ))}
+                    </AvatarGroup>
+
+                    {/* Start - Due time and Completed chip */}
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      {(startTime || dueTime) && (
+                        <Typography variant="caption" color="text.secondary">
+                          {startTime && dueTime ? `${startTime} – ${dueTime}` : (startTime || dueTime)}
+                        </Typography>
+                      )}
+                      {task.completeStatus && (
+                        <Chip size="small" color="success" label="Completed" sx={{ height: 20, fontSize: 10 }} />
+                      )}
+                    </Stack>
+                  </Stack>
+                </MobileCard>
               );
             })}
           </Box>
@@ -300,6 +351,14 @@ export default function FieldDashboard() {
               onTap={() => router.push('/field/calendar')}
               sx={{ textAlign: 'center', cursor: 'pointer' }}
             />
+             <MobileCard
+              size="small"
+              variant="outlined"
+              title="View Tasks"
+              icon={<Iconify icon="solar:clipboard-list-bold" width={24} />}
+              onTap={() => router.push('/field/tasks')}
+              sx={{ textAlign: 'center', cursor: 'pointer' }}
+            />
             <MobileCard
               size="small"
               variant="outlined"
@@ -308,48 +367,12 @@ export default function FieldDashboard() {
               onTap={() => router.push('/field/reports')}
               sx={{ textAlign: 'center', cursor: 'pointer' }}
             />
-            <MobileCard
-              size="small"
-              variant="outlined"
-              title="View Tasks"
-              icon={<Iconify icon="solar:clipboard-list-bold" width={24} />}
-              onTap={() => router.push('/field/tasks')}
-              sx={{ textAlign: 'center', cursor: 'pointer' }}
-            />
+           
           </Box>
         </CardContent>
       </Card>
 
-      {/* Action Buttons */}
-      <Box sx={{ mt: 3, display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
-        <MobileButton
-          variant="primary"
-          size="large"
-          fullWidth
-          icon={<Iconify icon="solar:calendar-bold" width={20} />}
-          onClick={() => router.push('/field/calendar')}
-        >
-          View Calendar
-        </MobileButton>
-        <MobileButton
-          variant="secondary"
-          size="large"
-          fullWidth
-          icon={<Iconify icon="solar:clipboard-list-bold" width={20} />}
-          onClick={() => router.push('/field/tasks')}
-        >
-          View Tasks
-        </MobileButton>
-        <MobileButton
-          variant="outline"
-          size="large"
-          fullWidth
-          icon={<Iconify icon="solar:document-text-bold" width={20} />}
-          onClick={() => router.push('/field/reports')}
-        >
-          Create Report
-        </MobileButton>
-      </Box>
+    
     </Box>
   );
 }

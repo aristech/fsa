@@ -428,14 +428,14 @@ export function MobileCard({
               sx={{ fontSize: '10px', height: '20px' }}
             />
           )}
-          {status && (
+          {/* {status && (
             <Chip
               label={statusInfo?.label}
               size="small"
               color={statusInfo?.color as any}
               sx={{ fontSize: '10px', height: '20px' }}
             />
-          )}
+          )} */}
         </Box>
 
         {/* Timestamp and location */}
