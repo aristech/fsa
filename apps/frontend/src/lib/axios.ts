@@ -69,6 +69,7 @@ export const endpoints = {
     me: '/api/v1/auth/verify',
     signIn: '/api/v1/auth/sign-in',
     signUp: '/api/v1/auth/sign-up',
+    signOut: '/api/v1/auth/sign-out',
   },
   mail: {
     list: '/api/mail/list',
@@ -86,6 +87,11 @@ export const endpoints = {
     details: '/api/product/details',
     search: '/api/product/search',
   },
+  // User management endpoints
+  users: {
+    online: '/api/v1/users/online',
+    heartbeat: '/api/v1/users/heartbeat',
+  },
   // Field Service Automation API endpoints
   fsa: {
     timeEntries: {
@@ -96,7 +102,7 @@ export const endpoints = {
       checkin: '/api/v1/time-entries/checkin',
       checkout: '/api/v1/time-entries/checkout',
       heartbeat: '/api/v1/time-entries/heartbeat',
-      activeSessions: '/api/v1/time-entries/sessions/active',
+      activeSessions: '/api/v1/time-entries/sessions/all-active',
       emergencyCheckout: '/api/v1/time-entries/emergency-checkout',
       cleanupStaleSessions: '/api/v1/time-entries/cleanup-stale-sessions',
     },

@@ -61,7 +61,7 @@ export async function permissionRoutes(fastify: FastifyInstance) {
 
         // Users can only check their own permissions unless they're admin
         if (currentUser.userId !== userId && !currentUser.isTenantOwner) {
-          const hasAdminAccess = await PermissionService.hasPermission(
+          const hasAdminAccess = await PermissionService.hasPermissionAsync(
             currentUser.userId,
             "admin.access"
           );
@@ -122,7 +122,7 @@ export async function permissionRoutes(fastify: FastifyInstance) {
         let result;
 
         if (validatedData.permission) {
-          result = await PermissionService.hasPermission(
+          result = await PermissionService.hasPermissionAsync(
             user.id,
             validatedData.permission
           );

@@ -30,6 +30,8 @@ import { Iconify } from 'src/components/iconify';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { WorkOrderDetailsAttachments } from './work-order-details-attachments';
+import { WorkOrderPersonnelSelection } from '../create/work-order-personnel-selection';
+import { Editor } from 'src/components/editor';
 
 // ----------------------------------------------------------------------
 
@@ -244,9 +246,27 @@ export function WorkOrderDetails({ id }: Props) {
                   />
                 </Stack>
 
-                <Typography variant="body1" color="text.secondary">
-                  {workOrder?.details || 'No details provided'}
-                </Typography>
+                {/* Details (rendered with Editor) */}
+                <Stack spacing={1}>
+                  <Typography variant="h6">Details</Typography>
+                  <Editor
+                    value={(workOrder as any)?.details || ''}
+                    editable={false}
+                    immediatelyRender
+                    slotProps={{
+                      wrapper: {
+                        sx: {
+                          '& .ProseMirror': {
+                            p: 1,
+                            borderRadius: 1,
+                            bgcolor: 'background.default',
+                            border: (theme: any) => `1px solid ${theme.palette.divider}`,
+                          },
+                        },
+                      },
+                    }}
+                  />
+                </Stack>
 
                 <Divider />
 
@@ -358,26 +378,24 @@ export function WorkOrderDetails({ id }: Props) {
               </CardContent>
             </Card>
 
-            {/* Assigned Personnel */}
+            {/* Assigned Personnel - consistent UI */}
             <Card>
               <CardContent>
                 <Stack spacing={2}>
                   <Typography variant="h6">Assigned Personnel</Typography>
-                  {Array.isArray(workOrder?.personnelIds) && workOrder.personnelIds.length > 0 ? (
-                    <Stack direction="row" spacing={1} flexWrap="wrap">
-                      {workOrder.personnelIds.map((p: any) => (
-                        <Chip
-                          key={p._id}
-                          label={p?.user?.name || p?.employeeId || '—'}
-                          size="small"
-                        />
-                      ))}
-                    </Stack>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      Unassigned
-                    </Typography>
-                  )}
+                  <WorkOrderPersonnelSelection
+                    value={Array.isArray(workOrder?.personnelIds)
+                      ? workOrder.personnelIds.map((p: any) => (typeof p === 'string' ? p : p._id)).filter(Boolean)
+                      : []}
+                    onChange={async (personnelIds) => {
+                      try {
+                        await axiosInstance.put(endpoints.fsa.workOrders.details(id), { personnelIds });
+                        await mutate(endpoints.fsa.workOrders.details(id));
+                      } catch (e) {
+                        console.error('Failed to update assigned personnel', e);
+                      }
+                    }}
+                  />
                 </Stack>
               </CardContent>
             </Card>

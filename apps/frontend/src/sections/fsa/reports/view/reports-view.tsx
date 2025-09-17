@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 
 import { ReportService } from 'src/lib/services/report-service';
+import { useClient } from 'src/contexts/client-context';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
@@ -33,6 +34,7 @@ import { ReportDetailsDrawer } from '../components/report-details-drawer';
 // ----------------------------------------------------------------------
 
 export function ReportsView() {
+  const { selectedClient } = useClient();
   const [reports, setReports] = useState<IReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<ReportSearchParams>({
@@ -56,7 +58,12 @@ export function ReportsView() {
   const loadReports = useCallback(async () => {
     try {
       setLoading(true);
-      const reportsResponse = await ReportService.getAllReports(filters);
+      // Add client filter to the params if a client is selected
+      const filtersWithClient = selectedClient
+        ? { ...filters, clientId: selectedClient._id }
+        : filters;
+
+      const reportsResponse = await ReportService.getAllReports(filtersWithClient);
 
       if (reportsResponse.success) {
         setReports(reportsResponse.data);
@@ -67,7 +74,7 @@ export function ReportsView() {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, selectedClient]);
 
   // Load data on mount and when filters change
   useEffect(() => {
@@ -140,19 +147,25 @@ export function ReportsView() {
   const handleExportCSV = useCallback(async () => {
     try {
       // Get all reports for export (without pagination)
-      const exportFilters = { ...filters, limit: 1000 };
+      const exportFilters = selectedClient
+        ? { ...filters, limit: 1000, clientId: selectedClient._id }
+        : { ...filters, limit: 1000 };
+
       const response = await ReportService.getAllReports(exportFilters);
 
       if (response.success) {
         const csvData = convertReportsToCSV(response.data);
-        downloadCSV(csvData, 'reports-export.csv');
+        const filename = selectedClient
+          ? `reports-export-${selectedClient.name}.csv`
+          : 'reports-export.csv';
+        downloadCSV(csvData, filename);
         toast.success('Reports exported successfully');
       }
     } catch (error) {
       console.error('Error exporting reports:', error);
       toast.error('Failed to export reports');
     }
-  }, [filters]);
+  }, [filters, selectedClient]);
 
   // Convert reports to CSV format
   const convertReportsToCSV = (reportsData: IReport[]) => {

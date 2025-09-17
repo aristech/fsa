@@ -316,11 +316,18 @@ export function KanbanTaskCreateDialog({
                     <MenuItem value="">
                       <em>No Work Order</em>
                     </MenuItem>
-                    {workOrders.map((workOrder: any) => (
-                      <MenuItem key={workOrder._id} value={workOrder._id}>
-                        {workOrder.workOrderNumber} - {workOrder.title}
-                      </MenuItem>
-                    ))}
+                    {workOrders.map((workOrder: any) => {
+                      // Get client name from the work order
+                      const clientName = typeof workOrder.clientId === 'object'
+                        ? workOrder.clientId?.name
+                        : workOrder.clientName || 'Unknown Client';
+
+                      return (
+                        <MenuItem key={workOrder._id} value={workOrder._id}>
+                          {workOrder.workOrderNumber} - {workOrder.title} ({clientName})
+                        </MenuItem>
+                      );
+                    })}
                   </Select>
                 </FormControl>
               )}

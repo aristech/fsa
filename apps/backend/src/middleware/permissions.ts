@@ -25,10 +25,16 @@ export function requirePermissions(requiredPermissions: string | string[]) {
         ? requiredPermissions
         : [requiredPermissions];
 
+      // Get tenant information from context
+      const req = request as any;
+      const tenant = req.context?.tenant;
+      const tenantId = tenant?._id?.toString();
+
       // Use the new PermissionService
       const result = await PermissionService.hasAllPermissions(
         user.id,
-        permissions
+        permissions,
+        tenantId
       );
 
       if (!result.hasPermission) {
@@ -37,17 +43,14 @@ export function requirePermissions(requiredPermissions: string | string[]) {
           message: "Insufficient permissions",
           reason: result.reason,
           required: permissions,
-          userPermissions: result.userPermissions,
         });
       }
 
-      // Add permission context to request
+      // Add basic permission context to request
       request.user = {
         ...user,
-        permissions: result.userPermissions || [],
-        isTenantOwner:
-          result.userPermissions?.length ===
-          PermissionService.getAllPermissions().length,
+        permissions: permissions, // Just the required permissions that passed
+        isTenantOwner: user.isTenantOwner || false,
       };
     } catch (error) {
       return reply.status(500).send({

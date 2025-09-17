@@ -32,8 +32,13 @@ export function createPermissionGuard(options: PermissionGuardOptions) {
 
       const userId = user.id;
 
-      // Allow tenant owners to bypass all checks if specified
-      if (options.allowTenantOwner !== false && user.isTenantOwner) {
+      // Get tenant information from request context
+      const req = request as any;
+      const tenant = req.context?.tenant;
+      const tenantId = tenant?._id?.toString();
+
+      // Allow superusers and tenant owners to bypass all checks if specified
+      if (options.allowTenantOwner !== false && (user.role === 'superuser' || user.isTenantOwner)) {
         return; // Continue to next middleware
       }
 
@@ -47,9 +52,10 @@ export function createPermissionGuard(options: PermissionGuardOptions) {
       }
       // Single permission check
       else if (options.permission) {
-        const result = await PermissionService.hasPermission(
+        const result = await PermissionService.hasPermissionAsync(
           userId,
-          options.permission
+          options.permission,
+          tenantId
         );
         hasPermission = result.hasPermission;
         reason = result.reason || "";
@@ -59,11 +65,13 @@ export function createPermissionGuard(options: PermissionGuardOptions) {
         const result = options.requireAll
           ? await PermissionService.hasAllPermissions(
               userId,
-              options.permissions
+              options.permissions,
+              tenantId
             )
           : await PermissionService.hasAnyPermission(
               userId,
-              options.permissions
+              options.permissions,
+              tenantId
             );
         hasPermission = result.hasPermission;
         reason = result.reason || "";
@@ -73,7 +81,8 @@ export function createPermissionGuard(options: PermissionGuardOptions) {
         const result = await PermissionService.canAccessResource(
           userId,
           options.resource,
-          options.action
+          options.action,
+          tenantId
         );
         hasPermission = result.hasPermission;
         reason = result.reason || "";

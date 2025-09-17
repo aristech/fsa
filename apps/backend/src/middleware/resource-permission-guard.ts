@@ -31,22 +31,27 @@ export function createResourcePermissionGuard(options: ResourcePermissionOptions
       const userId = user.id;
       const tenantId = user.tenantId;
 
-      // Allow tenant owners to bypass all checks
-      if (user.isTenantOwner) {
+      // Allow superusers and tenant owners to bypass all checks
+      if (user.role === 'superuser' || user.isTenantOwner) {
         return; // Continue to next middleware
       }
 
       const fullPermission = `${options.resource}.${options.action}`;
       const ownPermission = `${options.resource}.${options.action}Own`;
 
+      // Get tenant ID from context
+      const req = request as any;
+      const tenant = req.context?.tenant;
+      const tenantIdFromContext = tenant?._id?.toString();
+
       // First check if user has full permission
-      const fullPermissionResult = await PermissionService.hasPermission(userId, fullPermission);
+      const fullPermissionResult = await PermissionService.hasPermissionAsync(userId, fullPermission, tenantIdFromContext);
       if (fullPermissionResult.hasPermission) {
         return; // User has full permission, allow access
       }
 
       // Check if user has "own" permission
-      const ownPermissionResult = await PermissionService.hasPermission(userId, ownPermission);
+      const ownPermissionResult = await PermissionService.hasPermissionAsync(userId, ownPermission, tenantIdFromContext);
       if (!ownPermissionResult.hasPermission) {
         return reply.status(403).send({
           success: false,

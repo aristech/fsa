@@ -55,13 +55,15 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         );
         const { Personnel } = await import("../models");
 
-        const hasFullPermission = await PermissionService.hasPermission(
+        const hasFullPermission = await PermissionService.hasPermissionAsync(
           user.id,
           "workOrders.view",
+          tenant._id.toString()
         );
-        const hasOwnPermission = await PermissionService.hasPermission(
+        const hasOwnPermission = await PermissionService.hasPermissionAsync(
           user.id,
           "workOrders.viewOwn",
+          tenant._id.toString()
         );
 
         if (

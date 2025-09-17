@@ -15,6 +15,7 @@ import { iconButtonClasses } from '@mui/material/IconButton';
 import { allLangs } from 'src/locales';
 import { ClientProvider } from 'src/contexts/client-context';
 import { ClientsPopover } from 'src/layouts/components/clients-popover';
+import { useUserHeartbeat } from 'src/hooks/use-user-heartbeat';
 
 import { Logo } from 'src/components/logo';
 import { useSettingsContext } from 'src/components/settings';
@@ -62,6 +63,9 @@ export function DashboardLayout({
   // User data will be handled by auth context in child components
 
   const settings = useSettingsContext();
+
+  // Keep user marked as online while using the app
+  useUserHeartbeat();
 
   const navVars = dashboardNavColorVars(theme, settings.state.navColor, settings.state.navLayout);
 

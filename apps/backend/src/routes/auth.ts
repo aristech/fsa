@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/User";
 import { Role, Tenant } from "../models";
 import { Personnel } from "../models/Personnel";
+import { CheckInSession } from "../models/CheckInSession";
 import { authenticate } from "../middleware/auth";
 import { MagicLinkService } from "../services/magic-link-service";
 import { TenantSetupService } from "../services/tenant-setup";
@@ -56,6 +57,43 @@ const setupAccountSchema = z
   });
 
 export async function authRoutes(fastify: FastifyInstance) {
+  // Sign out
+  fastify.post("/sign-out", { preHandler: [authenticate] }, async (request, reply) => {
+    try {
+      const user = (request as any).user;
+      const userId = user?.userId as string;
+
+      if (userId) {
+        // Update user's lastLoginAt to a past time to mark them as offline
+        // We set it to 31 minutes ago (beyond the 30-minute online threshold)
+        const offlineTime = new Date(Date.now() - 31 * 60 * 1000);
+
+        await User.findByIdAndUpdate(
+          userId,
+          { $set: { lastLoginAt: offlineTime } },
+          { new: true }
+        );
+
+        // Also close any active time tracking sessions for this user
+        await CheckInSession.updateMany(
+          { userId, isActive: true },
+          { $set: { isActive: false, notes: 'Auto-closed on logout' } }
+        );
+      }
+
+      return reply.send({
+        success: true,
+        message: "Logged out successfully",
+      });
+    } catch (error) {
+      fastify.log.error("Error during logout:", error);
+      return reply.status(500).send({
+        success: false,
+        message: "Internal server error during logout",
+      });
+    }
+  });
+
   // Sign in
   fastify.post("/sign-in", async (request, reply) => {
     try {
@@ -101,6 +139,19 @@ export async function authRoutes(fastify: FastifyInstance) {
               "Your account is inactive. Please contact your administrator.",
           });
         }
+      }
+
+      // Update user's last login time
+      try {
+        await User.findByIdAndUpdate(
+          user._id,
+          { $set: { lastLoginAt: new Date() } },
+          { new: true }
+        );
+      } catch (e) {
+        fastify.log.warn(
+          `Could not update lastLoginAt on sign-in: ${String(e)}`,
+        );
       }
 
       // Ensure personnel status is active after successful first sign-in

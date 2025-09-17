@@ -55,7 +55,7 @@ interface PersonnelData {
 
 export default function FieldProfilePage() {
   const router = useRouter();
-  const { user } = useAuthContext();
+  const { user, authenticated, loading: authLoading } = useAuthContext();
 
   const [personnel, setPersonnel] = useState<PersonnelData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,15 +67,18 @@ export default function FieldProfilePage() {
     notes: '',
   });
 
-  // Fetch personnel data
+  // Fetch personnel data (token-based; no need for user id)
   useEffect(() => {
+    let active = true;
     const fetchPersonnelData = async () => {
-      if (!user?._id) return;
-
       try {
+        if (!authenticated) {
+          if (active) setLoading(false);
+          return;
+        }
         setLoading(true);
         const response = await axiosInstance.get('/api/v1/personnel/me');
-
+        if (!active) return;
         if (response.data.success) {
           const personnelData = response.data.data;
           setPersonnel(personnelData);
@@ -83,21 +86,27 @@ export default function FieldProfilePage() {
             phone: personnelData.user.phone || '',
             notes: personnelData.notes || '',
           });
+        } else {
+          setPersonnel(null);
         }
       } catch (error: any) {
         console.error('Error fetching personnel data:', error);
         if (error.response?.status === 404) {
-          toast.error('No personnel record found. Please contact your administrator to set up your field access.');
+          // No personnel record yet; show setup UI
+          setPersonnel(null);
         } else {
           toast.error('Failed to load profile data');
         }
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
 
     fetchPersonnelData();
-  }, [user?._id]);
+    return () => {
+      active = false;
+    };
+  }, [authenticated]);
 
   const handleSaveProfile = async () => {
     if (!personnel) return;
@@ -186,7 +195,7 @@ export default function FieldProfilePage() {
     }
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <Box sx={{ p: 2, textAlign: 'center' }}>
         <Typography>Loading profile...</Typography>

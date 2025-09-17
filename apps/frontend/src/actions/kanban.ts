@@ -162,14 +162,35 @@ export async function moveColumn(updateColumns: IKanbanColumn[]) {
    * Work in local
    */
   startTransition(() => {
-    mutate(
-      KANBAN_ENDPOINT,
-      (currentData) => {
-        const { data } = currentData as BoardData;
-        const { board } = data;
+    // Create the mutation function
+    const updateFunction = (currentData: any) => {
+      if (!currentData) return currentData;
+      const { data } = currentData as BoardData;
+      const { board } = data;
 
-        return { ...currentData, data: { ...data, board: { ...board, columns: updateColumns } } };
-      },
+      console.log('Column reorder - preserving tasks:', Object.keys(board.tasks || {}));
+
+      // Preserve existing tasks when reordering columns
+      return {
+        ...currentData,
+        data: {
+          ...data,
+          board: {
+            ...board,
+            columns: updateColumns,
+            tasks: board.tasks || {} // Keep the existing tasks with fallback
+          }
+        }
+      };
+    };
+
+    // Mutate the base kanban endpoint
+    mutate(KANBAN_ENDPOINT, updateFunction, false);
+
+    // Also mutate any client-filtered endpoints
+    mutate(
+      (key) => typeof key === 'string' && key.startsWith(KANBAN_ENDPOINT) && key.includes('clientId'),
+      updateFunction,
       false
     );
   });
@@ -178,8 +199,26 @@ export async function moveColumn(updateColumns: IKanbanColumn[]) {
    * Work on server
    */
   if (enableServer) {
-    const data = { order: updateColumns.map((c, idx) => ({ id: c.id, order: idx })) };
-    await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'reorder-columns' } });
+    try {
+      const data = { order: updateColumns.map((c, idx) => ({ id: c.id, order: idx })) };
+      await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'reorder-columns' } });
+
+      // Force revalidation after server update to ensure consistency
+      startTransition(() => {
+        // Revalidate base endpoint
+        mutate(KANBAN_ENDPOINT);
+        // Revalidate any client-filtered endpoints
+        mutate((key) => typeof key === 'string' && key.startsWith(KANBAN_ENDPOINT));
+      });
+    } catch (error) {
+      console.error('Failed to update column order on server:', error);
+      // Revert optimistic update on error by revalidating
+      startTransition(() => {
+        mutate(KANBAN_ENDPOINT);
+        mutate((key) => typeof key === 'string' && key.startsWith(KANBAN_ENDPOINT));
+      });
+      throw error;
+    }
   }
 }
 

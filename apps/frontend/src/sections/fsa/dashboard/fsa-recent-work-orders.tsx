@@ -1,14 +1,31 @@
 'use client';
 
 import useSWR from 'swr';
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 
 import { useTheme } from '@mui/material/styles';
-import { Card, Link, Stack, Skeleton, CardHeader, Typography, CardContent } from '@mui/material';
+import {
+  Box,
+  Card,
+  Link,
+  Chip,
+  Stack,
+  Grid,
+  Tooltip,
+  Skeleton,
+  CardHeader,
+  Typography,
+  CardContent,
+  LinearProgress,
+  IconButton,
+  Menu,
+  MenuItem,
+} from '@mui/material';
 
 import { fDateTime } from 'src/utils/format-time';
 
 import axiosInstance, { endpoints } from 'src/lib/axios';
+import { useClient } from 'src/contexts/client-context';
 
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
@@ -55,18 +72,66 @@ const getPriorityColor = (priority: string) => {
 
 export function FsaRecentWorkOrders() {
   const theme = useTheme();
+  const { selectedClient } = useClient();
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [selectedAttachments, setSelectedAttachments] = React.useState<any[]>([]);
+
+  const handleAttachmentMenuOpen = (event: React.MouseEvent<HTMLElement>, attachments: any[]) => {
+    event.stopPropagation();
+    setAnchorEl(event.currentTarget);
+    setSelectedAttachments(attachments);
+  };
+
+  const handleAttachmentMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedAttachments([]);
+  };
+
+  const handleDownloadAttachment = (url: string, name: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = name;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    handleAttachmentMenuClose();
+  };
+
+  // Build URL with client filter
+  const workOrdersUrl = selectedClient
+    ? `${endpoints.fsa.workOrders.list}?clientId=${selectedClient._id}&limit=10&sort=-createdAt`
+    : `${endpoints.fsa.workOrders.list}?limit=10&sort=-createdAt`;
 
   // Fetch work orders data
   const { data: workOrdersData, isLoading } = useSWR(
-    endpoints.fsa.workOrders.list,
+    workOrdersUrl,
     async (url: string) => {
-      const response = await axiosInstance.get(url, {
-        params: {
-          limit: 10,
-          sort: '-createdAt', // Get most recent first
-        },
-      });
+      const response = await axiosInstance.get(url);
       return response.data;
+    }
+  );
+
+  // Fetch progress summaries for work orders
+  const workOrderIds = workOrdersData?.data?.workOrders?.slice(0, 5).map((wo: any) => wo._id) || [];
+  const { data: summariesData } = useSWR(
+    workOrderIds.length > 0 ? `summaries-${workOrderIds.join(',')}` : null,
+    async () => {
+      if (workOrderIds.length === 0) return {};
+      const summaries = await Promise.all(
+        workOrderIds.map(async (id: string) => {
+          try {
+            const response = await axiosInstance.get(endpoints.fsa.workOrders.summary(id));
+            return { id, data: response.data?.data };
+          } catch {
+            return { id, data: null };
+          }
+        })
+      );
+      return summaries.reduce((acc: any, { id, data }) => {
+        acc[id] = data;
+        return acc;
+      }, {});
     }
   );
 
@@ -90,32 +155,62 @@ export function FsaRecentWorkOrders() {
     });
 
     return workOrders.slice(0, 5).map((workOrder: any) => {
-      // Get assigned personnel names
-      const assignedPersonnel =
-        workOrder.personnelIds
-          ?.map((id: string) => {
-            const person = personnelById.get(id);
-            return person
-              ? `${person.user?.firstName || ''} ${person.user?.lastName || ''}`.trim()
-              : 'Unknown';
-          })
-          .join(', ') || 'Unassigned';
+      // Prepare assigned personnel
+      const personnelObjs = (workOrder.personnelIds || [])
+        .map((id: any) => (typeof id === 'string' ? personnelById.get(id) : id))
+        .filter(Boolean);
+
+      const attachmentsCount = Array.isArray(workOrder.attachments)
+        ? workOrder.attachments.length
+        : 0;
+
+      // Get client details
+      const clientData = typeof workOrder.clientId === 'object'
+        ? workOrder.clientId
+        : null;
+
+      // Get progress data
+      const progressData = summariesData?.[workOrder._id] || null;
 
       return {
         id: workOrder._id,
         workOrderNumber: workOrder.workOrderNumber,
         title: workOrder.title,
-        customer: workOrder.clientName || workOrder.client?.name || 'Unknown Client',
+        customer: workOrder.clientName || workOrder.client?.name || clientData?.name || 'Unknown Client',
+        clientPhone: clientData?.phone || null,
+        clientEmail: clientData?.email || null,
         status: workOrder.status,
         priority: workOrder.priority,
         scheduledDate: workOrder.scheduledDate
           ? new Date(workOrder.scheduledDate)
           : new Date(workOrder.createdAt),
-        technician: assignedPersonnel,
+        location: workOrder.location?.address || workOrder.location || null,
         createdAt: new Date(workOrder.createdAt),
+        detailsHtml: (workOrder.details as string) || '',
+        personnel: personnelObjs,
+        attachmentsCount,
+        attachments: workOrder.attachments || [],
+        progress: progressData?.progress || 0,
+        tasksTotal: progressData?.tasksTotal || 0,
+        tasksCompleted: progressData?.tasksCompleted || 0,
       };
     });
-  }, [workOrdersData, personnelData]);
+  }, [workOrdersData, personnelData, summariesData]);
+
+  const renderDetailsPreview = (html: string) => (
+    <Box
+      sx={{
+        '& p': { m: 0 },
+        color: 'text.secondary',
+        fontSize: '12px',
+        display: '-webkit-box',
+        WebkitBoxOrient: 'vertical',
+        WebkitLineClamp: 3,
+        overflow: 'hidden',
+      }}
+      dangerouslySetInnerHTML={{ __html: html || '' }}
+    />
+  );
 
   return (
     <Card>
@@ -176,51 +271,209 @@ export function FsaRecentWorkOrders() {
               No work orders found
             </Typography>
           ) : (
-            recentWorkOrders.map((workOrder: any) => (
-              <Link
-                key={workOrder.id}
-                href={`/dashboard/work-orders/${workOrder.id}`}
-                sx={{ textDecoration: 'none' }}
+            recentWorkOrders.map((wo: any) => (
+              <Stack
+                key={wo.id}
+                spacing={2}
+                sx={{
+                  p: 3,
+                  borderRadius: 1,
+                  border: `1px solid ${theme.palette.divider}`,
+                  bgcolor: 'background.paper',
+                }}
               >
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  sx={{
-                    p: 2,
-                    borderRadius: 1,
-                    border: `1px solid ${theme.palette.divider}`,
-                    '&:hover': {
-                      bgcolor: theme.palette.action.hover,
-                    },
-                    cursor: 'pointer',
-                  }}
-                >
+                {/* Header row with title and status */}
+                <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2}>
                   <Stack spacing={1} sx={{ flex: 1 }}>
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                      <Typography variant="subtitle2">{workOrder.workOrderNumber}</Typography>
-                      <Label color={getStatusColor(workOrder.status)} variant="soft">
-                        {workOrder.status}
+                    <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+                      <Link
+                        href={`/dashboard/work-orders/${wo.id}`}
+                        sx={{
+                          textDecoration: 'none',
+                          '&:hover': {
+                            textDecoration: 'underline',
+                          }
+                        }}
+                      >
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          {wo.workOrderNumber || wo.title}
+                        </Typography>
+                      </Link>
+                      <Label color={getStatusColor(wo.status)} variant="soft">
+                        {wo.status}
                       </Label>
-                      <Label color={getPriorityColor(workOrder.priority)} variant="soft">
-                        {workOrder.priority}
+                      <Label color={getPriorityColor(wo.priority)} variant="soft">
+                        {wo.priority}
                       </Label>
                     </Stack>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {workOrder.title}
+                    {wo.workOrderNumber && wo.title !== wo.workOrderNumber && (
+                      <Typography variant="body2" color="text.secondary">
+                        {wo.title}
+                      </Typography>
+                    )}
+                  </Stack>
+
+                  {/* Actions */}
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    {wo.attachmentsCount > 0 && (
+                      <Tooltip title={`${wo.attachmentsCount} attachment${wo.attachmentsCount > 1 ? 's' : ''} - Click to view/download`}>
+                        <IconButton
+                          size="small"
+                          onClick={(event) => {
+                            if (wo.attachments.length === 1) {
+                              // Single attachment - download directly
+                              handleDownloadAttachment(wo.attachments[0].url, wo.attachments[0].name);
+                            } else {
+                              // Multiple attachments - show menu
+                              handleAttachmentMenuOpen(event, wo.attachments);
+                            }
+                          }}
+                        >
+                          <Iconify icon="eva:attach-2-fill" width={16} />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      label={`${wo.tasksCompleted}/${wo.tasksTotal} tasks`}
+                      sx={{ minWidth: 'auto' }}
+                    />
+                  </Stack>
+                </Stack>
+
+                {/* Progress bar */}
+                <Stack spacing={1}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography variant="caption" color="text.secondary">
+                      Progress
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {workOrder.customer} • {workOrder.technician}
+                      {wo.progress}%
                     </Typography>
                   </Stack>
-                  <Typography variant="caption" color="text.secondary">
-                    {fDateTime(workOrder.scheduledDate)}
-                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={Math.max(0, Math.min(100, wo.progress))}
+                    sx={{ height: 6, borderRadius: 1 }}
+                  />
                 </Stack>
-              </Link>
+
+                {/* Client and Personnel Info */}
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Stack spacing={1}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                        Client
+                      </Typography>
+                      <Stack spacing={0.5}>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {wo.customer}
+                        </Typography>
+                        {wo.clientPhone && (
+                          <Stack direction="row" alignItems="center" spacing={0.5}>
+                            <Iconify icon="eva:phone-fill" width={14} />
+                            <Typography variant="caption" color="text.secondary">
+                              {wo.clientPhone}
+                            </Typography>
+                          </Stack>
+                        )}
+                        {wo.clientEmail && (
+                          <Stack direction="row" alignItems="center" spacing={0.5}>
+                            <Iconify icon="eva:email-fill" width={14} />
+                            <Typography variant="caption" color="text.secondary">
+                              {wo.clientEmail}
+                            </Typography>
+                          </Stack>
+                        )}
+                      </Stack>
+                      <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
+                         <Iconify icon="eva:people-fill" width={14} />
+                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                        Assigned Personnel 
+                      </Typography>
+                      <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
+                     
+                          <Typography variant="body2" >
+                          {wo?.personnel?.length}
+                          </Typography>
+                    
+                      </Stack>
+                      </Stack>
+                    </Stack>
+                  </Grid>
+
+                 
+                </Grid>
+
+                {/* Schedule and Location */}
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                      <Iconify icon="eva:calendar-fill" width={16} />
+                      <Typography variant="caption" color="text.secondary">
+                        Scheduled:
+                      </Typography>
+                      <Typography variant="body2">
+                        {fDateTime(wo.scheduledDate)}
+                      </Typography>
+                    </Stack>
+                  </Grid>
+                  {wo.location && (
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Stack direction="row" alignItems="center" spacing={0.5}>
+                        <Iconify icon="eva:pin-fill" width={16} />
+                        <Typography variant="body2" noWrap>
+                          {wo.location}
+                        </Typography>
+                      </Stack>
+                    </Grid>
+                  )}
+                </Grid>
+
+                {/* Details preview */}
+                {wo.detailsHtml && (
+                  <Stack spacing={1}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                      Details
+                    </Typography>
+                    {renderDetailsPreview(wo.detailsHtml)}
+                  </Stack>
+                )}
+              </Stack>
             ))
           )}
         </Stack>
+
+        {/* Attachment Menu */}
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleAttachmentMenuClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'right',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+        >
+          {selectedAttachments.map((attachment, index) => (
+            <MenuItem
+              key={index}
+              onClick={() => handleDownloadAttachment(attachment.url, attachment.name)}
+              sx={{ minWidth: 200 }}
+            >
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ width: '100%' }}>
+                <Iconify icon="eva:file-text-fill" width={16} />
+                <Typography variant="body2" noWrap sx={{ flex: 1 }}>
+                  {attachment.name}
+                </Typography>
+              </Stack>
+            </MenuItem>
+          ))}
+        </Menu>
       </CardContent>
     </Card>
   );

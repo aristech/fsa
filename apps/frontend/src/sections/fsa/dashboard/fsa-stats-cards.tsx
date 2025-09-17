@@ -10,6 +10,7 @@ import { Card, Stack, Skeleton, Typography, CardContent } from '@mui/material';
 import { fNumber } from 'src/utils/format-number';
 
 import axiosInstance, { endpoints } from 'src/lib/axios';
+import { useClient } from 'src/contexts/client-context';
 
 import { Iconify } from 'src/components/iconify';
 
@@ -19,17 +20,23 @@ import { Iconify } from 'src/components/iconify';
 
 export function FsaStatsCards() {
   const theme = useTheme();
+  const { selectedClient } = useClient();
 
-  // Fetch work orders data
+  // Build URLs with client filter
+  const workOrdersUrl = selectedClient
+    ? `${endpoints.fsa.workOrders.list}?clientId=${selectedClient._id}&limit=1000`
+    : `${endpoints.fsa.workOrders.list}?limit=1000`;
+
+  // Fetch work orders data (filtered by client if selected)
   const { data: workOrdersData, isLoading: workOrdersLoading } = useSWR(
-    endpoints.fsa.workOrders.list,
+    workOrdersUrl,
     async (url: string) => {
-      const response = await axiosInstance.get(url, { params: { limit: 1000 } });
+      const response = await axiosInstance.get(url);
       return response.data;
     }
   );
 
-  // Fetch personnel data
+  // Fetch personnel data (always fetch all for online status)
   const { data: personnelData, isLoading: personnelLoading } = useSWR(
     endpoints.fsa.personnel.list,
     async (url: string) => {
@@ -47,11 +54,28 @@ export function FsaStatsCards() {
     }
   );
 
+  // Fetch online users data
+  const { data: onlineUsersData, isLoading: onlineUsersLoading } = useSWR(
+    endpoints.users.online,
+    async (url: string) => {
+      try {
+        const response = await axiosInstance.get(url);
+        return response.data;
+      } catch (error) {
+        // Fallback if endpoint doesn't exist - use active sessions as proxy for online status
+        console.log('Online users endpoint not available, falling back to active sessions');
+        return { data: [] };
+      }
+    },
+    { refreshInterval: 30000 } // Refresh every 30 seconds
+  );
+
   // Calculate stats from real data
   const stats = useMemo(() => {
     const workOrders = workOrdersData?.data?.workOrders || [];
     const personnel = personnelData?.data || [];
     const activeSessions = activeSessionsData?.data || [];
+    const onlineUsers = onlineUsersData?.data || [];
 
     // Calculate completed today
     const today = new Date();
@@ -62,11 +86,25 @@ export function FsaStatsCards() {
       return completedDate >= today;
     }).length;
 
-    // Count active personnel (those with active time sessions)
-    const activePersonnelIds = new Set(activeSessions.map((session: any) => session.personnelId));
-    const techniciansOnline = personnel.filter(
-      (p: any) => activePersonnelIds.has(p._id) && p.isActive
-    ).length;
+    // Count online technicians - prioritize actual online users, fallback to active sessions
+    let techniciansOnline = 0;
+    if (onlineUsers.length > 0) {
+      // Use actual online users data if available
+      const onlineUserIds = new Set(onlineUsers.map((user: any) => user._id));
+      techniciansOnline = personnel.filter((p: any) => {
+        const userId = p?.user?._id || p?.userId;
+        return userId && onlineUserIds.has(userId) && p.isActive;
+      }).length;
+    } else {
+      // Fallback to active time sessions as proxy for online status
+      const activePersonnelIds = new Set(activeSessions.map((session: any) => session.personnelId));
+      techniciansOnline = personnel.filter(
+        (p: any) => activePersonnelIds.has(p._id) && p.isActive
+      ).length;
+    }
+
+    // Count personnel currently being time tracked
+    const personnelBeingTracked = activeSessions.length;
 
     return [
       {
@@ -74,15 +112,6 @@ export function FsaStatsCards() {
         value: workOrders.length,
         icon: 'solar:clipboard-list-bold-duotone',
         color: 'primary',
-        loading: workOrdersLoading,
-      },
-      {
-        title: 'Active Work Orders',
-        value: workOrders.filter((wo: any) =>
-          ['assigned', 'in-progress', 'scheduled'].includes(wo.status)
-        ).length,
-        icon: 'solar:clock-circle-bold-duotone',
-        color: 'info',
         loading: workOrdersLoading,
       },
       {
@@ -96,17 +125,26 @@ export function FsaStatsCards() {
         title: 'Technicians Online',
         value: techniciansOnline,
         icon: 'solar:users-group-rounded-bold-duotone',
+        color: 'info',
+        loading: personnelLoading || onlineUsersLoading,
+      },
+      {
+        title: 'Active Time Tracking',
+        value: personnelBeingTracked,
+        icon: 'solar:clock-circle-bold-duotone',
         color: 'warning',
-        loading: personnelLoading || sessionsLoading,
+        loading: sessionsLoading,
       },
     ];
   }, [
     workOrdersData,
     personnelData,
     activeSessionsData,
+    onlineUsersData,
     workOrdersLoading,
     personnelLoading,
     sessionsLoading,
+    onlineUsersLoading,
   ]);
 
   return (

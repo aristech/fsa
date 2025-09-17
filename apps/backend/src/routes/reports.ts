@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { authenticate } from "../middleware/auth";
 import { Report, Task, Material, Client, WorkOrder, User } from "../models";
 import { AuthenticatedRequest } from "../types";
+import { PermissionService } from "../services/permission-service";
 
 export async function reportsRoutes(fastify: FastifyInstance) {
   // Get all reports with filtering and pagination
@@ -24,24 +25,39 @@ export async function reportsRoutes(fastify: FastifyInstance) {
         sortOrder = "desc",
       } = request.query as any;
 
-      const query: any = { tenantId: user.tenantId };
+      // Get user permissions and apply filtering
+      const userPermissions = await PermissionService.getUserPermissions(user.id, user.tenantId);
+      if (!userPermissions) {
+        return reply.code(403).send({
+          success: false,
+          message: "Access denied: Unable to verify permissions",
+        });
+      }
 
-      // Apply filters
-      if (type) query.type = type;
-      if (status) query.status = status;
-      if (clientId) query.clientId = clientId;
-      if (workOrderId) query.workOrderId = workOrderId;
-      if (createdBy) query.createdBy = createdBy;
+      // Build base filter with permission filtering
+      const baseFilter: any = {};
+      if (type) baseFilter.type = type;
+      if (status) baseFilter.status = status;
+      if (clientId) baseFilter.clientId = clientId;
+      if (workOrderId) baseFilter.workOrderId = workOrderId;
+      if (createdBy) baseFilter.createdBy = createdBy;
 
       if (dateFrom || dateTo) {
-        query.reportDate = {};
-        if (dateFrom) query.reportDate.$gte = new Date(dateFrom);
-        if (dateTo) query.reportDate.$lte = new Date(dateTo);
+        baseFilter.reportDate = {};
+        if (dateFrom) baseFilter.reportDate.$gte = new Date(dateFrom);
+        if (dateTo) baseFilter.reportDate.$lte = new Date(dateTo);
       }
 
       if (search) {
-        query.$text = { $search: search };
+        baseFilter.$text = { $search: search };
       }
+
+      // Apply permission-based filtering
+      const query = PermissionService.getReportFilter(
+        userPermissions,
+        user.tenantId,
+        baseFilter
+      );
 
       const skip = (parseInt(page) - 1) * parseInt(limit);
       const sort: any = {};
@@ -85,7 +101,23 @@ export async function reportsRoutes(fastify: FastifyInstance) {
       const { id } = request.params as { id: string };
       const user = (request as AuthenticatedRequest).user;
 
-      const report = await Report.findOne({ _id: id, tenantId: user.tenantId })
+      // Get user permissions to check access to specific report
+      const userPermissions = await PermissionService.getUserPermissions(user.id, user.tenantId);
+      if (!userPermissions) {
+        return reply.code(403).send({
+          success: false,
+          message: "Access denied: Unable to verify permissions",
+        });
+      }
+
+      // Build query with permission filtering
+      const reportFilter = PermissionService.getReportFilter(
+        userPermissions,
+        user.tenantId,
+        { _id: id }
+      );
+
+      const report = await Report.findOne(reportFilter)
         .populate("createdBy", "name email")
         .populate("assignedTo", "name email")
         .populate("clientId", "name company email phone")

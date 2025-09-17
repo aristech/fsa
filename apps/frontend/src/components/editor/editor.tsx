@@ -164,13 +164,15 @@ export function Editor({
         >
           {editor && !editor.isDestroyed && (
             <>
-              <Toolbar
-                editor={editor}
-                fullItem={fullItem}
-                fullscreen={fullscreen}
-                onToggleFullscreen={handleToggleFullscreen}
-              />
-              <BubbleToolbar editor={editor} />
+              {editable && (
+                <Toolbar
+                  editor={editor}
+                  fullItem={fullItem}
+                  fullscreen={fullscreen}
+                  onToggleFullscreen={handleToggleFullscreen}
+                />
+              )}
+              {editable && <BubbleToolbar editor={editor} />}
               <EditorContent
                 ref={contentRef}
                 spellCheck={false}

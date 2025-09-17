@@ -10,6 +10,7 @@ import {
   WorkOrder,
 } from "../models";
 import { AssignmentPermissionService } from "../services/assignment-permission-service";
+import { PermissionService } from "../services/permission-service";
 import { getPriorityOptions } from "../constants/priorities";
 import { WorkOrderProgressService } from "../services/work-order-progress-service";
 import { EntityCleanupService } from "../services/entity-cleanup-service";
@@ -29,16 +30,34 @@ export async function getKanbanData(
     const { tenant, user } = req.context!;
     const { clientId } = request.query as { clientId?: string };
 
+    // Get user permissions to filter data appropriately
+    const userPermissions = await PermissionService.getUserPermissions(user.id, tenant._id.toString());
+    if (!userPermissions) {
+      return reply.code(403).send({
+        success: false,
+        error: "Access denied: Unable to verify permissions",
+      });
+    }
 
     // Ensure at least one active column exists; create default 'Todo' if none
     await ensureAtLeastOneColumn(tenant._id.toString());
 
-    // Get all projects and tasks for the tenant, sorted by order (for tasks) and created_at (latest first)
+    // Build filters based on user permissions
+    const projectFilter = PermissionService.getProjectFilter(
+      userPermissions,
+      tenant._id.toString(),
+      { isActive: true }
+    );
+
+    const taskFilter = PermissionService.getTaskFilter(
+      userPermissions,
+      tenant._id.toString()
+    );
+
+    // Get projects and tasks filtered by permissions
     const [projects, tasks] = await Promise.all([
-      Project.find({ tenantId: tenant._id, isActive: true }).sort({
-        createdAt: -1,
-      }),
-      Task.find({ tenantId: tenant._id }).sort({ order: 1, createdAt: -1 }),
+      Project.find(projectFilter).sort({ createdAt: -1 }),
+      Task.find(taskFilter).sort({ order: 1, createdAt: -1 }),
     ]);
 
     // Build lookup maps for reporter (users) and assignees (personnel)
@@ -336,6 +355,17 @@ async function handleCreateTask(
 ) {
   const { tenant, user } = req.context!;
   const { taskData, columnId } = body;
+
+  // Check if user has permission to create tasks
+  const userPermissions = await PermissionService.getUserPermissions(user.id, tenant._id.toString());
+  if (!userPermissions ||
+      (!PermissionService.hasPermission(userPermissions, 'tasks.create') &&
+       !PermissionService.hasPermission(userPermissions, 'tasks.edit'))) {
+    return reply.code(403).send({
+      success: false,
+      error: "Access denied: You don't have permission to create tasks",
+    });
+  }
   const {
     name,
     description,
@@ -364,29 +394,37 @@ async function handleCreateTask(
     validatedClientId = clientId;
   }
 
-  // Validate assignees eligibility (active personnel only)
+  // Validate assignees eligibility (active personnel only) and check assignment permissions
   let validatedAssignees: string[] = [];
   if (Array.isArray(assignees) ? assignees.length > 0 : !!assignee) {
+    // Check if user can assign tasks to others
+    if (!PermissionService.canAssignTasks(userPermissions)) {
+      return reply.code(403).send({
+        success: false,
+        error: "Access denied: You don't have permission to assign tasks to others",
+      });
+    }
+
     try {
       const list = Array.isArray(assignees)
         ? assignees
         : assignee
           ? [assignee]
           : [];
-      
+
       // Only validate if we have assignees to validate
       if (list.length > 0) {
         const personnelDocs = await Personnel.find({
           _id: { $in: list },
           tenantId: tenant._id,
         }).select("_id isActive status");
-        
+
         const eligible = personnelDocs
           .filter((p: any) => p.isActive && p.status === "active")
           .map((p: any) => p._id.toString());
         validatedAssignees = eligible;
-        
-    
+
+
       }
     } catch (error) {
       console.error('Error validating assignees:', error);
@@ -674,6 +712,28 @@ async function handleUpdateTask(
     });
   }
 
+  // Check if user has permission to edit this specific task
+  const userPermissions = await PermissionService.getUserPermissions(user.id, tenant._id.toString());
+  if (!userPermissions) {
+    return reply.code(403).send({
+      success: false,
+      error: "Access denied: Unable to verify permissions",
+    });
+  }
+
+  const canEdit = await PermissionService.canEditTask(
+    userPermissions,
+    taskData.id,
+    tenant._id.toString()
+  );
+
+  if (!canEdit) {
+    return reply.code(403).send({
+      success: false,
+      error: "Access denied: You don't have permission to edit this task",
+    });
+  }
+
   // Get the existing task to compare changes
   const existingTask = await Task.findOne({
     _id: taskData.id,
@@ -742,6 +802,14 @@ async function handleUpdateTask(
   }
   let previousAssignees: string[] = [];
   if (assignees !== undefined) {
+    // Check if user can assign tasks when trying to change assignees
+    if (!PermissionService.canAssignTasks(userPermissions)) {
+      return reply.code(403).send({
+        success: false,
+        error: "Access denied: You don't have permission to assign tasks to others",
+      });
+    }
+
     previousAssignees = (existingTask.assignees || []).map((id: any) => id.toString());
     const list = Array.isArray(assignees)
       ? assignees
@@ -757,7 +825,7 @@ async function handleUpdateTask(
         .filter((p: any) => p.isActive && p.status === "active")
         .map((p: any) => p._id.toString());
       updateData.assignees = eligible;
-      
+
       // Check if assignees actually changed
       if (JSON.stringify(eligible.sort()) !== JSON.stringify(previousAssignees.sort())) {
         changes.push('assignees');

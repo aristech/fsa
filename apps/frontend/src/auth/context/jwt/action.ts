@@ -88,6 +88,21 @@ export const signUp = async ({
  *************************************** */
 export const signOut = async (): Promise<void> => {
   try {
+    // Call backend logout endpoint if we have a token
+    const token =
+      sessionStorage.getItem('jwt_access_token') ||
+      localStorage.getItem('jwt_access_token');
+
+    if (token) {
+      try {
+        await axios.post(endpoints.auth.signOut);
+      } catch (error) {
+        // Don't throw if logout endpoint fails - we still want to clear local session
+        console.warn('Backend logout failed:', error);
+      }
+    }
+
+    // Clear local session
     await setSession(null);
   } catch (error) {
     console.error('Error during sign out:', error);
