@@ -7,12 +7,12 @@ import { alpha, useTheme } from '@mui/material/styles';
 import {
   Card,
   Chip,
+  Link,
   Stack,
   Avatar,
-  CardHeader,
   Skeleton,
+  CardHeader,
   Typography,
-  Link,
   CardContent,
 } from '@mui/material';
 
@@ -177,7 +177,7 @@ export function FsaTechnicianStatus() {
               No active technicians found
             </Typography>
           ) : (
-            technicians.map((technician) => (
+            technicians.map((technician: any) => (
               <Stack
                 key={technician.id}
                 direction="row"

@@ -24,3 +24,4 @@ export { CalendarEvent, type ICalendarEvent } from "./CalendarEvent";
 export { Material, type IMaterial } from "./Material";
 export { TaskMaterial, type ITaskMaterial } from "./TaskMaterial";
 export { Report, type IReport } from "./Report";
+export { WorkOrderTimeline, type IWorkOrderTimelineEntry } from "./WorkOrderTimeline";

@@ -12,10 +12,11 @@ import Alert from '@mui/material/Alert';
 import { useTheme } from '@mui/material/styles';
 import { iconButtonClasses } from '@mui/material/IconButton';
 
+import { useUserHeartbeat } from 'src/hooks/use-user-heartbeat';
+
 import { allLangs } from 'src/locales';
 import { ClientProvider } from 'src/contexts/client-context';
 import { ClientsPopover } from 'src/layouts/components/clients-popover';
-import { useUserHeartbeat } from 'src/hooks/use-user-heartbeat';
 
 import { Logo } from 'src/components/logo';
 import { useSettingsContext } from 'src/components/settings';

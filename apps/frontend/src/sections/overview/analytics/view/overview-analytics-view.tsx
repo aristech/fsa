@@ -1,30 +1,637 @@
 'use client';
 
+import useSWR from 'swr';
+import { useMemo } from 'react';
+
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 
 import { CONFIG } from 'src/global-config';
 import { DashboardContent } from 'src/layouts/dashboard';
-import {
-  _analyticPosts,
-  _analyticTasks,
-  _analyticTraffic,
-  _analyticOrderTimeline,
-} from 'src/_mock';
+import axiosInstance, { endpoints } from 'src/lib/axios';
 
-import { AnalyticsNews } from '../analytics-news';
-import { AnalyticsTasks } from '../analytics-tasks';
 import { AnalyticsCurrentVisits } from '../analytics-current-visits';
 import { AnalyticsOrderTimeline } from '../analytics-order-timeline';
 import { AnalyticsWebsiteVisits } from '../analytics-website-visits';
 import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
-import { AnalyticsTrafficBySite } from '../analytics-traffic-by-site';
 import { AnalyticsCurrentSubject } from '../analytics-current-subject';
 import { AnalyticsConversionRates } from '../analytics-conversion-rates';
 
 // ----------------------------------------------------------------------
 
+function startOfWeek(d: Date) {
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = (day + 6) % 7; // Monday as start
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() - diff);
+  return date;
+}
+
+function formatWeekLabel(d: Date) {
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  return `${d.getFullYear()}-${m.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+}
+
+// ----------------------------------------------------------------------
+
 export function OverviewAnalyticsView() {
+  // Personnel
+  const { data: personnelResp } = useSWR('/api/v1/personnel?limit=500', async (url: string) => {
+    const res = await axiosInstance.get(url);
+    return res.data?.data || [];
+  });
+  const personnel: any[] = Array.isArray(personnelResp) ? personnelResp : [];
+
+  // Kanban tasks
+  const { data: kanbanResp } = useSWR(endpoints.kanban, async (url: string) => {
+    const res = await axiosInstance.get(url);
+    return res.data?.data?.board || res.data?.board || null;
+  });
+  const tasks: any[] = Array.isArray(kanbanResp?.tasks) ? kanbanResp!.tasks : [];
+
+  // Work orders list (limited)
+  const { data: workOrdersResp } = useSWR('/api/v1/work-orders?limit=500&sort=-createdAt', async (url: string) => {
+    const res = await axiosInstance.get(url);
+    return res.data?.data?.workOrders || res.data?.data || [];
+  });
+  const workOrders: any[] = Array.isArray(workOrdersResp) ? workOrdersResp : [];
+
+  // Fetch timeline data for work orders
+  const workOrderIds = workOrders.slice(0, 10).map(wo => wo._id).filter(Boolean); // Get top 10 work orders
+  const { data: timelinesResp } = useSWR(
+    workOrderIds.length > 0 ? ['work-order-timelines', ...workOrderIds] : null,
+    async () => {
+      const results = await Promise.all(
+        workOrderIds.map(async (id) => {
+          try {
+            const res = await axiosInstance.get(`/api/v1/work-orders/${id}/timeline?limit=5`);
+            return {
+              workOrderId: id,
+              timeline: res.data?.data?.timeline || []
+            };
+          } catch {
+            return { workOrderId: id, timeline: [] };
+          }
+        })
+      );
+      return results;
+    }
+  );
+
+  // Notifications (for weekly messages count)
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const { data: notificationsResp } = useSWR('/api/v1/notifications?limit=200&sort=-createdAt', async (url: string) => {
+    try {
+      const res = await axiosInstance.get(url);
+      return res.data?.data || [];
+    } catch {
+      return [] as any[];
+    }
+  });
+  const notifications: any[] = Array.isArray(notificationsResp) ? notificationsResp : [];
+
+  // Time entries (for personnel radar) - stabilize since parameter
+  const sinceISO = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 60);
+    return d.toISOString();
+  }, []);
+  const { data: timeResp } = useSWR(
+    `/api/v1/time-entries?since=${encodeURIComponent(sinceISO)}`,
+    async (url: string) => {
+      try {
+        const res = await axiosInstance.get(url);
+        return res.data?.data || [];
+      } catch {
+        return [] as any[];
+      }
+    }
+  );
+  const timeEntries: any[] = Array.isArray(timeResp) ? timeResp : [];
+
+  // Maps
+  const personnelById = new Map<string, any>();
+  personnel.forEach((p) => personnelById.set(p._id, p));
+
+  // ----------------- Personnel performance (radar) -----------------
+  const agg = new Map<
+    string,
+    {
+      name: string;
+      tasksCompleted: number;
+      totalCompletionDays: number;
+      completedCount: number;
+      hoursLogged: number;
+      lateCount: number;
+      woSet: Set<string>;
+    }
+  >();
+  const upsert = (personId: string, name: string) => {
+    if (!agg.has(personId)) {
+      agg.set(personId, {
+        name,
+        tasksCompleted: 0,
+        totalCompletionDays: 0,
+        completedCount: 0,
+        hoursLogged: 0,
+        lateCount: 0,
+        woSet: new Set<string>(),
+      });
+    }
+    return agg.get(personId)!;
+  };
+  tasks.forEach((t: any) => {
+    // Handle different assignee field names and structures
+    let assignees: any[] = [];
+    if (Array.isArray(t.assignee)) {
+      assignees = t.assignee;
+    } else if (Array.isArray(t.assignees)) {
+      assignees = t.assignees;
+    } else if (Array.isArray(t.personnelIds)) {
+      assignees = t.personnelIds.map((id: string) => ({ id, _id: id }));
+    } else if (t.assignee) {
+      assignees = [t.assignee];
+    }
+
+    const createdAt = t.createdAt ? new Date(t.createdAt) : undefined;
+    const updatedAt = t.updatedAt ? new Date(t.updatedAt) : undefined;
+
+    // Handle different due date structures
+    let dueEnd: Date | undefined;
+    if (Array.isArray(t.due) && t.due[1]) {
+      dueEnd = new Date(t.due[1]);
+    } else if (t.dueDate) {
+      dueEnd = new Date(t.dueDate);
+    } else if (t.due && typeof t.due === 'string') {
+      dueEnd = new Date(t.due);
+    }
+
+    // Improved completion status detection
+    const isComplete = !!(
+      t.completeStatus ||
+      t.completed ||
+      String(t.status || '').toLowerCase().includes('done') ||
+      String(t.status || '').toLowerCase().includes('completed') ||
+      String(t.status || '').toLowerCase().includes('complete')
+    );
+
+    const workOrderId = t.workOrderId || t.workOrder;
+
+    assignees.forEach((a) => {
+      const personId = a.id || a._id || a;
+      if (!personId) return;
+
+      const personDoc = personnelById.get(personId);
+      let name = 'Personnel';
+
+      // Try multiple ways to get the person's name
+      if (a.name) {
+        name = a.name;
+      } else if (personDoc?.user) {
+        name = [personDoc.user.firstName, personDoc.user.lastName].filter(Boolean).join(' ') || 'Personnel';
+      } else if (personDoc?.firstName || personDoc?.lastName) {
+        name = [personDoc.firstName, personDoc.lastName].filter(Boolean).join(' ') || 'Personnel';
+      } else if (typeof a === 'string' && personDoc) {
+        name = [personDoc.firstName, personDoc.lastName].filter(Boolean).join(' ') || 'Personnel';
+      }
+
+      const m = upsert(personId, name);
+      if (workOrderId) m.woSet.add(String(workOrderId));
+
+      if (isComplete) {
+        m.tasksCompleted += 1;
+        if (createdAt && updatedAt) {
+          const days = Math.max(0, (updatedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+          m.totalCompletionDays += days;
+          m.completedCount += 1;
+        }
+        if (dueEnd && updatedAt && updatedAt.getTime() > dueEnd.getTime()) {
+          m.lateCount += 1;
+        }
+      }
+    });
+  });
+  timeEntries.forEach((te: any) => {
+    const pid = te.personnelId || te.userId || te.technicianId || te.personnel;
+    if (!pid) return;
+
+    const personDoc = personnelById.get(pid);
+    let name = 'Personnel';
+
+    // Try multiple ways to get the person's name from time entry and personnel doc
+    if (te.personnelName) {
+      name = te.personnelName;
+    } else if (personDoc?.user) {
+      name = [personDoc.user.firstName, personDoc.user.lastName].filter(Boolean).join(' ') || 'Personnel';
+    } else if (personDoc?.firstName || personDoc?.lastName) {
+      name = [personDoc.firstName, personDoc.lastName].filter(Boolean).join(' ') || 'Personnel';
+    }
+
+    const m = upsert(pid, name);
+
+    // Calculate duration from various possible fields
+    let durationMin = 0;
+    if (te.durationMinutes) {
+      durationMin = Number(te.durationMinutes) || 0;
+    } else if (te.minutes) {
+      durationMin = Number(te.minutes) || 0;
+    } else if (te.duration) {
+      durationMin = Number(te.duration) || 0;
+    } else if (te.end && te.start) {
+      const start = new Date(te.start);
+      const end = new Date(te.end);
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        durationMin = Math.max(0, (end.getTime() - start.getTime()) / 60000);
+      }
+    } else if (te.hours) {
+      durationMin = (Number(te.hours) || 0) * 60;
+    }
+
+    m.hoursLogged += durationMin / 60;
+  });
+  const rows = Array.from(agg.entries()).map(([id, v]) => {
+    const avgDays = v.completedCount > 0 ? v.totalCompletionDays / v.completedCount : 0;
+    const lateRatio = v.completedCount > 0 ? v.lateCount / v.completedCount : 0;
+    return {
+      id,
+      name: v.name,
+      tasksCompleted: v.tasksCompleted,
+      avgCompletionDays: Math.round(avgDays * 100) / 100, // Round to 2 decimals
+      hoursLogged: Math.round(v.hoursLogged * 100) / 100, // Round to 2 decimals
+      lateRatio: Math.round(lateRatio * 10000) / 100, // Convert to percentage and round to 2 decimals
+      woParticipations: v.woSet.size,
+    };
+  });
+
+  // Filter out personnel with no activity and sort by activity
+  const activeRows = rows.filter(r => r.tasksCompleted > 0 || r.hoursLogged > 0);
+  const top = activeRows
+    .sort((a, b) => {
+      // Primary sort: tasks completed
+      if (b.tasksCompleted !== a.tasksCompleted) {
+        return b.tasksCompleted - a.tasksCompleted;
+      }
+      // Secondary sort: hours logged
+      return b.hoursLogged - a.hoursLogged;
+    })
+    .slice(0, 6);
+
+  // Ensure unique series names to avoid legend key collisions
+  const uniqueNameById = (() => {
+    const counts = new Map<string, number>();
+    const mapping = new Map<string, string>();
+    top.forEach((r) => {
+      const base = r.name && r.name.trim() ? r.name.trim() : 'Personnel';
+      const c = counts.get(base) || 0;
+      counts.set(base, c + 1);
+      if (c === 0) {
+        mapping.set(r.id, base);
+      } else {
+        const suffix = String(r.id).slice(-4);
+        mapping.set(r.id, `${base} ${suffix}`);
+      }
+    });
+    return mapping;
+  })();
+
+  const categoriesRadar = ['Tasks Completed', 'Avg Completion Days', 'Hours Logged', 'Late Rate %', 'Work Orders'];
+  const tasksArr = top.map((r) => r.tasksCompleted);
+  const avgDaysArr = top.map((r) => r.avgCompletionDays);
+  const hoursArr = top.map((r) => r.hoursLogged);
+  const lateArr = top.map((r) => r.lateRatio);
+  const woArr = top.map((r) => r.woParticipations);
+
+  // Improve normalization with better handling of edge cases
+  const normalizeRadarData = (values: number[], invert = false) => {
+    if (values.length === 0) return [];
+    const capped = values.map((v) => (Number.isFinite(v) ? Math.max(0, v) : 0));
+    const min = Math.min(...capped);
+    const max = Math.max(...capped);
+
+    // If all values are the same, return middle values
+    if (max === min) return capped.map(() => max > 0 ? 80 : 20);
+
+    // Normalize to 10-100 range for better radar visualization
+    return capped.map((v) => {
+      const ratio = (v - min) / (max - min);
+      const normalized = Math.round(10 + (ratio * 90)); // Scale to 10-100
+      return invert ? 110 - normalized : normalized;
+    });
+  };
+
+  const seriesRadar = top.map((r, idx) => ({
+    name: uniqueNameById.get(r.id) || r.name || 'Personnel',
+    data: [
+      normalizeRadarData(tasksArr)[idx] || 10,
+      normalizeRadarData(avgDaysArr, true)[idx] || 10, // Inverted: lower days = better
+      normalizeRadarData(hoursArr)[idx] || 10,
+      normalizeRadarData(lateArr, true)[idx] || 10, // Inverted: lower late rate = better
+      normalizeRadarData(woArr)[idx] || 10,
+    ],
+  }));
+
+  // ----------------- Workload per client (pie) -----------------
+  const workloadByClient = workOrders.reduce((acc: Record<string, number>, wo: any) => {
+    const name = wo.clientName || wo.client?.name || (typeof wo.clientId === 'object' ? wo.clientId?.name : undefined) || 'Unknown client';
+    acc[name] = (acc[name] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const workloadEntries = Object.entries(workloadByClient).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const workloadSeries = workloadEntries.map(([label, value]) => ({ label, value }));
+  const workloadColors = useMemo(() => workloadEntries.map(() => `#${Math.floor(Math.random()*16777215).toString(16).padStart(6,'0')}`), [workloadEntries.length]);
+
+
+  // ----------------- Tasks created vs completed (line) -----------------
+  const now = new Date();
+  const weeks: Date[] = [];
+  const wStart = startOfWeek(now);
+  for (let i = 8; i >= 0; i -= 1) {
+    const d = new Date(wStart);
+    d.setDate(d.getDate() - i * 7);
+    weeks.push(d);
+  }
+  const categoriesLine = weeks.map((w) => formatWeekLabel(w));
+  const createdSeries = weeks.map((w) => {
+    const start = new Date(w);
+    const end = new Date(w);
+    end.setDate(end.getDate() + 7);
+    return tasks.filter((t: any) => {
+      const c = t.createdAt ? new Date(t.createdAt) : null;
+      return c && c >= start && c < end;
+    }).length;
+  });
+  const completedSeries = weeks.map((w) => {
+    const start = new Date(w);
+    const end = new Date(w);
+    end.setDate(end.getDate() + 7);
+    return tasks.filter((t: any) => {
+      const done = !!t.completeStatus || String(t.status || '').toLowerCase().includes('done');
+      const u = t.updatedAt ? new Date(t.updatedAt) : null;
+      return done && u && u >= start && u < end;
+    }).length;
+  });
+
+  // ----------------- Widget summaries (weekly) -----------------
+  const weekStart = startOfWeek(now);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+  const weeklyWorkOrders = workOrders.filter((wo) => {
+    const c = wo.createdAt ? new Date(wo.createdAt) : null;
+    return c && c >= weekStart && c < weekEnd;
+  }).length;
+  const weeklyNewPersonnel = personnel.filter((p: any) => {
+    const c = p.createdAt ? new Date(p.createdAt) : null;
+    return c && c >= weekStart && c < weekEnd;
+  }).length;
+  const weeklyTasksCompleted = tasks.filter((t: any) => {
+    const done = !!t.completeStatus || String(t.status || '').toLowerCase().includes('done');
+    const u = t.updatedAt ? new Date(t.updatedAt) : null;
+    return done && u && u >= weekStart && u < weekEnd;
+  }).length;
+  const weeklyNotifications = notifications.filter((n: any) => {
+    const c = n.createdAt ? new Date(n.createdAt) : null;
+    return c && c >= weekStart && c < weekEnd;
+  }).length;
+
+  // ----------------- On-time completion by client (bar) -----------------
+  const byClient: Record<string, { ontime: number; total: number }> = {};
+  tasks.forEach((t: any) => {
+    const clientName = (t as any).clientName || (t as any).clientCompany || 'Unknown';
+    const done = !!t.completeStatus || String(t.status || '').toLowerCase().includes('done');
+    if (!done) return;
+    const dueEnd = Array.isArray(t.due) ? (t.due[1] ? new Date(t.due[1]) : undefined) : undefined;
+    const u = t.updatedAt ? new Date(t.updatedAt) : undefined;
+    if (!byClient[clientName]) byClient[clientName] = { ontime: 0, total: 0 };
+    byClient[clientName].total += 1;
+    if (dueEnd && u && u.getTime() <= dueEnd.getTime()) byClient[clientName].ontime += 1;
+  });
+
+  // Prepare names per week for tooltip meta
+  const createdNamesByWeek = useMemo(() => weeks.map((w) => {
+      const start = new Date(w);
+      const end = new Date(w);
+      end.setDate(end.getDate() + 7);
+      return tasks
+        .filter((t: any) => {
+          const c = t.createdAt ? new Date(t.createdAt) : null;
+          return c && c >= start && c < end;
+        })
+        .map((t: any) => t.name || t.title || 'Untitled task');
+    }), [weeks, tasks]);
+
+  const completedNamesByWeek = useMemo(() => weeks.map((w) => {
+      const start = new Date(w);
+      const end = new Date(w);
+      end.setDate(end.getDate() + 7);
+      return tasks
+        .filter((t: any) => {
+          const done = !!t.completeStatus || String(t.status || '').toLowerCase().includes('done');
+          const u = t.updatedAt ? new Date(t.updatedAt) : null;
+          return done && u && u >= start && u < end;
+        })
+        .map((t: any) => t.name || t.title || 'Untitled task');
+    }), [weeks, tasks]);
+
+  // Compute taskIds (limit to 500 to avoid overload)
+  const taskIds = useMemo(() => {
+    const ids = (Array.isArray(tasks) ? tasks : [])
+      .map((t: any) => t.id || t._id)
+      .filter(Boolean) as string[];
+    return ids.slice(0, 500);
+  }, [tasks]);
+
+  // Fetch subtask counts per taskId in parallel
+  const { data: subtaskCountsResp } = useSWR(
+    taskIds.length ? ['subtask-counts', ...taskIds] : null,
+    async () => {
+      const results = await Promise.all(
+        taskIds.map(async (id) => {
+          try {
+            const res = await axiosInstance.get(`/api/v1/subtasks/${id}`);
+            const arr = res.data?.data || res.data || [];
+            const count = Array.isArray(arr) ? arr.length : 0;
+            return { id, count };
+          } catch {
+            return { id, count: 0 };
+          }
+        })
+      );
+      return results.reduce((acc, { id, count }) => {
+        acc[id] = count;
+        return acc;
+      }, {} as Record<string, number>);
+    }
+  );
+
+  const subtaskCountByTask = useMemo(() => {
+    const map = new Map<string, number>();
+    const obj = subtaskCountsResp || {};
+    Object.entries(obj).forEach(([id, count]) => map.set(id, Number(count) || 0));
+    return map;
+  }, [subtaskCountsResp]);
+
+  // Top clients by workload
+
+
+  // ----------------- Tasks & Subtasks per Client -----------------
+  const clientAgg = useMemo(() => {
+    const clientMap = new Map<string, { tasks: number; subtasks: number }>();
+    (tasks || []).forEach((t: any) => {
+      const clientName = (t as any).clientName || (t as any).clientCompany || 'Unknown client';
+      if (!clientMap.has(clientName)) clientMap.set(clientName, { tasks: 0, subtasks: 0 });
+      const entry = clientMap.get(clientName)!;
+      entry.tasks += 1;
+      entry.subtasks += subtaskCountByTask.get(String(t.id || t._id)) || 0;
+    });
+    return clientMap;
+  }, [tasks, subtaskCountByTask]);
+
+  const topClientAgg = useMemo(() => Array.from(clientAgg.entries())
+      .sort((a, b) => b[1].tasks - a[1].tasks)
+      .slice(0, 6), [clientAgg]);
+
+  const categoriesClients = topClientAgg.map(([name]) => name);
+  const seriesClients = [
+    { name: 'Tasks', data: topClientAgg.map(([, v]) => v.tasks) },
+    { name: 'Subtasks', data: topClientAgg.map(([, v]) => v.subtasks) },
+  ];
+
+
+  // ----------------- Work Order Timeline (Combined) -----------------
+  const workOrderTimeline = useMemo(() => {
+    if (!timelinesResp || !workOrders.length) {
+      return {
+        entries: [],
+        colors: new Map()
+      };
+    }
+
+    // Create a map of work orders for easy lookup
+    const workOrderMap = new Map();
+    workOrders.forEach(wo => {
+      workOrderMap.set(wo._id, wo);
+    });
+
+    // Generate consistent colors for each work order
+    const workOrderColors = new Map();
+    const generateColor = (index: number) => {
+      const hue = (index * 137.508) % 360; // Golden angle approximation
+      return `hsl(${hue}, 70%, 55%)`;
+    };
+
+    let colorIndex = 0;
+    workOrders.slice(0, 10).forEach(wo => {
+      workOrderColors.set(wo.title || wo.workOrderNumber || wo._id, generateColor(colorIndex++));
+    });
+
+    // Combine all timeline entries
+    const allEntries: Array<{
+      id: string;
+      type: string;
+      title: string;
+      time: string;
+    }> = [];
+
+    timelinesResp.forEach(({ workOrderId, timeline }) => {
+      const workOrder = workOrderMap.get(workOrderId);
+      if (!workOrder) return;
+
+      timeline.forEach((entry: any) => {
+        allEntries.push({
+          id: entry._id,
+          type: workOrder.title || workOrder.workOrderNumber || workOrderId, // Use work order title as type to map to colors
+          title: `${workOrder.title || workOrder.workOrderNumber || 'Work Order'}: ${entry.title}`,
+          time: entry.timestamp
+        });
+      });
+    });
+
+    // Sort by timestamp (newest first)
+    allEntries.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
+    return {
+      entries: allEntries.slice(0, 20), // Limit to 20 most recent entries
+      colors: workOrderColors
+    };
+  }, [timelinesResp, workOrders]);
+
+  // ----------------- Work Orders Estimated vs Actual -----------------
+  // Pick top 10 recent work orders (we already fetched workOrders)
+  const top10WO = useMemo(() => {
+    const arr = Array.isArray(workOrders) ? workOrders : [];
+    return arr.slice(0, 10);
+  }, [workOrders]);
+
+  // Fetch details per WO to ensure estimatedDuration/actualDuration
+  const woIds = top10WO.map((wo: any) => wo._id || wo.id).filter(Boolean) as string[];
+  const { data: woDetailsMap } = useSWR(
+    woIds.length ? ['wo-details', ...woIds] : null,
+    async () => {
+      const results = await Promise.all(
+        woIds.map(async (id) => {
+          try {
+            const res = await axiosInstance.get(endpoints.fsa.workOrders.details(id));
+            return { id, data: res.data?.data || res.data };
+          } catch {
+            return { id, data: null };
+          }
+        })
+      );
+      const map: Record<string, any> = {};
+      results.forEach(({ id, data }) => {
+        map[id] = data || null;
+      });
+      return map;
+    }
+  );
+
+  const woDurCategories = useMemo(() => top10WO.map((wo: any) => wo.title || wo.workOrderNumber || (wo._id || '').slice(-6)), [top10WO]);
+
+  const { estSeries, actSeries } = useMemo(() => {
+    const est: number[] = [];
+    const act: number[] = [];
+
+    top10WO.forEach((wo: any) => {
+      const id = wo._id || wo.id;
+      const details = woDetailsMap?.[id] || wo;
+
+      // Parse estimatedDuration object: {value: 10, unit: "hours"}
+      let estHours = 0;
+      const estimatedDuration = (details as any)?.estimatedDuration;
+      if (estimatedDuration && typeof estimatedDuration === 'object') {
+        const value = Number(estimatedDuration.value) || 0;
+        const unit = estimatedDuration.unit || 'minutes';
+
+        // Convert to hours based on unit
+        if (unit === 'hours') {
+          estHours = value;
+        } else if (unit === 'minutes') {
+          estHours = value / 60;
+        } else if (unit === 'days') {
+          estHours = value * 24;
+        } else {
+          // Default to minutes if unknown unit
+          estHours = value / 60;
+        }
+      } else if (typeof estimatedDuration === 'number') {
+        // Fallback for direct number (assume minutes)
+        estHours = estimatedDuration / 60;
+      }
+
+      // Parse actualDuration (should be in minutes)
+      const actMin = (details as any)?.actualDuration ?? 0;
+      const actHours = (Number(actMin) || 0) / 60;
+
+      // Round to one decimal place
+      est.push(Math.round(estHours * 10) / 10);
+      act.push(Math.round(actHours * 10) / 10);
+    });
+    return { estSeries: est, actSeries: act };
+  }, [top10WO, woDetailsMap]);
+
   return (
     <DashboardContent maxWidth="xl">
       <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 } }}>
@@ -34,150 +641,229 @@ export function OverviewAnalyticsView() {
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <AnalyticsWidgetSummary
-            title="Weekly sales"
-            percent={2.6}
-            total={714000}
+            title="Work orders (this week)"
+            percent={0}
+            total={weeklyWorkOrders}
             icon={
               <img
-                alt="Weekly sales"
+                alt="Work orders"
                 src={`${CONFIG.assetsDir}/assets/icons/glass/ic-glass-bag.svg`}
               />
             }
             chart={{
-              categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-              series: [22, 8, 35, 50, 82, 84, 77, 12],
+              categories: categoriesLine,
+              series: createdSeries,
             }}
           />
         </Grid>
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <AnalyticsWidgetSummary
-            title="New users"
-            percent={-0.1}
-            total={1352831}
+            title="New personnel (this week)"
+            percent={0}
+            total={weeklyNewPersonnel}
             color="secondary"
             icon={
               <img
-                alt="New users"
+                alt="New personnel"
                 src={`${CONFIG.assetsDir}/assets/icons/glass/ic-glass-users.svg`}
               />
             }
             chart={{
-              categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-              series: [56, 47, 40, 62, 73, 30, 23, 54],
+              categories: categoriesLine,
+              series: createdSeries,
             }}
           />
         </Grid>
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <AnalyticsWidgetSummary
-            title="Purchase orders"
-            percent={2.8}
-            total={1723315}
+            title="Tasks completed (this week)"
+            percent={0}
+            total={weeklyTasksCompleted}
             color="warning"
             icon={
               <img
-                alt="Purchase orders"
+                alt="Tasks completed"
                 src={`${CONFIG.assetsDir}/assets/icons/glass/ic-glass-buy.svg`}
               />
             }
             chart={{
-              categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-              series: [40, 70, 50, 28, 70, 75, 7, 64],
+              categories: categoriesLine,
+              series: completedSeries,
             }}
           />
         </Grid>
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <AnalyticsWidgetSummary
-            title="Messages"
-            percent={3.6}
-            total={234}
+            title="Notifications (this week)"
+            percent={0}
+            total={weeklyNotifications}
             color="error"
             icon={
               <img
-                alt="Messages"
+                alt="Notifications"
                 src={`${CONFIG.assetsDir}/assets/icons/glass/ic-glass-message.svg`}
               />
             }
             chart={{
-              categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-              series: [56, 30, 23, 54, 47, 40, 62, 73],
+              categories: categoriesLine,
+              series: createdSeries,
             }}
           />
         </Grid>
 
         <Grid size={{ xs: 12, md: 6, lg: 4 }}>
           <AnalyticsCurrentVisits
-            title="Current visits"
+            title="Client workload (work orders)"
             chart={{
-              series: [
-                { label: 'America', value: 3500 },
-                { label: 'Asia', value: 2500 },
-                { label: 'Europe', value: 1500 },
-                { label: 'Africa', value: 500 },
-              ],
+              series: workloadSeries,
+              colors: workloadColors,
+              options: {
+                tooltip: {
+                  y: {
+                    formatter: (val: number) => `${val} work orders`,
+                  },
+                },
+              },
             }}
           />
         </Grid>
 
         <Grid size={{ xs: 12, md: 6, lg: 8 }}>
           <AnalyticsWebsiteVisits
-            title="Website visits"
-            subheader="(+43%) than last year"
+            title="Tasks created vs completed"
+            subheader="Last 9 weeks"
             chart={{
-              categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
+              categories: categoriesLine,
               series: [
-                { name: 'Team A', data: [43, 33, 22, 37, 67, 68, 37, 24, 55] },
-                { name: 'Team B', data: [51, 70, 47, 67, 40, 37, 24, 70, 24] },
+                { name: 'Created', data: createdSeries },
+                { name: 'Completed', data: completedSeries },
               ],
+              options: {
+                meta: {
+                  createdTaskNames: createdNamesByWeek,
+                  completedTaskNames: completedNamesByWeek,
+                },
+              },
             }}
           />
         </Grid>
 
+        {/* Replace conversion card with tasks/subtasks buckets */}
         <Grid size={{ xs: 12, md: 6, lg: 8 }}>
           <AnalyticsConversionRates
-            title="Conversion rates"
-            subheader="(+43%) than last year"
+            title="Tasks and subtasks per client"
+            subheader="Top clients by task count"
             chart={{
-              categories: ['Italy', 'Japan', 'China', 'Canada', 'France'],
-              series: [
-                { name: '2022', data: [44, 55, 41, 64, 22] },
-                { name: '2023', data: [53, 32, 33, 52, 13] },
-              ],
+              categories: categoriesClients,
+              series: seriesClients,
+              colors: ['#4dabf5', '#f6c343'],
+              options: {
+                chart: { stacked: false },
+                plotOptions: { bar: { horizontal: true } },
+                tooltip: { shared: true, intersect: false },
+              },
             }}
           />
         </Grid>
 
         <Grid size={{ xs: 12, md: 6, lg: 4 }}>
           <AnalyticsCurrentSubject
-            title="Current subject"
+            title="Personnel performance"
             chart={{
-              categories: ['English', 'History', 'Physics', 'Geography', 'Chinese', 'Math'],
-              series: [
-                { name: 'Series 1', data: [80, 50, 30, 40, 100, 20] },
-                { name: 'Series 2', data: [20, 30, 40, 80, 20, 80] },
-                { name: 'Series 3', data: [44, 76, 78, 13, 43, 10] },
-              ],
+              categories: categoriesRadar,
+              series: seriesRadar,
             }}
           />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6, lg: 8 }}>
-          <AnalyticsNews title="News" list={_analyticPosts} />
+       {/* Work Orders Estimated vs Actual */}
+        <Grid size={{ xs: 12, md: 12, lg: 8 }}>
+          <AnalyticsWebsiteVisits
+            title="Work Orders — Estimated vs Actual Duration"
+            subheader="Comparison of planned vs actual hours for recent work orders"
+            chart={{
+              categories: woDurCategories,
+              series: [
+                { name: 'Estimated (h)', data: estSeries },
+                { name: 'Actual (h)', data: actSeries },
+              ],
+              colors: ['#4caf50', '#f44336'], // Green for estimated, Red for actual
+              options: {
+                chart: {
+                  type: 'bar',
+                  stacked: false,
+                },
+                fill: {
+                  colors: ['#4caf50', '#f44336'], // Base colors
+                  type: 'solid',
+                },
+                plotOptions: {
+                  bar: {
+                    horizontal: true,
+                    barHeight: '70%',
+                    dataLabels: {
+                      position: 'center',
+                    },
+                    borderRadius: 4,
+                  },
+                },
+                dataLabels: {
+                  enabled: true,
+                  style: {
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    colors: ['#fff'],
+                  },
+                  formatter: (val: number) => `${val}h`,
+                },
+                tooltip: {
+                  shared: true,
+                  intersect: false,
+                  x: {
+                    show: true,
+                    formatter: (_val: number, opts: any) => {
+                      const categoryIndex = opts.dataPointIndex;
+                      return woDurCategories[categoryIndex] || `Work Order ${categoryIndex + 1}`;
+                    },
+                  },
+                  y: {
+                    formatter: (val: number) => `${val} hours`,
+                  },
+                },
+                legend: {
+                  position: 'top',
+                  horizontalAlign: 'right',
+                },
+                xaxis: {
+                  title: {
+                    text: 'Hours',
+                  },
+                },
+                yaxis: {
+                  title: {
+                    text: 'Work Orders',
+                  },
+                },
+              },
+            }}
+          />
         </Grid>
 
         <Grid size={{ xs: 12, md: 6, lg: 4 }}>
-          <AnalyticsOrderTimeline title="Order timeline" list={_analyticOrderTimeline} />
+          <AnalyticsOrderTimeline
+            title="Work Order timeline"
+            subheader="Latest updates across all work orders"
+            list={workOrderTimeline.entries || []}
+            colorMap={workOrderTimeline.colors}
+          />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6, lg: 4 }}>
-          <AnalyticsTrafficBySite title="Traffic by site" list={_analyticTraffic} />
-        </Grid>
+     
 
-        <Grid size={{ xs: 12, md: 6, lg: 8 }}>
-          <AnalyticsTasks title="Tasks" list={_analyticTasks} />
-        </Grid>
+       
       </Grid>
     </DashboardContent>
   );

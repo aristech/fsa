@@ -6,9 +6,9 @@ import { Container, Typography } from '@mui/material';
 import { useTenant } from 'src/hooks/use-tenant';
 
 import { FsaStatsCards } from '../fsa-stats-cards';
+import { FsaRecentTasks } from '../fsa-recent-tasks';
 import { FsaTechnicianStatus } from '../fsa-technician-status';
 import { FsaRecentWorkOrders } from '../fsa-recent-work-orders';
-import { FsaRecentTasks } from '../fsa-recent-tasks';
 
 // ----------------------------------------------------------------------
 

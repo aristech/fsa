@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useMemo, useState, useEffect } from 'react';
 
-import { Box, Card, Typography, CardContent, Avatar, AvatarGroup, Chip, Stack } from '@mui/material';
+import { Box, Card, Chip, Stack, Avatar, Typography, CardContent, AvatarGroup } from '@mui/material';
+
+import axios, { endpoints } from 'src/lib/axios';
 
 import { Iconify } from 'src/components/iconify';
 import { MobileCard, MobileButton } from 'src/components/mobile';
-import axios, { endpoints } from 'src/lib/axios';
+
 import { useAuthContext } from 'src/auth/hooks/use-auth-context';
 
 export default function FieldDashboard() {
@@ -19,7 +21,7 @@ export default function FieldDashboard() {
   const [materials, setMaterials] = useState<any[]>([]);
 
   useEffect(() => {
-    if (!authenticated) return;
+    if (!authenticated) return undefined;
 
     let active = true;
     const load = async () => {
@@ -35,7 +37,7 @@ export default function FieldDashboard() {
         setMaterials(
           Array.isArray(materialsRes.data?.data) ? materialsRes.data.data : materialsRes.data || []
         );
-      } catch (e) {
+      } catch (_e) {
         // Soft-fail to empty lists
         setTasks([]);
         setMaterials([]);
@@ -74,8 +76,7 @@ export default function FieldDashboard() {
     }
   };
 
-  const upcomingTasks = useMemo(() => {
-    return tasks.slice(0, 5).map((t) => {
+  const upcomingTasks = useMemo(() => tasks.slice(0, 5).map((t) => {
       const start = Array.isArray(t.due) ? t.due[0] : undefined;
       const end = Array.isArray(t.due) ? t.due[1] : undefined;
       const attachmentsCount = Array.isArray(t.attachments) ? t.attachments.length : 0;
@@ -97,11 +98,9 @@ export default function FieldDashboard() {
         assignees: Array.isArray(t.assignee) ? t.assignee : [],
         completeStatus: !!t.completeStatus,
       };
-    });
-  }, [tasks]);
+    }), [tasks]);
 
-  const lowStockMaterials = useMemo(() => {
-    return materials
+  const lowStockMaterials = useMemo(() => materials
       .filter((m) => (m.quantity ?? 0) <= (m.minimumStock ?? m.minimum_stock ?? 0))
       .slice(0, 5)
       .map((m) => ({
@@ -112,8 +111,7 @@ export default function FieldDashboard() {
         quantity: m.quantity ?? 0,
         minimumStock: m.minimumStock ?? m.minimum_stock ?? 0,
         location: m.location || '—',
-      }));
-  }, [materials]);
+      })), [materials]);
 
   if (loading) {
     return <Box sx={{ p: 3 }} />;

@@ -10,6 +10,7 @@ import { Personnel, type IPersonnel } from "../models/Personnel";
 import { normalizeHoursDays, computeLaborCost } from "../utils/time";
 import { realtimeService } from "../services/realtime-service";
 import { NotificationService } from "../services/notification-service";
+import { WorkOrderTimelineService } from "../services/work-order-timeline-service";
 
 // Helper function to check if a user can access time entries for a specific task
 async function canUserAccessTaskTimeEntry(
@@ -346,6 +347,37 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
       });
 
       await recalcAggregates(tenantId, body.taskId, body.workOrderId);
+
+      // Log timeline entry for time tracking if work order is linked
+      if (body.workOrderId) {
+        try {
+          const task = await Task.findById(body.taskId);
+          const personnel = await Personnel.findById(personnelId).populate('userId', 'firstName lastName');
+
+          const personnelName = personnel?.userId
+            ? `${personnel.userId.firstName} ${personnel.userId.lastName}`.trim()
+            : personnel?.employeeId || 'Unknown';
+
+          await WorkOrderTimelineService.addTimelineEntry({
+            workOrderId: body.workOrderId,
+            entityType: 'task',
+            entityId: body.taskId,
+            eventType: 'updated',
+            title: `${personnelName} logged ${hours} hours on task "${task?.title || 'Unknown'}"`,
+            metadata: {
+              taskTitle: task?.title,
+              taskId: body.taskId,
+              hoursLogged: hours,
+              personnelName: personnelName,
+              notes: body.notes
+            },
+            userId: user.id,
+            tenantId: tenantId,
+          });
+        } catch (error) {
+          console.error('Error adding timeline entry for time entry:', error);
+        }
+      }
 
       // Send notification to task reporter about time entry
       try {

@@ -19,7 +19,12 @@ type Props = CardProps & {
       name: string;
       data: number[];
     }[];
-    options?: ChartOptions;
+    options?: ChartOptions & {
+      meta?: {
+        createdTaskNames?: string[][]; // parallel to categories, per index an array of task names
+        completedTaskNames?: string[][];
+      };
+    };
   };
 };
 
@@ -31,12 +36,23 @@ export function AnalyticsWebsiteVisits({ title, subheader, chart, sx, ...other }
     hexAlpha(theme.palette.warning.main, 0.8),
   ];
 
+  const meta = (chart.options as any)?.meta || {};
+
   const chartOptions = useChart({
     colors: chartColors,
     stroke: { width: 2, colors: ['transparent'] },
     xaxis: { categories: chart.categories },
     legend: { show: true },
-    tooltip: { y: { formatter: (value: number) => `${value} visits` } },
+    tooltip: {
+      y: {
+        formatter: (value: number, { seriesIndex, dataPointIndex }: any) => {
+          const names = seriesIndex === 0 ? meta.createdTaskNames?.[dataPointIndex] : meta.completedTaskNames?.[dataPointIndex];
+          const list = Array.isArray(names) && names.length > 0 ? `\n- ${names.slice(0, 5).join('\n- ')}${names.length > 5 ? '\n…' : ''}` : '';
+          const label = seriesIndex === 0 ? 'created' : 'completed';
+          return `${value} ${label}${list ? `:${list}` : ''}`;
+        },
+      },
+    },
     ...chart.options,
   });
 

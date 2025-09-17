@@ -68,7 +68,7 @@ interface NotificationCounts {
 }
 
 export default function FieldNotificationsPage() {
-  const theme = useTheme();
+  const _theme = useTheme();
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [counts, setCounts] = useState<NotificationCounts>({

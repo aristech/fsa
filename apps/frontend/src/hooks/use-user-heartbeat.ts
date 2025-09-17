@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useRef, useEffect } from 'react';
 
 import axios, { endpoints } from 'src/lib/axios';
 

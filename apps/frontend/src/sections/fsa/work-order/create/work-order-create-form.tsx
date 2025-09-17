@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { CustomBreadcrumbs } from '@/components/custom-breadcrumbs';
 
 import {
   Box,
@@ -267,14 +268,30 @@ export function WorkOrderCreateForm({ id }: Props) {
 
   return (
     <Form methods={methods} onSubmit={handleSubmit(onSubmit)}>
+      
       <Card>
         <CardContent>
           <Stack spacing={3}>
             {/* Basic Information */}
             <Stack spacing={3}>
-              <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 600 }}>
-                Work Order Details
-              </Typography>
+              <CustomBreadcrumbs
+        heading={id ? 'Work Order Edit' : 'Work Order Create'}
+        links={[
+          { name: 'Dashboard', href: '/dashboard' },
+          { name: 'Work Orders', href: '/dashboard/work-orders' },
+          ...(id ? [{ name: 'Work Order Edit' }] : []),
+        ]}
+        sx={{ mb: 5 }}
+        action={
+          id && (
+             <Button variant="contained" startIcon={<Iconify icon="eva:eye-fill" />}
+            href={`${paths.dashboard.fsa.workOrders.details(id)}`}
+            >
+              View
+            </Button>
+          )}
+        
+      />
 
               <Grid container spacing={3}>
                 <Grid size={{ xs: 12, md: 6 }}>

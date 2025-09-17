@@ -60,7 +60,7 @@ export function OrderDetailsView({ order }: Props) {
               totalAmount={order?.totalAmount}
             />
 
-            <OrderDetailsHistory history={order?.history} />
+            <OrderDetailsHistory workOrderId={order?.id || ''} />
           </Box>
         </Grid>
 

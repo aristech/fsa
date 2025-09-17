@@ -247,7 +247,7 @@ export function MobileCard({
   children,
   ...props
 }: MobileCardProps) {
-  const theme = useTheme();
+  const _theme = useTheme();
   const cardRef = useRef<HTMLDivElement>(null);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [startX, setStartX] = useState(0);

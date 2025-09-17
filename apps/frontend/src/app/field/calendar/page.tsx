@@ -129,7 +129,7 @@ export default function FieldCalendarPage() {
  
 
     // Debug: Check which tasks have due dates
-    const tasksWithDates = allTasks.filter(
+    const _tasksWithDates = allTasks.filter(
       (task) => task.due && Array.isArray(task.due) && task.due.length >= 2
     );
   

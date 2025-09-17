@@ -9,8 +9,8 @@ import { Card, Stack, Skeleton, Typography, CardContent } from '@mui/material';
 
 import { fNumber } from 'src/utils/format-number';
 
-import axiosInstance, { endpoints } from 'src/lib/axios';
 import { useClient } from 'src/contexts/client-context';
+import axiosInstance, { endpoints } from 'src/lib/axios';
 
 import { Iconify } from 'src/components/iconify';
 
@@ -61,7 +61,7 @@ export function FsaStatsCards() {
       try {
         const response = await axiosInstance.get(url);
         return response.data;
-      } catch (error) {
+      } catch (_error) {
         // Fallback if endpoint doesn't exist - use active sessions as proxy for online status
         console.log('Online users endpoint not available, falling back to active sessions');
         return { data: [] };

@@ -26,12 +26,14 @@ import {
 
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
+import { Editor } from 'src/components/editor';
 import { Iconify } from 'src/components/iconify';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
+import { AnalyticsOrderTimeline } from 'src/sections/overview/analytics/analytics-order-timeline';
+
 import { WorkOrderDetailsAttachments } from './work-order-details-attachments';
 import { WorkOrderPersonnelSelection } from '../create/work-order-personnel-selection';
-import { Editor } from 'src/components/editor';
 
 // ----------------------------------------------------------------------
 
@@ -77,6 +79,36 @@ const getPriorityColor = (priority: string) => {
 
 // ----------------------------------------------------------------------
 
+const getTimelineType = (eventType: string, entityType: string) => {
+  // Map timeline events to the color types expected by AnalyticsOrderTimeline
+  if (entityType === 'work_order') {
+    switch (eventType) {
+      case 'created':
+        return 'order1'; // primary
+      case 'completed':
+        return 'order2'; // success
+      case 'assigned':
+        return 'order3'; // info
+      case 'status_changed':
+        return 'order4'; // warning
+      default:
+        return 'order1';
+    }
+  } else {
+    // Task events
+    switch (eventType) {
+      case 'created':
+        return 'order3'; // info
+      case 'completed':
+        return 'order2'; // success
+      case 'status_changed':
+        return 'order4'; // warning
+      default:
+        return 'order1';
+    }
+  }
+};
+
 export function WorkOrderDetails({ id }: Props) {
   // Fetch work order data
   const { data: detailsRes } = useSWR(
@@ -91,6 +123,22 @@ export function WorkOrderDetails({ id }: Props) {
     (url: string) => axiosInstance.get(url).then((r) => r.data),
     { revalidateOnFocus: true }
   );
+
+  // Fetch timeline data
+  const { data: timelineRes } = useSWR(
+    `/api/v1/work-orders/${id}/timeline`,
+    (url: string) => axiosInstance.get(url).then((r) => r.data),
+    { revalidateOnFocus: true }
+  );
+
+  // Transform timeline data for AnalyticsOrderTimeline component
+  const timelineList = timelineRes?.data?.timeline?.map((entry: any) => ({
+    id: entry._id,
+    type: getTimelineType(entry.eventType, entry.entityType),
+    title: entry.title,
+    time: entry.timestamp,
+  })) || [];
+
   const summary = summaryRes?.data as
     | {
         progressMode?: 'computed' | 'manual' | 'weighted';
@@ -110,11 +158,11 @@ export function WorkOrderDetails({ id }: Props) {
   return (
     <>
       <CustomBreadcrumbs
-        heading={workOrder?.workOrderNumber || 'Work Order'}
+        heading={workOrder?.title || workOrder?.workOrderNumber || 'Work Order'}
         links={[
           { name: 'Dashboard', href: '/dashboard' },
           { name: 'Work Orders', href: '/dashboard/work-orders' },
-          ...(workOrder?.workOrderNumber ? [{ name: workOrder.workOrderNumber }] : []),
+          ...(workOrder?.title || workOrder?.workOrderNumber ? [{ name: workOrder?.title || workOrder?.workOrderNumber }] : []),
         ]}
         action={
           <Stack direction="row" spacing={1}>
@@ -125,9 +173,7 @@ export function WorkOrderDetails({ id }: Props) {
             >
               Edit
             </Button>
-            <Button variant="contained" startIcon={<Iconify icon="eva:checkmark-fill" />}>
-              Complete
-            </Button>
+           
           </Stack>
         }
         sx={{ mb: 5 }}
@@ -424,42 +470,12 @@ export function WorkOrderDetails({ id }: Props) {
               </CardContent>
             </Card>
 
-            {/* Work Order History */}
-            <Card>
-              <CardContent>
-                <Stack spacing={2}>
-                  <Typography variant="h6">History</Typography>
-                  <Stack spacing={2}>
-                    {Array.isArray(workOrder?.history) &&
-                      workOrder.history.map((entry: any, index: number) => (
-                        <Stack key={index} spacing={0.5}>
-                          <Stack direction="row" alignItems="center" spacing={1}>
-                            <Chip
-                              label={entry.status}
-                              color={getStatusColor(entry.status)}
-                              variant="soft"
-                              size="small"
-                            />
-                            <Typography variant="caption" color="text.secondary">
-                              {entry.timestamp ? fDateTime(entry.timestamp) : ''}
-                            </Typography>
-                          </Stack>
-                          {entry.userId && (
-                            <Typography variant="body2" color="text.secondary">
-                              {entry.userId}
-                            </Typography>
-                          )}
-                          {entry.notes && (
-                            <Typography variant="caption" color="text.secondary">
-                              {entry.notes}
-                            </Typography>
-                          )}
-                        </Stack>
-                      ))}
-                  </Stack>
-                </Stack>
-              </CardContent>
-            </Card>
+            {/* Work Order Timeline */}
+            <AnalyticsOrderTimeline
+              title="Timeline"
+              subheader="Track all changes to this work order and related tasks"
+              list={timelineList}
+            />
           </Stack>
         </Grid>
       </Grid>

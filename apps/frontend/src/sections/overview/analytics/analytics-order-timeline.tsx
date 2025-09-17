@@ -25,9 +25,10 @@ type Props = CardProps & {
     title: string;
     time: IDateValue;
   }[];
+  colorMap?: Map<string, string>; // Map work order ID to color
 };
 
-export function AnalyticsOrderTimeline({ title, subheader, list, sx, ...other }: Props) {
+export function AnalyticsOrderTimeline({ title, subheader, list, colorMap, sx, ...other }: Props) {
   return (
     <Card sx={sx} {...other}>
       <CardHeader title={title} subheader={subheader} />
@@ -40,7 +41,12 @@ export function AnalyticsOrderTimeline({ title, subheader, list, sx, ...other }:
         }}
       >
         {list.map((item, index) => (
-          <Item key={item.id} item={item} lastItem={index === list.length - 1} />
+          <Item
+            key={item.id}
+            item={item}
+            lastItem={index === list.length - 1}
+            colorMap={colorMap}
+          />
         ))}
       </Timeline>
     </Card>
@@ -52,20 +58,31 @@ export function AnalyticsOrderTimeline({ title, subheader, list, sx, ...other }:
 type ItemProps = TimelineItemProps & {
   lastItem: boolean;
   item: Props['list'][number];
+  colorMap?: Map<string, string>;
 };
 
-function Item({ item, lastItem, ...other }: ItemProps) {
+function Item({ item, lastItem, colorMap, ...other }: ItemProps) {
+  // Get custom color from colorMap if available, otherwise use default colors
+  const customColor = colorMap?.get(item.type);
+
   return (
     <TimelineItem {...other}>
       <TimelineSeparator>
         <TimelineDot
           color={
-            (item.type === 'order1' && 'primary') ||
-            (item.type === 'order2' && 'success') ||
-            (item.type === 'order3' && 'info') ||
-            (item.type === 'order4' && 'warning') ||
-            'error'
+            customColor ? undefined : (
+              (item.type === 'order1' && 'primary') ||
+              (item.type === 'order2' && 'success') ||
+              (item.type === 'order3' && 'info') ||
+              (item.type === 'order4' && 'warning') ||
+              'error'
+            )
           }
+          sx={customColor ? {
+            backgroundColor: customColor,
+            color: 'white',
+            border: `2px solid ${customColor}33` // Add transparency for border
+          } : undefined}
         />
         {lastItem ? null : <TimelineConnector />}
       </TimelineSeparator>

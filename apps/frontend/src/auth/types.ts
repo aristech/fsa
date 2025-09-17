@@ -21,6 +21,7 @@ export type UserType = {
   avatar?: string;
   isActive?: boolean;
   lastLoginAt?: Date;
+  environmentAccess?: 'dashboard' | 'field' | 'all';
 } | null;
 
 export type AuthState = {

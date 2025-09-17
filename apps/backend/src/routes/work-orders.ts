@@ -13,6 +13,7 @@ import { WorkOrderProgressService } from "../services/work-order-progress-servic
 import { AssignmentPermissionService } from "../services/assignment-permission-service";
 import { EntityCleanupService } from "../services/entity-cleanup-service";
 import { WorkOrderAssignmentService } from "../services/work-order-assignment-service";
+import { WorkOrderTimelineService } from "../services/work-order-timeline-service";
 
 export async function workOrderRoutes(fastify: FastifyInstance) {
   // Apply authentication middleware to all routes
@@ -210,6 +211,60 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
     },
   );
 
+  // GET /api/v1/work-orders/:id/timeline - Get work order timeline
+  fastify.get(
+    "/:id/timeline",
+    { preHandler: requireWorkOrderView() },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const req = request as AuthenticatedRequest;
+        const { tenant } = req.context!;
+        const { id } = request.params as { id: string };
+        const { limit = 50, offset = 0, entityType } = request.query as {
+          limit?: number;
+          offset?: number;
+          entityType?: 'work_order' | 'task';
+        };
+
+        // Verify work order exists and user has access
+        const workOrder = await WorkOrder.findOne({
+          _id: id,
+          tenantId: tenant._id,
+        }).lean();
+
+        if (!workOrder) {
+          return reply
+            .code(404)
+            .send({ success: false, error: "Work order not found" });
+        }
+
+        // Get timeline entries
+        const timeline = await WorkOrderTimelineService.getWorkOrderTimeline(
+          id,
+          tenant._id.toString(),
+          { limit: Number(limit), offset: Number(offset), entityType }
+        );
+
+        return reply.send({
+          success: true,
+          data: {
+            timeline,
+            pagination: {
+              limit: Number(limit),
+              offset: Number(offset),
+              hasMore: timeline.length === Number(limit),
+            },
+          },
+        });
+      } catch (error) {
+        console.error("Error fetching work order timeline:", error);
+        return reply
+          .code(500)
+          .send({ success: false, error: "Internal server error" });
+      }
+    },
+  );
+
   // POST /api/v1/work-orders - Create work order
   fastify.post(
     "/",
@@ -304,6 +359,18 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
 
         await workOrder.save();
 
+        // Add timeline entry for work order creation
+        try {
+          await WorkOrderTimelineService.logWorkOrderCreated(
+            workOrder._id.toString(),
+            workOrder.title,
+            user.id,
+            tenant._id.toString()
+          );
+        } catch (error) {
+          console.error('Error adding timeline entry for work order creation:', error);
+        }
+
         // Recompute aggregates after creation
         await WorkOrderProgressService.recomputeForWorkOrder(
           tenant._id.toString(),
@@ -319,6 +386,23 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
               [], // no previous personnel for new work order
               tenant._id.toString(),
               user.id
+            );
+
+            // Log assignment in timeline
+            const assignedPersonnel = await Personnel.find({
+              _id: { $in: body.personnelIds },
+              tenantId: tenant._id
+            }).populate('user', 'firstName lastName');
+
+            const assigneeNames = assignedPersonnel.map(p =>
+              p.user ? `${p.user.firstName} ${p.user.lastName}`.trim() : p.employeeId
+            );
+
+            await WorkOrderTimelineService.logWorkOrderAssigned(
+              workOrder._id.toString(),
+              assigneeNames,
+              user.id,
+              tenant._id.toString()
             );
           } catch (error) {
             console.error('Error propagating work order assignments:', error);
@@ -353,19 +437,19 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         const body = request.body as any;
 
         // Get current work order to track personnel changes
-        const currentWorkOrder = await WorkOrder.findOne({
+        const currentWorkOrderLite = await WorkOrder.findOne({
           _id: id,
           tenantId: tenant._id,
         }).select('personnelIds');
 
-        if (!currentWorkOrder) {
+        if (!currentWorkOrderLite) {
           return reply.code(404).send({
             success: false,
             error: "Work order not found",
           });
         }
 
-        const previousPersonnelIds = currentWorkOrder.personnelIds || [];
+        const previousPersonnelIds = currentWorkOrderLite.personnelIds || [];
 
         // Validate personnelIds if provided
         if (body.personnelIds && Array.isArray(body.personnelIds)) {
@@ -417,6 +501,19 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           });
         }
 
+        // Get the current work order before updating for timeline comparison
+        const currentWorkOrder = await WorkOrder.findOne({
+          _id: id,
+          tenantId: tenant._id,
+        });
+
+        if (!currentWorkOrder) {
+          return reply.code(404).send({
+            success: false,
+            error: "Work order not found",
+          });
+        }
+
         const workOrder = await WorkOrder.findOneAndUpdate(
           {
             _id: id,
@@ -434,6 +531,44 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
             success: false,
             error: "Work order not found",
           });
+        }
+
+        // Log changes to timeline
+        try {
+          // Track status changes
+          if (body.status && currentWorkOrder.status !== body.status) {
+            await WorkOrderTimelineService.logWorkOrderStatusChanged(
+              workOrder._id.toString(),
+              currentWorkOrder.status,
+              body.status,
+              user.id,
+              tenant._id.toString()
+            );
+          }
+
+          // Track priority changes
+          if (body.priority && currentWorkOrder.priority !== body.priority) {
+            await WorkOrderTimelineService.logWorkOrderPriorityChanged(
+              workOrder._id.toString(),
+              currentWorkOrder.priority,
+              body.priority,
+              user.id,
+              tenant._id.toString()
+            );
+          }
+
+          // Track progress changes
+          if (body.progress !== undefined && currentWorkOrder.progress !== body.progress) {
+            await WorkOrderTimelineService.logWorkOrderProgressUpdated(
+              workOrder._id.toString(),
+              currentWorkOrder.progress || 0,
+              body.progress,
+              user.id,
+              tenant._id.toString()
+            );
+          }
+        } catch (error) {
+          console.error('Error logging work order changes to timeline:', error);
         }
 
         // Recompute aggregates after update

@@ -15,6 +15,7 @@ import { getPriorityOptions } from "../constants/priorities";
 import { WorkOrderProgressService } from "../services/work-order-progress-service";
 import { EntityCleanupService } from "../services/entity-cleanup-service";
 import { NotificationService } from "../services/notification-service";
+import { WorkOrderTimelineService } from "../services/work-order-timeline-service";
 import {
   transformProjectToKanbanTask,
   transformTaskToKanbanTask,
@@ -522,6 +523,21 @@ async function handleCreateTask(
 
   await newTask.save();
 
+  // Add timeline entry for task creation if linked to a work order
+  if (workOrderId) {
+    try {
+      await WorkOrderTimelineService.logTaskCreated(
+        workOrderId,
+        newTask._id.toString(),
+        newTask.title,
+        user.id,
+        tenant._id.toString()
+      );
+    } catch (error) {
+      console.error('Error adding timeline entry for task creation:', error);
+    }
+  }
+
   // If task is linked to a work order, inherit personnel assignments
   if (workOrderId) {
     try {
@@ -879,6 +895,62 @@ async function handleUpdateTask(
     });
   }
 
+  // Add timeline entries for task changes if linked to a work order
+  if (updatedTask.workOrderId && changes.length > 0) {
+    try {
+      // Log priority changes
+      if (updateData.priority && updateData.priority !== existingTask.priority) {
+        await WorkOrderTimelineService.logTaskPriorityChanged(
+          updatedTask.workOrderId,
+          updatedTask._id.toString(),
+          updatedTask.title,
+          existingTask.priority,
+          updateData.priority,
+          user.id,
+          tenant._id.toString()
+        );
+      }
+
+      // Log assignment changes
+      if (changes.includes('assignees')) {
+        const newAssignees = updateData.assignees || [];
+        if (newAssignees.length > 0) {
+          // Get assignee names for timeline
+          const assignedPersonnel = await Personnel.find({
+            _id: { $in: newAssignees },
+            tenantId: tenant._id
+          }).populate('user', 'firstName lastName');
+
+          const assigneeNames = assignedPersonnel.map(p =>
+            p.user ? `${p.user.firstName} ${p.user.lastName}`.trim() : p.employeeId
+          );
+
+          await WorkOrderTimelineService.logTaskAssigned(
+            updatedTask.workOrderId,
+            updatedTask._id.toString(),
+            updatedTask.title,
+            assigneeNames,
+            user.id,
+            tenant._id.toString()
+          );
+        }
+      }
+
+      // Log completion status
+      if (updateData.completeStatus === true && existingTask.completeStatus !== true) {
+        await WorkOrderTimelineService.logTaskCompleted(
+          updatedTask.workOrderId,
+          updatedTask._id.toString(),
+          updatedTask.title,
+          user.id,
+          tenant._id.toString()
+        );
+      }
+    } catch (error) {
+      console.error('Error adding timeline entries for task update:', error);
+    }
+  }
+
   // Send notifications for task updates
   if (changes.length > 0) {
     try {
@@ -1008,10 +1080,29 @@ async function handleMoveTask(
               { new: true },
             );
 
-            // Send notification if column changed (status change)
-            if (existingTask && updatedTask && 
+            // Send notification and log timeline if column changed (status change)
+            if (existingTask && updatedTask &&
                 existingTask.columnId?.toString() !== updatedTask.columnId?.toString()) {
               try {
+                // Get status names for timeline logging
+                const [oldStatus, newStatus] = await Promise.all([
+                  Status.findById(existingTask.columnId).select('name'),
+                  Status.findById(updatedTask.columnId).select('name')
+                ]);
+
+                // Log timeline entry for status change if task is linked to a work order
+                if (updatedTask.workOrderId) {
+                  await WorkOrderTimelineService.logTaskStatusChanged(
+                    updatedTask.workOrderId,
+                    updatedTask._id.toString(),
+                    updatedTask.title,
+                    oldStatus?.name || 'Unknown',
+                    newStatus?.name || 'Unknown',
+                    user.id,
+                    tenant._id.toString()
+                  );
+                }
+
                 await NotificationService.notifyTaskUpdated({
                   task: updatedTask,
                   previousTask: existingTask,

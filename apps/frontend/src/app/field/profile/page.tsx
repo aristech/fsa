@@ -55,7 +55,7 @@ interface PersonnelData {
 
 export default function FieldProfilePage() {
   const router = useRouter();
-  const { user, authenticated, loading: authLoading } = useAuthContext();
+  const { user: _user, authenticated, loading: authLoading } = useAuthContext();
 
   const [personnel, setPersonnel] = useState<PersonnelData | null>(null);
   const [loading, setLoading] = useState(true);
