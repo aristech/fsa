@@ -9,16 +9,18 @@ import { FsaStatsCards } from '../fsa-stats-cards';
 import { FsaRecentTasks } from '../fsa-recent-tasks';
 import { FsaTechnicianStatus } from '../fsa-technician-status';
 import { FsaRecentWorkOrders } from '../fsa-recent-work-orders';
+import { useTranslate } from '@/locales/use-locales';
 
 // ----------------------------------------------------------------------
 
 export function FsaDashboardView() {
   const { tenantName } = useTenant();
+  const { t } = useTranslate();
 
   return (
     <Container maxWidth="xl">
       <Typography variant="h4" sx={{ mb: 5 }}>
-        {`${tenantName} | Field Service Dashboard`}
+        {`${tenantName} | ${t('demo.title')}`}
       </Typography>
 
       <Grid container spacing={3}>
