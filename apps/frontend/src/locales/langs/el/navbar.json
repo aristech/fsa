@@ -8,5 +8,42 @@
     "title": "Ιστολόγιο",
     "caption": "Προσαρμοσμένες συντομεύσεις πληκτρολογίου."
   },
-  "subheader": "Υποτίτλος"
+  "subheader": "Υποτίτλος",
+  "overview": {
+    "title": "Επισκόπηση",
+    "app": "Εφαρμογή",
+    "analytics": "Αναλυτικά Στοιχεία",
+    "reports": "Αναφορές"
+  },
+  "management": {
+    "title": "Διαχείριση",
+    "projectsTasks": "Έργα & Εργασίες",
+    "calendar": "Ημερολόγιο",
+    "chat": "Συνομιλία"
+  },
+  "fieldService": {
+    "title": "Αυτοματισμός Υπηρεσιών Πεδίου",
+    "workOrders": {
+      "title": "Εργασίες",
+      "list": "Λίστα",
+      "create": "Δημιουργία"
+    },
+    "clients": {
+      "title": "Πελάτες",
+      "list": "Λίστα",
+      "create": "Δημιουργία"
+    },
+    "personnel": {
+      "title": "Προσωπικό",
+      "list": "Λίστα",
+      "roles": "Ρόλοι"
+    },
+    "materials": {
+      "title": "Υλικά",
+      "list": "Λίστα"
+    }
+  },
+  "settings": {
+    "title": "Ρυθμίσεις"
+  }
 }

@@ -1,0 +1,64 @@
+{
+  "dashboard": {
+    "title": "Field Dashboard",
+    "subtitle": "Manage your field operations",
+    "stats": {
+      "totalTasks": "Total Tasks",
+      "completedTasks": "Completed Tasks",
+      "pendingTasks": "Pending Tasks",
+      "blockedTasks": "Blocked Tasks",
+      "activeMaterials": "Active Materials"
+    }
+  },
+  "workOrders": {
+    "title": "Work Orders",
+    "status": {
+      "created": "Created",
+      "assigned": "Assigned",
+      "in_progress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "urgent": "Urgent"
+    },
+    "details": "Details",
+    "attachments": "Attachments",
+    "timeline": "Timeline",
+    "personnel": "Personnel",
+    "client": "Client",
+    "location": "Location",
+    "duration": "Duration",
+    "estimated": "Estimated",
+    "actual": "Actual",
+    "progress": "Progress"
+  },
+  "tasks": {
+    "title": "Tasks",
+    "myTasks": "My Tasks",
+    "assignedTo": "Assigned to",
+    "dueDate": "Due Date",
+    "priority": "Priority",
+    "status": "Status"
+  },
+  "materials": {
+    "title": "Materials",
+    "inventory": "Inventory",
+    "available": "Available",
+    "lowStock": "Low Stock",
+    "outOfStock": "Out of Stock"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAsRead": "Mark as Read",
+    "markAllAsRead": "Mark All as Read"
+  },
+  "profile": {
+    "title": "Profile",
+    "personalInfo": "Personal Information",
+    "workHistory": "Work History"
+  }
+}

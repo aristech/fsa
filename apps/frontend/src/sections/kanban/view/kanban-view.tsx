@@ -13,6 +13,7 @@ import GlobalStyles from '@mui/material/GlobalStyles';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
 import { useGetBoard } from 'src/actions/kanban';
+import { useTranslate } from 'src/locales/use-locales';
 import { DashboardContent } from 'src/layouts/dashboard';
 
 import { EmptyContent } from 'src/components/empty-content';
@@ -48,6 +49,7 @@ const inputGlobalStyles = () => (
 export function KanbanView() {
   const { board, boardLoading, boardEmpty } = useGetBoard();
   const { boardRef } = useBoardDnd(board);
+  const { t } = useTranslate('common');
 
   const [columnFixed, setColumnFixed] = useState(false);
   const [tableView, setTableView] = useState(false);
@@ -87,11 +89,11 @@ export function KanbanView() {
         justifyContent: 'space-between',
       }}
     >
-      <Typography variant="h4">Kanban</Typography>
+      <Typography variant="h4">{t('kanban', { defaultValue: 'Kanban' })}</Typography>
 
       <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
         <FormControlLabel
-          label="Table view"
+          label={t('tableView', { defaultValue: 'Table view' })}
           labelPlacement="start"
           control={
             <Switch
@@ -106,7 +108,7 @@ export function KanbanView() {
 
         {!tableView && (
           <FormControlLabel
-            label="Fixed column"
+            label={t('fixedColumn', { defaultValue: 'Fixed column' })}
             labelPlacement="start"
             control={
               <Switch

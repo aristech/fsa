@@ -3,6 +3,7 @@ import type { NavSectionProps } from 'src/components/nav-section';
 import { paths } from 'src/routes/paths';
 
 import { CONFIG } from 'src/global-config';
+import { useTranslate } from 'src/locales/use-locales';
 
 import { SvgColor } from 'src/components/svg-color';
 
@@ -66,114 +67,118 @@ const ICONS = {
  * - `disabled`: An optional boolean to disable the item.
  * - `deepMatch`: An optional boolean to indicate if the item should match subpaths.
  */
-export const navData: NavSectionProps['data'] = [
-  /**
-   * Overview
-   */
-  {
-    subheader: 'Overview',
-    items: [
-      { title: 'App', path: paths.dashboard.root, icon: ICONS.dashboard },
-      { title: 'Analytics', path: paths.dashboard.general.analytics, icon: ICONS.analytics },
-      { title: 'Reports', path: '/dashboard/analytics/reports', icon: ICONS.reports },
-    ],
-  },
-  /**
-   * Management
-   */
-  {
-    subheader: 'Management',
-    items: [
-      { title: 'Projects & Tasks', path: paths.dashboard.kanban, icon: ICONS.kanban },
-      { title: 'Calendar', path: paths.dashboard.calendar, icon: ICONS.calendar },
-      // {
-      //   title: 'Chat',
-      //   path: paths.dashboard.chat,
-      //   icon: ICONS.chat,
-      //   info: (
-      //     <Label color="error" variant="inverted">
-      //       +32
-      //     </Label>
-      //   ),
-      // },
-    ],
-  },
-  /**
-   * Field Service Automation
-   */
-  {
-    subheader: 'Field Service Automation',
-    items: [
-      {
-        title: 'Work Orders',
-        path: paths.dashboard.fsa.workOrders.root,
-        icon: ICONS.workOrder,
-        requiredPermissions: 'work_orders.view',
-        children: [
-          {
-            title: 'List',
-            path: paths.dashboard.fsa.workOrders.root,
-            requiredPermissions: 'work_orders.view',
-          },
-          {
-            title: 'Create',
-            path: paths.dashboard.fsa.workOrders.new,
-            requiredPermissions: 'work_orders.create',
-          },
-        ],
-      },
-      {
-        title: 'Clients',
-        path: paths.dashboard.fsa.clients.root,
-        icon: ICONS.customer,
-        requiredPermissions: 'clients.view',
-        children: [
-          {
-            title: 'List',
-            path: paths.dashboard.fsa.clients.root,
-            requiredPermissions: 'clients.view',
-          },
-          {
-            title: 'Create',
-            path: paths.dashboard.fsa.clients.new,
-            requiredPermissions: 'clients.create',
-          },
-        ],
-      },
-      {
-        title: 'Personnel',
-        path: '/dashboard/personnel',
-        icon: ICONS.technician,
-        requiredPermissions: 'personnel.view',
-        children: [
-          { title: 'List', path: '/dashboard/personnel', requiredPermissions: 'personnel.view' },
-          {
-            title: 'Roles',
-            path: '/dashboard/personnel/roles',
-            requiredPermissions: 'roles.manage',
-          },
-        ],
-      },
-      {
-        title: 'Materials',
-        path: paths.dashboard.fsa.materials.root,
-        icon: ICONS.materials,
-        requiredPermissions: 'materials.view',
-        children: [
-          {
-            title: 'List',
-            path: paths.dashboard.fsa.materials.root,
-            requiredPermissions: 'materials.view',
-          },
-        ],
-      },
-    ],
-  },
-  /**
-   * Item state
-   */
-  {
-    subheader: 'Settings',
-    items: [],
-  },
-];
+export function useNavData(): NavSectionProps['data'] {
+  const { t } = useTranslate('navbar');
+
+  return [
+    /**
+     * Overview
+     */
+    {
+      subheader: t('overview.title'),
+      items: [
+        { title: t('overview.app'), path: paths.dashboard.root, icon: ICONS.dashboard },
+        { title: t('overview.analytics'), path: paths.dashboard.general.analytics, icon: ICONS.analytics },
+        { title: t('overview.reports'), path: '/dashboard/analytics/reports', icon: ICONS.reports },
+      ],
+    },
+    /**
+     * Management
+     */
+    {
+      subheader: t('management.title'),
+      items: [
+        { title: t('management.projectsTasks'), path: paths.dashboard.kanban, icon: ICONS.kanban },
+        { title: t('management.calendar'), path: paths.dashboard.calendar, icon: ICONS.calendar },
+        // {
+        //   title: t('management.chat'),
+        //   path: paths.dashboard.chat,
+        //   icon: ICONS.chat,
+        //   info: (
+        //     <Label color="error" variant="inverted">
+        //       +32
+        //     </Label>
+        //   ),
+        // },
+      ],
+    },
+    /**
+     * Field Service Automation
+     */
+    {
+      subheader: t('fieldService.title'),
+      items: [
+        {
+          title: t('fieldService.workOrders.title'),
+          path: paths.dashboard.fsa.workOrders.root,
+          icon: ICONS.workOrder,
+          requiredPermissions: 'work_orders.view',
+          children: [
+            {
+              title: t('fieldService.workOrders.list'),
+              path: paths.dashboard.fsa.workOrders.root,
+              requiredPermissions: 'work_orders.view',
+            },
+            {
+              title: t('fieldService.workOrders.create'),
+              path: paths.dashboard.fsa.workOrders.new,
+              requiredPermissions: 'work_orders.create',
+            },
+          ],
+        },
+        {
+          title: t('fieldService.clients.title'),
+          path: paths.dashboard.fsa.clients.root,
+          icon: ICONS.customer,
+          requiredPermissions: 'clients.view',
+          children: [
+            {
+              title: t('fieldService.clients.list'),
+              path: paths.dashboard.fsa.clients.root,
+              requiredPermissions: 'clients.view',
+            },
+            {
+              title: t('fieldService.clients.create'),
+              path: paths.dashboard.fsa.clients.new,
+              requiredPermissions: 'clients.create',
+            },
+          ],
+        },
+        {
+          title: t('fieldService.personnel.title'),
+          path: '/dashboard/personnel',
+          icon: ICONS.technician,
+          requiredPermissions: 'personnel.view',
+          children: [
+            { title: t('fieldService.personnel.list'), path: '/dashboard/personnel', requiredPermissions: 'personnel.view' },
+            {
+              title: t('fieldService.personnel.roles'),
+              path: '/dashboard/personnel/roles',
+              requiredPermissions: 'roles.manage',
+            },
+          ],
+        },
+        {
+          title: t('fieldService.materials.title'),
+          path: paths.dashboard.fsa.materials.root,
+          icon: ICONS.materials,
+          requiredPermissions: 'materials.view',
+          children: [
+            {
+              title: t('fieldService.materials.list'),
+              path: paths.dashboard.fsa.materials.root,
+              requiredPermissions: 'materials.view',
+            },
+          ],
+        },
+      ],
+    },
+    /**
+     * Item state
+     */
+    {
+      subheader: t('settings.title'),
+      items: [],
+    },
+  ];
+}

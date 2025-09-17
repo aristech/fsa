@@ -5,22 +5,22 @@ import { Container, Typography } from '@mui/material';
 
 import { useTenant } from 'src/hooks/use-tenant';
 
+import { useTranslate } from 'src/locales/use-locales';
+
 import { FsaStatsCards } from '../fsa-stats-cards';
-import { FsaRecentTasks } from '../fsa-recent-tasks';
 import { FsaTechnicianStatus } from '../fsa-technician-status';
 import { FsaRecentWorkOrders } from '../fsa-recent-work-orders';
-import { useTranslate } from '@/locales/use-locales';
 
 // ----------------------------------------------------------------------
 
 export function FsaDashboardView() {
   const { tenantName } = useTenant();
-  const { t } = useTranslate();
+  const { t } = useTranslate('common');
 
   return (
     <Container maxWidth="xl">
       <Typography variant="h4" sx={{ mb: 5 }}>
-        {`${tenantName} | ${t('demo.title')}`}
+        {t('dashboard.title', { tenant: tenantName })}
       </Typography>
 
       <Grid container spacing={3}>
@@ -37,11 +37,7 @@ export function FsaDashboardView() {
         {/* Technician Status */}
         <Grid size={{ xs: 12, md: 4 }}>
           <FsaTechnicianStatus />
-           <FsaRecentTasks />
         </Grid>
-
-        {/* Recent Tasks (Kanban) */}
-       
       </Grid>
     </Container>
   );

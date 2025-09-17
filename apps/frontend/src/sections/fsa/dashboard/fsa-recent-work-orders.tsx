@@ -24,6 +24,7 @@ import {
 
 import { fDateTime } from 'src/utils/format-time';
 
+import { useTranslate } from 'src/locales/use-locales';
 import { useClient } from 'src/contexts/client-context';
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
@@ -73,6 +74,7 @@ const getPriorityColor = (priority: string) => {
 export function FsaRecentWorkOrders() {
   const theme = useTheme();
   const { selectedClient } = useClient();
+  const { t } = useTranslate('common');
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [selectedAttachments, setSelectedAttachments] = React.useState<any[]>([]);
 
@@ -176,7 +178,7 @@ export function FsaRecentWorkOrders() {
         id: workOrder._id,
         workOrderNumber: workOrder.workOrderNumber,
         title: workOrder.title,
-        customer: workOrder.clientName || workOrder.client?.name || clientData?.name || 'Unknown Client',
+        customer: workOrder.clientName || workOrder.client?.name || clientData?.name || t('unknownClient', { defaultValue: 'Unknown Client' }),
         clientPhone: clientData?.phone || null,
         clientEmail: clientData?.email || null,
         status: workOrder.status,
@@ -195,7 +197,7 @@ export function FsaRecentWorkOrders() {
         tasksCompleted: progressData?.tasksCompleted || 0,
       };
     });
-  }, [workOrdersData, personnelData, summariesData]);
+  }, [workOrdersData, personnelData, summariesData, t]);
 
   const renderDetailsPreview = (html: string) => (
     <Box
@@ -215,7 +217,7 @@ export function FsaRecentWorkOrders() {
   return (
     <Card>
       <CardHeader
-        title="Recent Work Orders"
+        title={t('dashboard.recentWorkOrders', { defaultValue: 'Recent Work Orders' })}
         action={
           <Link
             href="/dashboard/work-orders"
@@ -223,7 +225,7 @@ export function FsaRecentWorkOrders() {
             variant="body2"
             sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
           >
-            View All
+            {t('viewAll', { defaultValue: 'View All' })}
             <Iconify icon="eva:arrow-ios-forward-fill" width={16} />
           </Link>
         }
@@ -268,7 +270,7 @@ export function FsaRecentWorkOrders() {
             ))
           ) : recentWorkOrders.length === 0 ? (
             <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-              No work orders found
+              {t('dashboard.noWorkOrdersFound', { defaultValue: 'No work orders found' })}
             </Typography>
           ) : (
             recentWorkOrders.map((wo: any) => (
@@ -316,7 +318,7 @@ export function FsaRecentWorkOrders() {
                   {/* Actions */}
                   <Stack direction="row" spacing={1} alignItems="center">
                     {wo.attachmentsCount > 0 && (
-                      <Tooltip title={`${wo.attachmentsCount} attachment${wo.attachmentsCount > 1 ? 's' : ''} - Click to view/download`}>
+                      <Tooltip title={`${wo.attachmentsCount} ${t('attachments', { defaultValue: 'attachments' })} - ${t('clickToViewDownload', { defaultValue: 'Click to view/download' })}`}>
                         <IconButton
                           size="small"
                           onClick={(event) => {
@@ -336,7 +338,7 @@ export function FsaRecentWorkOrders() {
                     <Chip
                       size="small"
                       variant="outlined"
-                      label={`${wo.tasksCompleted}/${wo.tasksTotal} tasks`}
+                      label={`${wo.tasksCompleted}/${wo.tasksTotal} ${t('tasks', { defaultValue: 'tasks' })}`}
                       sx={{ minWidth: 'auto' }}
                     />
                   </Stack>
@@ -346,7 +348,7 @@ export function FsaRecentWorkOrders() {
                 <Stack spacing={1}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Typography variant="caption" color="text.secondary">
-                      Progress
+                      {t('progress', { defaultValue: 'Progress' })}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       {wo.progress}%
@@ -364,7 +366,7 @@ export function FsaRecentWorkOrders() {
                   <Grid size={{ xs: 12, md: 6 }}>
                     <Stack spacing={1}>
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                        Client
+                        {t('client', { defaultValue: 'Client' })}
                       </Typography>
                       <Stack spacing={0.5}>
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
@@ -390,7 +392,7 @@ export function FsaRecentWorkOrders() {
                       <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
                          <Iconify icon="eva:people-fill" width={14} />
                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                        Assigned Personnel 
+                        {t('assignedPersonnel', { defaultValue: 'Assigned Personnel' })}
                       </Typography>
                       <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
                      
@@ -412,7 +414,7 @@ export function FsaRecentWorkOrders() {
                     <Stack direction="row" alignItems="center" spacing={0.5}>
                       <Iconify icon="eva:calendar-fill" width={16} />
                       <Typography variant="caption" color="text.secondary">
-                        Scheduled:
+                        {t('scheduled', { defaultValue: 'Scheduled:' })}
                       </Typography>
                       <Typography variant="body2">
                         {fDateTime(wo.scheduledDate)}
@@ -435,7 +437,7 @@ export function FsaRecentWorkOrders() {
                 {wo.detailsHtml && (
                   <Stack spacing={1}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                      Details
+                      {t('details', { defaultValue: 'Details' })}
                     </Typography>
                     {renderDetailsPreview(wo.detailsHtml)}
                   </Stack>

@@ -6,6 +6,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { Box, Card, Chip, Stack, Avatar, Typography, CardContent, AvatarGroup } from '@mui/material';
 
 import axios, { endpoints } from 'src/lib/axios';
+import { useTranslate } from 'src/locales/use-locales';
 
 import { Iconify } from 'src/components/iconify';
 import { MobileCard, MobileButton } from 'src/components/mobile';
@@ -15,6 +16,7 @@ import { useAuthContext } from 'src/auth/hooks/use-auth-context';
 export default function FieldDashboard() {
   const router = useRouter();
   const { authenticated, loading } = useAuthContext();
+  const { t } = useTranslate('common');
 
   // Real data
   const [tasks, setTasks] = useState<any[]>([]);
@@ -51,21 +53,21 @@ export default function FieldDashboard() {
 
   const stats = useMemo(() => {
     const total = tasks.length;
-    const completed = tasks.filter((t) => {
-      const s = (t?.status?.slug || t?.status || t?.columnSlug || '').toString().toLowerCase();
+    const completed = tasks.filter((task) => {
+      const s = (task?.status?.slug || task?.status || task?.columnSlug || '').toString().toLowerCase();
       return s.includes('done') || s.includes('complete');
     }).length;
-    const pending = tasks.filter((t) => {
-      const s = (t?.status?.slug || t?.status || t?.columnSlug || '').toString().toLowerCase();
+    const pending = tasks.filter((task) => {
+      const s = (task?.status?.slug || task?.status || task?.columnSlug || '').toString().toLowerCase();
       return s.includes('pending') || s.includes('todo') || s.includes('backlog') || s === '';
     }).length;
     return [
-      { label: "Today's Tasks", value: total, icon: 'solar:clipboard-list-bold', color: 'primary' },
-      { label: 'Completed', value: completed, icon: 'solar:check-circle-bold', color: 'success' },
-      { label: 'Pending', value: pending, icon: 'solar:clock-circle-bold', color: 'warning' },
-      { label: 'This Week', value: Math.max(total, completed + pending), icon: 'solar:chart-bold', color: 'info' },
+      { label: t('field.todaysTasks', { defaultValue: "Today's Tasks" }), value: total, icon: 'solar:clipboard-list-bold', color: 'primary' },
+      { label: t('completed', { defaultValue: 'Completed' }), value: completed, icon: 'solar:check-circle-bold', color: 'success' },
+      { label: t('pending', { defaultValue: 'Pending' }), value: pending, icon: 'solar:clock-circle-bold', color: 'warning' },
+      { label: t('field.thisWeek', { defaultValue: 'This Week' }), value: Math.max(total, completed + pending), icon: 'solar:chart-bold', color: 'info' },
     ];
-  }, [tasks]);
+  }, [tasks, t]);
 
   const formatTime = (iso?: string) => {
     if (!iso) return '';
@@ -76,27 +78,27 @@ export default function FieldDashboard() {
     }
   };
 
-  const upcomingTasks = useMemo(() => tasks.slice(0, 5).map((t) => {
-      const start = Array.isArray(t.due) ? t.due[0] : undefined;
-      const end = Array.isArray(t.due) ? t.due[1] : undefined;
-      const attachmentsCount = Array.isArray(t.attachments) ? t.attachments.length : 0;
+  const upcomingTasks = useMemo(() => tasks.slice(0, 5).map((task) => {
+      const start = Array.isArray(task.due) ? task.due[0] : undefined;
+      const end = Array.isArray(task.due) ? task.due[1] : undefined;
+      const attachmentsCount = Array.isArray(task.attachments) ? task.attachments.length : 0;
       return {
-        _id: t.id || t._id || t.uid || String(t.taskId || ''),
-        title: t.name || t.title || 'Untitled Task',
-        description: t.description || '',
-        status: (t?.status?.slug || t?.status || t?.columnSlug || 'pending').toString().toLowerCase(),
-        priority: (t?.priority?.slug || t?.priority || 'medium').toString().toLowerCase(),
+        _id: task.id || task._id || task.uid || String(task.taskId || ''),
+        title: task.name || task.title || task.taskTitle || task.task_name || task.task || task?.workOrderTitle || task?.work_order_title || task?.title || task?.name || task?.uid || task?.id || task?._id || task?.taskId || 'Untitled Task',
+        description: task.description || '',
+        status: (task?.status?.slug || task?.status || task?.columnSlug || 'pending').toString().toLowerCase(),
+        priority: (task?.priority?.slug || task?.priority || 'medium').toString().toLowerCase(),
         startDate: start,
         dueDate: end || new Date().toISOString(),
-        estimatedHours: t.estimatedHours || t.estimated_hours || 0,
-        actualHours: t.actualHours || t.actual_hours || 0,
-        location: t.location || t.site || '—',
-        clientName: t.clientName || t.clientCompany || undefined,
-        workOrderNumber: t.workOrderNumber || undefined,
-        workOrderTitle: t.workOrderTitle || undefined,
+        estimatedHours: task.estimatedHours || task.estimated_hours || 0,
+        actualHours: task.actualHours || task.actual_hours || 0,
+        location: task.location || task.site || '—',
+        clientName: task.clientName || task.clientCompany || undefined,
+        workOrderNumber: task.workOrderNumber || undefined,
+        workOrderTitle: task.workOrderTitle || undefined,
         attachmentsCount,
-        assignees: Array.isArray(t.assignee) ? t.assignee : [],
-        completeStatus: !!t.completeStatus,
+        assignees: Array.isArray(task.assignee) ? task.assignee : [],
+        completeStatus: !!task.completeStatus,
       };
     }), [tasks]);
 
@@ -127,7 +129,7 @@ export default function FieldDashboard() {
           icon={<Iconify icon="solar:login-2-bold" width={20} />}
           onClick={() => router.push('/auth/jwt/sign-in?returnTo=/field')}
         >
-          Sign in
+          {t('signIn', { defaultValue: 'Sign in' })}
         </MobileButton>
       </Box>
     );
@@ -138,10 +140,10 @@ export default function FieldDashboard() {
       {/* Welcome Section */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          Good Morning! 👋
+          {t('field.goodMorning', { defaultValue: 'Good Morning! 👋' })}
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Here is your schedule for today
+          {t('field.scheduleToday', { defaultValue: 'Here is your schedule for today' })}
         </Typography>
       </Box>
       {/* Action Buttons */}
@@ -153,7 +155,7 @@ export default function FieldDashboard() {
           icon={<Iconify icon="solar:calendar-bold" width={20} />}
           onClick={() => router.push('/field/calendar')}
         >
-          View Calendar
+          {t('viewCalendar', { defaultValue: 'View Calendar' })}
         </MobileButton>
         <MobileButton
           variant="secondary"
@@ -162,7 +164,7 @@ export default function FieldDashboard() {
           icon={<Iconify icon="solar:clipboard-list-bold" width={20} />}
           onClick={() => router.push('/field/tasks')}
         >
-          View Tasks
+          {t('viewTasks', { defaultValue: 'View Tasks' })}
         </MobileButton>
         <MobileButton
           variant="outline"
@@ -171,7 +173,7 @@ export default function FieldDashboard() {
           icon={<Iconify icon="solar:document-text-bold" width={20} />}
           onClick={() => router.push('/field/reports')}
         >
-          Create Report
+          {t('createReport', { defaultValue: 'Create Report' })}
         </MobileButton>
       </Box>
 
@@ -245,7 +247,7 @@ export default function FieldDashboard() {
       <Card sx={{ mb: 4 }}>
         <CardContent>
           <Typography variant="h6" component="h2" gutterBottom>
-            Upcoming Tasks
+            {t('field.upcomingTasks', { defaultValue: 'Upcoming Tasks' })}
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {upcomingTasks.map((task) => {
@@ -285,7 +287,7 @@ export default function FieldDashboard() {
                         </Typography>
                       )}
                       {task.completeStatus && (
-                        <Chip size="small" color="success" label="Completed" sx={{ height: 20, fontSize: 10 }} />
+                        <Chip size="small" color="success" label={t('completed', { defaultValue: 'Completed' })} sx={{ height: 20, fontSize: 10 }} />
                       )}
                     </Stack>
                   </Stack>
@@ -300,15 +302,15 @@ export default function FieldDashboard() {
       <Card sx={{ mb: 4 }}>
         <CardContent>
           <Typography variant="h6" component="h2" gutterBottom>
-            Low Stock Materials
+            {t('field.lowStockMaterials', { defaultValue: 'Low Stock Materials' })}
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {lowStockMaterials.map((material) => (
               <MobileCard
                 key={material._id}
                 title={material.name}
-                subtitle={`SKU: ${material.sku}`}
-                description={`${material.quantity} ${material.unit} remaining (Min: ${material.minimumStock})`}
+                subtitle={`${t('sku', { defaultValue: 'SKU' })}: ${material.sku}`}
+                description={`${material.quantity} ${material.unit} ${t('remaining', { defaultValue: 'remaining' })} (${t('min', { defaultValue: 'Min' })}: ${material.minimumStock})`}
                 status="pending"
                 priority="high"
                 badge={`${material.quantity}`}
@@ -326,7 +328,7 @@ export default function FieldDashboard() {
       <Card>
         <CardContent>
           <Typography variant="h6" component="h2" gutterBottom>
-            Quick Actions
+            {t('field.quickActions', { defaultValue: 'Quick Actions' })}
           </Typography>
           <Box
             sx={{
@@ -338,7 +340,7 @@ export default function FieldDashboard() {
             <MobileCard
               size="small"
               variant="outlined"
-              title="View Calendar"
+              title={t('viewCalendar', { defaultValue: 'View Calendar' })}
               icon={<Iconify icon="solar:calendar-bold" width={24} />}
               onTap={() => router.push('/field/calendar')}
               sx={{ textAlign: 'center', cursor: 'pointer' }}
@@ -346,7 +348,7 @@ export default function FieldDashboard() {
             <MobileCard
               size="small"
               variant="outlined"
-              title="View Tasks"
+              title={t('viewTasks', { defaultValue: 'View Tasks' })}
               icon={<Iconify icon="solar:clipboard-list-bold" width={24} />}
               onTap={() => router.push('/field/tasks')}
               sx={{ textAlign: 'center', cursor: 'pointer' }}
@@ -354,7 +356,7 @@ export default function FieldDashboard() {
             <MobileCard
               size="small"
               variant="outlined"
-              title="View Reports"
+              title={t('viewReports', { defaultValue: 'View Reports' })}
               icon={<Iconify icon="solar:document-text-bold" width={24} />}
               onTap={() => router.push('/field/reports')}
               sx={{ textAlign: 'center', cursor: 'pointer' }}

@@ -7,8 +7,9 @@ import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 
 import { CONFIG } from 'src/global-config';
-import { DashboardContent } from 'src/layouts/dashboard';
+import { useTranslate } from 'src/locales/use-locales';
 import axiosInstance, { endpoints } from 'src/lib/axios';
+import { DashboardContent } from 'src/layouts/dashboard';
 
 import { AnalyticsCurrentVisits } from '../analytics-current-visits';
 import { AnalyticsOrderTimeline } from '../analytics-order-timeline';
@@ -37,6 +38,8 @@ function formatWeekLabel(d: Date) {
 // ----------------------------------------------------------------------
 
 export function OverviewAnalyticsView() {
+  const { t } = useTranslate('common');
+
   // Personnel
   const { data: personnelResp } = useSWR('/api/v1/personnel?limit=500', async (url: string) => {
     const res = await axiosInstance.get(url);
@@ -143,42 +146,42 @@ export function OverviewAnalyticsView() {
     }
     return agg.get(personId)!;
   };
-  tasks.forEach((t: any) => {
+  tasks.forEach((task: any) => {
     // Handle different assignee field names and structures
     let assignees: any[] = [];
-    if (Array.isArray(t.assignee)) {
-      assignees = t.assignee;
-    } else if (Array.isArray(t.assignees)) {
-      assignees = t.assignees;
-    } else if (Array.isArray(t.personnelIds)) {
-      assignees = t.personnelIds.map((id: string) => ({ id, _id: id }));
-    } else if (t.assignee) {
-      assignees = [t.assignee];
+    if (Array.isArray(task.assignee)) {
+      assignees = task.assignee;
+    } else if (Array.isArray(task.assignees)) {
+      assignees = task.assignees;
+    } else if (Array.isArray(task.personnelIds)) {
+      assignees = task.personnelIds.map((id: string) => ({ id, _id: id }));
+    } else if (task.assignee) {
+      assignees = [task.assignee];
     }
 
-    const createdAt = t.createdAt ? new Date(t.createdAt) : undefined;
-    const updatedAt = t.updatedAt ? new Date(t.updatedAt) : undefined;
+    const createdAt = task.createdAt ? new Date(task.createdAt) : undefined;
+    const updatedAt = task.updatedAt ? new Date(task.updatedAt) : undefined;
 
     // Handle different due date structures
     let dueEnd: Date | undefined;
-    if (Array.isArray(t.due) && t.due[1]) {
-      dueEnd = new Date(t.due[1]);
-    } else if (t.dueDate) {
-      dueEnd = new Date(t.dueDate);
-    } else if (t.due && typeof t.due === 'string') {
-      dueEnd = new Date(t.due);
+    if (Array.isArray(task.due) && task.due[1]) {
+      dueEnd = new Date(task.due[1]);
+    } else if (task.dueDate) {
+      dueEnd = new Date(task.dueDate);
+    } else if (task.due && typeof task.due === 'string') {
+      dueEnd = new Date(task.due);
     }
 
     // Improved completion status detection
     const isComplete = !!(
-      t.completeStatus ||
-      t.completed ||
-      String(t.status || '').toLowerCase().includes('done') ||
-      String(t.status || '').toLowerCase().includes('completed') ||
-      String(t.status || '').toLowerCase().includes('complete')
+      task.completeStatus ||
+      task.completed ||
+      String(task.status || '').toLowerCase().includes('done') ||
+      String(task.status || '').toLowerCase().includes('completed') ||
+      String(task.status || '').toLowerCase().includes('complete')
     );
 
-    const workOrderId = t.workOrderId || t.workOrder;
+    const workOrderId = task.workOrderId || task.workOrder;
 
     assignees.forEach((a) => {
       const personId = a.id || a._id || a;
@@ -358,8 +361,8 @@ export function OverviewAnalyticsView() {
     const start = new Date(w);
     const end = new Date(w);
     end.setDate(end.getDate() + 7);
-    return tasks.filter((t: any) => {
-      const c = t.createdAt ? new Date(t.createdAt) : null;
+    return tasks.filter((task: any) => {
+      const c = task.createdAt ? new Date(task.createdAt) : null;
       return c && c >= start && c < end;
     }).length;
   });
@@ -367,9 +370,9 @@ export function OverviewAnalyticsView() {
     const start = new Date(w);
     const end = new Date(w);
     end.setDate(end.getDate() + 7);
-    return tasks.filter((t: any) => {
-      const done = !!t.completeStatus || String(t.status || '').toLowerCase().includes('done');
-      const u = t.updatedAt ? new Date(t.updatedAt) : null;
+    return tasks.filter((task: any) => {
+      const done = !!task.completeStatus || String(task.status || '').toLowerCase().includes('done');
+      const u = task.updatedAt ? new Date(task.updatedAt) : null;
       return done && u && u >= start && u < end;
     }).length;
   });
@@ -386,9 +389,9 @@ export function OverviewAnalyticsView() {
     const c = p.createdAt ? new Date(p.createdAt) : null;
     return c && c >= weekStart && c < weekEnd;
   }).length;
-  const weeklyTasksCompleted = tasks.filter((t: any) => {
-    const done = !!t.completeStatus || String(t.status || '').toLowerCase().includes('done');
-    const u = t.updatedAt ? new Date(t.updatedAt) : null;
+  const weeklyTasksCompleted = tasks.filter((task: any) => {
+    const done = !!task.completeStatus || String(task.status || '').toLowerCase().includes('done');
+    const u = task.updatedAt ? new Date(task.updatedAt) : null;
     return done && u && u >= weekStart && u < weekEnd;
   }).length;
   const weeklyNotifications = notifications.filter((n: any) => {
@@ -398,12 +401,12 @@ export function OverviewAnalyticsView() {
 
   // ----------------- On-time completion by client (bar) -----------------
   const byClient: Record<string, { ontime: number; total: number }> = {};
-  tasks.forEach((t: any) => {
-    const clientName = (t as any).clientName || (t as any).clientCompany || 'Unknown';
-    const done = !!t.completeStatus || String(t.status || '').toLowerCase().includes('done');
+  tasks.forEach((task: any) => {
+    const clientName = (task as any).clientName || (task as any).clientCompany || 'Unknown';
+    const done = !!task.completeStatus || String(task.status || '').toLowerCase().includes('done');
     if (!done) return;
-    const dueEnd = Array.isArray(t.due) ? (t.due[1] ? new Date(t.due[1]) : undefined) : undefined;
-    const u = t.updatedAt ? new Date(t.updatedAt) : undefined;
+    const dueEnd = Array.isArray(task.due) ? (task.due[1] ? new Date(task.due[1]) : undefined) : undefined;
+    const u = task.updatedAt ? new Date(task.updatedAt) : undefined;
     if (!byClient[clientName]) byClient[clientName] = { ontime: 0, total: 0 };
     byClient[clientName].total += 1;
     if (dueEnd && u && u.getTime() <= dueEnd.getTime()) byClient[clientName].ontime += 1;
@@ -415,11 +418,11 @@ export function OverviewAnalyticsView() {
       const end = new Date(w);
       end.setDate(end.getDate() + 7);
       return tasks
-        .filter((t: any) => {
-          const c = t.createdAt ? new Date(t.createdAt) : null;
+        .filter((task: any) => {
+          const c = task.createdAt ? new Date(task.createdAt) : null;
           return c && c >= start && c < end;
         })
-        .map((t: any) => t.name || t.title || 'Untitled task');
+        .map((task: any) => task.name || task.title || 'Untitled task');
     }), [weeks, tasks]);
 
   const completedNamesByWeek = useMemo(() => weeks.map((w) => {
@@ -427,18 +430,18 @@ export function OverviewAnalyticsView() {
       const end = new Date(w);
       end.setDate(end.getDate() + 7);
       return tasks
-        .filter((t: any) => {
-          const done = !!t.completeStatus || String(t.status || '').toLowerCase().includes('done');
-          const u = t.updatedAt ? new Date(t.updatedAt) : null;
+        .filter((task: any) => {
+          const done = !!task.completeStatus || String(task.status || '').toLowerCase().includes('done');
+          const u = task.updatedAt ? new Date(task.updatedAt) : null;
           return done && u && u >= start && u < end;
         })
-        .map((t: any) => t.name || t.title || 'Untitled task');
+        .map((task: any) => task.name || task.title || 'Untitled task');
     }), [weeks, tasks]);
 
   // Compute taskIds (limit to 500 to avoid overload)
   const taskIds = useMemo(() => {
     const ids = (Array.isArray(tasks) ? tasks : [])
-      .map((t: any) => t.id || t._id)
+      .map((task: any) => task.id || task._id)
       .filter(Boolean) as string[];
     return ids.slice(0, 500);
   }, [tasks]);
@@ -479,12 +482,12 @@ export function OverviewAnalyticsView() {
   // ----------------- Tasks & Subtasks per Client -----------------
   const clientAgg = useMemo(() => {
     const clientMap = new Map<string, { tasks: number; subtasks: number }>();
-    (tasks || []).forEach((t: any) => {
-      const clientName = (t as any).clientName || (t as any).clientCompany || 'Unknown client';
+    (tasks || []).forEach((task: any) => {
+      const clientName = (task as any).clientName || (task as any).clientCompany || 'Unknown client';
       if (!clientMap.has(clientName)) clientMap.set(clientName, { tasks: 0, subtasks: 0 });
       const entry = clientMap.get(clientName)!;
       entry.tasks += 1;
-      entry.subtasks += subtaskCountByTask.get(String(t.id || t._id)) || 0;
+      entry.subtasks += subtaskCountByTask.get(String(task.id || task._id)) || 0;
     });
     return clientMap;
   }, [tasks, subtaskCountByTask]);
@@ -635,13 +638,13 @@ export function OverviewAnalyticsView() {
   return (
     <DashboardContent maxWidth="xl">
       <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 } }}>
-        Hi, Welcome back 👋
+        {t('demo.title')}
       </Typography>
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <AnalyticsWidgetSummary
-            title="Work orders (this week)"
+            title={t('analytics.workOrdersEstVsAct')}
             percent={0}
             total={weeklyWorkOrders}
             icon={
@@ -659,7 +662,7 @@ export function OverviewAnalyticsView() {
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <AnalyticsWidgetSummary
-            title="New personnel (this week)"
+            title={t('analytics.newPersonnel', { defaultValue: 'New personnel (this week)' })}
             percent={0}
             total={weeklyNewPersonnel}
             color="secondary"
@@ -678,7 +681,7 @@ export function OverviewAnalyticsView() {
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <AnalyticsWidgetSummary
-            title="Tasks completed (this week)"
+            title={t('analytics.tasksCreatedVsCompleted')}
             percent={0}
             total={weeklyTasksCompleted}
             color="warning"
@@ -697,7 +700,7 @@ export function OverviewAnalyticsView() {
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <AnalyticsWidgetSummary
-            title="Notifications (this week)"
+            title={t('analytics.notifications', { defaultValue: 'Notifications (this week)' })}
             percent={0}
             total={weeklyNotifications}
             color="error"
@@ -716,14 +719,14 @@ export function OverviewAnalyticsView() {
 
         <Grid size={{ xs: 12, md: 6, lg: 4 }}>
           <AnalyticsCurrentVisits
-            title="Client workload (work orders)"
+            title={t('analytics.clientWorkload')}
             chart={{
               series: workloadSeries,
               colors: workloadColors,
               options: {
                 tooltip: {
                   y: {
-                    formatter: (val: number) => `${val} work orders`,
+                    formatter: (val: number) => `${val} ${t('analytics.workOrders', { defaultValue: 'work orders' })}`,
                   },
                 },
               },
@@ -733,13 +736,13 @@ export function OverviewAnalyticsView() {
 
         <Grid size={{ xs: 12, md: 6, lg: 8 }}>
           <AnalyticsWebsiteVisits
-            title="Tasks created vs completed"
-            subheader="Last 9 weeks"
+            title={t('analytics.tasksCreatedVsCompleted')}
+            subheader={t('analytics.lastWeeks', { defaultValue: 'Last 9 weeks' })}
             chart={{
               categories: categoriesLine,
               series: [
-                { name: 'Created', data: createdSeries },
-                { name: 'Completed', data: completedSeries },
+                { name: t('analytics.created', { defaultValue: 'Created' }), data: createdSeries },
+                { name: t('analytics.completed', { defaultValue: 'Completed' }), data: completedSeries },
               ],
               options: {
                 meta: {
@@ -754,8 +757,8 @@ export function OverviewAnalyticsView() {
         {/* Replace conversion card with tasks/subtasks buckets */}
         <Grid size={{ xs: 12, md: 6, lg: 8 }}>
           <AnalyticsConversionRates
-            title="Tasks and subtasks per client"
-            subheader="Top clients by task count"
+            title={t('analytics.tasksAndSubtasksPerClient')}
+            subheader={t('analytics.topClients', { defaultValue: 'Top clients by task count' })}
             chart={{
               categories: categoriesClients,
               series: seriesClients,
@@ -771,7 +774,7 @@ export function OverviewAnalyticsView() {
 
         <Grid size={{ xs: 12, md: 6, lg: 4 }}>
           <AnalyticsCurrentSubject
-            title="Personnel performance"
+            title={t('analytics.personnelPerformance')}
             chart={{
               categories: categoriesRadar,
               series: seriesRadar,
@@ -782,71 +785,18 @@ export function OverviewAnalyticsView() {
        {/* Work Orders Estimated vs Actual */}
         <Grid size={{ xs: 12, md: 12, lg: 8 }}>
           <AnalyticsWebsiteVisits
-            title="Work Orders — Estimated vs Actual Duration"
-            subheader="Comparison of planned vs actual hours for recent work orders"
+            title={t('analytics.workOrdersEstVsAct')}
+            subheader={t('analytics.topRecentWorkOrders', { defaultValue: 'Top 10 recent work orders' })}
             chart={{
               categories: woDurCategories,
               series: [
-                { name: 'Estimated (h)', data: estSeries },
-                { name: 'Actual (h)', data: actSeries },
+                { name: t('analytics.estimated', { defaultValue: 'Estimated (h)' }), data: estSeries },
+                { name: t('analytics.actual', { defaultValue: 'Actual (h)' }), data: actSeries },
               ],
-              colors: ['#4caf50', '#f44336'], // Green for estimated, Red for actual
+              colors: ['#64b5f6', '#ef5350'],
               options: {
-                chart: {
-                  type: 'bar',
-                  stacked: false,
-                },
-                fill: {
-                  colors: ['#4caf50', '#f44336'], // Base colors
-                  type: 'solid',
-                },
-                plotOptions: {
-                  bar: {
-                    horizontal: true,
-                    barHeight: '70%',
-                    dataLabels: {
-                      position: 'center',
-                    },
-                    borderRadius: 4,
-                  },
-                },
-                dataLabels: {
-                  enabled: true,
-                  style: {
-                    fontSize: '11px',
-                    fontWeight: 'bold',
-                    colors: ['#fff'],
-                  },
-                  formatter: (val: number) => `${val}h`,
-                },
-                tooltip: {
-                  shared: true,
-                  intersect: false,
-                  x: {
-                    show: true,
-                    formatter: (_val: number, opts: any) => {
-                      const categoryIndex = opts.dataPointIndex;
-                      return woDurCategories[categoryIndex] || `Work Order ${categoryIndex + 1}`;
-                    },
-                  },
-                  y: {
-                    formatter: (val: number) => `${val} hours`,
-                  },
-                },
-                legend: {
-                  position: 'top',
-                  horizontalAlign: 'right',
-                },
-                xaxis: {
-                  title: {
-                    text: 'Hours',
-                  },
-                },
-                yaxis: {
-                  title: {
-                    text: 'Work Orders',
-                  },
-                },
+                plotOptions: { bar: { horizontal: false } },
+                tooltip: { y: { formatter: (val: number) => `${val} h` } },
               },
             }}
           />
@@ -854,8 +804,8 @@ export function OverviewAnalyticsView() {
 
         <Grid size={{ xs: 12, md: 6, lg: 4 }}>
           <AnalyticsOrderTimeline
-            title="Work Order timeline"
-            subheader="Latest updates across all work orders"
+            title={t('analytics.orderTimeline', { defaultValue: 'Order timeline' })}
+            subheader={t('analytics.latestUpdates')}
             list={workOrderTimeline.entries || []}
             colorMap={workOrderTimeline.colors}
           />

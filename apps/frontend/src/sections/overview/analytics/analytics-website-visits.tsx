@@ -5,6 +5,8 @@ import Card from '@mui/material/Card';
 import CardHeader from '@mui/material/CardHeader';
 import { useTheme, alpha as hexAlpha } from '@mui/material/styles';
 
+import { useTranslate } from 'src/locales/use-locales';
+
 import { Chart, useChart } from 'src/components/chart';
 
 // ----------------------------------------------------------------------
@@ -19,17 +21,13 @@ type Props = CardProps & {
       name: string;
       data: number[];
     }[];
-    options?: ChartOptions & {
-      meta?: {
-        createdTaskNames?: string[][]; // parallel to categories, per index an array of task names
-        completedTaskNames?: string[][];
-      };
-    };
+    options?: ChartOptions & { meta?: Record<string, any> };
   };
 };
 
 export function AnalyticsWebsiteVisits({ title, subheader, chart, sx, ...other }: Props) {
   const theme = useTheme();
+  const { t } = useTranslate('common');
 
   const chartColors = chart.colors ?? [
     hexAlpha(theme.palette.primary.dark, 0.8),
@@ -46,10 +44,15 @@ export function AnalyticsWebsiteVisits({ title, subheader, chart, sx, ...other }
     tooltip: {
       y: {
         formatter: (value: number, { seriesIndex, dataPointIndex }: any) => {
+          // If meta task names provided, render list; else use unit label
+          const unit = t('analytics.visits', { defaultValue: 'visits' });
           const names = seriesIndex === 0 ? meta.createdTaskNames?.[dataPointIndex] : meta.completedTaskNames?.[dataPointIndex];
-          const list = Array.isArray(names) && names.length > 0 ? `\n- ${names.slice(0, 5).join('\n- ')}${names.length > 5 ? '\n…' : ''}` : '';
-          const label = seriesIndex === 0 ? 'created' : 'completed';
-          return `${value} ${label}${list ? `:${list}` : ''}`;
+          if (Array.isArray(names) && names.length > 0) {
+            const list = `\n- ${names.slice(0, 5).join('\n- ')}${names.length > 5 ? '\n…' : ''}`;
+            const label = seriesIndex === 0 ? t('analytics.created', { defaultValue: 'Created' }) : t('analytics.completed', { defaultValue: 'Completed' });
+            return `${value} ${label}:${list}`;
+          }
+          return `${value} ${unit}`;
         },
       },
     },

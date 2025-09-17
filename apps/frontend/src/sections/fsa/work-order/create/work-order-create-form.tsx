@@ -23,6 +23,7 @@ import {
 import { paths } from 'src/routes/paths';
 import { RouterLink } from 'src/routes/components';
 
+import { useTranslate } from 'src/locales/use-locales';
 import axiosInstance, { endpoints } from 'src/lib/axios';
 import { type Client } from 'src/lib/services/client-service';
 import { getPriorityOptionsWithMetadata } from 'src/constants/priorities';
@@ -67,6 +68,7 @@ export function WorkOrderCreateForm({ id }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [originalAttachments, setOriginalAttachments] = useState<any[]>([]);
   const router = useRouter();
+  const { t } = useTranslate('common');
 
   // Custom fetcher using axiosInstance for authentication
   const axiosFetcher = (url: string) => axiosInstance.get(url).then((res) => res.data);
@@ -226,7 +228,7 @@ export function WorkOrderCreateForm({ id }: Props) {
 
             const uploadedFiles = uploadResponse.data?.data || [];
             const attachments = uploadedFiles.map((f: any) => ({
-              name: f.name || 'Unknown',
+              name: f.name || t('unknown', { defaultValue: 'Unknown' }),
               url: f.url,
               type: f.mime || 'application/octet-stream',
               size: f.size || 0,
@@ -244,21 +246,21 @@ export function WorkOrderCreateForm({ id }: Props) {
           } catch (uploadError) {
             console.error('File upload failed:', uploadError);
             toast.warning(
-              'Work order saved, but file upload failed. You can add attachments later.'
+              t('workOrderSavedUploadFailed', { defaultValue: 'Work order saved, but file upload failed. You can add attachments later.' })
             );
           }
         }
 
-        toast.success(id ? 'Work order updated' : 'Work order created');
+        toast.success(id ? t('workOrderUpdated', { defaultValue: 'Work order updated' }) : t('workOrderCreated', { defaultValue: 'Work order created' }));
         router.push(paths.dashboard.fsa.workOrders.root);
       } else {
-        throw new Error(response.data.message || 'Failed to create work order');
+        throw new Error(response.data.message || t('failedToCreateWorkOrder', { defaultValue: 'Failed to create work order' }));
       }
     } catch (error) {
       const message =
         (error as any)?.response?.data?.message ||
         (error as any)?.message ||
-        'Something went wrong';
+        t('somethingWentWrong', { defaultValue: 'Something went wrong' });
       toast.error(message);
       console.error('Error creating work order:', error);
     } finally {
@@ -275,11 +277,11 @@ export function WorkOrderCreateForm({ id }: Props) {
             {/* Basic Information */}
             <Stack spacing={3}>
               <CustomBreadcrumbs
-        heading={id ? 'Work Order Edit' : 'Work Order Create'}
+        heading={id ? t('workOrderEdit', { defaultValue: 'Work Order Edit' }) : t('workOrderCreate', { defaultValue: 'Work Order Create' })}
         links={[
-          { name: 'Dashboard', href: '/dashboard' },
-          { name: 'Work Orders', href: '/dashboard/work-orders' },
-          ...(id ? [{ name: 'Work Order Edit' }] : []),
+          { name: t('dashboard.title', { tenant: '' }), href: '/dashboard' },
+          { name: t('pages.workOrders', { defaultValue: 'Work Orders' }), href: '/dashboard/work-orders' },
+          ...(id ? [{ name: t('workOrderEdit', { defaultValue: 'Work Order Edit' }) }] : []),
         ]}
         sx={{ mb: 5 }}
         action={
@@ -287,7 +289,7 @@ export function WorkOrderCreateForm({ id }: Props) {
              <Button variant="contained" startIcon={<Iconify icon="eva:eye-fill" />}
             href={`${paths.dashboard.fsa.workOrders.details(id)}`}
             >
-              View
+              {t('view', { defaultValue: 'View' })}
             </Button>
           )}
         
@@ -297,7 +299,7 @@ export function WorkOrderCreateForm({ id }: Props) {
                 <Grid size={{ xs: 12, md: 6 }}>
                   {clients.length === 0 ? (
                     <Stack spacing={1}>
-                      <Typography variant="subtitle2">Client *</Typography>
+                      <Typography variant="subtitle2">{t('client', { defaultValue: 'Client' })} *</Typography>
                       <Box
                         sx={{
                           p: 3,
@@ -313,10 +315,10 @@ export function WorkOrderCreateForm({ id }: Props) {
                           sx={{ width: 48, height: 48, color: 'text.disabled', mb: 2 }}
                         />
                         <Typography variant="h6" color="text.secondary" gutterBottom>
-                          No Clients Found
+                          {t('noClientsFound', { defaultValue: 'No Clients Found' })}
                         </Typography>
                         <Typography variant="body2" color="text.disabled" paragraph>
-                          You need to add at least one client before creating a work order.
+                          {t('addClientBeforeWorkOrder', { defaultValue: 'You need to add at least one client before creating a work order.' })}
                         </Typography>
                         <Link
                           component={RouterLink}
@@ -325,12 +327,12 @@ export function WorkOrderCreateForm({ id }: Props) {
                           sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}
                         >
                           <Iconify icon="solar:add-circle-bold" width={16} />
-                          Add Your First Client
+                          {t('addYourFirstClient', { defaultValue: 'Add Your First Client' })}
                         </Link>
                       </Box>
                     </Stack>
                   ) : (
-                    <RHFSelect name="clientId" label="Client *" placeholder="Select client">
+                    <RHFSelect name="clientId" label={`${t('client', { defaultValue: 'Client' })} *`} placeholder={t('selectClient', { defaultValue: 'Select client' })}>
                       {clients.map((client: Client) => (
                         <MenuItem key={client._id} value={client._id}>
                           {client.name}
@@ -343,7 +345,7 @@ export function WorkOrderCreateForm({ id }: Props) {
                 <Grid size={{ xs: 12 }}>
                   {personnel.length === 0 ? (
                     <Stack spacing={1}>
-                      <Typography variant="subtitle2">Assigned Personnel (Optional)</Typography>
+                      <Typography variant="subtitle2">{t('assignedPersonnelOptional', { defaultValue: 'Assigned Personnel (Optional)' })}</Typography>
                       <Box
                         sx={{
                           p: 2.5,
@@ -359,10 +361,10 @@ export function WorkOrderCreateForm({ id }: Props) {
                           sx={{ width: 40, height: 40, color: 'text.disabled', mb: 1.5 }}
                         />
                         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                          No Personnel Available
+                          {t('noPersonnelAvailable', { defaultValue: 'No Personnel Available' })}
                         </Typography>
                         <Typography variant="body2" color="text.disabled" sx={{ mb: 1.5 }}>
-                          Add personnel to assign them to work orders.
+                          {t('addPersonnelHint', { defaultValue: 'Add personnel to assign them to work orders.' })}
                         </Typography>
                         <Link
                           component={RouterLink}
@@ -376,7 +378,7 @@ export function WorkOrderCreateForm({ id }: Props) {
                           }}
                         >
                           <Iconify icon="solar:add-circle-bold" width={14} />
-                          Add Your First Personnel
+                          {t('addYourFirstPersonnel', { defaultValue: 'Add Your First Personnel' })}
                         </Link>
                       </Box>
                     </Stack>
@@ -388,16 +390,16 @@ export function WorkOrderCreateForm({ id }: Props) {
                 <Grid size={{ xs: 12 }}>
                   <RHFTextField
                     name="title"
-                    label="Work Order Title *"
-                    placeholder="Brief description of the work to be performed"
+                    label={`${t('workOrderTitle', { defaultValue: 'Work Order Title' })} *`}
+                    placeholder={t('workOrderTitlePlaceholder', { defaultValue: 'Brief description of the work to be performed' })}
                   />
                 </Grid>
 
                 <Grid size={{ xs: 12, md: 6 }}>
                   <Stack spacing={1}>
-                    <Typography variant="subtitle2">Priority (Optional)</Typography>
+                    <Typography variant="subtitle2">{t('priorityOptional', { defaultValue: 'Priority (Optional)' })}</Typography>
 
-                    <RHFSelect name="priority" label="Priority">
+                    <RHFSelect name="priority" label={t('priority', { defaultValue: 'Priority' })}>
                       {getPriorityOptionsWithMetadata().map((priority) => (
                         <MenuItem key={priority.value} value={priority.value}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -419,7 +421,7 @@ export function WorkOrderCreateForm({ id }: Props) {
 
                 <Grid size={{ xs: 12, md: 6 }}>
                   <Stack spacing={1}>
-                    <Typography variant="subtitle2">Estimated Duration (Optional)</Typography>
+                    <Typography variant="subtitle2">{t('estimatedDurationOptional', { defaultValue: 'Estimated Duration (Optional)' })}</Typography>
                     <Grid container spacing={1}>
                       <Grid size={{ xs: 2 }}>
                         <RHFTextField
@@ -431,10 +433,10 @@ export function WorkOrderCreateForm({ id }: Props) {
                       </Grid>
                       <Grid size={{ xs: 6 }}>
                         <RHFSelect name="estimatedDurationUnit">
-                          <MenuItem value="hours">Hours</MenuItem>
-                          <MenuItem value="days">Days</MenuItem>
-                          <MenuItem value="weeks">Weeks</MenuItem>
-                          <MenuItem value="months">Months</MenuItem>
+                          <MenuItem value="hours">{t('hours', { defaultValue: 'Hours' })}</MenuItem>
+                          <MenuItem value="days">{t('days', { defaultValue: 'Days' })}</MenuItem>
+                          <MenuItem value="weeks">{t('weeks', { defaultValue: 'Weeks' })}</MenuItem>
+                          <MenuItem value="months">{t('months', { defaultValue: 'Months' })}</MenuItem>
                         </RHFSelect>
                       </Grid>
                     </Grid>
@@ -446,14 +448,14 @@ export function WorkOrderCreateForm({ id }: Props) {
             {/* Location Information */}
             <Stack spacing={3}>
               <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 600 }}>
-                Location (Optional)
+                {t('locationOptional', { defaultValue: 'Location (Optional)' })}
               </Typography>
               <Grid container spacing={3}>
                 <Grid size={{ xs: 12 }}>
                   <RHFTextField
                     name="locationAddress"
-                    label="Service Address"
-                    placeholder="Enter the complete service address"
+                    label={t('serviceAddress', { defaultValue: 'Service Address' })}
+                    placeholder={t('serviceAddressPlaceholder', { defaultValue: 'Enter the complete service address' })}
                     multiline
                     rows={2}
                   />
@@ -464,30 +466,30 @@ export function WorkOrderCreateForm({ id }: Props) {
             {/* Scheduling & Additional Information */}
             <Stack spacing={3}>
               <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 600 }}>
-                Scheduling & Additional Information (Optional)
+                {t('schedulingAndAdditionalOptional', { defaultValue: 'Scheduling & Additional Information (Optional)' })}
               </Typography>
               <Grid container spacing={3}>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <RHFDateTimePicker
                     name="scheduledDate"
-                    label="Preferred Scheduled Date & Time"
+                    label={t('preferredScheduledDateTime', { defaultValue: 'Preferred Scheduled Date & Time' })}
                     minutesStep={60}
                     slotProps={{
                       textField: {
-                        helperText: 'Leave empty for ASAP scheduling',
+                        helperText: t('leaveEmptyForASAP', { defaultValue: 'Leave empty for ASAP scheduling' }),
                       },
                     }}
                   />
                 </Grid>
 
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <RHFSelect name="progressMode" label="Progress Mode" placeholder="Select mode">
-                    <MenuItem value="computed">Computed</MenuItem>
-                    <MenuItem value="manual">Manual</MenuItem>
-                    <MenuItem value="weighted">Weighted</MenuItem>
+                  <RHFSelect name="progressMode" label={t('progressMode', { defaultValue: 'Progress Mode' })} placeholder={t('selectMode', { defaultValue: 'Select mode' })}>
+                    <MenuItem value="computed">{t('computed', { defaultValue: 'Computed' })}</MenuItem>
+                    <MenuItem value="manual">{t('manual', { defaultValue: 'Manual' })}</MenuItem>
+                    <MenuItem value="weighted">{t('weighted', { defaultValue: 'Weighted' })}</MenuItem>
                   </RHFSelect>
                   <Stack spacing={1}>
-                    <Typography variant="subtitle2">Manual Progress</Typography>
+                    <Typography variant="subtitle2">{t('manualProgress', { defaultValue: 'Manual Progress' })}</Typography>
                     <Box px={1}>
                       <input
                         type="range"
@@ -505,12 +507,12 @@ export function WorkOrderCreateForm({ id }: Props) {
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <Stack spacing={1}>
-                    <Typography variant="subtitle2">Attachments (Optional)</Typography>
+                    <Typography variant="subtitle2">{t('attachmentsOptional', { defaultValue: 'Attachments (Optional)' })}</Typography>
                     <RHFUpload
                       name="attachments"
                       multiple
                       accept={{ 'image/*': [], 'application/pdf': [], 'text/*': [] }}
-                      helperText="Upload photos, documents, or other relevant files"
+                      helperText={t('uploadHelper', { defaultValue: 'Upload photos, documents, or other relevant files' })}
                     />
                   </Stack>
                 </Grid>
@@ -518,10 +520,10 @@ export function WorkOrderCreateForm({ id }: Props) {
 
               <Grid size={{ xs: 12, md: 6 }}>
                 <Stack spacing={1.5}>
-                  <Typography variant="subtitle2">Details (Optional)</Typography>
+                  <Typography variant="subtitle2">{t('detailsOptional', { defaultValue: 'Details (Optional)' })}</Typography>
                   <RHFEditor
                     name="details"
-                    placeholder="Describe the work to be performed, requirements, and any special instructions..."
+                    placeholder={t('detailsPlaceholder', { defaultValue: 'Describe the work to be performed, requirements, and any special instructions...' })}
                   />
                 </Stack>
               </Grid>
@@ -535,7 +537,7 @@ export function WorkOrderCreateForm({ id }: Props) {
               sx={{ pt: 2, borderTop: 1, borderColor: 'divider' }}
             >
               <Button variant="outlined" href="/dashboard/work-orders" size="large">
-                Cancel
+                {t('cancel', { defaultValue: 'Cancel' })}
               </Button>
               <Button
                 type="submit"
@@ -545,7 +547,7 @@ export function WorkOrderCreateForm({ id }: Props) {
                 size="large"
                 startIcon={<Iconify icon="solar:add-circle-bold" />}
               >
-                {id ? 'Update Work Order' : 'Create Work Order'}
+                {id ? t('updateWorkOrder', { defaultValue: 'Update Work Order' }) : t('createWorkOrder', { defaultValue: 'Create Work Order' })}
               </Button>
             </Stack>
           </Stack>

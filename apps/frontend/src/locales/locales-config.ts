@@ -11,7 +11,6 @@ import {
 // MUI Date Pickers Locales
 import {
   enUS as enUSDate,
-  elGR as elGRDate,
 } from '@mui/x-date-pickers/locales';
 // MUI Data Grid Locales
 import {

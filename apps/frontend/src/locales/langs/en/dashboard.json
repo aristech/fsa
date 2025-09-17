@@ -1,0 +1,58 @@
+{
+  "welcome": {
+    "title": "Hi, Welcome back 👋",
+    "subtitle": "Field Service Dashboard"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "workOrders": "Work Orders",
+    "personnel": "Personnel",
+    "tasks": "Tasks",
+    "timeline": "Timeline",
+    "performance": "Performance",
+    "overview": "Overview",
+    "thisWeek": "this week",
+    "newPersonnel": "New personnel",
+    "tasksCompleted": "Tasks completed",
+    "workOrderTimeline": "Work Order Timeline",
+    "personnelPerformance": "Personnel Performance",
+    "clientWorkload": "Client workload (work orders)",
+    "tasksCreatedCompleted": "Tasks created vs completed",
+    "estimatedVsActual": "Work Orders — Estimated vs Actual Duration",
+    "comparisonPlannedActual": "Comparison of planned vs actual hours for recent work orders",
+    "latestUpdates": "Latest updates across all work orders"
+  },
+  "stats": {
+    "workOrdersThisWeek": "Work orders (this week)",
+    "newPersonnelThisWeek": "New personnel (this week)",
+    "tasksCompletedThisWeek": "Tasks completed (this week)",
+    "notificationsThisWeek": "Notifications (this week)"
+  },
+  "buttons": {
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "view": "View",
+    "details": "Details",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "reset": "Reset",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import",
+    "refresh": "Refresh"
+  },
+  "actions": {
+    "new": "New",
+    "add": "Add",
+    "remove": "Remove",
+    "update": "Update",
+    "assign": "Assign",
+    "unassign": "Unassign"
+  }
+}

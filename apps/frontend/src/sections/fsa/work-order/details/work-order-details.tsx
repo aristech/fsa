@@ -24,6 +24,7 @@ import {
   formatMinutesToDuration,
 } from 'src/utils/format-duration';
 
+import { useTranslate } from 'src/locales/use-locales';
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
 import { Editor } from 'src/components/editor';
@@ -110,6 +111,7 @@ const getTimelineType = (eventType: string, entityType: string) => {
 };
 
 export function WorkOrderDetails({ id }: Props) {
+  const { t } = useTranslate('common');
   // Fetch work order data
   const { data: detailsRes } = useSWR(
     endpoints.fsa.workOrders.details(id),
@@ -158,10 +160,10 @@ export function WorkOrderDetails({ id }: Props) {
   return (
     <>
       <CustomBreadcrumbs
-        heading={workOrder?.title || workOrder?.workOrderNumber || 'Work Order'}
+        heading={workOrder?.title || workOrder?.workOrderNumber || t('workOrder', { defaultValue: 'Work Order' })}
         links={[
-          { name: 'Dashboard', href: '/dashboard' },
-          { name: 'Work Orders', href: '/dashboard/work-orders' },
+          { name: t('dashboard.title', { tenant: '' }), href: '/dashboard' },
+          { name: t('pages.workOrders', { defaultValue: 'Work Orders' }), href: '/dashboard/work-orders' },
           ...(workOrder?.title || workOrder?.workOrderNumber ? [{ name: workOrder?.title || workOrder?.workOrderNumber }] : []),
         ]}
         action={
@@ -171,7 +173,7 @@ export function WorkOrderDetails({ id }: Props) {
               startIcon={<Iconify icon="eva:edit-fill" />}
               href={paths.dashboard.fsa.workOrders.edit(id)}
             >
-              Edit
+              {t('edit', { defaultValue: 'Edit' })}
             </Button>
            
           </Stack>
@@ -204,15 +206,15 @@ export function WorkOrderDetails({ id }: Props) {
                 <Grid size={{ xs: 12, md: 4 }}>
                   <Stack spacing={1} alignItems={{ xs: 'flex-start', md: 'flex-end' }}>
                     <Typography variant="body2" color="text.secondary">
-                      Client
+                      {t('client', { defaultValue: 'Client' })}
                     </Typography>
                     <Typography variant="subtitle2">
                       {typeof workOrder?.clientId === 'object' ? workOrder?.clientId?.name : '—'}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       {workOrder?.scheduledDate
-                        ? `Scheduled: ${fDateTime(workOrder.scheduledDate)}`
-                        : 'Not scheduled'}
+                        ? `${t('scheduled', { defaultValue: 'Scheduled:' })} ${fDateTime(workOrder.scheduledDate)}`
+                        : t('notScheduled', { defaultValue: 'Not scheduled' })}
                     </Typography>
                   </Stack>
                 </Grid>
@@ -226,7 +228,7 @@ export function WorkOrderDetails({ id }: Props) {
             <CardContent>
               <Stack spacing={1.5}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Typography variant="h6">Progress</Typography>
+                  <Typography variant="h6">{t('progress', { defaultValue: 'Progress' })}</Typography>
                   {summary?.progressMode && (
                     <Chip label={summary.progressMode} size="small" variant="outlined" />
                   )}
@@ -238,9 +240,9 @@ export function WorkOrderDetails({ id }: Props) {
                 />
                 <Typography variant="body2" color="text.secondary">
                   {(summary?.progress ?? 0).toString()}% • {summary?.tasksCompleted ?? 0}/
-                  {summary?.tasksTotal ?? 0} completed
+                  {summary?.tasksTotal ?? 0} {t('completed', { defaultValue: 'completed' })}
                   {typeof summary?.tasksInProgress === 'number'
-                    ? ` • ${summary?.tasksInProgress ?? 0} in progress`
+                    ? ` • ${summary?.tasksInProgress ?? 0} ${t('inProgress', { defaultValue: 'in progress' })}`
                     : ''}
                 </Typography>
 
@@ -248,7 +250,7 @@ export function WorkOrderDetails({ id }: Props) {
                 {summary?.progressMode === 'manual' && (
                   <Stack spacing={1}>
                     <Typography variant="caption" color="text.secondary">
-                      Adjust progress
+                      {t('adjustProgress', { defaultValue: 'Adjust progress' })}
                     </Typography>
                     <Slider
                       value={summary?.progress ?? 0}
@@ -294,7 +296,7 @@ export function WorkOrderDetails({ id }: Props) {
 
                 {/* Details (rendered with Editor) */}
                 <Stack spacing={1}>
-                  <Typography variant="h6">Details</Typography>
+                  <Typography variant="h6">{t('details', { defaultValue: 'Details' })}</Typography>
                   <Editor
                     value={(workOrder as any)?.details || ''}
                     editable={false}
@@ -317,12 +319,12 @@ export function WorkOrderDetails({ id }: Props) {
                 <Divider />
 
                 <Stack spacing={2}>
-                  <Typography variant="h6">Work Order Information</Typography>
+                  <Typography variant="h6">{t('workOrderInformation', { defaultValue: 'Work Order Information' })}</Typography>
                   <Grid container spacing={2}>
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <Stack spacing={0.5}>
                         <Typography variant="caption" color="text.secondary">
-                          Work Order Number
+                          {t('workOrderNumber', { defaultValue: 'Work Order Number' })}
                         </Typography>
                         <Typography variant="body2">{workOrder?.workOrderNumber || '—'}</Typography>
                       </Stack>
@@ -331,7 +333,7 @@ export function WorkOrderDetails({ id }: Props) {
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <Stack spacing={0.5}>
                         <Typography variant="caption" color="text.secondary">
-                          Scheduled Date
+                          {t('scheduledDate', { defaultValue: 'Scheduled Date' })}
                         </Typography>
                         <Typography variant="body2">
                           {workOrder?.scheduledDate ? fDateTime(workOrder.scheduledDate) : '—'}
@@ -342,15 +344,15 @@ export function WorkOrderDetails({ id }: Props) {
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <Stack spacing={0.5}>
                         <Typography variant="caption" color="text.secondary">
-                          Duration
+                          {t('duration', { defaultValue: 'Duration' })}
                         </Typography>
                         <Stack spacing={0.5}>
                           <Typography variant="body2">
-                            <strong>Estimated:</strong>{' '}
+                            <strong>{t('estimated', { defaultValue: 'Estimated:' })}</strong>{' '}
                             {formatEstimatedDuration((workOrder as any)?.estimatedDuration)}
                           </Typography>
                           <Typography variant="body2">
-                            <strong>Actual:</strong>{' '}
+                            <strong>{t('actual', { defaultValue: 'Actual:' })}</strong>{' '}
                             {(workOrder as any)?.actualDuration
                               ? formatMinutesToDuration((workOrder as any).actualDuration)
                               : '0 min'}
@@ -362,7 +364,7 @@ export function WorkOrderDetails({ id }: Props) {
                                   (workOrder as any).actualDuration,
                                   (workOrder as any).estimatedDuration
                                 )}
-                                % of estimated time
+                                % {t('ofEstimatedTime', { defaultValue: 'of estimated time' })}
                               </Typography>
                             )}
                         </Stack>
@@ -372,7 +374,7 @@ export function WorkOrderDetails({ id }: Props) {
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <Stack spacing={0.5}>
                         <Typography variant="caption" color="text.secondary">
-                          Labor Cost
+                          {t('laborCost', { defaultValue: 'Labor Cost' })}
                         </Typography>
                         <Typography variant="body2">
                           {(workOrder as any)?.cost?.labor
@@ -388,7 +390,7 @@ export function WorkOrderDetails({ id }: Props) {
 
                 {workOrder?.location?.address && (
                   <Stack spacing={2}>
-                    <Typography variant="h6">Location</Typography>
+                    <Typography variant="h6">{t('location', { defaultValue: 'Location' })}</Typography>
                     <Typography variant="body2">{workOrder.location.address}</Typography>
                   </Stack>
                 )}
@@ -397,7 +399,7 @@ export function WorkOrderDetails({ id }: Props) {
                   <>
                     <Divider />
                     <Stack spacing={2}>
-                      <Typography variant="h6">Notes</Typography>
+                      <Typography variant="h6">{t('notes', { defaultValue: 'Notes' })}</Typography>
                       <Typography variant="body2">{(workOrder as any).notes}</Typography>
                     </Stack>
                   </>
@@ -414,7 +416,7 @@ export function WorkOrderDetails({ id }: Props) {
             <Card>
               <CardContent>
                 <Stack spacing={2}>
-                  <Typography variant="h6">Client</Typography>
+                  <Typography variant="h6">{t('client', { defaultValue: 'Client' })}</Typography>
                   <Stack spacing={1}>
                     <Typography variant="subtitle2">
                       {typeof workOrder?.clientId === 'object' ? workOrder.clientId.name : '—'}
@@ -428,7 +430,7 @@ export function WorkOrderDetails({ id }: Props) {
             <Card>
               <CardContent>
                 <Stack spacing={2}>
-                  <Typography variant="h6">Assigned Personnel</Typography>
+                  <Typography variant="h6">{t('assignedPersonnel', { defaultValue: 'Assigned Personnel' })}</Typography>
                   <WorkOrderPersonnelSelection
                     value={Array.isArray(workOrder?.personnelIds)
                       ? workOrder.personnelIds.map((p: any) => (typeof p === 'string' ? p : p._id)).filter(Boolean)
@@ -450,7 +452,7 @@ export function WorkOrderDetails({ id }: Props) {
             <Card>
               <CardContent>
                 <Stack spacing={2}>
-                  <Typography variant="h6">Attachments</Typography>
+                  <Typography variant="h6">{t('attachmentsTitle', { defaultValue: 'Attachments' })}</Typography>
                   <WorkOrderDetailsAttachments
                     attachments={(workOrder as any)?.attachments || []}
                     workOrderId={id}
@@ -472,8 +474,8 @@ export function WorkOrderDetails({ id }: Props) {
 
             {/* Work Order Timeline */}
             <AnalyticsOrderTimeline
-              title="Timeline"
-              subheader="Track all changes to this work order and related tasks"
+              title={t('timeline', { defaultValue: 'Timeline' })}
+              subheader={t('workOrderTimelineSubheader', { defaultValue: 'Track all changes to this work order and related tasks' })}
               list={timelineList}
             />
           </Stack>

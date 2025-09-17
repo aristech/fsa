@@ -9,6 +9,7 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 
+import { useTranslate } from 'src/locales/use-locales';
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
 import { Iconify } from 'src/components/iconify';
@@ -77,6 +78,7 @@ type Props = {
 
 export function WorkOrderPersonnelSelection({ value = [], onChange, disabled = false }: Props) {
   const contactsDialog = useBoolean();
+  const { t } = useTranslate('common');
 
   // Fetch personnel data
   const axiosFetcher = (url: string) => axiosInstance.get(url).then((res) => res.data);
@@ -88,12 +90,12 @@ export function WorkOrderPersonnelSelection({ value = [], onChange, disabled = f
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <BlockLabel sx={{ height: 40, lineHeight: '40px' }}>Assigned Personnel</BlockLabel>
+      <BlockLabel sx={{ height: 40, lineHeight: '40px' }}>{t('assignedPersonnel', { defaultValue: 'Assigned Personnel' })}</BlockLabel>
 
       <Box sx={{ gap: 1, display: 'flex', flexWrap: 'wrap' }}>
         {error ? (
           <Typography variant="body2" sx={{ color: 'error.main', lineHeight: '40px' }}>
-            Error loading personnel
+            {t('errorLoadingPersonnel', { defaultValue: 'Error loading personnel' })}
           </Typography>
         ) : isLoading ? (
           <CircularProgress size={24} sx={{ my: 1 }} />
@@ -124,13 +126,13 @@ export function WorkOrderPersonnelSelection({ value = [], onChange, disabled = f
           })
         ) : (
           <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: '40px' }}>
-            No personnel assigned
+            {t('noPersonnelAssigned', { defaultValue: 'No personnel assigned' })}
           </Typography>
         )}
 
         {!disabled && (
           <>
-            <Tooltip title="Assign personnel">
+            <Tooltip title={t('assignPersonnel', { defaultValue: 'Assign personnel' })}>
               <IconButton
                 onClick={contactsDialog.onTrue}
                 sx={[

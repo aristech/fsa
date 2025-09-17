@@ -23,6 +23,7 @@ import {
 import { useRouter } from 'src/routes/hooks';
 
 import axiosInstance from 'src/lib/axios';
+import { useTranslate } from 'src/locales/use-locales';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
@@ -56,6 +57,7 @@ interface PersonnelData {
 export default function FieldProfilePage() {
   const router = useRouter();
   const { user: _user, authenticated, loading: authLoading } = useAuthContext();
+  const { t } = useTranslate('common');
 
   const [personnel, setPersonnel] = useState<PersonnelData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -95,7 +97,7 @@ export default function FieldProfilePage() {
           // No personnel record yet; show setup UI
           setPersonnel(null);
         } else {
-          toast.error('Failed to load profile data');
+          toast.error(t('failedToLoadProfile', { defaultValue: 'Failed to load profile data' }));
         }
       } finally {
         if (active) setLoading(false);
@@ -106,7 +108,7 @@ export default function FieldProfilePage() {
     return () => {
       active = false;
     };
-  }, [authenticated]);
+  }, [authenticated, t]);
 
   const handleSaveProfile = async () => {
     if (!personnel) return;
@@ -125,10 +127,10 @@ export default function FieldProfilePage() {
       } : null);
 
       setEditMode(false);
-      toast.success('Profile updated successfully');
+      toast.success(t('profileUpdated', { defaultValue: 'Profile updated successfully' }));
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('Failed to update profile');
+      toast.error(t('failedToUpdateProfile', { defaultValue: 'Failed to update profile' }));
     }
   };
 
@@ -136,10 +138,10 @@ export default function FieldProfilePage() {
     try {
       await signOut();
       router.replace('/');
-      toast.success('Logged out successfully');
+      toast.success(t('loggedOutSuccessfully', { defaultValue: 'Logged out successfully' }));
     } catch (error) {
       console.error('Error logging out:', error);
-      toast.error('Failed to logout');
+      toast.error(t('failedToLogout', { defaultValue: 'Failed to logout' }));
     }
     setLogoutDialogOpen(false);
   };
@@ -155,14 +157,14 @@ export default function FieldProfilePage() {
           phone: response.data.data.user.phone || '',
           notes: response.data.data.notes || '',
         });
-        toast.success('Profile set up successfully! You can now use field operations.');
+        toast.success(t('profileSetupSuccess', { defaultValue: 'Profile set up successfully! You can now use field operations.' }));
       }
     } catch (error: any) {
       console.error('Error setting up profile:', error);
       if (error.response?.status === 400) {
-        toast.error('Personnel record already exists');
+        toast.error(t('personnelExists', { defaultValue: 'Personnel record already exists' }));
       } else {
-        toast.error('Failed to set up profile. Please try again.');
+        toast.error(t('failedToSetupProfile', { defaultValue: 'Failed to set up profile. Please try again.' }));
       }
     } finally {
       setSettingUp(false);
@@ -172,13 +174,13 @@ export default function FieldProfilePage() {
   const getEnvironmentLabel = (access: string) => {
     switch (access) {
       case 'field':
-        return 'Field Only';
+        return t('fieldOnly', { defaultValue: 'Field Only' });
       case 'dashboard':
-        return 'Dashboard Only';
+        return t('dashboardOnly', { defaultValue: 'Dashboard Only' });
       case 'all':
-        return 'All Environments';
+        return t('allEnvironments', { defaultValue: 'All Environments' });
       default:
-        return 'Unknown';
+        return t('unknown', { defaultValue: 'Unknown' });
     }
   };
 
@@ -198,7 +200,7 @@ export default function FieldProfilePage() {
   if (authLoading || loading) {
     return (
       <Box sx={{ p: 2, textAlign: 'center' }}>
-        <Typography>Loading profile...</Typography>
+        <Typography>{t('loadingProfile', { defaultValue: 'Loading profile...' })}</Typography>
       </Box>
     );
   }
@@ -208,11 +210,10 @@ export default function FieldProfilePage() {
       <Box sx={{ p: 2 }}>
         <Alert severity="info">
           <Typography variant="h6" gutterBottom>
-            Welcome to Field Operations!
+            {t('welcomeFieldOps', { defaultValue: 'Welcome to Field Operations!' })}
           </Typography>
           <Typography variant="body2" gutterBottom>
-            Your account needs a personnel profile to access field operations.
-            We&apos;ll set this up automatically with default settings that you can customize later.
+            {t('accountNeedsPersonnelProfile', { defaultValue: "Your account needs a personnel profile to access field operations. We'll set this up automatically with default settings that you can customize later." })}
           </Typography>
           <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Button
@@ -221,7 +222,7 @@ export default function FieldProfilePage() {
               disabled={settingUp}
               startIcon={settingUp ? undefined : <Iconify icon="solar:user-plus-bold" />}
             >
-              {settingUp ? 'Setting up...' : 'Set Up My Profile'}
+              {settingUp ? t('settingUp', { defaultValue: 'Setting up...' }) : t('setUpMyProfile', { defaultValue: 'Set Up My Profile' })}
             </Button>
             <Button
               onClick={() => setLogoutDialogOpen(true)}
@@ -229,21 +230,21 @@ export default function FieldProfilePage() {
               color="error"
               size="small"
             >
-              Logout
+              {t('logout', { defaultValue: 'Logout' })}
             </Button>
           </Box>
         </Alert>
 
         {/* Include logout dialog even when no personnel record */}
         <Dialog open={logoutDialogOpen} onClose={() => setLogoutDialogOpen(false)}>
-          <DialogTitle>Confirm Logout</DialogTitle>
+          <DialogTitle>{t('confirmLogout', { defaultValue: 'Confirm Logout' })}</DialogTitle>
           <DialogContent>
-            <Typography>Are you sure you want to logout?</Typography>
+            <Typography>{t('areYouSureLogout', { defaultValue: 'Are you sure you want to logout?' })}</Typography>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setLogoutDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => setLogoutDialogOpen(false)}>{t('cancel', { defaultValue: 'Cancel' })}</Button>
             <Button onClick={handleLogout} color="error" variant="contained">
-              Logout
+              {t('logout', { defaultValue: 'Logout' })}
             </Button>
           </DialogActions>
         </Dialog>
@@ -267,7 +268,7 @@ export default function FieldProfilePage() {
             }}
           >
             {(() => {
-              const name = personnel.user.name || 'Unknown User';
+              const name = personnel.user.name || t('unknownUser', { defaultValue: 'Unknown User' });
               const nameParts = name.split(' ');
               if (nameParts.length >= 2) {
                 return `${nameParts[0].charAt(0)}${nameParts[nameParts.length - 1].charAt(0)}`.toUpperCase();
@@ -276,10 +277,10 @@ export default function FieldProfilePage() {
             })()}
           </Avatar>
           <Typography variant="h5" gutterBottom>
-            {personnel.user.name || 'Unknown User'}
+            {personnel.user.name || t('unknownUser', { defaultValue: 'Unknown User' })}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {personnel.role?.name || 'No Role Assigned'}
+            {personnel.role?.name || t('noRoleAssigned', { defaultValue: 'No Role Assigned' })}
           </Typography>
         </Box>
 
@@ -287,7 +288,7 @@ export default function FieldProfilePage() {
         <Card>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">Basic Information</Typography>
+              <Typography variant="h6">{t('basicInformation', { defaultValue: 'Basic Information' })}</Typography>
               <IconButton
                 onClick={() => setEditMode(!editMode)}
                 size="small"
@@ -300,14 +301,14 @@ export default function FieldProfilePage() {
             <Stack spacing={2}>
               <Box>
                 <Typography variant="subtitle2" color="text.secondary">
-                  Email
+                  {t('email', { defaultValue: 'Email' })}
                 </Typography>
                 <Typography>{personnel.user.email}</Typography>
               </Box>
 
               {editMode ? (
                 <TextField
-                  label="Phone"
+                  label={t('phone', { defaultValue: 'Phone' })}
                   value={editData.phone}
                   onChange={(e) => setEditData(prev => ({ ...prev, phone: e.target.value }))}
                   fullWidth
@@ -316,18 +317,18 @@ export default function FieldProfilePage() {
               ) : (
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary">
-                    Phone
+                    {t('phone', { defaultValue: 'Phone' })}
                   </Typography>
-                  <Typography>{personnel.user.phone || 'Not provided'}</Typography>
+                  <Typography>{personnel.user.phone || t('notProvided', { defaultValue: 'Not provided' })}</Typography>
                 </Box>
               )}
 
               <Box>
                 <Typography variant="subtitle2" color="text.secondary">
-                  Role
+                  {t('role', { defaultValue: 'Role' })}
                 </Typography>
                 <Chip
-                  label={personnel.role?.name || 'No Role Assigned'}
+                  label={personnel.role?.name || t('noRoleAssigned', { defaultValue: 'No Role Assigned' })}
                   color="primary"
                   size="small"
                   sx={{ mt: 0.5 }}
@@ -336,7 +337,7 @@ export default function FieldProfilePage() {
 
               <Box>
                 <Typography variant="subtitle2" color="text.secondary">
-                  Environment Access
+                  {t('environmentAccess', { defaultValue: 'Environment Access' })}
                 </Typography>
                 <Chip
                   label={getEnvironmentLabel(personnel.environmentAccess)}
@@ -348,10 +349,10 @@ export default function FieldProfilePage() {
 
               <Box>
                 <Typography variant="subtitle2" color="text.secondary">
-                  Status
+                  {t('status', { defaultValue: 'Status' })}
                 </Typography>
                 <Chip
-                  label={personnel.isActive ? 'Active' : 'Inactive'}
+                  label={personnel.isActive ? t('active', { defaultValue: 'Active' }) : t('inactive', { defaultValue: 'Inactive' })}
                   color={personnel.isActive ? 'success' : 'error'}
                   size="small"
                   sx={{ mt: 0.5 }}
@@ -362,10 +363,10 @@ export default function FieldProfilePage() {
             {editMode && (
               <Box sx={{ mt: 3, display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
                 <Button onClick={() => setEditMode(false)} variant="outlined" size="small">
-                  Cancel
+                  {t('cancel', { defaultValue: 'Cancel' })}
                 </Button>
                 <Button onClick={handleSaveProfile} variant="contained" size="small">
-                  Save
+                  {t('save', { defaultValue: 'Save' })}
                 </Button>
               </Box>
             )}
@@ -376,12 +377,12 @@ export default function FieldProfilePage() {
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              Skills & Certifications
+              {t('skillsAndCertifications', { defaultValue: 'Skills & Certifications' })}
             </Typography>
 
             <Box sx={{ mb: 2 }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Skills
+                {t('skills', { defaultValue: 'Skills' })}
               </Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                 {personnel.skills.length > 0 ? (
@@ -390,7 +391,7 @@ export default function FieldProfilePage() {
                   ))
                 ) : (
                   <Typography variant="body2" color="text.secondary">
-                    No skills listed
+                    {t('noSkillsListed', { defaultValue: 'No skills listed' })}
                   </Typography>
                 )}
               </Stack>
@@ -398,7 +399,7 @@ export default function FieldProfilePage() {
 
             <Box>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Certifications
+                {t('certifications', { defaultValue: 'Certifications' })}
               </Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                 {personnel.certifications.length > 0 ? (
@@ -407,7 +408,7 @@ export default function FieldProfilePage() {
                   ))
                 ) : (
                   <Typography variant="body2" color="text.secondary">
-                    No certifications listed
+                    {t('noCertificationsListed', { defaultValue: 'No certifications listed' })}
                   </Typography>
                 )}
               </Stack>
@@ -419,7 +420,7 @@ export default function FieldProfilePage() {
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              Notes
+              {t('notes', { defaultValue: 'Notes' })}
             </Typography>
 
             {editMode ? (
@@ -429,11 +430,11 @@ export default function FieldProfilePage() {
                 multiline
                 rows={3}
                 fullWidth
-                placeholder="Add personal notes..."
+                placeholder={t('addPersonalNotes', { defaultValue: 'Add personal notes...' })}
               />
             ) : (
               <Typography variant="body2" color="text.secondary">
-                {personnel.notes || 'No notes available'}
+                {personnel.notes || t('noNotesAvailable', { defaultValue: 'No notes available' })}
               </Typography>
             )}
           </CardContent>
@@ -443,7 +444,7 @@ export default function FieldProfilePage() {
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              Account Actions
+              {t('accountActions', { defaultValue: 'Account Actions' })}
             </Typography>
             <Stack spacing={2}>
               <Button
@@ -453,7 +454,7 @@ export default function FieldProfilePage() {
                 startIcon={<Iconify icon="solar:logout-2-bold" />}
                 fullWidth
               >
-                Logout
+                {t('logout', { defaultValue: 'Logout' })}
               </Button>
             </Stack>
           </CardContent>
@@ -462,14 +463,14 @@ export default function FieldProfilePage() {
 
       {/* Logout Confirmation Dialog */}
       <Dialog open={logoutDialogOpen} onClose={() => setLogoutDialogOpen(false)}>
-        <DialogTitle>Confirm Logout</DialogTitle>
+        <DialogTitle>{t('confirmLogout', { defaultValue: 'Confirm Logout' })}</DialogTitle>
         <DialogContent>
-          <Typography>Are you sure you want to logout?</Typography>
+          <Typography>{t('areYouSureLogout', { defaultValue: 'Are you sure you want to logout?' })}</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setLogoutDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setLogoutDialogOpen(false)}>{t('cancel', { defaultValue: 'Cancel' })}</Button>
           <Button onClick={handleLogout} color="error" variant="contained">
-            Logout
+            {t('logout', { defaultValue: 'Logout' })}
           </Button>
         </DialogActions>
       </Dialog>

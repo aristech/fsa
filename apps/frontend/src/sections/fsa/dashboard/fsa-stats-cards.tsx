@@ -9,6 +9,7 @@ import { Card, Stack, Skeleton, Typography, CardContent } from '@mui/material';
 
 import { fNumber } from 'src/utils/format-number';
 
+import { useTranslate } from 'src/locales/use-locales';
 import { useClient } from 'src/contexts/client-context';
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
@@ -21,6 +22,7 @@ import { Iconify } from 'src/components/iconify';
 export function FsaStatsCards() {
   const theme = useTheme();
   const { selectedClient } = useClient();
+  const { t } = useTranslate('common');
 
   // Build URLs with client filter
   const workOrdersUrl = selectedClient
@@ -108,28 +110,28 @@ export function FsaStatsCards() {
 
     return [
       {
-        title: 'Total Work Orders',
+        title: t('dashboard.totalWorkOrders', { defaultValue: 'Total Work Orders' }),
         value: workOrders.length,
         icon: 'solar:clipboard-list-bold-duotone',
         color: 'primary',
         loading: workOrdersLoading,
       },
       {
-        title: 'Completed Today',
+        title: t('dashboard.completedToday', { defaultValue: 'Completed Today' }),
         value: completedToday,
         icon: 'solar:check-circle-bold-duotone',
         color: 'success',
         loading: workOrdersLoading,
       },
       {
-        title: 'Technicians Online',
+        title: t('dashboard.techniciansOnline', { defaultValue: 'Technicians Online' }),
         value: techniciansOnline,
         icon: 'solar:users-group-rounded-bold-duotone',
         color: 'info',
         loading: personnelLoading || onlineUsersLoading,
       },
       {
-        title: 'Active Time Tracking',
+        title: t('dashboard.activeTimeTracking', { defaultValue: 'Active Time Tracking' }),
         value: personnelBeingTracked,
         icon: 'solar:clock-circle-bold-duotone',
         color: 'warning',
@@ -145,12 +147,13 @@ export function FsaStatsCards() {
     personnelLoading,
     sessionsLoading,
     onlineUsersLoading,
+    t,
   ]);
 
   return (
     <Grid container spacing={3}>
       {stats.map((stat) => (
-        <Grid size={{ xs: 12, sm: 6, md: 3 }} key={stat.title}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }} key={stat.title as string}>
           <Card>
             <CardContent>
               <Stack direction="row" alignItems="center" justifyContent="space-between">

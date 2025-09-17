@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 import axiosInstance from 'src/lib/axios';
 import { CONFIG } from 'src/global-config';
+import { useTranslate } from 'src/locales/use-locales';
 
 import { toast } from 'src/components/snackbar';
 import { UploadBox, MultiFilePreview } from 'src/components/upload';
@@ -24,6 +25,7 @@ type Props = {
 export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange }: Props) {
   const [files, setFiles] = useState<(File | string)[]>([]);
   const [uploadedAttachments, setUploadedAttachments] = useState<Attachment[]>(attachments);
+  const { t } = useTranslate('common');
 
   // Update uploadedAttachments when props change (e.g., from SWR refresh)
   useEffect(() => {
@@ -36,7 +38,7 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange
   const validateFiles = useCallback((filesToValidate: File[]) => {
     // Check number of files
     if (filesToValidate.length > CONFIG.upload.maxFilesPerRequest) {
-      toast.error(`Maximum ${CONFIG.upload.maxFilesPerRequest} files allowed per upload`);
+      toast.error(t('maxFilesAllowed', { defaultValue: 'Maximum {{count}} files allowed per upload', count: CONFIG.upload.maxFilesPerRequest }));
       return false;
     }
 
@@ -47,13 +49,13 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange
     if (oversizedFiles.length > 0) {
       const fileNames = oversizedFiles.map((f) => f.name).join(', ');
       toast.error(
-        `File(s) too large: ${fileNames}. Maximum size is ${CONFIG.upload.maxFileSizeMB}MB per file.`
+        t('filesTooLarge', { defaultValue: 'File(s) too large: {{names}}. Maximum size is {{max}}MB per file.', names: fileNames, max: CONFIG.upload.maxFileSizeMB })
       );
       return false;
     }
 
     return true;
-  }, []);
+  }, [t]);
 
   const handleDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -89,7 +91,7 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange
 
           // Convert upload response to attachment format
           const newAttachments: Attachment[] = uploadedFiles.map((f: any) => ({
-            name: f.name || 'Unknown',
+            name: f.name || t('unknown', { defaultValue: 'Unknown' }),
             url: f.url,
             type: f.mime || 'application/octet-stream',
             size: f.size || 0,
@@ -100,11 +102,11 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange
           onChange?.(allAttachments);
           // Clear local files after successful upload
           setFiles([]);
-          toast.success(`${acceptedFiles.length} file(s) uploaded successfully`);
+          toast.success(t('filesUploaded', { defaultValue: '{{count}} file(s) uploaded successfully', count: acceptedFiles.length }));
         } catch (error: any) {
           console.error('🔧 FRONTEND: Upload failed:', error);
           // Show backend error message if available, otherwise fallback
-          const errorMessage = error.message || 'Upload failed. Previewing locally only.';
+          const errorMessage = error.message || t('uploadFailedPreview', { defaultValue: 'Upload failed. Previewing locally only.' });
           toast.error(errorMessage);
 
           // Still add files for local preview
@@ -113,7 +115,7 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange
       };
       void upload();
     },
-    [uploadedAttachments, workOrderId, onChange, validateFiles]
+    [uploadedAttachments, workOrderId, onChange, validateFiles, t]
   );
 
   const handleRemoveFile = useCallback(
@@ -142,8 +144,7 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange
           placeholder={
             <div>
               <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '8px' }}>
-                Max {CONFIG.upload.maxFileSizeMB}MB per file, {CONFIG.upload.maxFilesPerRequest}{' '}
-                files max
+                {t('uploadLimits', { defaultValue: 'Max {{size}}MB per file, {{count}} files max', size: CONFIG.upload.maxFileSizeMB, count: CONFIG.upload.maxFilesPerRequest })}
               </div>
             </div>
           }

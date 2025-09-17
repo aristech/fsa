@@ -8,5 +8,42 @@
     "title": "Blog",
     "caption": "Custom keyboard shortcuts."
   },
-  "subheader": "Sub header"
+  "subheader": "Sub header",
+  "overview": {
+    "title": "Overview",
+    "app": "App",
+    "analytics": "Analytics",
+    "reports": "Reports"
+  },
+  "management": {
+    "title": "Management",
+    "projectsTasks": "Projects & Tasks",
+    "calendar": "Calendar",
+    "chat": "Chat"
+  },
+  "fieldService": {
+    "title": "Field Service Automation",
+    "workOrders": {
+      "title": "Work Orders",
+      "list": "List",
+      "create": "Create"
+    },
+    "clients": {
+      "title": "Clients",
+      "list": "List",
+      "create": "Create"
+    },
+    "personnel": {
+      "title": "Personnel",
+      "list": "List",
+      "roles": "Roles"
+    },
+    "materials": {
+      "title": "Materials",
+      "list": "List"
+    }
+  },
+  "settings": {
+    "title": "Settings"
+  }
 }

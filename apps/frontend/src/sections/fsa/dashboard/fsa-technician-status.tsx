@@ -16,6 +16,7 @@ import {
   CardContent,
 } from '@mui/material';
 
+import { useTranslate } from 'src/locales/use-locales';
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
 import { Iconify } from 'src/components/iconify';
@@ -54,6 +55,7 @@ const getStatusIcon = (status: string) => {
 
 export function FsaTechnicianStatus() {
   const theme = useTheme();
+  const { t } = useTranslate('common');
 
   // Fetch personnel data
   const { data: personnelData, isLoading: personnelLoading } = useSWR(
@@ -120,7 +122,7 @@ export function FsaTechnicianStatus() {
           name:
             person.user?.name ||
             `${person.user?.firstName || ''} ${person.user?.lastName || ''}`.trim() ||
-            'Unknown',
+            t('unknown', { defaultValue: 'Unknown' }),
           avatar: person.user?.avatar || null,
           status,
           currentWorkOrder: currentWorkOrder ? currentWorkOrder.workOrderNumber : null,
@@ -129,14 +131,14 @@ export function FsaTechnicianStatus() {
           sessionStartTime: activeSession ? new Date(activeSession.startTime) : null,
         };
       });
-  }, [personnelData, activeSessionsData, workOrdersData]);
+  }, [personnelData, activeSessionsData, workOrdersData, t]);
 
   const isLoading = personnelLoading || sessionsLoading;
 
   return (
     <Card>
       <CardHeader
-        title="Technician Status"
+        title={t('dashboard.technicianStatus', { defaultValue: 'Technician Status' })}
         action={
           <Link
             href="/dashboard/personnel"
@@ -144,7 +146,7 @@ export function FsaTechnicianStatus() {
             variant="body2"
             sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
           >
-            View All
+            {t('viewAll', { defaultValue: 'View All' })}
             <Iconify icon="eva:arrow-ios-forward-fill" width={16} />
           </Link>
         }
@@ -174,7 +176,7 @@ export function FsaTechnicianStatus() {
             ))
           ) : technicians.length === 0 ? (
             <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-              No active technicians found
+              {t('dashboard.noActiveTechniciansFound', { defaultValue: 'No active technicians found' })}
             </Typography>
           ) : (
             technicians.map((technician: any) => (
@@ -214,7 +216,7 @@ export function FsaTechnicianStatus() {
                   </Stack>
                   {technician.currentWorkOrder && (
                     <Typography variant="caption" color="text.secondary">
-                      Working on: {technician.currentWorkOrder}
+                      {t('workingOn', { defaultValue: 'Working on:' })} {technician.currentWorkOrder}
                     </Typography>
                   )}
                   {technician.workOrderTitle && (
@@ -228,7 +230,7 @@ export function FsaTechnicianStatus() {
                   )}
                   {technician.sessionStartTime && (
                     <Typography variant="caption" color="text.secondary">
-                      Started: {technician.sessionStartTime.toLocaleTimeString()}
+                      {t('started', { defaultValue: 'Started:' })} {technician.sessionStartTime.toLocaleTimeString()}
                     </Typography>
                   )}
                 </Stack>

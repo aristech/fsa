@@ -29,6 +29,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 
 import { useTaskRealtime, useRealtimeComments } from 'src/hooks/use-realtime';
 
+import { useTranslate } from 'src/locales/use-locales';
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
 import { toast } from 'src/components/snackbar';
@@ -90,6 +91,7 @@ type Props = {
 
 export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose }: Props) {
   const tabs = useTabs('overview');
+  const { t } = useTranslate('common');
 
   const contactsDialog = useBoolean();
   const reportCreateDrawer = useBoolean();
@@ -104,7 +106,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       priority: (task.priority || 'medium') as 'low' | 'medium' | 'high' | 'urgent',
       workOrderId: (task as any)?.workOrderId || '',
       taskIds: [task.id],
-      description: `Report for task: ${task.name}`,
+      description: `${t('reportForTask', { defaultValue: 'Report for task' })}: ${task.name}`,
       equipment: (task as any)?.equipment || [],
       tags: task.tags || task.labels || [],
     }),
@@ -188,7 +190,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     onCreated: (comment) => {
       // Refresh comments data when a new comment is created
       mutate(`/api/v1/comments/${task.id}`);
-      toast.success(`New comment from ${comment.name}`);
+      toast.success(`${t('newCommentFrom', { defaultValue: 'New comment from' })} ${comment.name}`);
       // Auto-scroll to show new comment
       setTimeout(scrollCommentsToBottom, 100);
     },
@@ -219,11 +221,11 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           taskData: { id: task.id, name: taskName },
         });
         onUpdateTask({ ...task, name: taskName });
-        toast.success('Task name updated');
+        toast.success(t('taskNameUpdated', { defaultValue: 'Task name updated' }));
       }
     } catch (error) {
       console.error('Failed to update task name:', error);
-      toast.error('Failed to update task name');
+      toast.error(t('failedToUpdateTaskName', { defaultValue: 'Failed to update task name' }));
       // Revert to original name on error
       setTaskName(task.name);
     }
@@ -249,11 +251,11 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           taskData: { id: task.id, description: taskDescription },
         });
         onUpdateTask({ ...task, description: taskDescription });
-        toast.success('Task description updated');
+        toast.success(t('taskDescriptionUpdated', { defaultValue: 'Task description updated' }));
       }
     } catch (error) {
       console.error('Failed to update description', error);
-      toast.error('Failed to update description');
+      toast.error(t('failedToUpdateDescription', { defaultValue: 'Failed to update description' }));
       // Revert to original description on error
       setTaskDescription(task.description || '');
     }
@@ -296,10 +298,10 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         clientName: selectedClient?.name || undefined,
         clientCompany: selectedClient?.company || undefined,
       });
-      toast.success('Client updated successfully!');
+      toast.success(t('clientUpdatedSuccessfully', { defaultValue: 'Client updated successfully!' }));
     } catch (error) {
       console.error('Failed to update client:', error);
-      toast.error('Failed to update client');
+      toast.error(t('failedToUpdateClient', { defaultValue: 'Failed to update client' }));
     }
   };
 
@@ -328,11 +330,11 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         .then(() => {
           // Update the task in the parent component
           onUpdateTask({ ...task, columnId: newValue, status: newValue } as any);
-          toast.success('Task status updated successfully');
+          toast.success(t('taskStatusUpdatedSuccessfully', { defaultValue: 'Task status updated successfully' }));
         })
         .catch((e) => {
           console.error('Failed to update status', e);
-          toast.error('Failed to update task status');
+          toast.error(t('failedToUpdateTaskStatus', { defaultValue: 'Failed to update task status' }));
           // Revert the status if update failed
           setStatus(task.columnId || task.status);
         });
@@ -358,10 +360,10 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       try {
         await axiosInstance.put(`/api/v1/subtasks/${task.id}/${subtaskId}`, { completed });
         mutate(`/api/v1/subtasks/${task.id}`);
-        toast.success(completed ? 'Subtask completed' : 'Subtask reopened');
+        toast.success(completed ? t('subtaskCompleted', { defaultValue: 'Subtask completed' }) : t('subtaskReopened', { defaultValue: 'Subtask reopened' }));
       } catch (error) {
         console.error('Failed to update subtask:', error);
-        toast.error('Failed to update subtask');
+        toast.error(t('failedToUpdateSubtask', { defaultValue: 'Failed to update subtask' }));
       }
     },
     [task.id]
@@ -374,10 +376,10 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       await axiosInstance.post(`/api/v1/subtasks/${task.id}`, { title: newSubtaskTitle.trim() });
       setNewSubtaskTitle('');
       mutate(`/api/v1/subtasks/${task.id}`);
-      toast.success('Subtask created');
+      toast.success(t('subtaskCreated', { defaultValue: 'Subtask created' }));
     } catch (error) {
       console.error('Failed to create subtask:', error);
-      toast.error('Failed to create subtask');
+      toast.error(t('failedToCreateSubtask', { defaultValue: 'Failed to create subtask' }));
     }
   }, [task.id, newSubtaskTitle]);
 
@@ -386,10 +388,10 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       try {
         await axiosInstance.delete(`/api/v1/subtasks/${task.id}/${subtaskId}`);
         mutate(`/api/v1/subtasks/${task.id}`);
-        toast.success('Subtask deleted');
+        toast.success(t('subtaskDeleted', { defaultValue: 'Subtask deleted' }));
       } catch (error) {
         console.error('Failed to delete subtask:', error);
-        toast.error('Failed to delete subtask');
+        toast.error(t('failedToDeleteSubtask', { defaultValue: 'Failed to delete subtask' }));
       }
     },
     [task.id]
@@ -409,10 +411,10 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
             taskData: { id: task.id, completeStatus: next },
           });
           onUpdateTask({ ...task, completeStatus: next });
-          toast.success(next ? 'Marked complete' : 'Marked incomplete');
+          toast.success(next ? t('markedComplete', { defaultValue: 'Marked complete' }) : t('markedIncomplete', { defaultValue: 'Marked incomplete' }));
         } catch (e) {
           console.error('Failed to toggle completion', e);
-          toast.error('Failed to update completion');
+          toast.error(t('failedToUpdateCompletion', { defaultValue: 'Failed to update completion' }));
         }
       }}
       onChangeWorkOrder={async (wo) => {
@@ -485,11 +487,11 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       sx={{ '--item-padding-x': 0 }}
     >
       {[
-        { value: 'overview', label: 'Overview' },
-        { value: 'time', label: 'Time' },
-        { value: 'subTasks', label: `Subtasks (${subtasks.length})` },
-        { value: 'materials', label: 'Materials' },
-        { value: 'comments', label: `Comments (${comments.length})` },
+        { value: 'overview', label: t('overview', { defaultValue: 'Overview' }) },
+        { value: 'time', label: t('time', { defaultValue: 'Time' }) },
+        { value: 'subTasks', label: `${t('subtasks', { defaultValue: 'Subtasks' })} (${subtasks.length})` },
+        { value: 'materials', label: t('materials', { defaultValue: 'Materials' }) },
+        { value: 'comments', label: `${t('comments', { defaultValue: 'Comments' })} (${comments.length})` },
       ].map((tab) => (
         <Tab key={tab.value} value={tab.value} label={tab.label} />
       ))}
@@ -500,7 +502,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
       {/* Task name */}
       <KanbanInputName
-        placeholder="Task name"
+        placeholder={t('taskName', { defaultValue: 'Task name' })}
         value={taskName}
         onChange={handleChangeTaskName}
         onKeyUp={handleKeyUpTaskName}
@@ -511,8 +513,8 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       {/* Reporter */}
       {task.reporter && (
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <BlockLabel>Reporter</BlockLabel>
-          <Tooltip title={task.reporter.name || 'Reporter'}>
+          <BlockLabel>{t('reporter', { defaultValue: 'Reporter' })}</BlockLabel>
+          <Tooltip title={task.reporter.name || t('reporter', { defaultValue: 'Reporter' })}>
             <Avatar>
               {task.reporter.initials ||
                 task.reporter.name
@@ -527,7 +529,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       )}
       {/* Assignee */}
       <Box sx={{ display: 'flex' }}>
-        <BlockLabel sx={{ height: 40, lineHeight: '40px' }}>Assignee</BlockLabel>
+        <BlockLabel sx={{ height: 40, lineHeight: '40px' }}>{t('assignee', { defaultValue: 'Assignee' })}</BlockLabel>
 
         <Box sx={{ gap: 1, display: 'flex', flexWrap: 'wrap' }}>
           {task.assignee && Array.isArray(task.assignee) && task.assignee.length > 0 ? (
@@ -549,11 +551,11 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
             ))
           ) : (
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              No assignees
+              {t('noAssignees', { defaultValue: 'No assignees' })}
             </Typography>
           )}
 
-          <Tooltip title="Add assignee">
+          <Tooltip title={t('addAssignee', { defaultValue: 'Add assignee' })}>
             <IconButton
               onClick={contactsDialog.onTrue}
               sx={[
@@ -586,7 +588,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       </Box>
       {/* Labels / Tags (editable) */}
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <BlockLabel sx={{ height: 40, lineHeight: '40px' }}>Labels</BlockLabel>
+        <BlockLabel sx={{ height: 40, lineHeight: '40px' }}>{t('labels', { defaultValue: 'Labels' })}</BlockLabel>
         <Autocomplete
           multiple
           freeSolo
@@ -603,14 +605,14 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
               />
             ))
           }
-          renderInput={(params) => <TextField {...params} size="small" placeholder="Add label" />}
+          renderInput={(params) => <TextField {...params} size="small" placeholder={t('addLabel', { defaultValue: 'Add label' })} />}
           sx={{ flexGrow: 1 }}
         />
       </Box>
 
       {/* Client */}
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <BlockLabel>Client</BlockLabel>
+        <BlockLabel>{t('client', { defaultValue: 'Client' })}</BlockLabel>
         <FormControl size="small" sx={{ minWidth: 200, maxWidth: 300 }}>
           <Select
             value={task.clientId || ''}
@@ -619,7 +621,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
             disabled={!clientsData}
           >
             <MenuItem value="">
-              <em>No Client</em>
+              <em>{t('noClient', { defaultValue: 'No Client' })}</em>
             </MenuItem>
             {clients.map((client: any) => (
               <MenuItem key={client._id} value={client._id}>
@@ -634,14 +636,14 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       {/* Tags display row is merged with Labels above */}
       {/* Start / Due date */}
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <BlockLabel> Start / Due </BlockLabel>
+        <BlockLabel>{t('startDue', { defaultValue: 'Start / Due' })}</BlockLabel>
 
         {rangePicker.selected ? (
           <Button size="small" onClick={rangePicker.onOpen}>
             {rangePicker.shortLabel}
           </Button>
         ) : (
-          <Tooltip title="Add due date">
+          <Tooltip title={t('addDueDate', { defaultValue: 'Add due date' })}>
             <IconButton
               onClick={rangePicker.onOpen}
               sx={[
@@ -658,7 +660,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
 
         <CustomDateRangePicker
           variant="calendar"
-          title="Choose task dates & times"
+          title={t('chooseTaskDatesTimes', { defaultValue: 'Choose task dates & times' })}
           enableTime
           startDate={rangePicker.startDate}
           endDate={rangePicker.endDate}
@@ -672,14 +674,14 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       </Box>
       {/* Priority */}
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <BlockLabel>Priority</BlockLabel>
+        <BlockLabel>{t('priority', { defaultValue: 'Priority' })}</BlockLabel>
         {/* Fallback to existing control if you prefer icons; for now, keep it and treat options dynamically */}
         <KanbanDetailsPriority priority={priority} onChangePriority={handleChangePriority} />
       </Box>
 
       {/* Status */}
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <BlockLabel>Status</BlockLabel>
+        <BlockLabel>{t('status', { defaultValue: 'Status' })}</BlockLabel>
         <FormControl size="small" sx={{ minWidth: 120 }}>
           <Select
             value={status || ''}
@@ -707,7 +709,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       </Box>
       {/* Description */}
       <Box sx={{ display: 'flex' }}>
-        <BlockLabel> Description </BlockLabel>
+        <BlockLabel>{t('description', { defaultValue: 'Description' })}</BlockLabel>
         <TextField
           fullWidth
           multiline
@@ -721,7 +723,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       </Box>
       {/* Attachments */}
       <Box sx={{ display: 'flex' }}>
-        <BlockLabel>Attachments</BlockLabel>
+        <BlockLabel>{t('attachments', { defaultValue: 'Attachments' })}</BlockLabel>
         <KanbanDetailsAttachments
           attachments={task.attachments}
           onChange={async (files: any[]) => {
@@ -747,7 +749,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
         <div>
           <Typography variant="body2" sx={{ mb: 1 }}>
-            {completedCount} of {totalCount} completed
+            {completedCount} {t('of', { defaultValue: 'of' })} {totalCount} {t('completed', { defaultValue: 'completed' })}
           </Typography>
 
           <LinearProgress
@@ -786,7 +788,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           <TextField
             size="small"
-            placeholder="Add subtask..."
+            placeholder={t('addSubtask', { defaultValue: 'Add subtask...' })}
             value={newSubtaskTitle}
             onChange={(e) => setNewSubtaskTitle(e.target.value)}
             onKeyPress={(e) => {
@@ -803,7 +805,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
             onClick={handleCreateSubtask}
             disabled={!newSubtaskTitle.trim()}
           >
-            Add
+            {t('add', { defaultValue: 'Add' })}
           </Button>
         </Box>
       </Box>
@@ -836,8 +838,8 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           }}
         >
           {typingUsers.length === 1
-            ? `${typingUsers[0].userEmail} is typing...`
-            : `${typingUsers.map((u) => u.userEmail).join(', ')} are typing...`}
+            ? `${typingUsers[0].userEmail} ${t('isTyping', { defaultValue: 'is typing...' })}`
+            : `${typingUsers.map((u) => u.userEmail).join(', ')} ${t('areTyping', { defaultValue: 'are typing...' })}`}
         </Box>
       )}
     </Box>
@@ -897,7 +899,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         open={reportCreateDrawer.value}
         onClose={reportCreateDrawer.onFalse}
         onSuccess={(report) => {
-          toast.success('Report created successfully');
+          toast.success(t('reportCreatedSuccessfully', { defaultValue: 'Report created successfully' }));
           reportCreateDrawer.onFalse();
         }}
         initialData={getReportInitialData}

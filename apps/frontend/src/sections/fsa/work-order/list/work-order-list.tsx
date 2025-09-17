@@ -28,6 +28,7 @@ import {
 import { fDateTime } from 'src/utils/format-time';
 import { formatEstimatedDuration, formatMinutesToDuration } from 'src/utils/format-duration';
 
+import { useTranslate } from 'src/locales/use-locales';
 import axiosInstance, { fetcher, endpoints } from 'src/lib/axios';
 
 import { toast } from 'src/components/snackbar';
@@ -115,6 +116,7 @@ export function WorkOrderList() {
   const popover = usePopover();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { t } = useTranslate('common');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -164,11 +166,11 @@ export function WorkOrderList() {
     <>
       <Card>
         <CustomBreadcrumbs
-          heading={clientId ? 'Work Orders (Filtered)' : 'Work Orders'}
+          heading={clientId ? t('pages.workOrdersFiltered', { defaultValue: 'Work Orders (Filtered)' }) : t('pages.workOrders', { defaultValue: 'Work Orders' })}
           links={[
-            { name: 'Dashboard', href: '/dashboard' },
-            { name: 'Work Orders' },
-            ...(clientId ? [{ name: 'Filtered by Client' }] : []),
+            { name: t('dashboard.title', { tenant: '' }), href: '/dashboard' },
+            { name: t('pages.workOrders', { defaultValue: 'Work Orders' }) },
+            ...(clientId ? [{ name: t('filteredByClient', { defaultValue: 'Filtered by Client' }) }] : []),
           ]}
           action={
             <Button
@@ -176,7 +178,7 @@ export function WorkOrderList() {
               startIcon={<Iconify icon="solar:add-circle-bold" />}
               href="/dashboard/work-orders/new"
             >
-              New Work Order
+              {t('newWorkOrder', { defaultValue: 'New Work Order' })}
             </Button>
           }
           sx={{ mb: { xs: 3, md: 5 } }}
@@ -186,15 +188,15 @@ export function WorkOrderList() {
           <Table sx={{ minWidth: 800 }}>
             <TableHead>
               <TableRow>
-                <TableCell>Work Order</TableCell>
-                <TableCell>Client</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Priority</TableCell>
-                <TableCell width={220}>Progress</TableCell>
-                <TableCell>Personnel</TableCell>
-                <TableCell>Scheduled</TableCell>
-                <TableCell>Duration</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell>{t('workOrder', { defaultValue: 'Work Order' })}</TableCell>
+                <TableCell>{t('client', { defaultValue: 'Client' })}</TableCell>
+                <TableCell>{t('status', { defaultValue: 'Status' })}</TableCell>
+                <TableCell>{t('priority', { defaultValue: 'Priority' })}</TableCell>
+                <TableCell width={220}>{t('progress', { defaultValue: 'Progress' })}</TableCell>
+                <TableCell>{t('personnel', { defaultValue: 'Personnel' })}</TableCell>
+                <TableCell>{t('scheduled', { defaultValue: 'Scheduled:' })}</TableCell>
+                <TableCell>{t('duration', { defaultValue: 'Duration' })}</TableCell>
+                <TableCell align="right">{t('actions', { defaultValue: 'Actions' })}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -208,12 +210,12 @@ export function WorkOrderList() {
                         sx={{ color: 'text.disabled' }}
                       />
                       <Typography variant="h6" color="text.secondary">
-                        {clientId ? 'No work orders found for this client' : 'No work orders found'}
+                        {clientId ? t('noWorkOrdersForClient', { defaultValue: 'No work orders found for this client' }) : t('dashboard.noWorkOrdersFound', { defaultValue: 'No work orders found' })}
                       </Typography>
                       <Typography variant="body2" color="text.disabled">
                         {clientId
-                          ? 'This client does not have any work orders yet.'
-                          : 'Create your first work order to get started.'}
+                          ? t('noWorkOrdersForClientHint', { defaultValue: 'This client does not have any work orders yet.' })
+                          : t('createFirstWorkOrderHint', { defaultValue: 'Create your first work order to get started.' })}
                       </Typography>
                     </Stack>
                   </TableCell>
@@ -231,7 +233,7 @@ export function WorkOrderList() {
                     </TableCell>
 
                     <TableCell>
-                      {typeof row.clientId === 'object' ? row.clientId.name : 'Unknown Client'}
+                      {typeof row.clientId === 'object' ? row.clientId.name : t('unknownClient', { defaultValue: 'Unknown Client' })}
                     </TableCell>
 
                     <TableCell>
@@ -268,9 +270,9 @@ export function WorkOrderList() {
                           sx={{ height: 6, borderRadius: 1 }}
                         />
                         <Typography variant="caption" color="text.secondary">
-                          {`${row.tasksCompleted ?? 0}/${row.tasksTotal ?? 0} completed`}
+                          {`${row.tasksCompleted ?? 0}/${row.tasksTotal ?? 0} ${t('completed', { defaultValue: 'completed' })}`}
                           {typeof row.tasksInProgress === 'number'
-                            ? ` • ${row.tasksInProgress ?? 0} in progress`
+                            ? ` • ${row.tasksInProgress ?? 0} ${t('inProgress', { defaultValue: 'in progress' })}`
                             : ''}
                         </Typography>
                       </Stack>
@@ -290,18 +292,18 @@ export function WorkOrderList() {
                           ))}
                         </Stack>
                       ) : (
-                        'Unassigned'
+                        t('unassigned', { defaultValue: 'Unassigned' })
                       )}
                     </TableCell>
 
                     <TableCell>
-                      {row.scheduledDate ? fDateTime(row.scheduledDate) : 'Not scheduled'}
+                      {row.scheduledDate ? fDateTime(row.scheduledDate) : t('notScheduled', { defaultValue: 'Not scheduled' })}
                     </TableCell>
 
                     <TableCell>
                       <Stack spacing={0.5}>
                         <Typography variant="caption" color="text.secondary">
-                          Est: {formatEstimatedDuration(row.estimatedDuration as any)}
+                          {t('estimatedShort', { defaultValue: 'Est:' })} {formatEstimatedDuration(row.estimatedDuration as any)}
                         </Typography>
                         <Typography variant="body2">
                           {row.actualDuration
@@ -357,7 +359,7 @@ export function WorkOrderList() {
           }}
         >
           <Iconify icon="solar:eye-bold" sx={{ mr: 2 }} />
-          View
+          {t('view', { defaultValue: 'View' })}
         </MenuItem>
 
         <MenuItem
@@ -367,7 +369,7 @@ export function WorkOrderList() {
           }}
         >
           <Iconify icon="solar:pen-bold" sx={{ mr: 2 }} />
-          Edit
+          {t('edit', { defaultValue: 'Edit' })}
         </MenuItem>
 
         <MenuItem
@@ -379,19 +381,19 @@ export function WorkOrderList() {
           sx={{ color: 'error.main' }}
         >
           <Iconify icon="solar:trash-bin-trash-bold" sx={{ mr: 2 }} />
-          Delete
+          {t('delete', { defaultValue: 'Delete' })}
         </MenuItem>
       </Popover>
 
       <ConfirmDialog
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
-        title="Delete Work Order"
+        title={t('deleteWorkOrderTitle', { defaultValue: 'Delete Work Order' })}
         content={
           <>
-            Are you sure you want to delete this work order?
+            {t('deleteWorkOrderConfirm', { defaultValue: 'Are you sure you want to delete this work order?' })}
             <br />
-            This will clean up related references.
+            {t('deleteWorkOrderCleanup', { defaultValue: 'This will clean up related references.' })}
           </>
         }
         action={
@@ -404,20 +406,20 @@ export function WorkOrderList() {
               try {
                 setDeleting(true);
                 await axiosInstance.delete(endpoints.fsa.workOrders.details(selectedId));
-                toast.success('Work order deleted');
+                toast.success(t('workOrderDeleted', { defaultValue: 'Work order deleted' }));
                 setDeleteOpen(false);
                 setSelectedId(null);
                 // Refresh list via SWR
                 await mutate();
               } catch (e) {
                 console.error('Failed to delete work order', e);
-                toast.error('Failed to delete work order');
+                toast.error(t('workOrderDeleteFailed', { defaultValue: 'Failed to delete work order' }));
               } finally {
                 setDeleting(false);
               }
             }}
           >
-            {deleting ? 'Deleting...' : 'Delete'}
+            {deleting ? t('deleting', { defaultValue: 'Deleting...' }) : t('delete', { defaultValue: 'Delete' })}
           </Button>
         }
       />

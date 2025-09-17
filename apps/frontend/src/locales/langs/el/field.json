@@ -1,0 +1,64 @@
+{
+  "dashboard": {
+    "title": "Πίνακας Πεδίου",
+    "subtitle": "Διαχειριστείτε τις εργασίες πεδίου σας",
+    "stats": {
+      "totalTasks": "Συνολικές Εργασίες",
+      "completedTasks": "Ολοκληρωμένες Εργασίες",
+      "pendingTasks": "Εκκρεμείς Εργασίες",
+      "blockedTasks": "Μπλοκαρισμένες Εργασίες",
+      "activeMaterials": "Ενεργά Υλικά"
+    }
+  },
+  "workOrders": {
+    "title": "Εργασίες",
+    "status": {
+      "created": "Δημιουργήθηκε",
+      "assigned": "Ανατέθηκε",
+      "in_progress": "Σε Εξέλιξη",
+      "completed": "Ολοκληρώθηκε",
+      "cancelled": "Ακυρώθηκε"
+    },
+    "priority": {
+      "low": "Χαμηλή",
+      "medium": "Μεσαία",
+      "high": "Υψηλή",
+      "urgent": "Επείγουσα"
+    },
+    "details": "Λεπτομέρειες",
+    "attachments": "Συνημμένα",
+    "timeline": "Χρονολόγιο",
+    "personnel": "Προσωπικό",
+    "client": "Πελάτης",
+    "location": "Τοποθεσία",
+    "duration": "Διάρκεια",
+    "estimated": "Εκτιμώμενη",
+    "actual": "Πραγματική",
+    "progress": "Πρόοδος"
+  },
+  "tasks": {
+    "title": "Εργασίες",
+    "myTasks": "Οι Εργασίες μου",
+    "assignedTo": "Ανατέθηκε σε",
+    "dueDate": "Ημερομηνία Λήξης",
+    "priority": "Προτεραιότητα",
+    "status": "Κατάσταση"
+  },
+  "materials": {
+    "title": "Υλικά",
+    "inventory": "Απόθεμα",
+    "available": "Διαθέσιμα",
+    "lowStock": "Χαμηλό Απόθεμα",
+    "outOfStock": "Εξαντλήθηκε το Απόθεμα"
+  },
+  "notifications": {
+    "title": "Ειδοποιήσεις",
+    "markAsRead": "Σήμανση ως Αναγνωσμένο",
+    "markAllAsRead": "Σήμανση Όλων ως Αναγνωσμένα"
+  },
+  "profile": {
+    "title": "Προφίλ",
+    "personalInfo": "Προσωπικά Στοιχεία",
+    "workHistory": "Ιστορικό Εργασιών"
+  }
+}

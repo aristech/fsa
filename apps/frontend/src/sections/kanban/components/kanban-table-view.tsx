@@ -28,6 +28,7 @@ import {
 import { fDate } from 'src/utils/format-time';
 import { sortTasks, searchTasks } from 'src/utils/search-utils';
 
+import { useTranslate } from 'src/locales/use-locales';
 import { deleteTask, updateTask, useGetBoard } from 'src/actions/kanban';
 
 import { toast } from 'src/components/snackbar';
@@ -54,18 +55,18 @@ type OrderBy =
 
 // ----------------------------------------------------------------------
 
-const TABLE_HEAD = [
-  { id: 'name', label: 'Task', align: 'left' as const, sortable: true },
-  { id: 'client', label: 'Client', align: 'left' as const, sortable: true },
-  { id: 'workOrder', label: 'Work Order', align: 'left' as const, sortable: true },
-  { id: 'status', label: 'Status', align: 'left' as const, sortable: true },
-  { id: 'assignee', label: 'Assignee', align: 'left' as const, sortable: true },
-  { id: 'reporter', label: 'Reporter', align: 'left' as const, sortable: true },
-  { id: 'completedStatus', label: 'Completed', align: 'center' as const, sortable: true },
-  { id: 'priority', label: 'Priority', align: 'center' as const, sortable: true },
-  { id: 'created', label: 'Created', align: 'left' as const, sortable: true },
-  { id: 'due', label: 'Due Date', align: 'left' as const, sortable: true },
-  { id: 'labels', label: 'Labels', align: 'left' as const, sortable: false },
+const getTableHead = (t: any) => [
+  { id: 'name', label: t('task', { defaultValue: 'Task' }), align: 'left' as const, sortable: true },
+  { id: 'client', label: t('client', { defaultValue: 'Client' }), align: 'left' as const, sortable: true },
+  { id: 'workOrder', label: t('workOrder', { defaultValue: 'Work Order' }), align: 'left' as const, sortable: true },
+  { id: 'status', label: t('status', { defaultValue: 'Status' }), align: 'left' as const, sortable: true },
+  { id: 'assignee', label: t('assignee', { defaultValue: 'Assignee' }), align: 'left' as const, sortable: true },
+  { id: 'reporter', label: t('reporter', { defaultValue: 'Reporter' }), align: 'left' as const, sortable: true },
+  { id: 'completedStatus', label: t('completed', { defaultValue: 'Completed' }), align: 'center' as const, sortable: true },
+  { id: 'priority', label: t('priority', { defaultValue: 'Priority' }), align: 'center' as const, sortable: true },
+  { id: 'created', label: t('created', { defaultValue: 'Created' }), align: 'left' as const, sortable: true },
+  { id: 'due', label: t('dueDate', { defaultValue: 'Due Date' }), align: 'left' as const, sortable: true },
+  { id: 'labels', label: t('labels', { defaultValue: 'Labels' }), align: 'left' as const, sortable: false },
 ];
 
 const getPriorityColor = (priority: string) => {
@@ -102,10 +103,12 @@ const getStatusColor = (status: string) => {
 export function KanbanTableView() {
   // Get data from SWR hook for automatic updates
   const { board, boardLoading, boardError } = useGetBoard();
+  const { t } = useTranslate('common');
 
   // Extract tasks and columns from board data
   const tasks = useMemo(() => Object.values(board?.tasks || {}).flat(), [board?.tasks]);
   const columns = board?.columns || [];
+  const TABLE_HEAD = getTableHead(t);
 
   // All hooks must be called before any early returns
   const table = useTable({
@@ -121,9 +124,9 @@ export function KanbanTableView() {
 
   // Get column name by id
   const getColumnName = (columnId?: string) => {
-    if (!columnId) return 'Unknown';
+    if (!columnId) return t('unknown', { defaultValue: 'Unknown' });
     const column = columns.find((col) => col.id === columnId);
-    return column?.name || 'Unknown';
+    return column?.name || t('unknown', { defaultValue: 'Unknown' });
   };
 
   // Filter and sort tasks using the modular search utility
@@ -167,10 +170,10 @@ export function KanbanTableView() {
       const columnId = taskData.columnId || 'default';
       await updateTask(columnId, taskData);
       setSelectedTask(taskData);
-      toast.success('Task updated successfully');
+      toast.success(t('taskUpdatedSuccessfully', { defaultValue: 'Task updated successfully' }));
     } catch (error) {
       console.error('Failed to update task:', error);
-      toast.error('Failed to update task');
+      toast.error(t('failedToUpdateTask', { defaultValue: 'Failed to update task' }));
     }
   }, []);
 
@@ -182,10 +185,10 @@ export function KanbanTableView() {
       await deleteTask(columnId, selectedTask.id, selectedTask);
       taskDetailsDialog.onFalse();
       setSelectedTask(null);
-      toast.success('Task deleted successfully');
+      toast.success(t('taskDeletedSuccessfully', { defaultValue: 'Task deleted successfully' }));
     } catch (error) {
       console.error('Failed to delete task:', error);
-      toast.error('Failed to delete task');
+      toast.error(t('failedToDeleteTask', { defaultValue: 'Failed to delete task' }));
     }
   }, [selectedTask, taskDetailsDialog]);
 
@@ -195,7 +198,7 @@ export function KanbanTableView() {
       <Card
         sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
-        <Typography>Loading tasks...</Typography>
+        <Typography>{t('loadingTasks', { defaultValue: 'Loading tasks...' })}</Typography>
       </Card>
     );
   }
@@ -206,7 +209,7 @@ export function KanbanTableView() {
       <Card
         sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
-        <Typography color="error">Error loading tasks: {boardError.message}</Typography>
+        <Typography color="error">{t('errorLoadingTasks', { defaultValue: 'Error loading tasks' })}: {boardError.message}</Typography>
       </Card>
     );
   }
@@ -225,7 +228,7 @@ export function KanbanTableView() {
             fullWidth
             value={searchTerm}
             onChange={handleSearchChange}
-            placeholder="Search across tasks, clients, work orders, and personnel..."
+            placeholder={t('searchTasksPlaceholder', { defaultValue: 'Search across tasks, clients, work orders, and personnel...' })}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -233,7 +236,7 @@ export function KanbanTableView() {
                 </InputAdornment>
               ),
             }}
-            helperText="Search by task name, description, labels, client info, work order details, assignee, or reporter"
+            helperText={t('searchTasksHelper', { defaultValue: 'Search by task name, description, labels, client info, work order details, assignee, or reporter' })}
           />
           <Button
             variant="contained"
@@ -242,7 +245,7 @@ export function KanbanTableView() {
             sx={{ flexShrink: 0, mt: 0 }}
             size="large"
           >
-            Add New Task
+{t('addNewTask', { defaultValue: 'Add New Task' })}
           </Button>
         </Stack>
       </Box>
@@ -301,15 +304,14 @@ export function KanbanTableView() {
                         sx={{ color: 'text.disabled' }}
                       />
                       <Typography variant="h6" color="text.secondary">
-                        No tasks found
+                        {t('noTasksFound', { defaultValue: 'No tasks found' })}
                       </Typography>
                       <Typography
                         variant="body2"
                         color="text.disabled"
                         sx={{ maxWidth: 400, textAlign: 'center' }}
                       >
-                        Try adjusting your search criteria. You can search by task name, client
-                        info, work order details, assignees, or any other field.
+                        {t('noTasksFoundHelper', { defaultValue: 'Try adjusting your search criteria. You can search by task name, client info, work order details, assignees, or any other field.' })}
                       </Typography>
                     </Stack>
                   </TableCell>
@@ -438,7 +440,7 @@ export function KanbanTableView() {
                         </Stack>
                       ) : (
                         <Typography variant="body2" color="text.disabled">
-                          Unassigned
+                          {t('unassigned', { defaultValue: 'Unassigned' })}
                         </Typography>
                       )}
                     </TableCell>
@@ -456,7 +458,7 @@ export function KanbanTableView() {
                             'R'}
                         </Avatar>
                         <Typography variant="body2" noWrap>
-                          {task.reporter?.name || 'Unknown'}
+                          {task.reporter?.name || t('unknown', { defaultValue: 'Unknown' })}
                         </Typography>
                       </Stack>
                     </TableCell>
@@ -464,7 +466,7 @@ export function KanbanTableView() {
                     {/* Completed Status */}
                     <TableCell align="center">
                       <Chip
-                        label={(task as any).completeStatus ? 'Yes' : 'No'}
+                        label={(task as any).completeStatus ? t('yes', { defaultValue: 'Yes' }) : t('no', { defaultValue: 'No' })}
                         size="small"
                         color={(task as any).completeStatus ? 'success' : 'default'}
                         variant={(task as any).completeStatus ? 'filled' : 'outlined'}
@@ -484,7 +486,7 @@ export function KanbanTableView() {
                     {/* Created */}
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {task.createdAt ? fDate(task.createdAt) : 'N/A'}
+                        {task.createdAt ? fDate(task.createdAt) : t('na', { defaultValue: 'N/A' })}
                       </Typography>
                     </TableCell>
 
@@ -494,7 +496,7 @@ export function KanbanTableView() {
                         fDate(task.due[1])
                       ) : (
                         <Typography variant="body2" color="text.disabled">
-                          No due date
+                          {t('noDueDate', { defaultValue: 'No due date' })}
                         </Typography>
                       )}
                     </TableCell>

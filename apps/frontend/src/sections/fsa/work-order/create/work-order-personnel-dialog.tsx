@@ -13,6 +13,7 @@ import DialogContent from '@mui/material/DialogContent';
 import InputAdornment from '@mui/material/InputAdornment';
 import ListItemButton from '@mui/material/ListItemButton';
 
+import { useTranslate } from 'src/locales/use-locales';
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
 import { Iconify } from 'src/components/iconify';
@@ -51,6 +52,7 @@ export function WorkOrderPersonnelDialog({
 }: Props) {
   const [searchContact, setSearchContact] = useState('');
   const [selected, setSelected] = useState<Personnel[]>(selectedPersonnel);
+  const { t } = useTranslate('common');
 
   const axiosFetcher = (url: string) => axiosInstance.get(url).then((res) => res.data);
   const { data: personnelResp } = useSWR(endpoints.fsa.personnel.list, axiosFetcher);
@@ -92,9 +94,9 @@ export function WorkOrderPersonnelDialog({
   return (
     <Dialog fullWidth maxWidth="xs" open={open} onClose={onClose}>
       <DialogTitle sx={{ pb: 0 }}>
-        Assign Personnel
+        {t('assignPersonnel', { defaultValue: 'Assign Personnel' })}
         <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
-          Select personnel to assign to this work order
+          {t('assignPersonnelSubheader', { defaultValue: 'Select personnel to assign to this work order' })}
         </Typography>
       </DialogTitle>
 
@@ -103,7 +105,7 @@ export function WorkOrderPersonnelDialog({
           fullWidth
           value={searchContact}
           onChange={handleSearchContacts}
-          placeholder="Search personnel..."
+          placeholder={t('searchPersonnelPlaceholder', { defaultValue: 'Search personnel...' })}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -169,10 +171,10 @@ export function WorkOrderPersonnelDialog({
 
         <Box sx={{ display: 'flex', gap: 1, mt: 3 }}>
           <Button variant="outlined" onClick={onClose} fullWidth>
-            Cancel
+            {t('cancel', { defaultValue: 'Cancel' })}
           </Button>
           <Button variant="contained" onClick={handleAssign} fullWidth>
-            Assign ({selected.length})
+            {t('assignCount', { defaultValue: 'Assign ({{count}})', count: selected.length })}
           </Button>
         </Box>
       </DialogContent>
