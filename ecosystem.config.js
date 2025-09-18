@@ -21,7 +21,7 @@ module.exports = {
     },
     {
       name: 'progressnet-frontend',
-      script: 'npm',
+      script: 'node_modules/.bin/next',
       args: 'start',
       cwd: '/var/www/progressnet.io/apps/frontend',
       instances: 1,
