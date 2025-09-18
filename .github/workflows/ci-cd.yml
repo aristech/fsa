@@ -199,12 +199,12 @@ jobs:
         echo "${{ secrets.ENV_BACK }}" > apps/backend/.env
         echo "${{ secrets.ENV_FRONT }}" > apps/frontend/.env.local
 
-        # If build artifacts don't exist, build with dev dependencies
+        # Always install dev dependencies first for TypeScript support
+        yarn install --frozen-lockfile
+
+        # If build artifacts don't exist, build them
         if [ ! -d "apps/backend/dist" ] || [ ! -d "apps/frontend/.next" ]; then
           echo "Build artifacts missing, building on server..."
-
-          # Install dev dependencies temporarily for building
-          yarn install --frozen-lockfile
 
           # Build backend
           cd apps/backend
@@ -215,10 +215,10 @@ jobs:
           cd apps/frontend
           npm run build
           cd ../..
-
-          # Remove dev dependencies after build
-          yarn install --production --frozen-lockfile
         fi
+
+        # Keep dev dependencies for Next.js TypeScript config support
+        # Don't remove them as frontend needs TypeScript at runtime
 
         # Set proper ownership (keep user access, add www-data group)
         sudo chown -R $USER:www-data /var/www/progressnet.io-app-new
