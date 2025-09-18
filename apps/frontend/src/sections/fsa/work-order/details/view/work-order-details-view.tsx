@@ -1,6 +1,7 @@
-import { Container, Typography } from '@mui/material';
+"use client";
 
-import { useTranslate } from 'src/locales/use-locales';
+
+
 
 import { WorkOrderDetails } from '../work-order-details';
 
@@ -11,14 +12,10 @@ type Props = {
 };
 
 export function WorkOrderDetailsView({ id }: Props) {
-  const { t } = useTranslate('common');
-  return (
-    <Container maxWidth="lg">
-      <Typography variant="h4" sx={{ mb: 5 }}>
-        {t('pages.workOrderDetails', { defaultValue: 'Work Order Details' })}
-      </Typography>
 
+  return (
+    
       <WorkOrderDetails id={id} />
-    </Container>
+  
   );
 }

@@ -13,6 +13,7 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
+import { useTranslate } from 'src/locales';
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
 import { Iconify } from 'src/components/iconify';
@@ -52,7 +53,7 @@ export function KanbanDetailsToolbar({
   ...other
 }: Props) {
   const smUp = useMediaQuery((theme) => theme.breakpoints.up('sm'));
-
+  const { t } = useTranslate('common');
   const menuActions = usePopover();
 
   const confirmDialog = useBoolean();
@@ -102,7 +103,7 @@ export function KanbanDetailsToolbar({
             onChangeWorkOrder?.(null);
           }}
         >
-          No Work Order
+         {t('noWorkOrder', { defaultValue: 'No Work Order' })}
         </MenuItem>
         <Box
           component="div"
@@ -181,7 +182,7 @@ export function KanbanDetailsToolbar({
               endIcon={<Iconify icon="eva:arrow-ios-downward-fill" width={16} sx={{ ml: -0.5 }} />}
               onClick={menuActions.onOpen}
             >
-              Work Order
+              {t('workOrder', { defaultValue: 'Work Order' })}
             </Button>
           </Box>
         </Box>
@@ -191,24 +192,34 @@ export function KanbanDetailsToolbar({
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Tooltip title="Create report from task">
             <IconButton onClick={onCreateReport} color="primary">
-              <Iconify icon="eva:file-text-fill" />
+              <Iconify sx={{
+                      minWidth: 40,
+                      height: 40,
+                      fontWeight: 600,
+                     
+                      borderRadius: '50%',
+                    }} icon="eva:file-text-fill" />
             </IconButton>
           </Tooltip>
-          <Button
-            size="small"
-            variant="soft"
-            color={completed ? 'success' : 'primary'}
-            startIcon={
-              <Iconify icon={completed ? 'eva:checkmark-fill' : 'eva:checkmark-circle-2-outline'} />
-            }
-            onClick={() => {
+          
+           <Tooltip title={completed ? t('completed', { defaultValue: 'Completed' }) : t('markComplete', { defaultValue: 'Mark complete' })}>
+            <IconButton onClick={() => {
               const next = !completed;
               setCompleted(next);
               onToggleComplete?.(next);
             }}
-          >
-            {completed ? 'Completed' : 'Mark complete'}
-          </Button>
+           
+            >
+              <Iconify  sx={{
+                      minWidth: 40,
+                      height: 40,
+                      fontWeight: 600,
+                      bgcolor: completed ? 'success.main' : '#fff',
+                      borderRadius: '50%',
+                    }} 
+                    icon={completed ? 'eva:checkmark-fill' : 'eva:checkmark-circle-2-outline'} />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="Delete task">
             <IconButton onClick={confirmDialog.onTrue}>
               <Iconify icon="solar:trash-bin-trash-bold" />

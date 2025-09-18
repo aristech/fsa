@@ -17,7 +17,7 @@ import { Logo } from 'src/components/logo';
 
 const LINKS = [
   {
-    headline: 'Minimal',
+    headline: 'ProgressNet FSA',
     children: [
       { name: 'About us', href: paths.about },
       { name: 'Contact us', href: paths.contact },
@@ -31,7 +31,7 @@ const LINKS = [
       { name: 'Privacy policy', href: '#' },
     ],
   },
-  { headline: 'Contact', children: [{ name: 'support@minimals.cc', href: '#' }] },
+  { headline: 'Contact', children: [{ name: 'support@progressnet.gr', href: '#' }] },
 ];
 
 // ----------------------------------------------------------------------
@@ -81,8 +81,7 @@ export function Footer({
                 [theme.breakpoints.up(layoutQuery)]: { mx: 'unset' },
               })}
             >
-              The starting point for your next project with Minimal UI Kit, built on the newest
-              version of Material-UI ©, ready to be customized to your style.
+              The starting point for your next project with ProgressNet FSA.
             </Typography>
 
             <Box
@@ -165,7 +164,7 @@ export function HomeFooter({ sx, ...other }: FooterProps) {
         <Box sx={{ mt: 1, typography: 'caption' }}>
           © All rights reserved.
           <br /> made by
-          <Link href="https://minimals.cc/"> minimals.cc </Link>
+          <Link href="https://progressnet.io/"> ProgressNet </Link>
         </Box>
       </Container>
     </FooterRoot>

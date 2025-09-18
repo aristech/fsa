@@ -1,0 +1,89 @@
+{
+  "auth": {
+    "invalid_credentials": "Invalid email or password",
+    "no_token_provided": "Authentication token is required",
+    "invalid_token": "Invalid or expired authentication token",
+    "user_not_found": "User account not found",
+    "authentication_failed": "Authentication failed",
+    "authentication_required": "Please sign in to continue",
+    "account_inactive": "Your account is inactive. Please contact your administrator",
+    "tenant_inactive": "Your organization is not active. Please contact support",
+    "logout_success": "Successfully logged out",
+    "user_verified": "User verified successfully",
+    "magic_link_valid": "Magic link is valid",
+    "account_setup_complete": "Account setup completed successfully"
+  },
+  "permissions": {
+    "insufficient_permissions": "You don't have permission to perform this action",
+    "role_not_found": "Role not found or inactive",
+    "access_denied": "Access denied",
+    "own_resource_only": "You can only access your own resources",
+    "superuser_only": "Only administrators can perform this action"
+  },
+  "validation": {
+    "general_error": "Please check your input and try again",
+    "password_requirements": "Password must contain at least 8 characters with uppercase, lowercase, numbers, and special characters",
+    "passwords_dont_match": "Passwords don't match",
+    "email_required": "Valid email address is required",
+    "name_required": "Name is required",
+    "field_required": "This field is required",
+    "field_too_long": "This field is too long",
+    "positive_number_required": "Please enter a positive number"
+  },
+  "business": {
+    "user_already_exists": "An account with this email already exists",
+    "direct_signup_disabled": "Direct sign-up is not supported. Please use the invitation link provided by your organization",
+    "magic_link_invalid": "Invalid or expired magic link",
+    "magic_link_expired": "This link has expired. Please request a new one",
+    "duplicate_sku": "A material with this SKU already exists",
+    "duplicate_barcode": "A material with this barcode already exists",
+    "duplicate_employee_id": "This employee ID is already in use",
+    "already_checked_in": "You are already checked in to this task",
+    "no_active_session": "No active time tracking session found",
+    "assignment_required": "You must be assigned to this task to perform this action",
+    "cannot_delete_default": "Cannot delete default system item",
+    "tenant_slug_exists": "An organization with this name already exists"
+  },
+  "not_found": {
+    "tenant": "Organization not found",
+    "role": "Role not found",
+    "material": "Material not found",
+    "personnel": "Personnel record not found",
+    "task": "Task not found",
+    "work_order": "Work order not found",
+    "user": "User not found",
+    "session": "Session not found",
+    "resource": "Requested resource not found"
+  },
+  "success": {
+    "created": "Successfully created",
+    "updated": "Successfully updated",
+    "deleted": "Successfully deleted",
+    "fetched": "Data loaded successfully",
+    "tenant_registration": "Registration successful! Please check your email for the activation link",
+    "tenant_created": "Organization created successfully with default roles. Activation email sent to organization owner",
+    "setup_completed": "Default roles created successfully",
+    "time_entry_logged": "Time entry logged successfully",
+    "checked_in": "Successfully checked in",
+    "checked_out": "Successfully checked out and time logged",
+    "heartbeat_recorded": "Activity updated",
+    "emergency_checkout": "Emergency checkout completed",
+    "profile_updated": "Profile updated successfully",
+    "task_moved": "Task moved successfully",
+    "column_renamed": "Column renamed successfully",
+    "columns_reordered": "Columns reordered successfully",
+    "column_created": "Column created successfully",
+    "column_deleted": "Column deleted successfully"
+  },
+  "server": {
+    "internal_error": "Something went wrong. Please try again later",
+    "database_error": "Database error occurred. Please try again",
+    "permission_check_failed": "Permission check failed. Please try again",
+    "service_unavailable": "Service temporarily unavailable. Please try again later",
+    "configuration_error": "System configuration error. Please contact support"
+  },
+  "system": {
+    "email_service_healthy": "Email service is operational",
+    "service_healthy": "Service is running normally"
+  }
+}

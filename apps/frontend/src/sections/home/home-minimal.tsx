@@ -35,7 +35,7 @@ export function HomeMinimal({ sx, ...other }: BoxProps) {
       <SectionTitle
         caption="Visualizing Success"
         title="What's in"
-        txtGradient="Minimal?"
+        txtGradient="ProgressNet FSA?"
         sx={{ mb: { xs: 5, md: 8 }, textAlign: { xs: 'center', md: 'left' } }}
       />
 

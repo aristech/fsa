@@ -64,13 +64,15 @@ export async function authRoutes(fastify: FastifyInstance) {
       const userId = user?.userId as string;
 
       if (userId) {
-        // Update user's lastLoginAt to a past time to mark them as offline
-        // We set it to 31 minutes ago (beyond the 30-minute online threshold)
-        const offlineTime = new Date(Date.now() - 31 * 60 * 1000);
-
+        // Mark user as offline and update lastSeenAt
         await User.findByIdAndUpdate(
           userId,
-          { $set: { lastLoginAt: offlineTime } },
+          {
+            $set: {
+              isOnline: false,
+              lastSeenAt: new Date()
+            }
+          },
           { new: true }
         );
 
@@ -108,16 +110,28 @@ export async function authRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // Get the user's tenant
-      const tenant = await Tenant.findOne({
-        _id: user.tenantId,
-        isActive: true,
-      });
-      if (!tenant) {
-        return reply.status(401).send({
-          success: false,
-          message: "Your tenant is not active. Please contact support.",
+      // Superuser bootstrap: allow login without tenant
+      const isSuperuser = user.role === "superuser";
+
+      // Get the user's tenant (non-superuser only)
+      let tenant: any = null;
+      if (!isSuperuser) {
+        if (!user.tenantId) {
+          return reply.status(401).send({
+            success: false,
+            message: "Your account is not associated with a tenant.",
+          });
+        }
+        tenant = await Tenant.findOne({
+          _id: user.tenantId,
+          isActive: true,
         });
+        if (!tenant) {
+          return reply.status(401).send({
+            success: false,
+            message: "Your tenant is not active. Please contact support.",
+          });
+        }
       }
 
       // Verify password
@@ -130,7 +144,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       }
 
       // Check if user is active (for technician/supervisor roles)
-      if (user.role && ["technician", "supervisor"].includes(user.role)) {
+      if (!isSuperuser && user.role && ["technician", "supervisor"].includes(user.role)) {
         const personnel = await Personnel.findOne({ userId: user._id });
         if (!personnel || !personnel.isActive) {
           return reply.status(403).send({
@@ -141,16 +155,22 @@ export async function authRoutes(fastify: FastifyInstance) {
         }
       }
 
-      // Update user's last login time
+      // Update user's login status and timestamps
       try {
         await User.findByIdAndUpdate(
           user._id,
-          { $set: { lastLoginAt: new Date() } },
+          {
+            $set: {
+              lastLoginAt: new Date(),
+              isOnline: true,
+              lastSeenAt: new Date()
+            }
+          },
           { new: true }
         );
       } catch (e) {
         fastify.log.warn(
-          `Could not update lastLoginAt on sign-in: ${String(e)}`,
+          `Could not update login status on sign-in: ${String(e)}`,
         );
       }
 
@@ -173,7 +193,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           userId: user._id,
           email: user.email,
           role: user.role || "admin",
-          tenantId: user.tenantId,
+          tenantId: user.tenantId || null,
         },
         process.env.JWT_SECRET || "fallback-secret",
         { expiresIn: "7d" },
@@ -190,6 +210,16 @@ export async function authRoutes(fastify: FastifyInstance) {
             avatarUrl: user.avatar,
           },
           token,
+          // Include tenant info when available for convenience
+          tenant: tenant
+            ? {
+                _id: tenant._id,
+                name: tenant.name,
+                slug: tenant.slug,
+                email: tenant.email,
+                isActive: tenant.isActive,
+              }
+            : null,
         },
       });
     } catch (error) {
@@ -269,11 +299,12 @@ export async function authRoutes(fastify: FastifyInstance) {
       });
 
       // Get tenant information
-      const tenant = await Tenant.findById(user.tenantId);
+      const isSuperuser = user.role === "superuser";
+      const tenant = user.tenantId ? await Tenant.findById(user.tenantId) : null;
 
       // Get user's role and permissions
       let permissions: string[] = [];
-      if (user.role === "superuser") {
+      if (isSuperuser) {
         permissions = [];
       } else if (user.isTenantOwner) {
         // Tenant owner has all permissions
@@ -578,6 +609,38 @@ export async function authRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         success: false,
         message: "Internal server error",
+      });
+    }
+  });
+
+  // Heartbeat endpoint to update user activity
+  fastify.post("/heartbeat", { preHandler: [authenticate] }, async (request, reply) => {
+    try {
+      const user = (request as any).user;
+      const userId = user?.userId as string;
+
+      if (userId) {
+        await User.findByIdAndUpdate(
+          userId,
+          {
+            $set: {
+              isOnline: true,
+              lastSeenAt: new Date()
+            }
+          },
+          { new: true }
+        );
+      }
+
+      return reply.send({
+        success: true,
+        message: "Heartbeat updated",
+      });
+    } catch (error) {
+      fastify.log.error("Error updating heartbeat:", error);
+      return reply.status(500).send({
+        success: false,
+        message: "Failed to update heartbeat",
       });
     }
   });

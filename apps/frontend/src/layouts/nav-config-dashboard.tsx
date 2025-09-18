@@ -79,7 +79,7 @@ export function useNavData(): NavSectionProps['data'] {
       items: [
         { title: t('overview.app'), path: paths.dashboard.root, icon: ICONS.dashboard },
         { title: t('overview.analytics'), path: paths.dashboard.general.analytics, icon: ICONS.analytics },
-        { title: t('overview.reports'), path: '/dashboard/analytics/reports', icon: ICONS.reports },
+        { title: t('overview.reports'), path: '/dashboard/analytics/reports', icon: ICONS.tour },
       ],
     },
     /**

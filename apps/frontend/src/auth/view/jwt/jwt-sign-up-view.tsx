@@ -54,8 +54,8 @@ export function JwtSignUpView() {
   const defaultValues: SignUpSchemaType = {
     firstName: 'Hello',
     lastName: 'Friend',
-    email: 'hello@gmail.com',
-    password: '@2Minimal',
+    email: '',
+    password: '',
   };
 
   const methods = useForm({

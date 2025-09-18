@@ -1,6 +1,6 @@
 {
-  "name": "fsa",
-  "version": "1.0.0",
+  "name": "progressnet-fsa",
+  "version": "1.0.1",
   "description": "Field Service Application - A comprehensive field service management system",
   "private": true,
   "workspaces": [
@@ -25,7 +25,7 @@
     "fastify",
     "mongodb"
   ],
-  "author": "FSA Team",
+  "author": "Aristech",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"

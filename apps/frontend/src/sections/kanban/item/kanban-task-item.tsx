@@ -1,17 +1,20 @@
 import type { IKanbanTask } from 'src/types/kanban';
 import type { UseTaskItemDndReturn } from '../hooks/use-task-item-dnd';
 
+import useSWR from 'swr';
 import { toast } from 'sonner';
-import { useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useMemo, useCallback } from 'react';
 import { useBoolean } from 'minimal-shared/hooks';
 import { mergeClasses } from 'minimal-shared/utils';
 
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 
+import axiosInstance, { endpoints } from 'src/lib/axios';
 import { deleteTask, updateTask } from 'src/actions/kanban';
 
+import { Iconify } from 'src/components/iconify';
 import { TimeTrackingIndicator } from 'src/components/time-tracking/time-tracking-indicator';
 
 import { kanbanClasses } from '../classes';
@@ -64,6 +67,43 @@ type TaskItemProps = React.ComponentProps<typeof ItemRoot> & {
 export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) {
   const taskDetailsDialog = useBoolean();
   const { taskRef, state } = useTaskItemDnd(task, columnId);
+
+  // Fetch time entries total hours for this task (lightweight)
+  const timeKey = useMemo(
+    () => [endpoints.fsa.timeEntries.list, { params: { taskId: task.id, limit: 100 } }] as const,
+    [task.id]
+  );
+  const { data: timeData } = useSWR<{ success: boolean; data: { hours?: number }[] }>(
+    timeKey,
+    ([url, cfg]: [string, any]) => axiosInstance.get(url, cfg).then((r) => r.data),
+    { revalidateOnFocus: false, dedupingInterval: 60_000 }
+  );
+  const totalHours = useMemo(
+    () => (timeData?.data || []).reduce((sum, e: any) => sum + (e.hours || 0), 0),
+    [timeData?.data]
+  );
+
+  // Fetch subtasks count
+  const { data: subtaskData } = useSWR<{ success: boolean; data: any[] }>(
+    `/api/v1/subtasks/${task.id}`,
+    (url) => axiosInstance.get(url).then((r) => r.data),
+    { revalidateOnFocus: false, dedupingInterval: 60_000 }
+  );
+  const subtaskCount = subtaskData?.data?.length || 0;
+
+  const attachmentsCount = task.attachments?.length || 0;
+
+  const startDate = (task as any).startDate || task.due?.[0];
+  const dueDate = (task as any).endDate || task.due?.[1];
+  const formatTime = (d?: any) => {
+    if (!d) return '';
+    try {
+      const date = typeof d === 'string' || typeof d === 'number' ? new Date(d) : new Date(d);
+      return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } catch {
+      return '';
+    }
+  };
 
   const handleDeleteTask = useCallback(async () => {
     try {
@@ -161,6 +201,43 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
             )}
           </Box>
         )}
+        {/* Quick info chips */}
+        <Box sx={{ mt: 0.5, mb: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+          {(startDate || dueDate) && (
+            <Chip
+              size="small"
+              variant="outlined"
+              color="default"
+              icon={<Iconify icon="solar:calendar-mark-bold" width={14} />}
+              label={
+                startDate && dueDate
+                  ? `${formatTime(startDate)} → ${formatTime(dueDate)}`
+                  : startDate
+                  ? `Start: ${formatTime(startDate)}`
+                  : `Due: ${formatTime(dueDate)}`
+              }
+              sx={{ height: 22, '& .MuiChip-label': { px: 0.75, fontSize: '0.72rem' } }}
+            />
+          )}
+         
+          
+          <Chip
+            size="small"
+            variant="outlined"
+            color="default"
+            icon={<Iconify icon="solar:clock-circle-bold" width={14} />}
+            label={`${totalHours.toFixed ? totalHours.toFixed(2) : Number(totalHours || 0).toFixed(2)}h`}
+            sx={{ height: 22, '& .MuiChip-label': { px: 0.75, fontSize: '0.72rem' } }}
+          />
+        </Box>
+        <Chip
+            size="small"
+            variant="outlined"
+            color="default"
+            icon={<Iconify icon="solar:folder-with-files-bold" width={14} />}
+            label={`${subtaskCount}`}
+            sx={{ height: 22, '& .MuiChip-label': { px: 0.75, fontSize: '0.72rem' } }}
+          />
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <ItemInfo
             comments={task.comments}

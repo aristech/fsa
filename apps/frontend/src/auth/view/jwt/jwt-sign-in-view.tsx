@@ -1,8 +1,8 @@
 'use client';
 
 import * as z from 'zod';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useState, useEffect } from 'react';
 import { useBoolean } from 'minimal-shared/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -66,17 +66,20 @@ export function JwtSignInView() {
 
   const {
     handleSubmit,
-    watch,
+    getValues,
     setValue,
     formState: { isSubmitting },
   } = methods;
 
-  // Prefill from localStorage if available
-  const savedEmail = typeof window !== 'undefined' ? localStorage.getItem('auth_email') : null;
-  if (savedEmail && !watch('email')) {
-    setValue('email', savedEmail);
-    setValue('rememberMe', true);
-  }
+  // Prefill from localStorage if available (avoid setState during render)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const savedEmail = localStorage.getItem('auth_email');
+    if (savedEmail && !getValues('email')) {
+      setValue('email', savedEmail);
+      setValue('rememberMe', true);
+    }
+  }, [getValues, setValue]);
 
   const onSubmit = handleSubmit(async (data) => {
     try {

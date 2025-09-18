@@ -98,7 +98,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
             }),
           ]}
         >
-          Minimal
+          ProgressNet FSA
         </Box>
       </Box>
     </m.div>

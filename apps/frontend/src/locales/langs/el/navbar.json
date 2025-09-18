@@ -17,14 +17,14 @@
   },
   "management": {
     "title": "Διαχείριση",
-    "projectsTasks": "Έργα & Εργασίες",
+    "projectsTasks": "Εργασίες",
     "calendar": "Ημερολόγιο",
     "chat": "Συνομιλία"
   },
   "fieldService": {
     "title": "Αυτοματισμός Υπηρεσιών Πεδίου",
     "workOrders": {
-      "title": "Εργασίες",
+      "title": "Έργα",
       "list": "Λίστα",
       "create": "Δημιουργία"
     },

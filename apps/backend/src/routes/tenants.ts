@@ -7,6 +7,23 @@ import { TenantSetupService } from "../services/tenant-setup";
 import { slugify } from "../utils/slugify";
 import { MagicLinkService } from "../services/magic-link-service";
 import { sendTenantActivationMagicLink } from "./email";
+import {
+  sendError,
+  sendSuccess,
+  sendBadRequest,
+  sendForbidden,
+  sendNotFound,
+  sendUnauthorized,
+  handleZodError
+} from "../utils/error-handler";
+import {
+  AUTH_MESSAGES,
+  BUSINESS_MESSAGES,
+  SUCCESS_MESSAGES,
+  SERVER_MESSAGES,
+  PERMISSION_MESSAGES,
+  NOT_FOUND_MESSAGES
+} from "../constants/error-messages";
 
 // ----------------------------------------------------------------------
 
@@ -40,6 +57,9 @@ const createTenantSchema = z.object({
     .optional(), // Make slug optional - will be auto-generated from name
   email: z.string().email("Valid email is required"),
   phone: z.string().optional(),
+  // Owner/Admin user details
+  ownerFirstName: z.string().min(1, "Owner first name is required").optional(),
+  ownerLastName: z.string().min(1, "Owner last name is required").optional(),
   address: z
     .object({
       street: z.string().optional(),
@@ -124,10 +144,11 @@ export async function tenantRoutes(fastify: FastifyInstance) {
         });
 
         if (existingTenant) {
-          return reply.status(400).send({
-            success: false,
-            message: "Company with this name or admin email already exists",
-          });
+          return sendBadRequest(
+            reply,
+            BUSINESS_MESSAGES.USER_ALREADY_EXISTS,
+            "Company with this name or admin email already exists"
+          );
         }
 
         // Create tenant record (inactive until magic link is used)
@@ -160,10 +181,12 @@ export async function tenantRoutes(fastify: FastifyInstance) {
           // Clean up tenant if magic link creation fails
           await Tenant.findByIdAndDelete(tenant._id);
 
-          return reply.status(500).send({
-            success: false,
-            message: "Failed to create activation link",
-          });
+          return sendError(
+            reply,
+            500,
+            SERVER_MESSAGES.SERVICE_UNAVAILABLE,
+            "Failed to create activation link"
+          );
         }
 
         // Send activation email
@@ -182,32 +205,30 @@ export async function tenantRoutes(fastify: FastifyInstance) {
           // Don't fail the registration if email fails, but log it
         }
 
-        return reply.status(201).send({
-          success: true,
-          data: {
+        return sendSuccess(
+          reply,
+          201,
+          SUCCESS_MESSAGES.TENANT_REGISTRATION,
+          "Tenant registration initiated. Please check your email to complete activation.",
+          {
             tenantId: tenant._id,
             companyName: validatedData.companyName,
             adminEmail: validatedData.adminEmail,
-            message:
-              "Registration successful! Please check your email for the activation link.",
-          },
-          message:
-            "Tenant registration initiated. Please check your email to complete activation.",
-        });
+            message: "Registration successful! Please check your email for the activation link.",
+          }
+        );
       } catch (error) {
         if (error instanceof z.ZodError) {
-          return reply.status(400).send({
-            success: false,
-            message: "Validation error",
-            errors: error.issues,
-          });
+          return handleZodError(error, reply);
         }
 
         fastify.log.error(error as Error, "Error registering tenant");
-        return reply.status(500).send({
-          success: false,
-          message: "Failed to register tenant",
-        });
+        return sendError(
+          reply,
+          500,
+          SERVER_MESSAGES.INTERNAL_ERROR,
+          "Failed to register tenant"
+        );
       }
     },
   );
@@ -219,17 +240,21 @@ export async function tenantRoutes(fastify: FastifyInstance) {
         createdAt: -1,
       });
 
-      return reply.send({
-        success: true,
-        data: tenants,
-        message: "Tenants fetched successfully",
-      });
+      return sendSuccess(
+        reply,
+        200,
+        SUCCESS_MESSAGES.FETCHED,
+        "Tenants fetched successfully",
+        tenants
+      );
     } catch (error) {
       fastify.log.error(error as Error, "Error fetching tenants");
-      return reply.status(500).send({
-        success: false,
-        message: "Failed to fetch tenants",
-      });
+      return sendError(
+        reply,
+        500,
+        SERVER_MESSAGES.INTERNAL_ERROR,
+        "Failed to fetch tenants"
+      );
     }
   });
 
@@ -240,23 +265,28 @@ export async function tenantRoutes(fastify: FastifyInstance) {
       const tenant = await Tenant.findById(id);
 
       if (!tenant) {
-        return reply.status(404).send({
-          success: false,
-          message: "Tenant not found",
-        });
+        return sendNotFound(
+          reply,
+          NOT_FOUND_MESSAGES.TENANT_NOT_FOUND,
+          "Tenant not found"
+        );
       }
 
-      return reply.send({
-        success: true,
-        data: tenant,
-        message: "Tenant fetched successfully",
-      });
+      return sendSuccess(
+        reply,
+        200,
+        SUCCESS_MESSAGES.FETCHED,
+        "Tenant fetched successfully",
+        tenant
+      );
     } catch (error) {
       fastify.log.error(error as Error, "Error fetching tenant");
-      return reply.status(500).send({
-        success: false,
-        message: "Failed to fetch tenant",
-      });
+      return sendError(
+        reply,
+        500,
+        SERVER_MESSAGES.INTERNAL_ERROR,
+        "Failed to fetch tenant"
+      );
     }
   });
 
@@ -275,34 +305,40 @@ export async function tenantRoutes(fastify: FastifyInstance) {
       });
 
       if (existingTenant) {
-        return reply.status(400).send({
-          success: false,
-          message: "Tenant with this slug or email already exists",
-        });
+        return sendBadRequest(
+          reply,
+          BUSINESS_MESSAGES.USER_ALREADY_EXISTS,
+          "Tenant with this slug or email already exists"
+        );
       }
 
       // Get the current user ID from the request (assuming it's set by auth middleware)
       const userId = (request as any).user?.id;
       if (!userId) {
-        return reply.status(401).send({
-          success: false,
-          message: "User authentication required",
-        });
+        return sendUnauthorized(
+          reply,
+          AUTH_MESSAGES.NO_TOKEN_PROVIDED,
+          "User authentication required"
+        );
       }
 
       // Ensure caller is superuser
       const caller = await User.findById(userId).select("role");
       if (!caller || caller.role !== "superuser") {
-        return reply.status(403).send({
-          success: false,
-          message: "Only superusers can create tenants",
-        });
+        return sendForbidden(
+          reply,
+          PERMISSION_MESSAGES.SUPERUSER_ONLY,
+          "Only superusers can create tenants"
+        );
       }
 
       // Add the generated slug to the data (no ownerId needed - will create new user)
       const tenantData = {
         ...validatedData,
         slug: slug,
+        // Provide owner details - use defaults if not provided
+        ownerFirstName: validatedData.ownerFirstName || validatedData.name.split(' ')[0] || validatedData.name,
+        ownerLastName: validatedData.ownerLastName || validatedData.name.split(' ').slice(1).join(' ') || 'Admin',
       };
 
       // Setup new tenant with default roles and create tenant owner
@@ -360,9 +396,12 @@ export async function tenantRoutes(fastify: FastifyInstance) {
         // Don't fail the tenant creation if email fails
       }
 
-      return reply.status(201).send({
-        success: true,
-        data: {
+      return sendSuccess(
+        reply,
+        201,
+        SUCCESS_MESSAGES.TENANT_CREATED,
+        "Tenant created successfully with default roles. Activation email sent to tenant owner.",
+        {
           tenant,
           roles,
           owner: {
@@ -374,24 +413,20 @@ export async function tenantRoutes(fastify: FastifyInstance) {
             isTenantOwner: owner.isTenantOwner,
             isActive: owner.isActive,
           },
-        },
-        message:
-          "Tenant created successfully with default roles. Activation email sent to tenant owner.",
-      });
+        }
+      );
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return reply.status(400).send({
-          success: false,
-          message: "Validation error",
-          errors: error.issues,
-        });
+        return handleZodError(error, reply);
       }
 
       fastify.log.error(error as Error, "Error creating tenant");
-      return reply.status(500).send({
-        success: false,
-        message: "Failed to create tenant",
-      });
+      return sendError(
+        reply,
+        500,
+        SERVER_MESSAGES.INTERNAL_ERROR,
+        "Failed to create tenant"
+      );
     }
   });
 
@@ -412,10 +447,11 @@ export async function tenantRoutes(fastify: FastifyInstance) {
         });
 
         if (existingTenant) {
-          return reply.status(400).send({
-            success: false,
-            message: "Tenant with this slug already exists",
-          });
+          return sendBadRequest(
+            reply,
+            BUSINESS_MESSAGES.TENANT_SLUG_EXISTS,
+            "Tenant with this slug already exists"
+          );
         }
 
         validatedData.slug = newSlug;
@@ -428,31 +464,32 @@ export async function tenantRoutes(fastify: FastifyInstance) {
       );
 
       if (!tenant) {
-        return reply.status(404).send({
-          success: false,
-          message: "Tenant not found",
-        });
+        return sendNotFound(
+          reply,
+          NOT_FOUND_MESSAGES.TENANT_NOT_FOUND,
+          "Tenant not found"
+        );
       }
 
-      return reply.send({
-        success: true,
-        data: tenant,
-        message: "Tenant updated successfully",
-      });
+      return sendSuccess(
+        reply,
+        200,
+        SUCCESS_MESSAGES.UPDATED,
+        "Tenant updated successfully",
+        tenant
+      );
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return reply.status(400).send({
-          success: false,
-          message: "Validation error",
-          errors: error.issues,
-        });
+        return handleZodError(error, reply);
       }
 
       fastify.log.error(error as Error, "Error updating tenant");
-      return reply.status(500).send({
-        success: false,
-        message: "Failed to update tenant",
-      });
+      return sendError(
+        reply,
+        500,
+        SERVER_MESSAGES.INTERNAL_ERROR,
+        "Failed to update tenant"
+      );
     }
   });
 
@@ -470,22 +507,27 @@ export async function tenantRoutes(fastify: FastifyInstance) {
         );
 
         if (!tenant) {
-          return reply.status(404).send({
-            success: false,
-            message: "Tenant not found",
-          });
+          return sendNotFound(
+            reply,
+            NOT_FOUND_MESSAGES.TENANT_NOT_FOUND,
+            "Tenant not found"
+          );
         }
 
-        return reply.send({
-          success: true,
-          message: "Tenant deleted successfully",
-        });
+        return sendSuccess(
+          reply,
+          200,
+          SUCCESS_MESSAGES.DELETED,
+          "Tenant deleted successfully"
+        );
       } catch (error) {
         fastify.log.error(error as Error, "Error deleting tenant");
-        return reply.status(500).send({
-          success: false,
-          message: "Failed to delete tenant",
-        });
+        return sendError(
+          reply,
+          500,
+          SERVER_MESSAGES.INTERNAL_ERROR,
+          "Failed to delete tenant"
+        );
       }
     },
   );
@@ -499,10 +541,11 @@ export async function tenantRoutes(fastify: FastifyInstance) {
 
         const tenant = await Tenant.findById(id);
         if (!tenant) {
-          return reply.status(404).send({
-            success: false,
-            message: "Tenant not found",
-          });
+          return sendNotFound(
+            reply,
+            NOT_FOUND_MESSAGES.TENANT_NOT_FOUND,
+            "Tenant not found"
+          );
         }
 
         // Create default roles for this tenant
@@ -514,17 +557,21 @@ export async function tenantRoutes(fastify: FastifyInstance) {
           isDefault: true,
         });
 
-        return reply.send({
-          success: true,
-          data: { tenant, roles },
-          message: "Default roles created successfully",
-        });
+        return sendSuccess(
+          reply,
+          200,
+          SUCCESS_MESSAGES.SETUP_COMPLETED,
+          "Default roles created successfully",
+          { tenant, roles }
+        );
       } catch (error) {
         fastify.log.error(error as Error, "Error setting up tenant");
-        return reply.status(500).send({
-          success: false,
-          message: "Failed to setup tenant",
-        });
+        return sendError(
+          reply,
+          500,
+          SERVER_MESSAGES.INTERNAL_ERROR,
+          "Failed to setup tenant"
+        );
       }
     },
   );

@@ -290,7 +290,7 @@ const getMonthDates = (date: Date): Date[] => {
 };
 
 const formatTime = (date: Date): string =>
-  date.toLocaleTimeString('en-US', {
+  date.toLocaleTimeString(undefined, {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
@@ -389,8 +389,8 @@ export function MobileCalendar({
 
             return (
               <DayHeader key={index} isToday={isToday} isSelected={isSelected}>
-                <Typography variant="caption" color="text.secondary">
-                  {date.toLocaleDateString('en-US', { weekday: 'short' })}
+            <Typography variant="caption" color="text.secondary">
+              {date.toLocaleDateString(undefined, { weekday: 'short' })}
                 </Typography>
                 <Typography
                   variant="h6"
@@ -576,7 +576,7 @@ export function MobileCalendar({
         <WeekHeader>
           <DayHeader isToday={isToday} isSelected>
             <Typography variant="caption" color="text.secondary">
-              {currentDate.toLocaleDateString('en-US', { weekday: 'long' })}
+              {currentDate.toLocaleDateString(undefined, { weekday: 'long' })}
             </Typography>
             <Typography
               variant="h6"
@@ -657,7 +657,7 @@ export function MobileCalendar({
           </IconButton>
 
           <Typography variant="h6" sx={{ minWidth: '120px', textAlign: 'center' }}>
-            {currentDate.toLocaleDateString('en-US', {
+            {currentDate.toLocaleDateString(undefined, {
               month: 'long',
               year: 'numeric',
               ...(view === 'week' && { day: 'numeric' }),

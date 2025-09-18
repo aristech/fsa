@@ -1,3 +1,5 @@
+"use client";
+
 import type { ICalendarView } from 'src/types/calendar';
 import type { IconifyName } from 'src/components/iconify';
 import type { UseCalendarReturn } from './hooks/use-calendar';
@@ -14,6 +16,8 @@ import IconButton from '@mui/material/IconButton';
 import ToggleButton from '@mui/material/ToggleButton';
 import LinearProgress from '@mui/material/LinearProgress';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+
+import { useTranslate } from 'src/locales/use-locales';
 
 import { Iconify } from 'src/components/iconify';
 import { CustomPopover } from 'src/components/custom-popover';
@@ -41,6 +45,7 @@ export function CalendarToolbar({
   onOpenFilters,
   onDateNavigation,
 }: CalendarToolbarProps) {
+  const { t } = useTranslate('common');
   const mobileActions = usePopover();
 
   const selectedView = viewOptions.find((option) => option.value === view) ?? viewOptions[0];
@@ -49,7 +54,7 @@ export function CalendarToolbar({
     <ToggleButtonGroup
       exclusive
       size="small"
-      aria-label="calendar view"
+      aria-label={t('calendar.viewAria', { defaultValue: 'calendar view' })}
       value={view}
       onChange={(
         event: React.MouseEvent<HTMLElement>,
@@ -63,7 +68,7 @@ export function CalendarToolbar({
     >
       {viewOptions.map((option) => (
         <Tooltip key={option.value} title={option.label}>
-          <ToggleButton value={option.value} aria-label={`${option.label} view`}>
+          <ToggleButton value={option.value} aria-label={`${option.label} ${t('calendar.view', { defaultValue: 'view' })}`}>
             <Iconify icon={option.icon} />
           </ToggleButton>
         </Tooltip>
@@ -139,7 +144,7 @@ export function CalendarToolbar({
         variant="contained"
         onClick={() => onDateNavigation?.('today')}
       >
-        Today
+        {t('calendar.today', { defaultValue: 'Today' })}
       </Button>
 
       <IconButton onClick={onOpenFilters}>

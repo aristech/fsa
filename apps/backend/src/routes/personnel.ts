@@ -339,7 +339,7 @@ export async function personnelRoutes(fastify: FastifyInstance) {
           _id: id,
           tenantId: tenant._id,
         })
-          .populate("userId", "firstName lastName email phone")
+          .populate("userId", "firstName lastName email phone lastLoginAt isOnline lastSeenAt")
           .populate("roleId", "name color");
 
         if (!personnel) {
@@ -360,6 +360,9 @@ export async function personnelRoutes(fastify: FastifyInstance) {
             name: full,
             email: obj.userId.email,
             phone: obj.userId.phone,
+            lastLoginAt: obj.userId.lastLoginAt,
+            isOnline: obj.userId.isOnline,
+            lastSeenAt: obj.userId.lastSeenAt,
           };
           // Add name directly on personnel object for easier frontend access
           obj.name = full || obj.userId.email || "Unknown Personnel";
@@ -384,7 +387,7 @@ export async function personnelRoutes(fastify: FastifyInstance) {
       }
 
       const personnel = await Personnel.find({ tenantId: tenant._id })
-        .populate("userId", "firstName lastName email phone")
+        .populate("userId", "firstName lastName email phone lastLoginAt isOnline lastSeenAt")
         .populate("roleId", "name color")
         .sort({ createdAt: -1 });
 
@@ -403,6 +406,9 @@ export async function personnelRoutes(fastify: FastifyInstance) {
             name: full,
             email: obj.userId.email,
             phone: obj.userId.phone,
+            lastLoginAt: obj.userId.lastLoginAt,
+            isOnline: obj.userId.isOnline,
+            lastSeenAt: obj.userId.lastSeenAt,
           };
           // Add name directly on personnel object for easier frontend access
           obj.name = full || obj.userId.email || "Unknown Personnel";

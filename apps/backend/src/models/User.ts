@@ -16,6 +16,8 @@ export interface IUser {
   isActive: boolean;
   isTenantOwner: boolean;
   lastLoginAt?: Date;
+  isOnline: boolean;
+  lastSeenAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -77,6 +79,13 @@ const UserSchema = new Schema<IUser>(
       default: false,
     },
     lastLoginAt: {
+      type: Date,
+    },
+    isOnline: {
+      type: Boolean,
+      default: false,
+    },
+    lastSeenAt: {
       type: Date,
     },
   },

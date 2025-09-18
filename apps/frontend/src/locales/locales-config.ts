@@ -29,6 +29,9 @@ export type LangCode = (typeof supportedLngs)[number];
 export const fallbackLng: LangCode = 'en';
 export const defaultNS = 'common';
 
+// Available namespaces
+export const namespaces = ['common', 'messages', 'api', 'dashboard', 'field', 'navbar'] as const;
+
 // Storage config
 export const storageConfig = {
   cookie: { key: 'i18next', autoDetection: false },

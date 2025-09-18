@@ -204,6 +204,8 @@ export class TenantSetupService {
     phone?: string;
     address?: any;
     settings?: any;
+    ownerFirstName?: string;
+    ownerLastName?: string;
   }): Promise<{ tenant: any; roles: any[]; owner: any }> {
     try {
       // Create tenant
@@ -233,8 +235,8 @@ export class TenantSetupService {
       // Create tenant owner user with admin privileges (inactive until activation)
       const owner = new User({
         email: tenantData.email,
-        firstName: tenantData.name.split(' ')[0] || tenantData.name,
-        lastName: tenantData.name.split(' ').slice(1).join(' ') || '',
+        firstName: tenantData.ownerFirstName || tenantData.name.split(' ')[0] || tenantData.name,
+        lastName: tenantData.ownerLastName || tenantData.name.split(' ').slice(1).join(' ') || 'Admin',
         phone: tenantData.phone,
         tenantId: tenant._id.toString(),
         isTenantOwner: true,

@@ -56,7 +56,7 @@ const FAQs = [
         <li>
           Learn more about the
           <Link
-            href="https://docs.minimals.cc/package/"
+            href="https://progressnet.io/"
             target="_blank"
             rel="noopener noreferrer"
             sx={{ mx: 0.5 }}
@@ -218,7 +218,7 @@ export function HomeFAQs({ sx, ...other }: BoxProps) {
         <Button
           color="inherit"
           variant="contained"
-          href="mailto:support@minimals.cc?subject=[Feedback] from Customer"
+          href="mailto:support@progressnet.gr?subject=[Feedback] from Customer"
           startIcon={<Iconify icon="solar:letter-bold" />}
         >
           Contact us

@@ -26,6 +26,7 @@ import { usePathname } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
 
 import { PERMISSIONS } from 'src/hooks/use-permissions';
+import { useRoleLabel } from 'src/hooks/use-role-label';
 
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
@@ -48,18 +49,13 @@ export type EnhancedAccountDrawerProps = IconButtonProps & {
   }[];
 };
 
-const ROLE_TITLES: Record<string, string> = {
-  admin: 'Administrator',
-  manager: 'Manager',
-  technician: 'Technician',
-  dispatcher: 'Dispatcher',
-  customer: 'Customer',
-};
+// Role label is resolved dynamically from backend via hook
 
 export function EnhancedAccountDrawer({ data = [], sx, ...other }: EnhancedAccountDrawerProps) {
   const pathname = usePathname();
   const { value: open, onFalse: onClose, onTrue: onOpen } = useBoolean();
   const { user } = useAuthContext();
+  const { label: roleLabel } = useRoleLabel(user?.role || undefined);
 
   // Get permissions based on the user we're using
   const permissions = useMemo(() => {
@@ -112,7 +108,7 @@ export function EnhancedAccountDrawer({ data = [], sx, ...other }: EnhancedAccou
 
             <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
               <Chip
-                label={ROLE_TITLES[user?.role || ''] || user?.role || 'User'}
+                label={roleLabel}
                 size="small"
                 color="primary"
                 variant="outlined"

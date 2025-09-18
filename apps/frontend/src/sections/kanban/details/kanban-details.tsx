@@ -10,6 +10,7 @@ import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
 import Chip from '@mui/material/Chip';
 import Tabs from '@mui/material/Tabs';
+import Badge from '@mui/material/Badge';
 import Drawer from '@mui/material/Drawer';
 import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
@@ -489,11 +490,24 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       {[
         { value: 'overview', label: t('overview', { defaultValue: 'Overview' }) },
         { value: 'time', label: t('time', { defaultValue: 'Time' }) },
-        { value: 'subTasks', label: `${t('subtasks', { defaultValue: 'Subtasks' })} (${subtasks.length})` },
+        { value: 'subTasks', label: t('subtasks', { defaultValue: 'Subtasks' }), count: subtasks.length },
         { value: 'materials', label: t('materials', { defaultValue: 'Materials' }) },
-        { value: 'comments', label: `${t('comments', { defaultValue: 'Comments' })} (${comments.length})` },
+        { value: 'comments', label: t('comments', { defaultValue: 'Comments' }), count: comments.length },
       ].map((tab) => (
-        <Tab key={tab.value} value={tab.value} label={tab.label} />
+        <Tab
+          key={tab.value}
+          value={tab.value}
+          label={
+            tab.count !== undefined ? (
+              <Box sx={{ display: 'absolute', alignItems: 'center', gap: 1 }}>
+                <span>{tab.label}</span>
+                <Badge  badgeContent={tab.count} invisible={!tab.count} sx={{ position: 'absolute', top: 12, right: 12 }} />
+              </Box>
+            ) : (
+              tab.label
+            )
+          }
+        />
       ))}
     </Tabs>
   );

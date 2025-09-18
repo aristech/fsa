@@ -8,6 +8,7 @@ import listPlugin from '@fullcalendar/list';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import { useState, startTransition } from 'react';
 import timeGridPlugin from '@fullcalendar/timegrid';
+import elLocale from '@fullcalendar/core/locales/el';
 import interactionPlugin from '@fullcalendar/interaction';
 import { useBoolean, useSetState } from 'minimal-shared/hooks';
 
@@ -19,6 +20,7 @@ import Typography from '@mui/material/Typography';
 import { fIsAfter, fIsBetween } from 'src/utils/format-time';
 
 import { useGetEvents } from 'src/actions/calendar';
+import { useTranslate } from 'src/locales/use-locales';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { deleteTask, updateTaskDates } from 'src/actions/kanban';
 
@@ -38,6 +40,7 @@ import { CalendarFiltersResult } from '../calendar-filters-result';
 
 export function CalendarView() {
   const theme = useTheme();
+  const { t, currentLang } = useTranslate('common');
 
   const openFilters = useBoolean();
 
@@ -257,7 +260,7 @@ export function CalendarView() {
             mb: { xs: 3, md: 5 },
           }}
         >
-          <Typography variant="h4">Calendar</Typography>
+          <Typography variant="h4">{t('calendar.title', { defaultValue: 'Calendar' })}</Typography>
         </Box>
 
         {canReset && renderResults()}
@@ -273,10 +276,10 @@ export function CalendarView() {
               onDateNavigation={onDateNavigation}
               onOpenFilters={openFilters.onTrue}
               viewOptions={[
-                { value: 'dayGridMonth', label: 'Month', icon: 'mingcute:calendar-month-line' },
-                { value: 'timeGridWeek', label: 'Week', icon: 'mingcute:calendar-week-line' },
-                { value: 'timeGridDay', label: 'Day', icon: 'mingcute:calendar-day-line' },
-                { value: 'listWeek', label: 'Agenda', icon: 'custom:calendar-agenda-outline' },
+                { value: 'dayGridMonth', label: t('calendar.month', { defaultValue: 'Month' }), icon: 'mingcute:calendar-month-line' },
+                { value: 'timeGridWeek', label: t('calendar.week', { defaultValue: 'Week' }), icon: 'mingcute:calendar-week-line' },
+                { value: 'timeGridDay', label: t('calendar.day', { defaultValue: 'Day' }), icon: 'mingcute:calendar-day-line' },
+                { value: 'listWeek', label: t('calendar.agenda', { defaultValue: 'Agenda' }), icon: 'custom:calendar-agenda-outline' },
               ]}
             />
 
@@ -295,6 +298,8 @@ export function CalendarView() {
               headerToolbar={false}
               eventDisplay="block"
               ref={calendarRef}
+              locales={[elLocale]}
+              locale={currentLang.value}
               initialView={view}
               events={dataFiltered}
               select={handleSelectRange}

@@ -298,7 +298,7 @@ export function FsaRecentWorkOrders() {
                         }}
                       >
                         <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                          {wo.workOrderNumber || wo.title}
+                          {wo.title}
                         </Typography>
                       </Link>
                       <Label color={getStatusColor(wo.status)} variant="soft">
@@ -310,7 +310,7 @@ export function FsaRecentWorkOrders() {
                     </Stack>
                     {wo.workOrderNumber && wo.title !== wo.workOrderNumber && (
                       <Typography variant="body2" color="text.secondary">
-                        {wo.title}
+                        {wo.workOrderNumber}
                       </Typography>
                     )}
                   </Stack>

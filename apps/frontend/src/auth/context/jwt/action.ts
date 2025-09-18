@@ -36,7 +36,7 @@ export const signInWithPassword = async ({
 
     const res = await axios.post(endpoints.auth.signIn, params);
 
-    // Handle both response formats: our API format and Minimals UI format
+    // Handle both response formats
     const accessToken = res.data.accessToken || res.data.data?.token;
 
     if (!accessToken) {
@@ -69,7 +69,7 @@ export const signUp = async ({
   try {
     const res = await axios.post(endpoints.auth.signUp, params);
 
-    // Handle both response formats: our API format and Minimals UI format
+    // Handle both response formats
     const accessToken = res.data.accessToken || res.data.data?.token;
 
     if (!accessToken) {

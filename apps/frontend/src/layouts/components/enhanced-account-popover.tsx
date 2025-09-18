@@ -18,6 +18,7 @@ import { paths } from 'src/routes/paths';
 import { usePathname } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
 
+import { useRoleLabel } from 'src/hooks/use-role-label';
 import { usePermissions } from 'src/hooks/use-permissions';
 
 import { Label } from 'src/components/label';
@@ -44,7 +45,10 @@ export function EnhancedAccountPopover({ data = [], sx, ...other }: EnhancedAcco
   const pathname = usePathname();
   const { open, anchorEl, onClose, onOpen } = usePopover();
   const { user } = useAuthContext();
+  const { label: roleLabel } = useRoleLabel(user?.role || undefined);
   const { permissions } = usePermissions();
+
+  // role label is resolved dynamically from backend via hook
 
   const renderUserInfo = () => (
     <Card sx={{ m: 2, mb: 1 }}>
@@ -65,7 +69,7 @@ export function EnhancedAccountPopover({ data = [], sx, ...other }: EnhancedAcco
             </Typography>
 
             <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-              <Chip label={user?.role || 'User'} size="small" color="primary" variant="outlined" />
+              <Chip label={roleLabel} size="small" color="primary" variant="outlined" />
 
               {user?.isTenantOwner && (
                 <Chip

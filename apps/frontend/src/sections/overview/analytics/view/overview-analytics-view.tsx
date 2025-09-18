@@ -119,6 +119,27 @@ export function OverviewAnalyticsView() {
   const personnelById = new Map<string, any>();
   personnel.forEach((p) => personnelById.set(p._id, p));
 
+  // Helper function to resolve personnel name consistently
+  const resolvePersonnelName = (personId: string, fallbackName?: string) => {
+    const personDoc = personnelById.get(personId);
+
+    // Try different name sources in order of preference
+    if (personDoc?.user?.firstName || personDoc?.user?.lastName) {
+      return [personDoc.user.firstName, personDoc.user.lastName].filter(Boolean).join(' ') || 'Personnel';
+    }
+    if (personDoc?.user?.name) {
+      return personDoc.user.name;
+    }
+    if (personDoc?.name) {
+      return personDoc.name;
+    }
+    if (personDoc?.firstName || personDoc?.lastName) {
+      return [personDoc.firstName, personDoc.lastName].filter(Boolean).join(' ') || 'Personnel';
+    }
+
+    return fallbackName || 'Personnel';
+  };
+
   // ----------------- Personnel performance (radar) -----------------
   const agg = new Map<
     string,
@@ -143,10 +164,16 @@ export function OverviewAnalyticsView() {
         lateCount: 0,
         woSet: new Set<string>(),
       });
+    } else {
+      // If entry exists but has a generic name, update it with a better name
+      const existing = agg.get(personId)!;
+      if (existing.name === 'Personnel' && name !== 'Personnel') {
+        existing.name = name;
+      }
     }
     return agg.get(personId)!;
   };
-  tasks.forEach((task: any) => {
+  tasks.forEach((task: any, taskIndex: number) => {
     // Handle different assignee field names and structures
     let assignees: any[] = [];
     if (Array.isArray(task.assignee)) {
@@ -157,6 +184,19 @@ export function OverviewAnalyticsView() {
       assignees = task.personnelIds.map((id: string) => ({ id, _id: id }));
     } else if (task.assignee) {
       assignees = [task.assignee];
+    }
+
+    // Debug logging for first few tasks
+    if (process.env.NODE_ENV === 'development' && taskIndex < 3) {
+      console.log(`🔍 Task ${taskIndex} Debug:`, {
+        taskTitle: task.title || task.name,
+        taskId: task._id || task.id,
+        rawAssignee: task.assignee,
+        rawAssignees: task.assignees,
+        rawPersonnelIds: task.personnelIds,
+        processedAssignees: assignees,
+        workOrderId: task.workOrderId || task.workOrder
+      });
     }
 
     const createdAt = task.createdAt ? new Date(task.createdAt) : undefined;
@@ -183,22 +223,27 @@ export function OverviewAnalyticsView() {
 
     const workOrderId = task.workOrderId || task.workOrder;
 
-    assignees.forEach((a) => {
+    assignees.forEach((a, assigneeIndex) => {
       const personId = a.id || a._id || a;
       if (!personId) return;
 
-      const personDoc = personnelById.get(personId);
-      let name = 'Personnel';
+      // Use consistent name resolution
+      const name = a.name || resolvePersonnelName(personId);
 
-      // Try multiple ways to get the person's name
-      if (a.name) {
-        name = a.name;
-      } else if (personDoc?.user) {
-        name = [personDoc.user.firstName, personDoc.user.lastName].filter(Boolean).join(' ') || 'Personnel';
-      } else if (personDoc?.firstName || personDoc?.lastName) {
-        name = [personDoc.firstName, personDoc.lastName].filter(Boolean).join(' ') || 'Personnel';
-      } else if (typeof a === 'string' && personDoc) {
-        name = [personDoc.firstName, personDoc.lastName].filter(Boolean).join(' ') || 'Personnel';
+      // Debug logging for assignee processing
+      if (process.env.NODE_ENV === 'development' && taskIndex < 3) {
+        const personDoc = personnelById.get(personId);
+        console.log(`🔍 Assignee ${assigneeIndex} Processing:`, {
+          assigneeRaw: a,
+          personId,
+          personDoc: personDoc ? {
+            _id: personDoc._id,
+            user: personDoc.user,
+            firstName: personDoc.firstName,
+            lastName: personDoc.lastName
+          } : null,
+          resolvedName: name
+        });
       }
 
       const m = upsert(personId, name);
@@ -217,20 +262,44 @@ export function OverviewAnalyticsView() {
       }
     });
   });
-  timeEntries.forEach((te: any) => {
+  timeEntries.forEach((te: any, teIndex: number) => {
     const pid = te.personnelId || te.userId || te.technicianId || te.personnel;
     if (!pid) return;
 
     const personDoc = personnelById.get(pid);
-    let name = 'Personnel';
 
-    // Try multiple ways to get the person's name from time entry and personnel doc
-    if (te.personnelName) {
-      name = te.personnelName;
-    } else if (personDoc?.user) {
-      name = [personDoc.user.firstName, personDoc.user.lastName].filter(Boolean).join(' ') || 'Personnel';
-    } else if (personDoc?.firstName || personDoc?.lastName) {
-      name = [personDoc.firstName, personDoc.lastName].filter(Boolean).join(' ') || 'Personnel';
+    // Use the consistent name resolution helper
+    const name = resolvePersonnelName(pid, te.personnelName);
+
+    // Debug logging for first few time entries
+    if (process.env.NODE_ENV === 'development' && teIndex < 3) {
+      console.log(`🔍 TimeEntry ${teIndex} Debug:`, {
+        timeEntryId: te._id || te.id,
+        personnelId: pid,
+        personnelName: te.personnelName,
+        personDoc: personDoc ? {
+          _id: personDoc._id,
+          name: personDoc.name,
+          firstName: personDoc.firstName,
+          lastName: personDoc.lastName,
+          user: personDoc.user ? {
+            _id: personDoc.user._id,
+            name: personDoc.user.name,
+            firstName: personDoc.user.firstName,
+            lastName: personDoc.user.lastName,
+            email: personDoc.user.email
+          } : null
+        } : null,
+        resolvedName: name,
+        durationData: {
+          durationMinutes: te.durationMinutes,
+          minutes: te.minutes,
+          duration: te.duration,
+          hours: te.hours,
+          start: te.start,
+          end: te.end
+        }
+      });
     }
 
     const m = upsert(pid, name);
@@ -269,8 +338,26 @@ export function OverviewAnalyticsView() {
     };
   });
 
+  // Debug logging for personnel performance
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 Personnel Performance Debug:', {
+      totalPersonnel: personnel.length,
+      totalTasks: tasks.length,
+      totalTimeEntries: timeEntries.length,
+      personnelAggregation: Array.from(agg.entries()).map(([id, data]) => ({
+        id,
+        name: data.name,
+        tasksCompleted: data.tasksCompleted,
+        hoursLogged: data.hoursLogged,
+        woParticipations: data.woSet.size
+      })),
+      allRows: rows,
+      activeRowsCount: rows.filter(r => r.tasksCompleted > 0 || r.hoursLogged > 0 || r.woParticipations > 0).length
+    });
+  }
+
   // Filter out personnel with no activity and sort by activity
-  const activeRows = rows.filter(r => r.tasksCompleted > 0 || r.hoursLogged > 0);
+  const activeRows = rows.filter(r => r.tasksCompleted > 0 || r.hoursLogged > 0 || r.woParticipations > 0);
   const top = activeRows
     .sort((a, b) => {
       // Primary sort: tasks completed
@@ -638,7 +725,7 @@ export function OverviewAnalyticsView() {
   return (
     <DashboardContent maxWidth="xl">
       <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 } }}>
-        {t('demo.title')}
+        {t('analytics.title')}
       </Typography>
 
       <Grid container spacing={3}>

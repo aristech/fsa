@@ -1,7 +1,7 @@
 {
-  "name": "@minimal-kit/next-ts",
-  "author": "Minimals",
-  "version": "7.4.0",
+  "name": "progressnet-fsa",
+  "author": "Aristech",
+  "version": "1.0.1",
   "description": "Next & TypeScript",
   "private": true,
   "scripts": {

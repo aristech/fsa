@@ -55,7 +55,6 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
           {user?.email}
         </Typography>
       </Box>
-
       <Divider sx={{ borderStyle: 'dashed' }} />
 
       <MenuList sx={{ p: 1, my: 1, '& li': { p: 0 } }}>
