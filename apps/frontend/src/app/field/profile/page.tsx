@@ -120,11 +120,15 @@ export default function FieldProfilePage() {
       });
 
       // Update local state
-      setPersonnel(prev => prev ? {
-        ...prev,
-        user: { ...prev.user, phone: editData.phone },
-        notes: editData.notes,
-      } : null);
+      setPersonnel((prev) =>
+        prev
+          ? {
+              ...prev,
+              user: { ...prev.user, phone: editData.phone },
+              notes: editData.notes,
+            }
+          : null
+      );
 
       setEditMode(false);
       toast.success(t('profileUpdated', { defaultValue: 'Profile updated successfully' }));
@@ -157,14 +161,20 @@ export default function FieldProfilePage() {
           phone: response.data.data.user.phone || '',
           notes: response.data.data.notes || '',
         });
-        toast.success(t('profileSetupSuccess', { defaultValue: 'Profile set up successfully! You can now use field operations.' }));
+        toast.success(
+          t('profileSetupSuccess', {
+            defaultValue: 'Profile set up successfully! You can now use field operations.',
+          })
+        );
       }
     } catch (error: any) {
       console.error('Error setting up profile:', error);
       if (error.response?.status === 400) {
         toast.error(t('personnelExists', { defaultValue: 'Personnel record already exists' }));
       } else {
-        toast.error(t('failedToSetupProfile', { defaultValue: 'Failed to set up profile. Please try again.' }));
+        toast.error(
+          t('failedToSetupProfile', { defaultValue: 'Failed to set up profile. Please try again.' })
+        );
       }
     } finally {
       setSettingUp(false);
@@ -213,7 +223,10 @@ export default function FieldProfilePage() {
             {t('welcomeFieldOps', { defaultValue: 'Welcome to Field Operations!' })}
           </Typography>
           <Typography variant="body2" gutterBottom>
-            {t('accountNeedsPersonnelProfile', { defaultValue: "Your account needs a personnel profile to access field operations. We'll set this up automatically with default settings that you can customize later." })}
+            {t('accountNeedsPersonnelProfile', {
+              defaultValue:
+                "Your account needs a personnel profile to access field operations. We'll set this up automatically with default settings that you can customize later.",
+            })}
           </Typography>
           <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Button
@@ -222,7 +235,9 @@ export default function FieldProfilePage() {
               disabled={settingUp}
               startIcon={settingUp ? undefined : <Iconify icon="solar:user-plus-bold" />}
             >
-              {settingUp ? t('settingUp', { defaultValue: 'Setting up...' }) : t('setUpMyProfile', { defaultValue: 'Set Up My Profile' })}
+              {settingUp
+                ? t('settingUp', { defaultValue: 'Setting up...' })
+                : t('setUpMyProfile', { defaultValue: 'Set Up My Profile' })}
             </Button>
             <Button
               onClick={() => setLogoutDialogOpen(true)}
@@ -239,10 +254,14 @@ export default function FieldProfilePage() {
         <Dialog open={logoutDialogOpen} onClose={() => setLogoutDialogOpen(false)}>
           <DialogTitle>{t('confirmLogout', { defaultValue: 'Confirm Logout' })}</DialogTitle>
           <DialogContent>
-            <Typography>{t('areYouSureLogout', { defaultValue: 'Are you sure you want to logout?' })}</Typography>
+            <Typography>
+              {t('areYouSureLogout', { defaultValue: 'Are you sure you want to logout?' })}
+            </Typography>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setLogoutDialogOpen(false)}>{t('cancel', { defaultValue: 'Cancel' })}</Button>
+            <Button onClick={() => setLogoutDialogOpen(false)}>
+              {t('cancel', { defaultValue: 'Cancel' })}
+            </Button>
             <Button onClick={handleLogout} color="error" variant="contained">
               {t('logout', { defaultValue: 'Logout' })}
             </Button>
@@ -268,7 +287,8 @@ export default function FieldProfilePage() {
             }}
           >
             {(() => {
-              const name = personnel.user.name || t('unknownUser', { defaultValue: 'Unknown User' });
+              const name =
+                personnel.user.name || t('unknownUser', { defaultValue: 'Unknown User' });
               const nameParts = name.split(' ');
               if (nameParts.length >= 2) {
                 return `${nameParts[0].charAt(0)}${nameParts[nameParts.length - 1].charAt(0)}`.toUpperCase();
@@ -287,8 +307,12 @@ export default function FieldProfilePage() {
         {/* Basic Info Card */}
         <Card>
           <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">{t('basicInformation', { defaultValue: 'Basic Information' })}</Typography>
+            <Box
+              sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
+            >
+              <Typography variant="h6">
+                {t('basicInformation', { defaultValue: 'Basic Information' })}
+              </Typography>
               <IconButton
                 onClick={() => setEditMode(!editMode)}
                 size="small"
@@ -310,7 +334,7 @@ export default function FieldProfilePage() {
                 <TextField
                   label={t('phone', { defaultValue: 'Phone' })}
                   value={editData.phone}
-                  onChange={(e) => setEditData(prev => ({ ...prev, phone: e.target.value }))}
+                  onChange={(e) => setEditData((prev) => ({ ...prev, phone: e.target.value }))}
                   fullWidth
                   size="small"
                 />
@@ -319,7 +343,9 @@ export default function FieldProfilePage() {
                   <Typography variant="subtitle2" color="text.secondary">
                     {t('phone', { defaultValue: 'Phone' })}
                   </Typography>
-                  <Typography>{personnel.user.phone || t('notProvided', { defaultValue: 'Not provided' })}</Typography>
+                  <Typography>
+                    {personnel.user.phone || t('notProvided', { defaultValue: 'Not provided' })}
+                  </Typography>
                 </Box>
               )}
 
@@ -328,7 +354,10 @@ export default function FieldProfilePage() {
                   {t('role', { defaultValue: 'Role' })}
                 </Typography>
                 <Chip
-                  label={personnel.role?.name || t('noRoleAssigned', { defaultValue: 'No Role Assigned' })}
+                  label={
+                    personnel.role?.name ||
+                    t('noRoleAssigned', { defaultValue: 'No Role Assigned' })
+                  }
                   color="primary"
                   size="small"
                   sx={{ mt: 0.5 }}
@@ -352,7 +381,11 @@ export default function FieldProfilePage() {
                   {t('status', { defaultValue: 'Status' })}
                 </Typography>
                 <Chip
-                  label={personnel.isActive ? t('active', { defaultValue: 'Active' }) : t('inactive', { defaultValue: 'Inactive' })}
+                  label={
+                    personnel.isActive
+                      ? t('active', { defaultValue: 'Active' })
+                      : t('inactive', { defaultValue: 'Inactive' })
+                  }
                   color={personnel.isActive ? 'success' : 'error'}
                   size="small"
                   sx={{ mt: 0.5 }}
@@ -404,7 +437,13 @@ export default function FieldProfilePage() {
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                 {personnel.certifications.length > 0 ? (
                   personnel.certifications.map((cert, index) => (
-                    <Chip key={index} label={cert} size="small" variant="outlined" color="primary" />
+                    <Chip
+                      key={index}
+                      label={cert}
+                      size="small"
+                      variant="outlined"
+                      color="primary"
+                    />
                   ))
                 ) : (
                   <Typography variant="body2" color="text.secondary">
@@ -426,7 +465,7 @@ export default function FieldProfilePage() {
             {editMode ? (
               <TextField
                 value={editData.notes}
-                onChange={(e) => setEditData(prev => ({ ...prev, notes: e.target.value }))}
+                onChange={(e) => setEditData((prev) => ({ ...prev, notes: e.target.value }))}
                 multiline
                 rows={3}
                 fullWidth
@@ -465,10 +504,14 @@ export default function FieldProfilePage() {
       <Dialog open={logoutDialogOpen} onClose={() => setLogoutDialogOpen(false)}>
         <DialogTitle>{t('confirmLogout', { defaultValue: 'Confirm Logout' })}</DialogTitle>
         <DialogContent>
-          <Typography>{t('areYouSureLogout', { defaultValue: 'Are you sure you want to logout?' })}</Typography>
+          <Typography>
+            {t('areYouSureLogout', { defaultValue: 'Are you sure you want to logout?' })}
+          </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setLogoutDialogOpen(false)}>{t('cancel', { defaultValue: 'Cancel' })}</Button>
+          <Button onClick={() => setLogoutDialogOpen(false)}>
+            {t('cancel', { defaultValue: 'Cancel' })}
+          </Button>
           <Button onClick={handleLogout} color="error" variant="contained">
             {t('logout', { defaultValue: 'Logout' })}
           </Button>

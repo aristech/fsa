@@ -22,7 +22,11 @@ export function ReportTimeEntriesTab({ report, onUpdate, canEdit }: ReportTimeEn
   if (!report.timeEntries || report.timeEntries.length === 0) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
-        <Iconify icon="solar:clock-circle-outline" width={48} sx={{ color: 'text.disabled', mb: 1 }} />
+        <Iconify
+          icon="solar:clock-circle-outline"
+          width={48}
+          sx={{ color: 'text.disabled', mb: 1 }}
+        />
         <Typography variant="h6" color="text.secondary" gutterBottom>
           No Time Entries
         </Typography>
@@ -51,7 +55,14 @@ export function ReportTimeEntriesTab({ report, onUpdate, canEdit }: ReportTimeEn
               backgroundColor: 'background.paper',
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                mb: 1,
+              }}
+            >
               <Typography variant="subtitle2" sx={{ fontWeight: 600, flex: 1 }}>
                 {entry.description}
               </Typography>
@@ -96,7 +107,15 @@ export function ReportTimeEntriesTab({ report, onUpdate, canEdit }: ReportTimeEn
       </Box>
 
       {/* Summary */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          pt: 2,
+          borderTop: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
           Total Hours:
         </Typography>
@@ -111,8 +130,9 @@ export function ReportTimeEntriesTab({ report, onUpdate, canEdit }: ReportTimeEn
           Time by Category:
         </Typography>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-          {['labor', 'travel', 'waiting', 'equipment', 'other'].map(category => {
-            const categoryEntries = report.timeEntries?.filter(entry => entry.category === category) || [];
+          {['labor', 'travel', 'waiting', 'equipment', 'other'].map((category) => {
+            const categoryEntries =
+              report.timeEntries?.filter((entry) => entry.category === category) || [];
             const totalMinutes = categoryEntries.reduce((sum, entry) => sum + entry.duration, 0);
 
             if (totalMinutes === 0) return null;

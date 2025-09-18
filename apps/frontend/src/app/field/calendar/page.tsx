@@ -126,13 +126,11 @@ export default function FieldCalendarPage() {
     if (!board?.tasks) return [];
 
     const allTasks = Object.values(board.tasks).flat();
- 
 
     // Debug: Check which tasks have due dates
     const _tasksWithDates = allTasks.filter(
       (task) => task.due && Array.isArray(task.due) && task.due.length >= 2
     );
-  
 
     const transformedTasks = allTasks
       .map((task, index) => {

@@ -26,7 +26,7 @@ export function Iconify({ className, icon, width = 20, height, sx, ...other }: I
     console.warn(
       [
         `Icon "${icon}" is currently loaded online, which may cause flickering effects.`,
-        `To ensure a smoother experience, please register your icon collection for offline use.`
+        `To ensure a smoother experience, please register your icon collection for offline use.`,
       ].join('\n')
     );
   }

@@ -78,7 +78,6 @@ export function useRealtimeEvent<K extends keyof RealtimeEvents>(
       return () => {
         unsubscribe();
       };
-       
     },
     [event].concat(deps as any[])
   );

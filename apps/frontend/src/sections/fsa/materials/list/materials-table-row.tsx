@@ -49,93 +49,93 @@ export function MaterialsTableRow({ row, selected, onSelectRow, onEdit }: Materi
 
   return (
     <TableRow hover selected={selected}>
-        <TableCell padding="checkbox">
-          <Checkbox checked={selected} onClick={onSelectRow} />
-        </TableCell>
+      <TableCell padding="checkbox">
+        <Checkbox checked={selected} onClick={onSelectRow} />
+      </TableCell>
 
-        <TableCell>
-          <Stack spacing={0.5}>
-            <Typography variant="subtitle2" noWrap>
-              {row.name}
-            </Typography>
-            {row.description && (
-              <Typography variant="body2" color="text.secondary" noWrap>
-                {row.description}
-              </Typography>
-            )}
-            {row.sku && (
-              <Typography variant="caption" color="text.secondary">
-                SKU: {row.sku}
-              </Typography>
-            )}
-          </Stack>
-        </TableCell>
-
-        <TableCell>
-          {row.category ? (
-            <Chip label={row.category} size="small" variant="outlined" color="primary" />
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              -
+      <TableCell>
+        <Stack spacing={0.5}>
+          <Typography variant="subtitle2" noWrap>
+            {row.name}
+          </Typography>
+          {row.description && (
+            <Typography variant="body2" color="text.secondary" noWrap>
+              {row.description}
             </Typography>
           )}
-        </TableCell>
-
-        <TableCell>
-          <Typography variant="body2" color="text.secondary">
-            {row.sku || '-'}
-          </Typography>
-        </TableCell>
-
-        <TableCell align="center">
-          <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
-            <Typography
-              variant="body2"
-              fontWeight={600}
-              color={isLowStock ? 'error.main' : 'text.primary'}
-            >
-              {row.quantity} {row.unit}
+          {row.sku && (
+            <Typography variant="caption" color="text.secondary">
+              SKU: {row.sku}
             </Typography>
-            {isLowStock && (
-              <Tooltip title="Low stock warning">
-                <Iconify
-                  icon="solar:danger-triangle-bold"
-                  sx={{ color: 'error.main', width: 16, height: 16 }}
-                />
-              </Tooltip>
-            )}
-          </Stack>
-        </TableCell>
+          )}
+        </Stack>
+      </TableCell>
 
-        <TableCell align="center">
-          <Typography variant="body2" fontWeight={600}>
-            {fCurrency(row.unitCost)}
+      <TableCell>
+        {row.category ? (
+          <Chip label={row.category} size="small" variant="outlined" color="primary" />
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            -
           </Typography>
-        </TableCell>
+        )}
+      </TableCell>
 
-        <TableCell>
-          <Typography variant="body2">{row.location || '-'}</Typography>
-        </TableCell>
+      <TableCell>
+        <Typography variant="body2" color="text.secondary">
+          {row.sku || '-'}
+        </Typography>
+      </TableCell>
 
-        <TableCell align="center">
-          <Chip
-            label={row.status}
-            size="small"
-            sx={{
-              backgroundColor: getStatusColor(),
-              color: 'white',
-              textTransform: 'capitalize',
-            }}
-          />
-        </TableCell>
+      <TableCell align="center">
+        <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
+          <Typography
+            variant="body2"
+            fontWeight={600}
+            color={isLowStock ? 'error.main' : 'text.primary'}
+          >
+            {row.quantity} {row.unit}
+          </Typography>
+          {isLowStock && (
+            <Tooltip title="Low stock warning">
+              <Iconify
+                icon="solar:danger-triangle-bold"
+                sx={{ color: 'error.main', width: 16, height: 16 }}
+              />
+            </Tooltip>
+          )}
+        </Stack>
+      </TableCell>
 
-        <TableCell align="right">
-          <Tooltip title="Edit">
-            <IconButton onClick={onEdit}>
-              <Iconify icon="solar:pen-bold" />
-            </IconButton>
-          </Tooltip>
-        </TableCell>
-      </TableRow>
+      <TableCell align="center">
+        <Typography variant="body2" fontWeight={600}>
+          {fCurrency(row.unitCost)}
+        </Typography>
+      </TableCell>
+
+      <TableCell>
+        <Typography variant="body2">{row.location || '-'}</Typography>
+      </TableCell>
+
+      <TableCell align="center">
+        <Chip
+          label={row.status}
+          size="small"
+          sx={{
+            backgroundColor: getStatusColor(),
+            color: 'white',
+            textTransform: 'capitalize',
+          }}
+        />
+      </TableCell>
+
+      <TableCell align="right">
+        <Tooltip title="Edit">
+          <IconButton onClick={onEdit}>
+            <Iconify icon="solar:pen-bold" />
+          </IconButton>
+        </Tooltip>
+      </TableCell>
+    </TableRow>
   );
 }

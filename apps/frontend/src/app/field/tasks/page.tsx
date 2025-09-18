@@ -50,7 +50,8 @@ export default function FieldTasksPage() {
 
   // Generate status options from kanban columns
   const taskStatuses = useMemo(() => {
-    if (!board?.columns) return [{ value: 'all-statuses', label: t('allStatuses', { defaultValue: 'All Statuses' }) }];
+    if (!board?.columns)
+      return [{ value: 'all-statuses', label: t('allStatuses', { defaultValue: 'All Statuses' }) }];
 
     return [
       { value: 'all-statuses', label: t('allStatuses', { defaultValue: 'All Statuses' }) },
@@ -269,7 +270,8 @@ export default function FieldTasksPage() {
     return columnName || t('unknown', { defaultValue: 'Unknown' });
   };
 
-  const getTaskLocation = (task: IKanbanTask) => t('fieldLocation', { defaultValue: 'Field Location' });
+  const getTaskLocation = (task: IKanbanTask) =>
+    t('fieldLocation', { defaultValue: 'Field Location' });
 
   return (
     <Box
@@ -314,7 +316,9 @@ export default function FieldTasksPage() {
             fullWidth
             value={searchTerm}
             onChange={handleSearchChange}
-            placeholder={t('searchTasksPlaceholder', { defaultValue: 'Search across tasks, clients, work orders, and personnel...' })}
+            placeholder={t('searchTasksPlaceholder', {
+              defaultValue: 'Search across tasks, clients, work orders, and personnel...',
+            })}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -322,7 +326,10 @@ export default function FieldTasksPage() {
                 </InputAdornment>
               ),
             }}
-            helperText={t('searchTasksHelper', { defaultValue: 'Search by task name, description, labels, client info, work order details, assignee, or reporter' })}
+            helperText={t('searchTasksHelper', {
+              defaultValue:
+                'Search by task name, description, labels, client info, work order details, assignee, or reporter',
+            })}
             sx={{
               '& .MuiInputBase-input': {
                 fontSize: '16px', // Prevent zoom on iOS
@@ -345,7 +352,10 @@ export default function FieldTasksPage() {
                 label={t('priority', { defaultValue: 'Priority' })}
                 value={filters.priority}
                 onChange={(value) => handleFilterChange('priority', value)}
-                options={taskPriorities.map((p) => ({ value: p.value, label: t(p.label.toLowerCase().replace(' ', ''), { defaultValue: p.label }) }))}
+                options={taskPriorities.map((p) => ({
+                  value: p.value,
+                  label: t(p.label.toLowerCase().replace(' ', ''), { defaultValue: p.label }),
+                }))}
               />
             </Box>
             <Box sx={{ flex: 1, minWidth: '120px' }}>
@@ -410,19 +420,27 @@ export default function FieldTasksPage() {
                   </Box>
 
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    {task.clientName || task.clientCompany || t('noClient', { defaultValue: 'No Client' })} •{' '}
-                    {(task as any).workOrderTitle || t('noWorkOrder', { defaultValue: 'No Work Order' })}
+                    {task.clientName ||
+                      task.clientCompany ||
+                      t('noClient', { defaultValue: 'No Client' })}{' '}
+                    •{' '}
+                    {(task as any).workOrderTitle ||
+                      t('noWorkOrder', { defaultValue: 'No Work Order' })}
                   </Typography>
 
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    {task.description || t('noDescriptionAvailable', { defaultValue: 'No description available' })}
+                    {task.description ||
+                      t('noDescriptionAvailable', { defaultValue: 'No description available' })}
                   </Typography>
 
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <Iconify icon="eva:calendar-fill" width={14} />
                       <Typography variant="caption" color="text.secondary">
-                        {t('due', { defaultValue: 'Due' })}: {task.due?.[1] ? formatDate(new Date(task.due[1])) : t('noDueDate', { defaultValue: 'No due date' })}
+                        {t('due', { defaultValue: 'Due' })}:{' '}
+                        {task.due?.[1]
+                          ? formatDate(new Date(task.due[1]))
+                          : t('noDueDate', { defaultValue: 'No due date' })}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -444,7 +462,7 @@ export default function FieldTasksPage() {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <Iconify icon="eva:people-fill" width={14} />
                       <Typography variant="caption" color="text.secondary">
-                        {(task.assignee?.length || 0)} {t('assigned', { defaultValue: 'assigned' })}
+                        {task.assignee?.length || 0} {t('assigned', { defaultValue: 'assigned' })}
                       </Typography>
                     </Box>
                     {task.attachments?.length > 0 && (
@@ -540,7 +558,9 @@ export default function FieldTasksPage() {
                 {t('noTasksFound', { defaultValue: 'No Tasks Found' })}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {t('adjustFiltersOrCreateTask', { defaultValue: 'Try adjusting your filters or create a new task' })}
+                {t('adjustFiltersOrCreateTask', {
+                  defaultValue: 'Try adjusting your filters or create a new task',
+                })}
               </Typography>
             </Box>
           )}

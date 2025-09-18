@@ -1,7 +1,4 @@
-"use client";
-
-
-
+'use client';
 
 import { WorkOrderDetails } from '../work-order-details';
 
@@ -12,10 +9,5 @@ type Props = {
 };
 
 export function WorkOrderDetailsView({ id }: Props) {
-
-  return (
-    
-      <WorkOrderDetails id={id} />
-  
-  );
+  return <WorkOrderDetails id={id} />;
 }

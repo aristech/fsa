@@ -96,7 +96,9 @@ export function WorkOrderPersonnelDialog({
       <DialogTitle sx={{ pb: 0 }}>
         {t('assignPersonnel', { defaultValue: 'Assign Personnel' })}
         <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
-          {t('assignPersonnelSubheader', { defaultValue: 'Select personnel to assign to this work order' })}
+          {t('assignPersonnelSubheader', {
+            defaultValue: 'Select personnel to assign to this work order',
+          })}
         </Typography>
       </DialogTitle>
 

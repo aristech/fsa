@@ -37,8 +37,8 @@ export function ReportMaterialsTab({ report, onUpdate, canEdit }: ReportMaterial
       {/* This would integrate the materials section from ReportDetailsView */}
       {/* For now, showing basic info */}
       <Typography variant="body2" color="text.secondary">
-        Materials functionality is integrated in the main report view.
-        Navigate to the Materials tab in task details for full material management.
+        Materials functionality is integrated in the main report view. Navigate to the Materials tab
+        in task details for full material management.
       </Typography>
     </Box>
   );

@@ -276,10 +276,26 @@ export function CalendarView() {
               onDateNavigation={onDateNavigation}
               onOpenFilters={openFilters.onTrue}
               viewOptions={[
-                { value: 'dayGridMonth', label: t('calendar.month', { defaultValue: 'Month' }), icon: 'mingcute:calendar-month-line' },
-                { value: 'timeGridWeek', label: t('calendar.week', { defaultValue: 'Week' }), icon: 'mingcute:calendar-week-line' },
-                { value: 'timeGridDay', label: t('calendar.day', { defaultValue: 'Day' }), icon: 'mingcute:calendar-day-line' },
-                { value: 'listWeek', label: t('calendar.agenda', { defaultValue: 'Agenda' }), icon: 'custom:calendar-agenda-outline' },
+                {
+                  value: 'dayGridMonth',
+                  label: t('calendar.month', { defaultValue: 'Month' }),
+                  icon: 'mingcute:calendar-month-line',
+                },
+                {
+                  value: 'timeGridWeek',
+                  label: t('calendar.week', { defaultValue: 'Week' }),
+                  icon: 'mingcute:calendar-week-line',
+                },
+                {
+                  value: 'timeGridDay',
+                  label: t('calendar.day', { defaultValue: 'Day' }),
+                  icon: 'mingcute:calendar-day-line',
+                },
+                {
+                  value: 'listWeek',
+                  label: t('calendar.agenda', { defaultValue: 'Agenda' }),
+                  icon: 'custom:calendar-agenda-outline',
+                },
               ]}
             />
 

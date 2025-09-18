@@ -42,8 +42,8 @@ export function FsaDashboardView() {
         const personnelCount = Array.isArray(personnelPayload?.data)
           ? personnelPayload.data.length
           : Array.isArray(personnelPayload)
-          ? personnelPayload.length
-          : 0;
+            ? personnelPayload.length
+            : 0;
 
         const anyData = clientsTotal > 0 || workOrdersTotal > 0 || personnelCount > 0;
         if (isMounted) {

@@ -4,20 +4,11 @@ import type { Theme, Components } from '@mui/material/styles';
 import resourcesToBackend from 'i18next-resources-to-backend';
 
 // MUI Core Locales
-import {
-
-  elGR as elGRCore,
-} from '@mui/material/locale';
+import { elGR as elGRCore } from '@mui/material/locale';
 // MUI Date Pickers Locales
-import {
-  enUS as enUSDate,
-} from '@mui/x-date-pickers/locales';
+import { enUS as enUSDate } from '@mui/x-date-pickers/locales';
 // MUI Data Grid Locales
-import {
-  enUS as enUSDataGrid,
-
-  elGR as elGRDataGrid,
-} from '@mui/x-data-grid/locales';
+import { enUS as enUSDataGrid, elGR as elGRDataGrid } from '@mui/x-data-grid/locales';
 
 // ----------------------------------------------------------------------
 

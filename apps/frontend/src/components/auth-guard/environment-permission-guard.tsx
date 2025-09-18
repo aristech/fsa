@@ -17,7 +17,7 @@ interface EnvironmentPermissionGuardProps {
 export function EnvironmentPermissionGuard({
   children,
   requiresEnvironment,
-  fallback
+  fallback,
 }: EnvironmentPermissionGuardProps) {
   const router = useRouter();
   const { canAccessField, canAccessDashboard, environmentAccess } = useEnvironmentAccess();
@@ -52,13 +52,7 @@ export function EnvironmentPermissionGuard({
   }
 
   return (
-    <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      minHeight="60vh"
-      p={3}
-    >
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh" p={3}>
       <Box textAlign="center" maxWidth={480}>
         <Alert severity="warning" sx={{ mb: 3 }}>
           <Typography variant="h6" gutterBottom>
@@ -66,16 +60,16 @@ export function EnvironmentPermissionGuard({
           </Typography>
           <Typography variant="body2" color="text.secondary">
             You don&apos;t have permission to access this area. Your account is configured for{' '}
-            {environmentAccess === 'field' ? 'field operations only' :
-             environmentAccess === 'dashboard' ? 'dashboard access only' :
-             'limited access'}.
+            {environmentAccess === 'field'
+              ? 'field operations only'
+              : environmentAccess === 'dashboard'
+                ? 'dashboard access only'
+                : 'limited access'}
+            .
           </Typography>
         </Alert>
 
-        <Button
-          variant="contained"
-          onClick={() => router.replace(getDefaultRoute())}
-        >
+        <Button variant="contained" onClick={() => router.replace(getDefaultRoute())}>
           Go to {environmentAccess === 'field' ? 'Field' : 'Dashboard'}
         </Button>
       </Box>

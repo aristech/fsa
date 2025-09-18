@@ -82,7 +82,11 @@ export function WorkOrderPersonnelSelection({ value = [], onChange, disabled = f
 
   // Fetch personnel data
   const axiosFetcher = (url: string) => axiosInstance.get(url).then((res) => res.data);
-  const { data: personnelResp, error, isLoading } = useSWR(endpoints.fsa.personnel.list, axiosFetcher);
+  const {
+    data: personnelResp,
+    error,
+    isLoading,
+  } = useSWR(endpoints.fsa.personnel.list, axiosFetcher);
   const personnel: PersonnelFromAPI[] = personnelResp?.data || [];
 
   // Get selected personnel details
@@ -90,7 +94,9 @@ export function WorkOrderPersonnelSelection({ value = [], onChange, disabled = f
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <BlockLabel sx={{ height: 40, lineHeight: '40px' }}>{t('assignedPersonnel', { defaultValue: 'Assigned Personnel' })}</BlockLabel>
+      <BlockLabel sx={{ height: 40, lineHeight: '40px' }}>
+        {t('assignedPersonnel', { defaultValue: 'Assigned Personnel' })}
+      </BlockLabel>
 
       <Box sx={{ gap: 1, display: 'flex', flexWrap: 'wrap' }}>
         {error ? (
@@ -102,25 +108,22 @@ export function WorkOrderPersonnelSelection({ value = [], onChange, disabled = f
         ) : selectedPersonnel.length > 0 ? (
           selectedPersonnel.map((person: PersonnelFromAPI) => {
             const displayName = person.user?.name || person.employeeId;
-            const initials = person.user?.name
-              ?.split(' ')
-              .map((n: string) => n.charAt(0))
-              .join('')
-              .toUpperCase() ||
+            const initials =
+              person.user?.name
+                ?.split(' ')
+                .map((n: string) => n.charAt(0))
+                .join('')
+                .toUpperCase() ||
               person.employeeId?.charAt(0)?.toUpperCase() ||
               'P';
-            
-            const tooltipText = [
-              displayName,
-              person.user?.email,
-              person.role?.name
-            ].filter(Boolean).join(' • ');
+
+            const tooltipText = [displayName, person.user?.email, person.role?.name]
+              .filter(Boolean)
+              .join(' • ');
 
             return (
               <Tooltip key={person._id} title={tooltipText}>
-                <Avatar sx={{ width: 32, height: 32 }}>
-                  {initials}
-                </Avatar>
+                <Avatar sx={{ width: 32, height: 32 }}>{initials}</Avatar>
               </Tooltip>
             );
           })
@@ -139,7 +142,8 @@ export function WorkOrderPersonnelSelection({ value = [], onChange, disabled = f
                   (theme) => ({
                     border: `dashed 1px ${theme.vars?.palette?.divider || theme.palette.divider}`,
                     bgcolor: varAlpha(
-                      theme.vars?.palette?.grey?.['500Channel'] || theme.palette.grey[500] + 'Channel',
+                      theme.vars?.palette?.grey?.['500Channel'] ||
+                        theme.palette.grey[500] + 'Channel',
                       0.08
                     ),
                     width: 32,
@@ -152,7 +156,7 @@ export function WorkOrderPersonnelSelection({ value = [], onChange, disabled = f
             </Tooltip>
 
             <WorkOrderPersonnelDialog
-              selectedPersonnel={selectedPersonnel.filter((p): p is DialogPersonnel => 
+              selectedPersonnel={selectedPersonnel.filter((p): p is DialogPersonnel =>
                 Boolean(p.user?.name && p.user?.email && p.role?.name)
               )}
               open={contactsDialog.value}

@@ -87,7 +87,9 @@ export function OrderDetailsHistory({ workOrderId }: Props) {
     }
   };
 
-  const getEventColor = (eventType: string): 'primary' | 'success' | 'warning' | 'error' | 'grey' => {
+  const getEventColor = (
+    eventType: string
+  ): 'primary' | 'success' | 'warning' | 'error' | 'grey' => {
     switch (eventType) {
       case 'created':
         return 'primary';
@@ -119,9 +121,9 @@ export function OrderDetailsHistory({ workOrderId }: Props) {
   );
 
   const renderSummary = () => {
-    const workOrderEvents = timeline.filter(item => item.entityType === 'work_order');
-    const taskEvents = timeline.filter(item => item.entityType === 'task');
-    const completedTasks = taskEvents.filter(item => item.eventType === 'completed');
+    const workOrderEvents = timeline.filter((item) => item.entityType === 'work_order');
+    const taskEvents = timeline.filter((item) => item.entityType === 'task');
+    const completedTasks = taskEvents.filter((item) => item.eventType === 'completed');
 
     const summaryItems = [
       { label: 'Total Events', value: timeline.length },
@@ -245,7 +247,8 @@ export function OrderDetailsHistory({ workOrderId }: Props) {
                         )}
                         {item.metadata.oldValue && item.metadata.newValue && (
                           <Typography variant="caption" color="text.secondary">
-                            Changed from &quot;{item.metadata.oldValue}&quot; to &quot;{item.metadata.newValue}&quot;
+                            Changed from &quot;{item.metadata.oldValue}&quot; to &quot;
+                            {item.metadata.newValue}&quot;
                           </Typography>
                         )}
                       </Box>

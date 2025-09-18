@@ -299,7 +299,9 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         clientName: selectedClient?.name || undefined,
         clientCompany: selectedClient?.company || undefined,
       });
-      toast.success(t('clientUpdatedSuccessfully', { defaultValue: 'Client updated successfully!' }));
+      toast.success(
+        t('clientUpdatedSuccessfully', { defaultValue: 'Client updated successfully!' })
+      );
     } catch (error) {
       console.error('Failed to update client:', error);
       toast.error(t('failedToUpdateClient', { defaultValue: 'Failed to update client' }));
@@ -331,11 +333,15 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         .then(() => {
           // Update the task in the parent component
           onUpdateTask({ ...task, columnId: newValue, status: newValue } as any);
-          toast.success(t('taskStatusUpdatedSuccessfully', { defaultValue: 'Task status updated successfully' }));
+          toast.success(
+            t('taskStatusUpdatedSuccessfully', { defaultValue: 'Task status updated successfully' })
+          );
         })
         .catch((e) => {
           console.error('Failed to update status', e);
-          toast.error(t('failedToUpdateTaskStatus', { defaultValue: 'Failed to update task status' }));
+          toast.error(
+            t('failedToUpdateTaskStatus', { defaultValue: 'Failed to update task status' })
+          );
           // Revert the status if update failed
           setStatus(task.columnId || task.status);
         });
@@ -361,7 +367,11 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       try {
         await axiosInstance.put(`/api/v1/subtasks/${task.id}/${subtaskId}`, { completed });
         mutate(`/api/v1/subtasks/${task.id}`);
-        toast.success(completed ? t('subtaskCompleted', { defaultValue: 'Subtask completed' }) : t('subtaskReopened', { defaultValue: 'Subtask reopened' }));
+        toast.success(
+          completed
+            ? t('subtaskCompleted', { defaultValue: 'Subtask completed' })
+            : t('subtaskReopened', { defaultValue: 'Subtask reopened' })
+        );
       } catch (error) {
         console.error('Failed to update subtask:', error);
         toast.error(t('failedToUpdateSubtask', { defaultValue: 'Failed to update subtask' }));
@@ -412,10 +422,16 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
             taskData: { id: task.id, completeStatus: next },
           });
           onUpdateTask({ ...task, completeStatus: next });
-          toast.success(next ? t('markedComplete', { defaultValue: 'Marked complete' }) : t('markedIncomplete', { defaultValue: 'Marked incomplete' }));
+          toast.success(
+            next
+              ? t('markedComplete', { defaultValue: 'Marked complete' })
+              : t('markedIncomplete', { defaultValue: 'Marked incomplete' })
+          );
         } catch (e) {
           console.error('Failed to toggle completion', e);
-          toast.error(t('failedToUpdateCompletion', { defaultValue: 'Failed to update completion' }));
+          toast.error(
+            t('failedToUpdateCompletion', { defaultValue: 'Failed to update completion' })
+          );
         }
       }}
       onChangeWorkOrder={async (wo) => {
@@ -490,9 +506,17 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       {[
         { value: 'overview', label: t('overview', { defaultValue: 'Overview' }) },
         { value: 'time', label: t('time', { defaultValue: 'Time' }) },
-        { value: 'subTasks', label: t('subtasks', { defaultValue: 'Subtasks' }), count: subtasks.length },
+        {
+          value: 'subTasks',
+          label: t('subtasks', { defaultValue: 'Subtasks' }),
+          count: subtasks.length,
+        },
         { value: 'materials', label: t('materials', { defaultValue: 'Materials' }) },
-        { value: 'comments', label: t('comments', { defaultValue: 'Comments' }), count: comments.length },
+        {
+          value: 'comments',
+          label: t('comments', { defaultValue: 'Comments' }),
+          count: comments.length,
+        },
       ].map((tab) => (
         <Tab
           key={tab.value}
@@ -501,7 +525,11 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
             tab.count !== undefined ? (
               <Box sx={{ display: 'absolute', alignItems: 'center', gap: 1 }}>
                 <span>{tab.label}</span>
-                <Badge  badgeContent={tab.count} invisible={!tab.count} sx={{ position: 'absolute', top: 12, right: 12 }} />
+                <Badge
+                  badgeContent={tab.count}
+                  invisible={!tab.count}
+                  sx={{ position: 'absolute', top: 12, right: 12 }}
+                />
               </Box>
             ) : (
               tab.label
@@ -543,7 +571,9 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       )}
       {/* Assignee */}
       <Box sx={{ display: 'flex' }}>
-        <BlockLabel sx={{ height: 40, lineHeight: '40px' }}>{t('assignee', { defaultValue: 'Assignee' })}</BlockLabel>
+        <BlockLabel sx={{ height: 40, lineHeight: '40px' }}>
+          {t('assignee', { defaultValue: 'Assignee' })}
+        </BlockLabel>
 
         <Box sx={{ gap: 1, display: 'flex', flexWrap: 'wrap' }}>
           {task.assignee && Array.isArray(task.assignee) && task.assignee.length > 0 ? (
@@ -602,7 +632,9 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       </Box>
       {/* Labels / Tags (editable) */}
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <BlockLabel sx={{ height: 40, lineHeight: '40px' }}>{t('labels', { defaultValue: 'Labels' })}</BlockLabel>
+        <BlockLabel sx={{ height: 40, lineHeight: '40px' }}>
+          {t('labels', { defaultValue: 'Labels' })}
+        </BlockLabel>
         <Autocomplete
           multiple
           freeSolo
@@ -619,7 +651,13 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
               />
             ))
           }
-          renderInput={(params) => <TextField {...params} size="small" placeholder={t('addLabel', { defaultValue: 'Add label' })} />}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              size="small"
+              placeholder={t('addLabel', { defaultValue: 'Add label' })}
+            />
+          )}
           sx={{ flexGrow: 1 }}
         />
       </Box>
@@ -763,7 +801,8 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
         <div>
           <Typography variant="body2" sx={{ mb: 1 }}>
-            {completedCount} {t('of', { defaultValue: 'of' })} {totalCount} {t('completed', { defaultValue: 'completed' })}
+            {completedCount} {t('of', { defaultValue: 'of' })} {totalCount}{' '}
+            {t('completed', { defaultValue: 'completed' })}
           </Typography>
 
           <LinearProgress
@@ -913,7 +952,9 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         open={reportCreateDrawer.value}
         onClose={reportCreateDrawer.onFalse}
         onSuccess={(report) => {
-          toast.success(t('reportCreatedSuccessfully', { defaultValue: 'Report created successfully' }));
+          toast.success(
+            t('reportCreatedSuccessfully', { defaultValue: 'Report created successfully' })
+          );
           reportCreateDrawer.onFalse();
         }}
         initialData={getReportInitialData}

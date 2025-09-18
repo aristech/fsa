@@ -35,31 +35,46 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange
   // Convert attachments to file preview format
   const displayFiles = [...uploadedAttachments.map((att) => att.url), ...files];
 
-  const validateFiles = useCallback((filesToValidate: File[]) => {
-    // Check number of files
-    if (filesToValidate.length > CONFIG.upload.maxFilesPerRequest) {
-      toast.error(t('maxFilesAllowed', { defaultValue: 'Maximum {{count}} files allowed per upload', count: CONFIG.upload.maxFilesPerRequest }));
-      return false;
-    }
+  const validateFiles = useCallback(
+    (filesToValidate: File[]) => {
+      // Check number of files
+      if (filesToValidate.length > CONFIG.upload.maxFilesPerRequest) {
+        toast.error(
+          t('maxFilesAllowed', {
+            defaultValue: 'Maximum {{count}} files allowed per upload',
+            count: CONFIG.upload.maxFilesPerRequest,
+          })
+        );
+        return false;
+      }
 
-    // Check file sizes
-    const maxSizeBytes = CONFIG.upload.maxFileSizeMB * 1024 * 1024;
-    const oversizedFiles = filesToValidate.filter((file) => file.size > maxSizeBytes);
+      // Check file sizes
+      const maxSizeBytes = CONFIG.upload.maxFileSizeMB * 1024 * 1024;
+      const oversizedFiles = filesToValidate.filter((file) => file.size > maxSizeBytes);
 
-    if (oversizedFiles.length > 0) {
-      const fileNames = oversizedFiles.map((f) => f.name).join(', ');
-      toast.error(
-        t('filesTooLarge', { defaultValue: 'File(s) too large: {{names}}. Maximum size is {{max}}MB per file.', names: fileNames, max: CONFIG.upload.maxFileSizeMB })
-      );
-      return false;
-    }
+      if (oversizedFiles.length > 0) {
+        const fileNames = oversizedFiles.map((f) => f.name).join(', ');
+        toast.error(
+          t('filesTooLarge', {
+            defaultValue: 'File(s) too large: {{names}}. Maximum size is {{max}}MB per file.',
+            names: fileNames,
+            max: CONFIG.upload.maxFileSizeMB,
+          })
+        );
+        return false;
+      }
 
-    return true;
-  }, [t]);
+      return true;
+    },
+    [t]
+  );
 
   const handleDrop = useCallback(
     (acceptedFiles: File[]) => {
-      console.log('🔧 FRONTEND: handleDrop called with files:', acceptedFiles.map(f => f.name));
+      console.log(
+        '🔧 FRONTEND: handleDrop called with files:',
+        acceptedFiles.map((f) => f.name)
+      );
       // Validate files before uploading
       if (!validateFiles(acceptedFiles)) {
         console.log('🔧 FRONTEND: File validation failed');
@@ -72,7 +87,7 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange
         form.append('scope', 'workOrder');
         form.append('workOrderId', workOrderId);
         acceptedFiles.forEach((file) => form.append('files', file));
-        
+
         // Debug FormData contents
         console.log('🔧 FRONTEND: FormData contents:');
         for (const [key, value] of form.entries()) {
@@ -102,11 +117,18 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange
           onChange?.(allAttachments);
           // Clear local files after successful upload
           setFiles([]);
-          toast.success(t('filesUploaded', { defaultValue: '{{count}} file(s) uploaded successfully', count: acceptedFiles.length }));
+          toast.success(
+            t('filesUploaded', {
+              defaultValue: '{{count}} file(s) uploaded successfully',
+              count: acceptedFiles.length,
+            })
+          );
         } catch (error: any) {
           console.error('🔧 FRONTEND: Upload failed:', error);
           // Show backend error message if available, otherwise fallback
-          const errorMessage = error.message || t('uploadFailedPreview', { defaultValue: 'Upload failed. Previewing locally only.' });
+          const errorMessage =
+            error.message ||
+            t('uploadFailedPreview', { defaultValue: 'Upload failed. Previewing locally only.' });
           toast.error(errorMessage);
 
           // Still add files for local preview
@@ -144,7 +166,11 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange
           placeholder={
             <div>
               <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '8px' }}>
-                {t('uploadLimits', { defaultValue: 'Max {{size}}MB per file, {{count}} files max', size: CONFIG.upload.maxFileSizeMB, count: CONFIG.upload.maxFilesPerRequest })}
+                {t('uploadLimits', {
+                  defaultValue: 'Max {{size}}MB per file, {{count}} files max',
+                  size: CONFIG.upload.maxFileSizeMB,
+                  count: CONFIG.upload.maxFilesPerRequest,
+                })}
               </div>
             </div>
           }

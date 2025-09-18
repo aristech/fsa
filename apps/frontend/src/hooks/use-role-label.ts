@@ -15,10 +15,14 @@ const toTitleCase = (text: string) =>
     .trim();
 
 export function useRoleLabel(role?: string) {
-  const { data, isLoading } = useSWR(endpoints.fsa.roles.list, fetcher<{ success: boolean; data: Role[] }>, {
-    revalidateOnFocus: false,
-    dedupingInterval: 60_000,
-  });
+  const { data, isLoading } = useSWR(
+    endpoints.fsa.roles.list,
+    fetcher<{ success: boolean; data: Role[] }>,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60_000,
+    }
+  );
 
   const roles = data?.data || [];
 
@@ -55,5 +59,3 @@ export function useRoleLabel(role?: string) {
 
   return { label: resolveLabel(), loading: isLoading } as const;
 }
-
-

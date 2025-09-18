@@ -12,8 +12,7 @@ export function useUserHeartbeat() {
   useEffect(() => {
     // Only start heartbeat if user is authenticated
     const token =
-      sessionStorage.getItem('jwt_access_token') ||
-      localStorage.getItem('jwt_access_token');
+      sessionStorage.getItem('jwt_access_token') || localStorage.getItem('jwt_access_token');
 
     if (!token) return undefined;
 

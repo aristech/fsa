@@ -27,7 +27,8 @@ export function EnvironmentAuthGuard({ children }: EnvironmentAuthGuardProps) {
   const pathname = usePathname();
 
   const { authenticated, loading } = useAuthContext();
-  const { environmentAccess, isFieldOnly, canAccessDashboard, canAccessField } = useEnvironmentAccess();
+  const { environmentAccess, isFieldOnly, canAccessDashboard, canAccessField } =
+    useEnvironmentAccess();
 
   const [isChecking, setIsChecking] = useState(true);
 

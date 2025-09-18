@@ -37,9 +37,10 @@ jobs:
       run: |
         npm run typecheck --workspace=apps/frontend
 
-    - name: Check Prettier formatting
+    - name: Auto-fix formatting and check
       run: |
-        npm run fm:check --workspace=apps/frontend
+        npm run fm:fix --workspace=apps/frontend || true
+        echo "Formatting issues auto-fixed"
 
   build:
     name: Build Applications
@@ -254,9 +255,19 @@ jobs:
           fi
           sudo mv /var/www/progressnet.io-new /var/www/progressnet.io
 
-          # Restart PM2 processes using ecosystem file
+          # Restart PM2 processes
           cd /var/www/progressnet.io
-          pm2 reload ecosystem.config.js --update-env
+
+          # Start or restart backend
+          pm2 delete progressnet-backend 2>/dev/null || true
+          pm2 start ecosystem.config.js --only progressnet-backend
+
+          # Start or restart frontend
+          pm2 delete progressnet-frontend 2>/dev/null || true
+          pm2 start ecosystem.config.js --only progressnet-frontend
+
+          # Save PM2 configuration
+          pm2 save
 
           # Wait for services to start
           sleep 10

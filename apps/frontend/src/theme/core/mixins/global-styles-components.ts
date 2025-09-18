@@ -233,7 +233,10 @@ export function softStyles(theme: Theme, colorKey: ColorKey, options?: StyleOpti
   if (colorKey === 'inherit') {
     const base: CSSObject = {
       boxShadow: 'none',
-      backgroundColor: varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', theme.vars?.opacity.soft.bg),
+      backgroundColor: varAlpha(
+        theme.vars?.palette.grey['500Channel'] || '0 0 0',
+        theme.vars?.opacity.soft.bg
+      ),
     };
 
     const hover: CSSObject = getHoverStyles(options?.hover, {

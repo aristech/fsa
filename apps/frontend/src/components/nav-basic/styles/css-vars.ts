@@ -5,10 +5,7 @@ import { varAlpha } from 'minimal-shared/utils';
 // ----------------------------------------------------------------------
 
 function desktopVars(theme: Theme) {
-  const {
-    shape,
-    vars: { palette } = { palette: {} as any },
-  } = theme;
+  const { shape, vars: { palette } = { palette: {} as any } } = theme;
 
   return {
     '--nav-dropdown-width': '200px',
@@ -38,10 +35,7 @@ function desktopVars(theme: Theme) {
 // ----------------------------------------------------------------------
 
 function mobileVars(theme: Theme) {
-  const {
-    shape,
-    vars: { palette } = { palette: {} as any },
-  } = theme;
+  const { shape, vars: { palette } = { palette: {} as any } } = theme;
 
   return {
     '--nav-item-gap': '4px',

@@ -128,7 +128,8 @@ export const endpoints = {
       list: '/api/v1/materials',
       details: (id: string) => `/api/v1/materials/${id}`,
       categories: '/api/v1/materials/categories',
-      deleteCategory: (categoryName: string) => `/api/v1/materials/categories/${encodeURIComponent(categoryName)}`,
+      deleteCategory: (categoryName: string) =>
+        `/api/v1/materials/categories/${encodeURIComponent(categoryName)}`,
       bulkImport: '/api/v1/materials/bulk-import',
       toggleActive: (id: string) => `/api/v1/materials/${id}/toggle-active`,
     },
@@ -146,8 +147,10 @@ export const endpoints = {
       materials: {
         list: (taskId: string) => `/api/v1/tasks/${taskId}/materials`,
         add: (taskId: string) => `/api/v1/tasks/${taskId}/materials`,
-        update: (taskId: string, materialId: string) => `/api/v1/tasks/${taskId}/materials/${materialId}`,
-        remove: (taskId: string, materialId: string) => `/api/v1/tasks/${taskId}/materials/${materialId}`,
+        update: (taskId: string, materialId: string) =>
+          `/api/v1/tasks/${taskId}/materials/${materialId}`,
+        remove: (taskId: string, materialId: string) =>
+          `/api/v1/tasks/${taskId}/materials/${materialId}`,
         stats: (taskId: string) => `/api/v1/tasks/${taskId}/materials/stats`,
       },
     },
@@ -181,7 +184,8 @@ export const endpoints = {
       templates: '/api/v1/reports/templates',
       fromTemplate: (templateId: string) => `/api/v1/reports/templates/${templateId}`,
       generateFromTask: (taskId: string) => `/api/v1/reports/generate/task/${taskId}`,
-      generateFromWorkOrder: (workOrderId: string) => `/api/v1/reports/generate/work-order/${workOrderId}`,
+      generateFromWorkOrder: (workOrderId: string) =>
+        `/api/v1/reports/generate/work-order/${workOrderId}`,
       bulkUpdate: '/api/v1/reports/bulk/update',
       bulkExport: '/api/v1/reports/bulk/export',
     },

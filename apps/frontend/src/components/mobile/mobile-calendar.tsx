@@ -389,8 +389,8 @@ export function MobileCalendar({
 
             return (
               <DayHeader key={index} isToday={isToday} isSelected={isSelected}>
-            <Typography variant="caption" color="text.secondary">
-              {date.toLocaleDateString(undefined, { weekday: 'short' })}
+                <Typography variant="caption" color="text.secondary">
+                  {date.toLocaleDateString(undefined, { weekday: 'short' })}
                 </Typography>
                 <Typography
                   variant="h6"

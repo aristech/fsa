@@ -192,7 +192,9 @@ export function FsaTechnicianStatus() {
 
         // Check if session exists and is recent
         if (activeSession) {
-          const sessionAge = Date.now() - new Date(activeSession.lastHeartbeat || activeSession.checkInTime).getTime();
+          const sessionAge =
+            Date.now() -
+            new Date(activeSession.lastHeartbeat || activeSession.checkInTime).getTime();
           const isSessionStale = sessionAge > 30 * 60 * 1000; // 30 minutes threshold
 
           if (isSessionStale) {
@@ -200,7 +202,9 @@ export function FsaTechnicianStatus() {
             statusDetails = `Last seen ${Math.floor(sessionAge / (60 * 1000))} min ago`;
           } else {
             status = 'working';
-            statusDetails = currentWorkOrder ? `Working on ${currentWorkOrder.workOrderNumber}` : 'Working';
+            statusDetails = currentWorkOrder
+              ? `Working on ${currentWorkOrder.workOrderNumber}`
+              : 'Working';
           }
         } else {
           // No active session - determine status based on other factors
@@ -230,14 +234,19 @@ export function FsaTechnicianStatus() {
 
             // Use lastSeenAt (logout time) if available, otherwise lastLoginAt
             const lastSeenDate = person.user?.lastSeenAt ? new Date(person.user.lastSeenAt) : null;
-            const lastLoginDate = person.user?.lastLoginAt ? new Date(person.user.lastLoginAt) : null;
+            const lastLoginDate = person.user?.lastLoginAt
+              ? new Date(person.user.lastLoginAt)
+              : null;
             const lastActivityDate = lastSeenDate || lastLoginDate;
 
             if (lastActivityDate && !isNaN(lastActivityDate.getTime())) {
-              const timeSinceActivity = Math.floor((Date.now() - lastActivityDate.getTime()) / (60 * 1000));
+              const timeSinceActivity = Math.floor(
+                (Date.now() - lastActivityDate.getTime()) / (60 * 1000)
+              );
               if (timeSinceActivity < 60) {
                 statusDetails = `Last seen ${timeSinceActivity}m ago`;
-              } else if (timeSinceActivity < 1440) { // Less than 24 hours
+              } else if (timeSinceActivity < 1440) {
+                // Less than 24 hours
                 const hours = Math.floor(timeSinceActivity / 60);
                 statusDetails = `Last seen ${hours}h ago`;
               } else {
@@ -251,13 +260,15 @@ export function FsaTechnicianStatus() {
         }
 
         // Determine if technician is field-capable vs office-only
-        const isFieldCapable = person.environmentAccess === 'field' || person.environmentAccess === 'all';
+        const isFieldCapable =
+          person.environmentAccess === 'field' || person.environmentAccess === 'all';
         const isFieldOnly = person.environmentAccess === 'field';
         const isAllEnvironments = person.environmentAccess === 'all';
 
         // Check for location data
-        const hasRecentLocation = person.location?.lastUpdated &&
-          (Date.now() - new Date(person.location.lastUpdated).getTime()) < 60 * 60 * 1000; // 1 hour
+        const hasRecentLocation =
+          person.location?.lastUpdated &&
+          Date.now() - new Date(person.location.lastUpdated).getTime() < 60 * 60 * 1000; // 1 hour
 
         return {
           id: person._id,
@@ -276,7 +287,9 @@ export function FsaTechnicianStatus() {
           workOrderTitle: currentWorkOrder ? currentWorkOrder.title : null,
           location: currentWorkOrder?.location || person.location?.address || null,
           sessionStartTime: activeSession ? new Date(activeSession.checkInTime) : null,
-          lastHeartbeat: activeSession?.lastHeartbeat ? new Date(activeSession.lastHeartbeat) : null,
+          lastHeartbeat: activeSession?.lastHeartbeat
+            ? new Date(activeSession.lastHeartbeat)
+            : null,
           environmentAccess: person.environmentAccess,
           skills: person.skills || [],
           certifications: person.certifications || [],
@@ -290,10 +303,13 @@ export function FsaTechnicianStatus() {
   const statusSummary = useMemo(() => {
     if (!technicians.length) return null;
 
-    const counts = technicians.reduce((acc: Record<string, number>, tech: any) => {
-      acc[tech.status] = (acc[tech.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const counts = technicians.reduce(
+      (acc: Record<string, number>, tech: any) => {
+        acc[tech.status] = (acc[tech.status] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     const workingCount = counts.working || 0;
     const availableCount = counts.available || 0;
@@ -375,11 +391,14 @@ export function FsaTechnicianStatus() {
               <Iconify icon="eva:people-outline" width={48} color="text.disabled" />
               <Stack spacing={0.5} alignItems="center">
                 <Typography variant="subtitle2" color="text.secondary">
-                  {t('dashboard.noActiveTechniciansFound', { defaultValue: 'No active technicians found' })}
+                  {t('dashboard.noActiveTechniciansFound', {
+                    defaultValue: 'No active technicians found',
+                  })}
                 </Typography>
                 <Typography variant="caption" color="text.disabled">
                   {t('dashboard.technicianStatusHint', {
-                    defaultValue: 'Technicians will appear here when they log in and are available for work'
+                    defaultValue:
+                      'Technicians will appear here when they log in and are available for work',
                   })}
                 </Typography>
               </Stack>
@@ -452,14 +471,19 @@ export function FsaTechnicianStatus() {
                   </Stack>
 
                   {technician.statusDetails && (
-                    <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ fontStyle: 'italic' }}
+                    >
                       {technician.statusDetails}
                     </Typography>
                   )}
 
                   {technician.currentWorkOrder && (
                     <Typography variant="caption" color="text.secondary">
-                      {t('workingOn', { defaultValue: 'Working on:' })} {technician.currentWorkOrder}
+                      {t('workingOn', { defaultValue: 'Working on:' })}{' '}
+                      {technician.currentWorkOrder}
                     </Typography>
                   )}
 
@@ -474,7 +498,11 @@ export function FsaTechnicianStatus() {
                   )}
 
                   {technician.location && (
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                    >
                       <Iconify icon="eva:pin-outline" width={12} />
                       {technician.location}
                     </Typography>
@@ -482,16 +510,29 @@ export function FsaTechnicianStatus() {
 
                   <Stack direction="row" spacing={1} flexWrap="wrap">
                     {technician.sessionStartTime && (
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                      >
                         <Iconify icon="eva:clock-outline" width={12} />
-                        {t('started', { defaultValue: 'Started:' })} {technician.sessionStartTime.toLocaleTimeString()}
+                        {t('started', { defaultValue: 'Started:' })}{' '}
+                        {technician.sessionStartTime.toLocaleTimeString()}
                       </Typography>
                     )}
 
                     {technician.lastHeartbeat && technician.status === 'working' && (
-                      <Typography variant="caption" color="success.main" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Typography
+                        variant="caption"
+                        color="success.main"
+                        sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                      >
                         <Iconify icon="eva:activity-fill" width={12} />
-                        {t('active', { defaultValue: 'Active' })} {Math.floor((Date.now() - new Date(technician.lastHeartbeat).getTime()) / 60000)}m ago
+                        {t('active', { defaultValue: 'Active' })}{' '}
+                        {Math.floor(
+                          (Date.now() - new Date(technician.lastHeartbeat).getTime()) / 60000
+                        )}
+                        m ago
                       </Typography>
                     )}
                   </Stack>

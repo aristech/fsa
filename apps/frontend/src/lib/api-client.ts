@@ -34,7 +34,11 @@ export class ApiClient {
   /**
    * POST request with enhanced error handling
    */
-  static async post<T = any>(url: string, data?: any, config?: any): Promise<EnhancedApiResponse<T>> {
+  static async post<T = any>(
+    url: string,
+    data?: any,
+    config?: any
+  ): Promise<EnhancedApiResponse<T>> {
     try {
       const response = await axiosInstance.post(url, data, config);
       return response as EnhancedApiResponse<T>;
@@ -46,7 +50,11 @@ export class ApiClient {
   /**
    * PUT request with enhanced error handling
    */
-  static async put<T = any>(url: string, data?: any, config?: any): Promise<EnhancedApiResponse<T>> {
+  static async put<T = any>(
+    url: string,
+    data?: any,
+    config?: any
+  ): Promise<EnhancedApiResponse<T>> {
     try {
       const response = await axiosInstance.put(url, data, config);
       return response as EnhancedApiResponse<T>;
@@ -70,7 +78,11 @@ export class ApiClient {
   /**
    * PATCH request with enhanced error handling
    */
-  static async patch<T = any>(url: string, data?: any, config?: any): Promise<EnhancedApiResponse<T>> {
+  static async patch<T = any>(
+    url: string,
+    data?: any,
+    config?: any
+  ): Promise<EnhancedApiResponse<T>> {
     try {
       const response = await axiosInstance.patch(url, data, config);
       return response as EnhancedApiResponse<T>;
@@ -102,11 +114,7 @@ export class ApiClient {
       );
     } else {
       // Request setup error
-      return new ApiClientError(
-        error.message || 'Request failed',
-        0,
-        'server.request_error'
-      );
+      return new ApiClientError(error.message || 'Request failed', 0, 'server.request_error');
     }
   }
 }

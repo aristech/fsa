@@ -166,11 +166,17 @@ export function WorkOrderList() {
     <>
       <Card>
         <CustomBreadcrumbs
-          heading={clientId ? t('pages.workOrdersFiltered', { defaultValue: 'Work Orders (Filtered)' }) : t('pages.workOrders', { defaultValue: 'Work Orders' })}
+          heading={
+            clientId
+              ? t('pages.workOrdersFiltered', { defaultValue: 'Work Orders (Filtered)' })
+              : t('pages.workOrders', { defaultValue: 'Work Orders' })
+          }
           links={[
             { name: t('dashboard.title', { tenant: '' }), href: '/dashboard' },
             { name: t('pages.workOrders', { defaultValue: 'Work Orders' }) },
-            ...(clientId ? [{ name: t('filteredByClient', { defaultValue: 'Filtered by Client' }) }] : []),
+            ...(clientId
+              ? [{ name: t('filteredByClient', { defaultValue: 'Filtered by Client' }) }]
+              : []),
           ]}
           action={
             <Button
@@ -210,12 +216,22 @@ export function WorkOrderList() {
                         sx={{ color: 'text.disabled' }}
                       />
                       <Typography variant="h6" color="text.secondary">
-                        {clientId ? t('noWorkOrdersForClient', { defaultValue: 'No work orders found for this client' }) : t('dashboard.noWorkOrdersFound', { defaultValue: 'No work orders found' })}
+                        {clientId
+                          ? t('noWorkOrdersForClient', {
+                              defaultValue: 'No work orders found for this client',
+                            })
+                          : t('dashboard.noWorkOrdersFound', {
+                              defaultValue: 'No work orders found',
+                            })}
                       </Typography>
                       <Typography variant="body2" color="text.disabled">
                         {clientId
-                          ? t('noWorkOrdersForClientHint', { defaultValue: 'This client does not have any work orders yet.' })
-                          : t('createFirstWorkOrderHint', { defaultValue: 'Create your first work order to get started.' })}
+                          ? t('noWorkOrdersForClientHint', {
+                              defaultValue: 'This client does not have any work orders yet.',
+                            })
+                          : t('createFirstWorkOrderHint', {
+                              defaultValue: 'Create your first work order to get started.',
+                            })}
                       </Typography>
                     </Stack>
                   </TableCell>
@@ -233,7 +249,9 @@ export function WorkOrderList() {
                     </TableCell>
 
                     <TableCell>
-                      {typeof row.clientId === 'object' ? row.clientId.name : t('unknownClient', { defaultValue: 'Unknown Client' })}
+                      {typeof row.clientId === 'object'
+                        ? row.clientId.name
+                        : t('unknownClient', { defaultValue: 'Unknown Client' })}
                     </TableCell>
 
                     <TableCell>
@@ -297,13 +315,16 @@ export function WorkOrderList() {
                     </TableCell>
 
                     <TableCell>
-                      {row.scheduledDate ? fDateTime(row.scheduledDate) : t('notScheduled', { defaultValue: 'Not scheduled' })}
+                      {row.scheduledDate
+                        ? fDateTime(row.scheduledDate)
+                        : t('notScheduled', { defaultValue: 'Not scheduled' })}
                     </TableCell>
 
                     <TableCell>
                       <Stack spacing={0.5}>
                         <Typography variant="caption" color="text.secondary">
-                          {t('estimatedShort', { defaultValue: 'Est:' })} {formatEstimatedDuration(row.estimatedDuration as any)}
+                          {t('estimatedShort', { defaultValue: 'Est:' })}{' '}
+                          {formatEstimatedDuration(row.estimatedDuration as any)}
                         </Typography>
                         <Typography variant="body2">
                           {row.actualDuration
@@ -391,9 +412,13 @@ export function WorkOrderList() {
         title={t('deleteWorkOrderTitle', { defaultValue: 'Delete Work Order' })}
         content={
           <>
-            {t('deleteWorkOrderConfirm', { defaultValue: 'Are you sure you want to delete this work order?' })}
+            {t('deleteWorkOrderConfirm', {
+              defaultValue: 'Are you sure you want to delete this work order?',
+            })}
             <br />
-            {t('deleteWorkOrderCleanup', { defaultValue: 'This will clean up related references.' })}
+            {t('deleteWorkOrderCleanup', {
+              defaultValue: 'This will clean up related references.',
+            })}
           </>
         }
         action={
@@ -413,13 +438,17 @@ export function WorkOrderList() {
                 await mutate();
               } catch (e) {
                 console.error('Failed to delete work order', e);
-                toast.error(t('workOrderDeleteFailed', { defaultValue: 'Failed to delete work order' }));
+                toast.error(
+                  t('workOrderDeleteFailed', { defaultValue: 'Failed to delete work order' })
+                );
               } finally {
                 setDeleting(false);
               }
             }}
           >
-            {deleting ? t('deleting', { defaultValue: 'Deleting...' }) : t('delete', { defaultValue: 'Delete' })}
+            {deleting
+              ? t('deleting', { defaultValue: 'Deleting...' })
+              : t('delete', { defaultValue: 'Delete' })}
           </Button>
         }
       />

@@ -40,7 +40,10 @@ export function KanbanDetailsAttachments({ attachments, onChange }: Props) {
 
   const handleDrop = useCallback(
     (acceptedFiles: File[]) => {
-      console.log('🔧 KANBAN: Upload called with files:', acceptedFiles.map(f => f.name));
+      console.log(
+        '🔧 KANBAN: Upload called with files:',
+        acceptedFiles.map((f) => f.name)
+      );
       // Validate files before uploading
       if (!validateFiles(acceptedFiles)) {
         return;

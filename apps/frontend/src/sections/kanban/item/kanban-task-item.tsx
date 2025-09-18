@@ -213,14 +213,13 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
                 startDate && dueDate
                   ? `${formatTime(startDate)} → ${formatTime(dueDate)}`
                   : startDate
-                  ? `Start: ${formatTime(startDate)}`
-                  : `Due: ${formatTime(dueDate)}`
+                    ? `Start: ${formatTime(startDate)}`
+                    : `Due: ${formatTime(dueDate)}`
               }
               sx={{ height: 22, '& .MuiChip-label': { px: 0.75, fontSize: '0.72rem' } }}
             />
           )}
-         
-          
+
           <Chip
             size="small"
             variant="outlined"
@@ -231,14 +230,21 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
           />
         </Box>
         <Chip
-            size="small"
-            variant="outlined"
-            color="default"
-            icon={<Iconify icon="solar:folder-with-files-bold" width={14} />}
-            label={`${subtaskCount}`}
-            sx={{ height: 22, '& .MuiChip-label': { px: 0.75, fontSize: '0.72rem' } }}
-          />
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+          size="small"
+          variant="outlined"
+          color="default"
+          icon={<Iconify icon="solar:folder-with-files-bold" width={14} />}
+          label={`${subtaskCount}`}
+          sx={{ height: 22, '& .MuiChip-label': { px: 0.75, fontSize: '0.72rem' } }}
+        />
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+          }}
+        >
           <ItemInfo
             comments={task.comments}
             assignee={task.assignee}

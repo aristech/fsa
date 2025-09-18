@@ -5,11 +5,7 @@ import { varAlpha } from 'minimal-shared/utils';
 // ----------------------------------------------------------------------
 
 export function megaMenuVars(theme: Theme, variant: 'vertical' | 'horizontal' | 'mobile') {
-  const {
-    shape,
-    spacing,
-    vars: { palette } = { palette: {} as any },
-  } = theme;
+  const { shape, spacing, vars: { palette } = { palette: {} as any } } = theme;
 
   const getValue = (values: {
     vertical?: string | number;

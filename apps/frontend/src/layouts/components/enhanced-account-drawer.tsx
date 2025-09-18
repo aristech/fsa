@@ -107,12 +107,7 @@ export function EnhancedAccountDrawer({ data = [], sx, ...other }: EnhancedAccou
             </Typography>
 
             <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-              <Chip
-                label={roleLabel}
-                size="small"
-                color="primary"
-                variant="outlined"
-              />
+              <Chip label={roleLabel} size="small" color="primary" variant="outlined" />
 
               {user?.isTenantOwner && (
                 <Chip

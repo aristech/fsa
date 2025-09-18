@@ -76,7 +76,9 @@ const ItemRoot = styled(ButtonBase, { shouldForwardProp })<StyledState>(({ theme
   const activeStyles: CSSObject = {
     color: theme.vars?.palette.primary.main,
     backgroundColor: varAlpha(theme.vars?.palette.primary.mainChannel || '0 0 0', 0.08),
-    '&:hover': { backgroundColor: varAlpha(theme.vars?.palette.primary.mainChannel || '0 0 0', 0.16) },
+    '&:hover': {
+      backgroundColor: varAlpha(theme.vars?.palette.primary.mainChannel || '0 0 0', 0.16),
+    },
   };
 
   return {

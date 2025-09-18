@@ -233,16 +233,22 @@ export function ReportsTable({
                     <Typography variant="body2">
                       {report.client?.name ||
                         report.clientData?.name ||
-                        (typeof report.clientId === 'object' && report.clientId ? (report.clientId as any)?.name : undefined) ||
+                        (typeof report.clientId === 'object' && report.clientId
+                          ? (report.clientId as any)?.name
+                          : undefined) ||
                         '-'}
                     </Typography>
                     {(report.client?.company ||
                       report.clientData?.company ||
-                      (typeof report.clientId === 'object' && report.clientId ? (report.clientId as any)?.company : undefined)) && (
+                      (typeof report.clientId === 'object' && report.clientId
+                        ? (report.clientId as any)?.company
+                        : undefined)) && (
                       <Typography variant="caption" color="text.secondary">
                         {report.client?.company ||
                           report.clientData?.company ||
-                          (typeof report.clientId === 'object' && report.clientId ? (report.clientId as any)?.company : undefined)}
+                          (typeof report.clientId === 'object' && report.clientId
+                            ? (report.clientId as any)?.company
+                            : undefined)}
                       </Typography>
                     )}
                   </TableCell>

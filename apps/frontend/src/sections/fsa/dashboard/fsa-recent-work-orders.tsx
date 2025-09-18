@@ -106,13 +106,10 @@ export function FsaRecentWorkOrders() {
     : `${endpoints.fsa.workOrders.list}?limit=10&sort=-createdAt`;
 
   // Fetch work orders data
-  const { data: workOrdersData, isLoading } = useSWR(
-    workOrdersUrl,
-    async (url: string) => {
-      const response = await axiosInstance.get(url);
-      return response.data;
-    }
-  );
+  const { data: workOrdersData, isLoading } = useSWR(workOrdersUrl, async (url: string) => {
+    const response = await axiosInstance.get(url);
+    return response.data;
+  });
 
   // Fetch progress summaries for work orders
   const workOrderIds = workOrdersData?.data?.workOrders?.slice(0, 5).map((wo: any) => wo._id) || [];
@@ -167,9 +164,7 @@ export function FsaRecentWorkOrders() {
         : 0;
 
       // Get client details
-      const clientData = typeof workOrder.clientId === 'object'
-        ? workOrder.clientId
-        : null;
+      const clientData = typeof workOrder.clientId === 'object' ? workOrder.clientId : null;
 
       // Get progress data
       const progressData = summariesData?.[workOrder._id] || null;
@@ -178,7 +173,11 @@ export function FsaRecentWorkOrders() {
         id: workOrder._id,
         workOrderNumber: workOrder.workOrderNumber,
         title: workOrder.title,
-        customer: workOrder.clientName || workOrder.client?.name || clientData?.name || t('unknownClient', { defaultValue: 'Unknown Client' }),
+        customer:
+          workOrder.clientName ||
+          workOrder.client?.name ||
+          clientData?.name ||
+          t('unknownClient', { defaultValue: 'Unknown Client' }),
         clientPhone: clientData?.phone || null,
         clientEmail: clientData?.email || null,
         status: workOrder.status,
@@ -285,7 +284,12 @@ export function FsaRecentWorkOrders() {
                 }}
               >
                 {/* Header row with title and status */}
-                <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2}>
+                <Stack
+                  direction="row"
+                  alignItems="flex-start"
+                  justifyContent="space-between"
+                  spacing={2}
+                >
                   <Stack spacing={1} sx={{ flex: 1 }}>
                     <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
                       <Link
@@ -294,7 +298,7 @@ export function FsaRecentWorkOrders() {
                           textDecoration: 'none',
                           '&:hover': {
                             textDecoration: 'underline',
-                          }
+                          },
                         }}
                       >
                         <Typography variant="h6" sx={{ fontWeight: 600 }}>
@@ -318,13 +322,18 @@ export function FsaRecentWorkOrders() {
                   {/* Actions */}
                   <Stack direction="row" spacing={1} alignItems="center">
                     {wo.attachmentsCount > 0 && (
-                      <Tooltip title={`${wo.attachmentsCount} ${t('attachments', { defaultValue: 'attachments' })} - ${t('clickToViewDownload', { defaultValue: 'Click to view/download' })}`}>
+                      <Tooltip
+                        title={`${wo.attachmentsCount} ${t('attachments', { defaultValue: 'attachments' })} - ${t('clickToViewDownload', { defaultValue: 'Click to view/download' })}`}
+                      >
                         <IconButton
                           size="small"
                           onClick={(event) => {
                             if (wo.attachments.length === 1) {
                               // Single attachment - download directly
-                              handleDownloadAttachment(wo.attachments[0].url, wo.attachments[0].name);
+                              handleDownloadAttachment(
+                                wo.attachments[0].url,
+                                wo.attachments[0].name
+                              );
                             } else {
                               // Multiple attachments - show menu
                               handleAttachmentMenuOpen(event, wo.attachments);
@@ -390,22 +399,20 @@ export function FsaRecentWorkOrders() {
                         )}
                       </Stack>
                       <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
-                         <Iconify icon="eva:people-fill" width={14} />
-                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                        {t('assignedPersonnel', { defaultValue: 'Assigned Personnel' })}
-                      </Typography>
-                      <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
-                     
-                          <Typography variant="body2" >
-                          {wo?.personnel?.length}
-                          </Typography>
-                    
-                      </Stack>
+                        <Iconify icon="eva:people-fill" width={14} />
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ fontWeight: 600 }}
+                        >
+                          {t('assignedPersonnel', { defaultValue: 'Assigned Personnel' })}
+                        </Typography>
+                        <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
+                          <Typography variant="body2">{wo?.personnel?.length}</Typography>
+                        </Stack>
                       </Stack>
                     </Stack>
                   </Grid>
-
-                 
                 </Grid>
 
                 {/* Schedule and Location */}
@@ -416,9 +423,7 @@ export function FsaRecentWorkOrders() {
                       <Typography variant="caption" color="text.secondary">
                         {t('scheduled', { defaultValue: 'Scheduled:' })}
                       </Typography>
-                      <Typography variant="body2">
-                        {fDateTime(wo.scheduledDate)}
-                      </Typography>
+                      <Typography variant="body2">{fDateTime(wo.scheduledDate)}</Typography>
                     </Stack>
                   </Grid>
                   {wo.location && (

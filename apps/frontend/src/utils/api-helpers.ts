@@ -46,9 +46,10 @@ export class ApiToast {
       return;
     }
 
-    const errorResponse = typeof error === 'object' && error && 'success' in error
-      ? error as ApiErrorResponse
-      : extractApiErrorResponse(error);
+    const errorResponse =
+      typeof error === 'object' && error && 'success' in error
+        ? (error as ApiErrorResponse)
+        : extractApiErrorResponse(error);
 
     if (getErrorMessage) {
       const message = getErrorMessage(errorResponse);
@@ -103,14 +104,14 @@ export function withApiErrorHandling<T extends any[], R>(
       }
 
       return result;
-
     } catch (error) {
       // Handle error
       if (options?.onError) {
         options.onError(error);
       }
 
-      if (options?.showErrorToast !== false) { // Default to showing error toasts
+      if (options?.showErrorToast !== false) {
+        // Default to showing error toasts
         ApiToast.error(error);
       }
 
@@ -158,7 +159,6 @@ export function useApiHelpers() {
       }
 
       return response.data;
-
     } catch (error) {
       if (options?.onError) {
         options.onError(error);

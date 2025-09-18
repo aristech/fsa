@@ -7,7 +7,12 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 
-import { useTaskTimeSession, useSessionDuration, formatDurationHuman, type ActiveTimeSession } from 'src/hooks/use-time-tracking';
+import {
+  useTaskTimeSession,
+  useSessionDuration,
+  formatDurationHuman,
+  type ActiveTimeSession,
+} from 'src/hooks/use-time-tracking';
 
 import { Iconify } from 'src/components/iconify';
 
@@ -79,12 +84,7 @@ export const TimeTrackingIndicator = memo(function TimeTrackingIndicator({
               },
             }}
           />
-          <Iconify
-            icon="eva:clock-fill"
-            width={12}
-            height={12}
-            sx={{ color: 'success.main' }}
-          />
+          <Iconify icon="eva:clock-fill" width={12} height={12} sx={{ color: 'success.main' }} />
         </Box>
       </Tooltip>
     );
@@ -111,11 +111,7 @@ export const TimeTrackingIndicator = memo(function TimeTrackingIndicator({
             }}
           />
         }
-        label={
-          showDuration
-            ? formatDurationHuman(duration)
-            : 'Tracking'
-        }
+        label={showDuration ? formatDurationHuman(duration) : 'Tracking'}
         sx={{
           bgcolor: alpha(theme.palette.success.main, 0.1),
           color: 'success.dark',
@@ -158,12 +154,7 @@ export const TimeTrackingIndicator = memo(function TimeTrackingIndicator({
         }}
       />
 
-      <Iconify
-        icon="eva:clock-fill"
-        width={16}
-        height={16}
-        sx={{ color: 'success.main' }}
-      />
+      <Iconify icon="eva:clock-fill" width={16} height={16} sx={{ color: 'success.main' }} />
 
       {showPersonnel && personnel && (
         <>

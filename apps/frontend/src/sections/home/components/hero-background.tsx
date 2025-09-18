@@ -97,21 +97,39 @@ export function HeroBackground({ sx, ...other }: BoxProps) {
             '--stroke-spacing': '80px',
             /* line */
             '--hero-line-stroke-width': 1,
-            '--hero-line-stroke-color': varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.32),
+            '--hero-line-stroke-color': varAlpha(
+              theme.vars?.palette.grey['500Channel'] || '0 0 0',
+              0.32
+            ),
             ...theme.applyStyles('dark', {
-              '--hero-line-stroke-color': varAlpha(theme.vars?.palette.grey['600Channel'] || '0 0 0', 0.16),
+              '--hero-line-stroke-color': varAlpha(
+                theme.vars?.palette.grey['600Channel'] || '0 0 0',
+                0.16
+              ),
             }),
             /* text */
             '--hero-text-stroke-width': 1,
-            '--hero-text-stroke-color': varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.24),
+            '--hero-text-stroke-color': varAlpha(
+              theme.vars?.palette.grey['500Channel'] || '0 0 0',
+              0.24
+            ),
             ...theme.applyStyles('dark', {
-              '--hero-text-stroke-color': varAlpha(theme.vars?.palette.grey['600Channel'] || '0 0 0', 0.12),
+              '--hero-text-stroke-color': varAlpha(
+                theme.vars?.palette.grey['600Channel'] || '0 0 0',
+                0.12
+              ),
             }),
             /* circle */
             '--hero-circle-stroke-width': 1,
-            '--hero-circle-stroke-color': varAlpha(theme.vars?.palette.grey['500Channel'] || '0 0 0', 0.48),
+            '--hero-circle-stroke-color': varAlpha(
+              theme.vars?.palette.grey['500Channel'] || '0 0 0',
+              0.48
+            ),
             ...theme.applyStyles('dark', {
-              '--hero-circle-stroke-color': varAlpha(theme.vars?.palette.grey['600Channel'] || '0 0 0', 0.24),
+              '--hero-circle-stroke-color': varAlpha(
+                theme.vars?.palette.grey['600Channel'] || '0 0 0',
+                0.24
+              ),
             }),
             /* plus */
             '--hero-plus-stroke-color': theme.vars?.palette.text.disabled,

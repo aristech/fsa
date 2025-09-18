@@ -134,12 +134,13 @@ export function WorkOrderDetails({ id }: Props) {
   );
 
   // Transform timeline data for AnalyticsOrderTimeline component
-  const timelineList = timelineRes?.data?.timeline?.map((entry: any) => ({
-    id: entry._id,
-    type: getTimelineType(entry.eventType, entry.entityType),
-    title: entry.title,
-    time: entry.timestamp,
-  })) || [];
+  const timelineList =
+    timelineRes?.data?.timeline?.map((entry: any) => ({
+      id: entry._id,
+      type: getTimelineType(entry.eventType, entry.entityType),
+      title: entry.title,
+      time: entry.timestamp,
+    })) || [];
 
   const summary = summaryRes?.data as
     | {
@@ -160,11 +161,20 @@ export function WorkOrderDetails({ id }: Props) {
   return (
     <>
       <CustomBreadcrumbs
-        heading={workOrder?.title || workOrder?.workOrderNumber || t('workOrder', { defaultValue: 'Work Order' })}
+        heading={
+          workOrder?.title ||
+          workOrder?.workOrderNumber ||
+          t('workOrder', { defaultValue: 'Work Order' })
+        }
         links={[
           { name: t('dashboard.title', { tenant: '' }), href: '/dashboard' },
-          { name: t('pages.workOrders', { defaultValue: 'Work Orders' }), href: '/dashboard/work-orders' },
-          ...(workOrder?.title || workOrder?.workOrderNumber ? [{ name: workOrder?.title || workOrder?.workOrderNumber }] : []),
+          {
+            name: t('pages.workOrders', { defaultValue: 'Work Orders' }),
+            href: '/dashboard/work-orders',
+          },
+          ...(workOrder?.title || workOrder?.workOrderNumber
+            ? [{ name: workOrder?.title || workOrder?.workOrderNumber }]
+            : []),
         ]}
         action={
           <Stack direction="row" spacing={1}>
@@ -175,7 +185,6 @@ export function WorkOrderDetails({ id }: Props) {
             >
               {t('edit', { defaultValue: 'Edit' })}
             </Button>
-           
           </Stack>
         }
         sx={{ mb: 5 }}
@@ -228,7 +237,9 @@ export function WorkOrderDetails({ id }: Props) {
             <CardContent>
               <Stack spacing={1.5}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Typography variant="h6">{t('progress', { defaultValue: 'Progress' })}</Typography>
+                  <Typography variant="h6">
+                    {t('progress', { defaultValue: 'Progress' })}
+                  </Typography>
                   {summary?.progressMode && (
                     <Chip label={summary.progressMode} size="small" variant="outlined" />
                   )}
@@ -319,7 +330,9 @@ export function WorkOrderDetails({ id }: Props) {
                 <Divider />
 
                 <Stack spacing={2}>
-                  <Typography variant="h6">{t('workOrderInformation', { defaultValue: 'Work Order Information' })}</Typography>
+                  <Typography variant="h6">
+                    {t('workOrderInformation', { defaultValue: 'Work Order Information' })}
+                  </Typography>
                   <Grid container spacing={2}>
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <Stack spacing={0.5}>
@@ -390,7 +403,9 @@ export function WorkOrderDetails({ id }: Props) {
 
                 {workOrder?.location?.address && (
                   <Stack spacing={2}>
-                    <Typography variant="h6">{t('location', { defaultValue: 'Location' })}</Typography>
+                    <Typography variant="h6">
+                      {t('location', { defaultValue: 'Location' })}
+                    </Typography>
                     <Typography variant="body2">{workOrder.location.address}</Typography>
                   </Stack>
                 )}
@@ -430,14 +445,22 @@ export function WorkOrderDetails({ id }: Props) {
             <Card>
               <CardContent>
                 <Stack spacing={2}>
-                  <Typography variant="h6">{t('assignedPersonnel', { defaultValue: 'Assigned Personnel' })}</Typography>
+                  <Typography variant="h6">
+                    {t('assignedPersonnel', { defaultValue: 'Assigned Personnel' })}
+                  </Typography>
                   <WorkOrderPersonnelSelection
-                    value={Array.isArray(workOrder?.personnelIds)
-                      ? workOrder.personnelIds.map((p: any) => (typeof p === 'string' ? p : p._id)).filter(Boolean)
-                      : []}
+                    value={
+                      Array.isArray(workOrder?.personnelIds)
+                        ? workOrder.personnelIds
+                            .map((p: any) => (typeof p === 'string' ? p : p._id))
+                            .filter(Boolean)
+                        : []
+                    }
                     onChange={async (personnelIds) => {
                       try {
-                        await axiosInstance.put(endpoints.fsa.workOrders.details(id), { personnelIds });
+                        await axiosInstance.put(endpoints.fsa.workOrders.details(id), {
+                          personnelIds,
+                        });
                         await mutate(endpoints.fsa.workOrders.details(id));
                       } catch (e) {
                         console.error('Failed to update assigned personnel', e);
@@ -452,7 +475,9 @@ export function WorkOrderDetails({ id }: Props) {
             <Card>
               <CardContent>
                 <Stack spacing={2}>
-                  <Typography variant="h6">{t('attachmentsTitle', { defaultValue: 'Attachments' })}</Typography>
+                  <Typography variant="h6">
+                    {t('attachmentsTitle', { defaultValue: 'Attachments' })}
+                  </Typography>
                   <WorkOrderDetailsAttachments
                     attachments={(workOrder as any)?.attachments || []}
                     workOrderId={id}
@@ -475,7 +500,9 @@ export function WorkOrderDetails({ id }: Props) {
             {/* Work Order Timeline */}
             <AnalyticsOrderTimeline
               title={t('timeline', { defaultValue: 'Timeline' })}
-              subheader={t('workOrderTimelineSubheader', { defaultValue: 'Track all changes to this work order and related tasks' })}
+              subheader={t('workOrderTimelineSubheader', {
+                defaultValue: 'Track all changes to this work order and related tasks',
+              })}
               list={timelineList}
             />
           </Stack>

@@ -203,7 +203,8 @@ const inputComponents: any = {
   },
   MuiPickersOutlinedInput: {
     styleOverrides: {
-      root: ({ theme }: { theme: Theme }) => outlinedInputStyles.root(theme, pickersOutlinedInputClasses),
+      root: ({ theme }: { theme: Theme }) =>
+        outlinedInputStyles.root(theme, pickersOutlinedInputClasses),
       sectionsContainer: { variants: [...outlinedInputVariants.input] },
       notchedOutline: ({ theme }: { theme: Theme }) => outlinedInputStyles.notchedOutline(theme),
     },
@@ -213,7 +214,8 @@ const inputComponents: any = {
       disableUnderline: true,
     },
     styleOverrides: {
-      root: ({ theme }: { theme: Theme }) => filledInputStyles.root(theme, pickersFilledInputClasses),
+      root: ({ theme }: { theme: Theme }) =>
+        filledInputStyles.root(theme, pickersFilledInputClasses),
       sectionsContainer: { variants: [...filledInputVariants.input] },
     },
   },

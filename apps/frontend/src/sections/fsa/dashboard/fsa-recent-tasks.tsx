@@ -67,11 +67,13 @@ export function FsaRecentTasks() {
   const tasks: any[] = useMemo(() => {
     const list = data?.data?.board?.tasks || data?.board?.tasks || [];
     // Sort by createdAt desc when available, otherwise keep order
-    return [...list].sort((a: any, b: any) => {
-      const ad = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const bd = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return bd - ad;
-    }).slice(0, 10);
+    return [...list]
+      .sort((a: any, b: any) => {
+        const ad = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bd = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bd - ad;
+      })
+      .slice(0, 10);
   }, [data]);
 
   // Drawer state
@@ -84,7 +86,12 @@ export function FsaRecentTasks() {
       <CardHeader
         title="Recent Tasks"
         action={
-          <Link href="/dashboard/kanban" color="primary" variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Link
+            href="/dashboard/kanban"
+            color="primary"
+            variant="body2"
+            sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+          >
             View Board
             <Iconify icon="eva:arrow-ios-forward-fill" width={16} />
           </Link>
@@ -149,14 +156,19 @@ export function FsaRecentTasks() {
                     {Array.isArray(task.assignee) && task.assignee.length > 0 ? (
                       <Stack direction="row" spacing={0.5} alignItems="center">
                         {task.assignee.slice(0, 3).map((user: any) => (
-                          <Tooltip key={user.id} title={`${user.name}${user.email ? ` • ${user.email}` : ''}`}>
+                          <Tooltip
+                            key={user.id}
+                            title={`${user.name}${user.email ? ` • ${user.email}` : ''}`}
+                          >
                             <Avatar sx={{ width: 24, height: 24, fontSize: 12 }}>
                               {user.initials || user.name?.charAt(0)?.toUpperCase() || 'A'}
                             </Avatar>
                           </Tooltip>
                         ))}
                         {task.assignee.length > 3 && (
-                          <Typography variant="caption" color="text.secondary">+{task.assignee.length - 3}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            +{task.assignee.length - 3}
+                          </Typography>
                         )}
                       </Stack>
                     ) : (

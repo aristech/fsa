@@ -78,7 +78,11 @@ export function useNavData(): NavSectionProps['data'] {
       subheader: t('overview.title'),
       items: [
         { title: t('overview.app'), path: paths.dashboard.root, icon: ICONS.dashboard },
-        { title: t('overview.analytics'), path: paths.dashboard.general.analytics, icon: ICONS.analytics },
+        {
+          title: t('overview.analytics'),
+          path: paths.dashboard.general.analytics,
+          icon: ICONS.analytics,
+        },
         { title: t('overview.reports'), path: '/dashboard/analytics/reports', icon: ICONS.tour },
       ],
     },
@@ -150,7 +154,11 @@ export function useNavData(): NavSectionProps['data'] {
           icon: ICONS.technician,
           requiredPermissions: 'personnel.view',
           children: [
-            { title: t('fieldService.personnel.list'), path: '/dashboard/personnel', requiredPermissions: 'personnel.view' },
+            {
+              title: t('fieldService.personnel.list'),
+              path: '/dashboard/personnel',
+              requiredPermissions: 'personnel.view',
+            },
             {
               title: t('fieldService.personnel.roles'),
               path: '/dashboard/personnel/roles',

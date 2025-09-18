@@ -123,10 +123,14 @@ const MuiAlert: Components<Theme>['MuiAlert'] = {
     icon: ({ theme }) => ({
       opacity: 1,
       ...theme.applyStyles('dark', {
-        [parseCssVar(theme.vars?.palette.Alert.infoIconColor || '--alert-info-icon-color')]: theme.vars?.palette.info.light,
-        [parseCssVar(theme.vars?.palette.Alert.errorIconColor || '--alert-error-icon-color')]: theme.vars?.palette.error.light,
-        [parseCssVar(theme.vars?.palette.Alert.successIconColor || '--alert-success-icon-color')]: theme.vars?.palette.success.light,
-        [parseCssVar(theme.vars?.palette.Alert.warningIconColor || '--alert-warning-icon-color')]: theme.vars?.palette.warning.light,
+        [parseCssVar(theme.vars?.palette.Alert.infoIconColor || '--alert-info-icon-color')]:
+          theme.vars?.palette.info.light,
+        [parseCssVar(theme.vars?.palette.Alert.errorIconColor || '--alert-error-icon-color')]:
+          theme.vars?.palette.error.light,
+        [parseCssVar(theme.vars?.palette.Alert.successIconColor || '--alert-success-icon-color')]:
+          theme.vars?.palette.success.light,
+        [parseCssVar(theme.vars?.palette.Alert.warningIconColor || '--alert-warning-icon-color')]:
+          theme.vars?.palette.warning.light,
       }),
     }),
   },

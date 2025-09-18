@@ -33,15 +33,18 @@ export function useApiError() {
     if (error.messageKey) {
       // Try to get translated message, using the backend message as fallback
       const translatedMessage = t(error.messageKey, {
-        defaultValue: error.message || 'An error occurred'
+        defaultValue: error.message || 'An error occurred',
       });
       return translatedMessage;
     }
 
     // Fallback to provided message or generic error
-    return error.message || t('server.internal_error', {
-      defaultValue: 'Something went wrong. Please try again later'
-    });
+    return (
+      error.message ||
+      t('server.internal_error', {
+        defaultValue: 'Something went wrong. Please try again later',
+      })
+    );
   };
 
   /**
@@ -51,21 +54,26 @@ export function useApiError() {
     if (response.messageKey) {
       // Try to get translated message, using the backend message as fallback
       const translatedMessage = t(response.messageKey, {
-        defaultValue: response.message || 'Operation completed successfully'
+        defaultValue: response.message || 'Operation completed successfully',
       });
       return translatedMessage;
     }
 
     // Fallback to provided message or generic success
-    return response.message || t('success.fetched', {
-      defaultValue: 'Operation completed successfully'
-    });
+    return (
+      response.message ||
+      t('success.fetched', {
+        defaultValue: 'Operation completed successfully',
+      })
+    );
   };
 
   /**
    * Handle API response and return appropriate message
    */
-  const handleApiResponse = (response: ApiResponse): {
+  const handleApiResponse = (
+    response: ApiResponse
+  ): {
     isSuccess: boolean;
     message: string;
     data?: any;

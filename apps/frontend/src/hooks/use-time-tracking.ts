@@ -57,12 +57,19 @@ export function useActiveTimeSessions() {
   // Listen for real-time updates
   useRealtimeEvent(
     'notification',
-    useCallback((eventData: any) => {
-      if (eventData.type === 'checkin' || eventData.type === 'checkout' || eventData.type === 'emergency_checkout') {
-        // Refresh sessions when check-in/out events occur
-        mutate();
-      }
-    }, [mutate]),
+    useCallback(
+      (eventData: any) => {
+        if (
+          eventData.type === 'checkin' ||
+          eventData.type === 'checkout' ||
+          eventData.type === 'emergency_checkout'
+        ) {
+          // Refresh sessions when check-in/out events occur
+          mutate();
+        }
+      },
+      [mutate]
+    ),
     []
   );
 
@@ -80,7 +87,7 @@ export function useActiveTimeSessions() {
 export function useTaskTimeSession(taskId: string) {
   const { sessions, isLoading, error, mutate } = useActiveTimeSessions();
 
-  const taskSession = sessions.find(session => session.taskId === taskId);
+  const taskSession = sessions.find((session) => session.taskId === taskId);
 
   return {
     session: taskSession || null,
@@ -115,12 +122,19 @@ export function useMyActiveSessions() {
   // Listen for real-time updates for user's own sessions
   useRealtimeEvent(
     'notification',
-    useCallback((eventData: any) => {
-      if (eventData.type === 'checkin' || eventData.type === 'checkout' || eventData.type === 'emergency_checkout') {
-        // Refresh user's sessions when check-in/out events occur
-        mutate();
-      }
-    }, [mutate]),
+    useCallback(
+      (eventData: any) => {
+        if (
+          eventData.type === 'checkin' ||
+          eventData.type === 'checkout' ||
+          eventData.type === 'emergency_checkout'
+        ) {
+          // Refresh user's sessions when check-in/out events occur
+          mutate();
+        }
+      },
+      [mutate]
+    ),
     []
   );
 
@@ -211,14 +225,17 @@ export function formatDurationHuman(durationMs: number): string {
 export function useTasksTrackingStatus(taskIds: string[]) {
   const { sessions, isLoading, error } = useActiveTimeSessions();
 
-  const trackingStatus = taskIds.reduce((acc, taskId) => {
-    const session = sessions.find(s => s.taskId === taskId);
-    acc[taskId] = {
-      isActive: !!session,
-      session: session || null,
-    };
-    return acc;
-  }, {} as Record<string, { isActive: boolean; session: ActiveTimeSession | null }>);
+  const trackingStatus = taskIds.reduce(
+    (acc, taskId) => {
+      const session = sessions.find((s) => s.taskId === taskId);
+      acc[taskId] = {
+        isActive: !!session,
+        session: session || null,
+      };
+      return acc;
+    },
+    {} as Record<string, { isActive: boolean; session: ActiveTimeSession | null }>
+  );
 
   return {
     trackingStatus,

@@ -63,13 +63,16 @@ export function AnalyticsCurrentSubject({ title, subheader, chart, sx, ...other 
     return [c];
   }, [chart.series.length, chartColors, selectedIndex]);
 
-  const labelHelpMap: Record<string, string> = useMemo(() => ({
-      'Tasks': 'Completed tasks (higher is better).',
+  const labelHelpMap: Record<string, string> = useMemo(
+    () => ({
+      Tasks: 'Completed tasks (higher is better).',
       'Avg days (inv)': 'Average completion days (inverted; lower days => higher score).',
-      'Hours': 'Total logged hours.',
+      Hours: 'Total logged hours.',
       'Late % (inv)': 'Late completion ratio (inverted; fewer late tasks => higher score).',
       'WO involved': 'Number of work orders participated in.',
-    }), []);
+    }),
+    []
+  );
 
   const chartOptions = useChart({
     colors: displayedColors,
@@ -79,7 +82,10 @@ export function AnalyticsCurrentSubject({ title, subheader, chart, sx, ...other 
       categories: chart.categories,
       labels: {
         style: {
-          colors: Array.from({ length: chart.categories.length }, () => theme.palette.text.secondary),
+          colors: Array.from(
+            { length: chart.categories.length },
+            () => theme.palette.text.secondary
+          ),
         },
       },
     },
@@ -116,7 +122,13 @@ export function AnalyticsCurrentSubject({ title, subheader, chart, sx, ...other 
       <Divider sx={{ borderStyle: 'dashed' }} />
 
       {/* Avatar legend */}
-      <Stack direction="row" spacing={1} justifyContent="center" alignItems="center" sx={{ p: 2, flexWrap: 'wrap' }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        justifyContent="center"
+        alignItems="center"
+        sx={{ p: 2, flexWrap: 'wrap' }}
+      >
         {chart.series.map((s, idx) => {
           const color = chartColors[idx % chartColors.length];
           const initials = getInitials(s.name);

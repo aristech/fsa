@@ -20,7 +20,8 @@ export function EnvironmentGuard({
   fallbackPath,
 }: EnvironmentGuardProps) {
   const router = useRouter();
-  const { canAccessField, canAccessDashboard, isFieldOnly, isDashboardOnly, hasAllAccess } = useEnvironmentAccess();
+  const { canAccessField, canAccessDashboard, isFieldOnly, isDashboardOnly, hasAllAccess } =
+    useEnvironmentAccess();
 
   const hasAccess = (() => {
     switch (requiredAccess) {

@@ -70,7 +70,10 @@ const outlinedVariants = [
       '&:hover': {
         borderColor: 'currentColor',
         boxShadow: '0 0 0 0.75px currentColor',
-        backgroundColor: varAlpha('currentColor', theme.vars?.palette.action.hoverOpacity || '0.08'),
+        backgroundColor: varAlpha(
+          'currentColor',
+          theme.vars?.palette.action.hoverOpacity || '0.08'
+        ),
       },
     }),
   },
@@ -96,7 +99,10 @@ const textVariants = [
     props: (props) => props.variant === 'text',
     style: ({ theme }) => ({
       '&:hover': {
-        backgroundColor: varAlpha('currentColor', theme.vars?.palette.action.hoverOpacity || '0.08'),
+        backgroundColor: varAlpha(
+          'currentColor',
+          theme.vars?.palette.action.hoverOpacity || '0.08'
+        ),
       },
     }),
   },

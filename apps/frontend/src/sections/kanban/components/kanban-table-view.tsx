@@ -56,17 +56,72 @@ type OrderBy =
 // ----------------------------------------------------------------------
 
 const getTableHead = (t: any) => [
-  { id: 'name', label: t('task', { defaultValue: 'Task' }), align: 'left' as const, sortable: true },
-  { id: 'client', label: t('client', { defaultValue: 'Client' }), align: 'left' as const, sortable: true },
-  { id: 'workOrder', label: t('workOrder', { defaultValue: 'Work Order' }), align: 'left' as const, sortable: true },
-  { id: 'status', label: t('status', { defaultValue: 'Status' }), align: 'left' as const, sortable: true },
-  { id: 'assignee', label: t('assignee', { defaultValue: 'Assignee' }), align: 'left' as const, sortable: true },
-  { id: 'reporter', label: t('reporter', { defaultValue: 'Reporter' }), align: 'left' as const, sortable: true },
-  { id: 'completedStatus', label: t('completed', { defaultValue: 'Completed' }), align: 'center' as const, sortable: true },
-  { id: 'priority', label: t('priority', { defaultValue: 'Priority' }), align: 'center' as const, sortable: true },
-  { id: 'created', label: t('created', { defaultValue: 'Created' }), align: 'left' as const, sortable: true },
-  { id: 'due', label: t('dueDate', { defaultValue: 'Due Date' }), align: 'left' as const, sortable: true },
-  { id: 'labels', label: t('labels', { defaultValue: 'Labels' }), align: 'left' as const, sortable: false },
+  {
+    id: 'name',
+    label: t('task', { defaultValue: 'Task' }),
+    align: 'left' as const,
+    sortable: true,
+  },
+  {
+    id: 'client',
+    label: t('client', { defaultValue: 'Client' }),
+    align: 'left' as const,
+    sortable: true,
+  },
+  {
+    id: 'workOrder',
+    label: t('workOrder', { defaultValue: 'Work Order' }),
+    align: 'left' as const,
+    sortable: true,
+  },
+  {
+    id: 'status',
+    label: t('status', { defaultValue: 'Status' }),
+    align: 'left' as const,
+    sortable: true,
+  },
+  {
+    id: 'assignee',
+    label: t('assignee', { defaultValue: 'Assignee' }),
+    align: 'left' as const,
+    sortable: true,
+  },
+  {
+    id: 'reporter',
+    label: t('reporter', { defaultValue: 'Reporter' }),
+    align: 'left' as const,
+    sortable: true,
+  },
+  {
+    id: 'completedStatus',
+    label: t('completed', { defaultValue: 'Completed' }),
+    align: 'center' as const,
+    sortable: true,
+  },
+  {
+    id: 'priority',
+    label: t('priority', { defaultValue: 'Priority' }),
+    align: 'center' as const,
+    sortable: true,
+  },
+  {
+    id: 'created',
+    label: t('created', { defaultValue: 'Created' }),
+    align: 'left' as const,
+    sortable: true,
+  },
+  {
+    id: 'due',
+    label: t('dueDate', { defaultValue: 'Due Date' }),
+    align: 'left' as const,
+    sortable: true,
+  },
+  {
+    id: 'labels',
+    label: t('labels', { defaultValue: 'Labels' }),
+    align: 'left' as const,
+    sortable: false,
+  },
 ];
 
 const getPriorityColor = (priority: string) => {
@@ -209,7 +264,9 @@ export function KanbanTableView() {
       <Card
         sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
-        <Typography color="error">{t('errorLoadingTasks', { defaultValue: 'Error loading tasks' })}: {boardError.message}</Typography>
+        <Typography color="error">
+          {t('errorLoadingTasks', { defaultValue: 'Error loading tasks' })}: {boardError.message}
+        </Typography>
       </Card>
     );
   }
@@ -228,7 +285,9 @@ export function KanbanTableView() {
             fullWidth
             value={searchTerm}
             onChange={handleSearchChange}
-            placeholder={t('searchTasksPlaceholder', { defaultValue: 'Search across tasks, clients, work orders, and personnel...' })}
+            placeholder={t('searchTasksPlaceholder', {
+              defaultValue: 'Search across tasks, clients, work orders, and personnel...',
+            })}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -236,7 +295,10 @@ export function KanbanTableView() {
                 </InputAdornment>
               ),
             }}
-            helperText={t('searchTasksHelper', { defaultValue: 'Search by task name, description, labels, client info, work order details, assignee, or reporter' })}
+            helperText={t('searchTasksHelper', {
+              defaultValue:
+                'Search by task name, description, labels, client info, work order details, assignee, or reporter',
+            })}
           />
           <Button
             variant="contained"
@@ -245,7 +307,7 @@ export function KanbanTableView() {
             sx={{ flexShrink: 0, mt: 0 }}
             size="large"
           >
-{t('addNewTask', { defaultValue: 'Add New Task' })}
+            {t('addNewTask', { defaultValue: 'Add New Task' })}
           </Button>
         </Stack>
       </Box>
@@ -311,7 +373,10 @@ export function KanbanTableView() {
                         color="text.disabled"
                         sx={{ maxWidth: 400, textAlign: 'center' }}
                       >
-                        {t('noTasksFoundHelper', { defaultValue: 'Try adjusting your search criteria. You can search by task name, client info, work order details, assignees, or any other field.' })}
+                        {t('noTasksFoundHelper', {
+                          defaultValue:
+                            'Try adjusting your search criteria. You can search by task name, client info, work order details, assignees, or any other field.',
+                        })}
                       </Typography>
                     </Stack>
                   </TableCell>
@@ -466,7 +531,11 @@ export function KanbanTableView() {
                     {/* Completed Status */}
                     <TableCell align="center">
                       <Chip
-                        label={(task as any).completeStatus ? t('yes', { defaultValue: 'Yes' }) : t('no', { defaultValue: 'No' })}
+                        label={
+                          (task as any).completeStatus
+                            ? t('yes', { defaultValue: 'Yes' })
+                            : t('no', { defaultValue: 'No' })
+                        }
                         size="small"
                         color={(task as any).completeStatus ? 'success' : 'default'}
                         variant={(task as any).completeStatus ? 'filled' : 'outlined'}

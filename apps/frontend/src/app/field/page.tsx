@@ -3,7 +3,16 @@
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, useEffect } from 'react';
 
-import { Box, Card, Chip, Stack, Avatar, Typography, CardContent, AvatarGroup } from '@mui/material';
+import {
+  Box,
+  Card,
+  Chip,
+  Stack,
+  Avatar,
+  Typography,
+  CardContent,
+  AvatarGroup,
+} from '@mui/material';
 
 import axios, { endpoints } from 'src/lib/axios';
 import { useTranslate } from 'src/locales/use-locales';
@@ -54,18 +63,42 @@ export default function FieldDashboard() {
   const stats = useMemo(() => {
     const total = tasks.length;
     const completed = tasks.filter((task) => {
-      const s = (task?.status?.slug || task?.status || task?.columnSlug || '').toString().toLowerCase();
+      const s = (task?.status?.slug || task?.status || task?.columnSlug || '')
+        .toString()
+        .toLowerCase();
       return s.includes('done') || s.includes('complete');
     }).length;
     const pending = tasks.filter((task) => {
-      const s = (task?.status?.slug || task?.status || task?.columnSlug || '').toString().toLowerCase();
+      const s = (task?.status?.slug || task?.status || task?.columnSlug || '')
+        .toString()
+        .toLowerCase();
       return s.includes('pending') || s.includes('todo') || s.includes('backlog') || s === '';
     }).length;
     return [
-      { label: t('field.todaysTasks', { defaultValue: "Today's Tasks" }), value: total, icon: 'solar:clipboard-list-bold', color: 'primary' },
-      { label: t('completed', { defaultValue: 'Completed' }), value: completed, icon: 'solar:check-circle-bold', color: 'success' },
-      { label: t('pending', { defaultValue: 'Pending' }), value: pending, icon: 'solar:clock-circle-bold', color: 'warning' },
-      { label: t('field.thisWeek', { defaultValue: 'This Week' }), value: Math.max(total, completed + pending), icon: 'solar:chart-bold', color: 'info' },
+      {
+        label: t('field.todaysTasks', { defaultValue: "Today's Tasks" }),
+        value: total,
+        icon: 'solar:clipboard-list-bold',
+        color: 'primary',
+      },
+      {
+        label: t('completed', { defaultValue: 'Completed' }),
+        value: completed,
+        icon: 'solar:check-circle-bold',
+        color: 'success',
+      },
+      {
+        label: t('pending', { defaultValue: 'Pending' }),
+        value: pending,
+        icon: 'solar:clock-circle-bold',
+        color: 'warning',
+      },
+      {
+        label: t('field.thisWeek', { defaultValue: 'This Week' }),
+        value: Math.max(total, completed + pending),
+        icon: 'solar:chart-bold',
+        color: 'info',
+      },
     ];
   }, [tasks, t]);
 
@@ -78,42 +111,66 @@ export default function FieldDashboard() {
     }
   };
 
-  const upcomingTasks = useMemo(() => tasks.slice(0, 5).map((task) => {
-      const start = Array.isArray(task.due) ? task.due[0] : undefined;
-      const end = Array.isArray(task.due) ? task.due[1] : undefined;
-      const attachmentsCount = Array.isArray(task.attachments) ? task.attachments.length : 0;
-      return {
-        _id: task.id || task._id || task.uid || String(task.taskId || ''),
-        title: task.name || task.title || task.taskTitle || task.task_name || task.task || task?.workOrderTitle || task?.work_order_title || task?.title || task?.name || task?.uid || task?.id || task?._id || task?.taskId || 'Untitled Task',
-        description: task.description || '',
-        status: (task?.status?.slug || task?.status || task?.columnSlug || 'pending').toString().toLowerCase(),
-        priority: (task?.priority?.slug || task?.priority || 'medium').toString().toLowerCase(),
-        startDate: start,
-        dueDate: end || new Date().toISOString(),
-        estimatedHours: task.estimatedHours || task.estimated_hours || 0,
-        actualHours: task.actualHours || task.actual_hours || 0,
-        location: task.location || task.site || '—',
-        clientName: task.clientName || task.clientCompany || undefined,
-        workOrderNumber: task.workOrderNumber || undefined,
-        workOrderTitle: task.workOrderTitle || undefined,
-        attachmentsCount,
-        assignees: Array.isArray(task.assignee) ? task.assignee : [],
-        completeStatus: !!task.completeStatus,
-      };
-    }), [tasks]);
+  const upcomingTasks = useMemo(
+    () =>
+      tasks.slice(0, 5).map((task) => {
+        const start = Array.isArray(task.due) ? task.due[0] : undefined;
+        const end = Array.isArray(task.due) ? task.due[1] : undefined;
+        const attachmentsCount = Array.isArray(task.attachments) ? task.attachments.length : 0;
+        return {
+          _id: task.id || task._id || task.uid || String(task.taskId || ''),
+          title:
+            task.name ||
+            task.title ||
+            task.taskTitle ||
+            task.task_name ||
+            task.task ||
+            task?.workOrderTitle ||
+            task?.work_order_title ||
+            task?.title ||
+            task?.name ||
+            task?.uid ||
+            task?.id ||
+            task?._id ||
+            task?.taskId ||
+            'Untitled Task',
+          description: task.description || '',
+          status: (task?.status?.slug || task?.status || task?.columnSlug || 'pending')
+            .toString()
+            .toLowerCase(),
+          priority: (task?.priority?.slug || task?.priority || 'medium').toString().toLowerCase(),
+          startDate: start,
+          dueDate: end || new Date().toISOString(),
+          estimatedHours: task.estimatedHours || task.estimated_hours || 0,
+          actualHours: task.actualHours || task.actual_hours || 0,
+          location: task.location || task.site || '—',
+          clientName: task.clientName || task.clientCompany || undefined,
+          workOrderNumber: task.workOrderNumber || undefined,
+          workOrderTitle: task.workOrderTitle || undefined,
+          attachmentsCount,
+          assignees: Array.isArray(task.assignee) ? task.assignee : [],
+          completeStatus: !!task.completeStatus,
+        };
+      }),
+    [tasks]
+  );
 
-  const lowStockMaterials = useMemo(() => materials
-      .filter((m) => (m.quantity ?? 0) <= (m.minimumStock ?? m.minimum_stock ?? 0))
-      .slice(0, 5)
-      .map((m) => ({
-        _id: m.id || m._id,
-        name: m.name,
-        sku: m.sku || '—',
-        unit: m.unit || '',
-        quantity: m.quantity ?? 0,
-        minimumStock: m.minimumStock ?? m.minimum_stock ?? 0,
-        location: m.location || '—',
-      })), [materials]);
+  const lowStockMaterials = useMemo(
+    () =>
+      materials
+        .filter((m) => (m.quantity ?? 0) <= (m.minimumStock ?? m.minimum_stock ?? 0))
+        .slice(0, 5)
+        .map((m) => ({
+          _id: m.id || m._id,
+          name: m.name,
+          sku: m.sku || '—',
+          unit: m.unit || '',
+          quantity: m.quantity ?? 0,
+          minimumStock: m.minimumStock ?? m.minimum_stock ?? 0,
+          location: m.location || '—',
+        })),
+    [materials]
+  );
 
   if (loading) {
     return <Box sx={{ p: 3 }} />;
@@ -253,7 +310,10 @@ export default function FieldDashboard() {
             {upcomingTasks.map((task) => {
               const dueTime = formatTime(task.dueDate);
               const startTime = formatTime(task.startDate);
-              const subtitleParts = [task.clientName, task.workOrderNumber && `${task.workOrderNumber}`].filter(Boolean);
+              const subtitleParts = [
+                task.clientName,
+                task.workOrderNumber && `${task.workOrderNumber}`,
+              ].filter(Boolean);
 
               return (
                 <MobileCard
@@ -263,7 +323,11 @@ export default function FieldDashboard() {
                   description={task.description}
                   status={task.status}
                   priority={task.priority}
-                  progress={task.actualHours && task.estimatedHours ? Math.round((task.actualHours / task.estimatedHours) * 100) : 0}
+                  progress={
+                    task.actualHours && task.estimatedHours
+                      ? Math.round((task.actualHours / task.estimatedHours) * 100)
+                      : 0
+                  }
                   timestamp={dueTime}
                   badge={task.attachmentsCount > 0 ? task.attachmentsCount : undefined}
                   onTap={() => console.log('Navigate to task:', task._id)}
@@ -271,11 +335,21 @@ export default function FieldDashboard() {
                   onSwipeRight={() => console.log('Start task:', task._id)}
                   onSwipeLeft={() => console.log('Complete task:', task._id)}
                 >
-                  <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 1 }}>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    sx={{ mt: 1 }}
+                  >
                     {/* Assignees */}
-                    <AvatarGroup max={4} sx={{ '& .MuiAvatar-root': { width: 24, height: 24, fontSize: 12 } }}>
+                    <AvatarGroup
+                      max={4}
+                      sx={{ '& .MuiAvatar-root': { width: 24, height: 24, fontSize: 12 } }}
+                    >
                       {task.assignees?.map((a: any) => (
-                        <Avatar key={a.id} src={a.avatarUrl || ''}>{a.initials || a.name?.[0] || 'A'}</Avatar>
+                        <Avatar key={a.id} src={a.avatarUrl || ''}>
+                          {a.initials || a.name?.[0] || 'A'}
+                        </Avatar>
                       ))}
                     </AvatarGroup>
 
@@ -283,11 +357,18 @@ export default function FieldDashboard() {
                     <Stack direction="row" spacing={1} alignItems="center">
                       {(startTime || dueTime) && (
                         <Typography variant="caption" color="text.secondary">
-                          {startTime && dueTime ? `${startTime} – ${dueTime}` : (startTime || dueTime)}
+                          {startTime && dueTime
+                            ? `${startTime} – ${dueTime}`
+                            : startTime || dueTime}
                         </Typography>
                       )}
                       {task.completeStatus && (
-                        <Chip size="small" color="success" label={t('completed', { defaultValue: 'Completed' })} sx={{ height: 20, fontSize: 10 }} />
+                        <Chip
+                          size="small"
+                          color="success"
+                          label={t('completed', { defaultValue: 'Completed' })}
+                          sx={{ height: 20, fontSize: 10 }}
+                        />
                       )}
                     </Stack>
                   </Stack>
@@ -364,8 +445,6 @@ export default function FieldDashboard() {
           </Box>
         </CardContent>
       </Card>
-
-      
     </Box>
   );
 }

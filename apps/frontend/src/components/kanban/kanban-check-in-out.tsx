@@ -57,7 +57,7 @@ const storeSession = (session: CheckInSession) => {
   if (typeof window === 'undefined') return;
   try {
     const sessions = getStoredSessions();
-    const filtered = sessions.filter(s => s.taskId !== session.taskId);
+    const filtered = sessions.filter((s) => s.taskId !== session.taskId);
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify([...filtered, session]));
   } catch (error) {
     console.warn('Failed to store session locally:', error);
@@ -68,14 +68,15 @@ const removeStoredSession = (taskId: string) => {
   if (typeof window === 'undefined') return;
   try {
     const sessions = getStoredSessions();
-    const filtered = sessions.filter(s => s.taskId !== taskId);
+    const filtered = sessions.filter((s) => s.taskId !== taskId);
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(filtered));
   } catch (error) {
     console.warn('Failed to remove stored session:', error);
   }
 };
 
-const generateClientSessionId = (): string => `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+const generateClientSessionId = (): string =>
+  `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 export function KanbanCheckInOut({ taskId, workOrderId, onTimeEntryCreated }: Props) {
   const theme = useTheme();
@@ -123,7 +124,7 @@ export function KanbanCheckInOut({ taskId, workOrderId, onTimeEntryCreated }: Pr
   useEffect(() => {
     if (isOnline) {
       const stored = getStoredSessions();
-      const taskSession = stored.find(s => s.taskId === taskId);
+      const taskSession = stored.find((s) => s.taskId === taskId);
 
       if (taskSession && !activeSession) {
         // Found a stored session but no active session from server
@@ -160,24 +161,27 @@ export function KanbanCheckInOut({ taskId, workOrderId, onTimeEntryCreated }: Pr
   // Listen for real-time check-in/check-out events
   useRealtimeEvent(
     'notification',
-    useCallback((data: any) => {
-      if (data.data?.taskId === taskId) {
-        if (data.type === 'checkin' || data.type === 'checkout') {
-          // Refresh session data when someone else checks in/out
-          mutateSession();
+    useCallback(
+      (data: any) => {
+        if (data.data?.taskId === taskId) {
+          if (data.type === 'checkin' || data.type === 'checkout') {
+            // Refresh session data when someone else checks in/out
+            mutateSession();
 
-          if (data.type === 'checkin') {
-            toast.info('Someone checked in to this task');
-          } else if (data.type === 'checkout') {
-            toast.info('Someone checked out and logged time');
-            // Refresh time entries if callback provided
-            if (onTimeEntryCreated) {
-              onTimeEntryCreated();
+            if (data.type === 'checkin') {
+              toast.info('Someone checked in to this task');
+            } else if (data.type === 'checkout') {
+              toast.info('Someone checked out and logged time');
+              // Refresh time entries if callback provided
+              if (onTimeEntryCreated) {
+                onTimeEntryCreated();
+              }
             }
           }
         }
-      }
-    }, [taskId, mutateSession, onTimeEntryCreated]),
+      },
+      [taskId, mutateSession, onTimeEntryCreated]
+    ),
     [taskId]
   );
 
@@ -314,74 +318,83 @@ export function KanbanCheckInOut({ taskId, workOrderId, onTimeEntryCreated }: Pr
   };
 
   // Handle session recovery
-  const handleRecoverSession = useCallback(async (storedSession: CheckInSession) => {
-    try {
-      // Try to sync the offline session with server
-      const payload = {
-        taskId,
-        action: 'checkin',
-        notes: storedSession.notes || '',
-        clientSessionId: storedSession._id,
-      };
+  const handleRecoverSession = useCallback(
+    async (storedSession: CheckInSession) => {
+      try {
+        // Try to sync the offline session with server
+        const payload = {
+          taskId,
+          action: 'checkin',
+          notes: storedSession.notes || '',
+          clientSessionId: storedSession._id,
+        };
 
-      const response = await axiosInstance.post(endpoints.fsa.timeEntries.checkin, payload);
-      const session = response.data.data;
+        const response = await axiosInstance.post(endpoints.fsa.timeEntries.checkin, payload);
+        const session = response.data.data;
 
-      // Update local storage with server session
-      storeSession(session);
+        // Update local storage with server session
+        storeSession(session);
 
-      // Refresh session data
-      mutateSession();
+        // Refresh session data
+        mutateSession();
 
-      setRecoveryDialogOpen(false);
-      setStoredSessions([]);
+        setRecoveryDialogOpen(false);
+        setStoredSessions([]);
 
-      toast.success('Session recovered successfully');
-    } catch (error: any) {
-      const message = error?.response?.data?.message || 'Failed to recover session';
-      toast.error(message);
-    }
-  }, [taskId, mutateSession]);
+        toast.success('Session recovered successfully');
+      } catch (error: any) {
+        const message = error?.response?.data?.message || 'Failed to recover session';
+        toast.error(message);
+      }
+    },
+    [taskId, mutateSession]
+  );
 
   // Handle emergency checkout for stored session
-  const handleEmergencyCheckout = useCallback(async (storedSession: CheckInSession) => {
-    try {
-      const checkInTime = new Date(storedSession.checkInTime);
-      const checkOutTime = new Date();
-      const hours = (checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
+  const handleEmergencyCheckout = useCallback(
+    async (storedSession: CheckInSession) => {
+      try {
+        const checkInTime = new Date(storedSession.checkInTime);
+        const checkOutTime = new Date();
+        const hours = (checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
 
-      // Use emergency checkout endpoint
-      await axiosInstance.post(endpoints.fsa.timeEntries.emergencyCheckout, {
-        sessionId: storedSession._id,
-        notes: `Emergency checkout - offline session recovery (${hours.toFixed(2)}h)`,
-      });
+        // Use emergency checkout endpoint
+        await axiosInstance.post(endpoints.fsa.timeEntries.emergencyCheckout, {
+          sessionId: storedSession._id,
+          notes: `Emergency checkout - offline session recovery (${hours.toFixed(2)}h)`,
+        });
 
-      // Remove from local storage
-      removeStoredSession(taskId);
+        // Remove from local storage
+        removeStoredSession(taskId);
 
-      setRecoveryDialogOpen(false);
-      setStoredSessions([]);
+        setRecoveryDialogOpen(false);
+        setStoredSessions([]);
 
-      // Refresh data
-      mutateSession();
-      if (onTimeEntryCreated) {
-        onTimeEntryCreated();
+        // Refresh data
+        mutateSession();
+        if (onTimeEntryCreated) {
+          onTimeEntryCreated();
+        }
+
+        toast.success(`Emergency checkout completed (${hours.toFixed(2)}h logged)`);
+      } catch (error: any) {
+        const message = error?.response?.data?.message || 'Failed to complete emergency checkout';
+        toast.error(message);
       }
-
-      toast.success(`Emergency checkout completed (${hours.toFixed(2)}h logged)`);
-    } catch (error: any) {
-      const message = error?.response?.data?.message || 'Failed to complete emergency checkout';
-      toast.error(message);
-    }
-  }, [taskId, mutateSession, onTimeEntryCreated]);
+    },
+    [taskId, mutateSession, onTimeEntryCreated]
+  );
 
   // Discard stored session
-  const handleDiscardSession = useCallback((storedSession: CheckInSession) => {
-    removeStoredSession(taskId);
-    setRecoveryDialogOpen(false);
-    setStoredSessions([]);
-    toast.info('Stored session discarded');
-  }, [taskId]);
+  const handleDiscardSession = useCallback(
+    (storedSession: CheckInSession) => {
+      removeStoredSession(taskId);
+      setRecoveryDialogOpen(false);
+      setStoredSessions([]);
+      toast.info('Stored session discarded');
+    },
+    [taskId]
+  );
 
   return (
     <>
@@ -415,7 +428,6 @@ export function KanbanCheckInOut({ taskId, workOrderId, onTimeEntryCreated }: Pr
             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
               Time Tracking
             </Typography>
-          
           </Box>
 
           <Stack direction="row" spacing={1}>
@@ -510,7 +522,8 @@ export function KanbanCheckInOut({ taskId, workOrderId, onTimeEntryCreated }: Pr
                     <strong>Duration:</strong> {elapsedTime}
                   </Typography>
                   <Typography variant="body2">
-                    <strong>Started:</strong> {activeSession && new Date(activeSession.checkInTime).toLocaleString()}
+                    <strong>Started:</strong>{' '}
+                    {activeSession && new Date(activeSession.checkInTime).toLocaleString()}
                   </Typography>
                   <Typography variant="body2">
                     <strong>Ending:</strong> {new Date().toLocaleString()}
@@ -566,17 +579,23 @@ export function KanbanCheckInOut({ taskId, workOrderId, onTimeEntryCreated }: Pr
             {storedSessions.map((session) => (
               <Paper key={session._id} variant="outlined" sx={{ p: 2 }}>
                 <Stack spacing={2}>
-                  <Typography variant="subtitle2">
-                    Offline Check-in Session
-                  </Typography>
+                  <Typography variant="subtitle2">Offline Check-in Session</Typography>
                   <Stack spacing={1}>
                     <Typography variant="body2">
                       <strong>Started:</strong> {new Date(session.checkInTime).toLocaleString()}
                     </Typography>
                     <Typography variant="body2">
                       <strong>Duration:</strong>{' '}
-                      {Math.floor((Date.now() - new Date(session.checkInTime).getTime()) / (1000 * 60 * 60))}h{' '}
-                      {Math.floor(((Date.now() - new Date(session.checkInTime).getTime()) % (1000 * 60 * 60)) / (1000 * 60))}m
+                      {Math.floor(
+                        (Date.now() - new Date(session.checkInTime).getTime()) / (1000 * 60 * 60)
+                      )}
+                      h{' '}
+                      {Math.floor(
+                        ((Date.now() - new Date(session.checkInTime).getTime()) %
+                          (1000 * 60 * 60)) /
+                          (1000 * 60)
+                      )}
+                      m
                     </Typography>
                     {session.notes && (
                       <Typography variant="body2">

@@ -90,8 +90,7 @@ export const signOut = async (): Promise<void> => {
   try {
     // Call backend logout endpoint if we have a token
     const token =
-      sessionStorage.getItem('jwt_access_token') ||
-      localStorage.getItem('jwt_access_token');
+      sessionStorage.getItem('jwt_access_token') || localStorage.getItem('jwt_access_token');
 
     if (token) {
       try {

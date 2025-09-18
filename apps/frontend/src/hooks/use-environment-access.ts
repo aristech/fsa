@@ -17,7 +17,8 @@ export function useEnvironmentAccess(): EnvironmentAccess {
   const environmentAccess = user?.environmentAccess || null;
 
   const canAccessField = environmentAccess === 'field' || environmentAccess === 'all';
-  const canAccessDashboard = environmentAccess === 'dashboard' || environmentAccess === 'all' || environmentAccess === null;
+  const canAccessDashboard =
+    environmentAccess === 'dashboard' || environmentAccess === 'all' || environmentAccess === null;
   const canAccessOffice = canAccessDashboard; // Alias for backwards compatibility
 
   const isFieldOnly = environmentAccess === 'field';

@@ -81,9 +81,11 @@ const colorVariants = [
     props: {},
     style: ({ theme }) => ({
       color: theme.vars?.palette.action.active,
-      [parseCssVar(theme.vars?.palette.Avatar.defaultBg || '--avatar-default-bg')]: theme.vars?.palette.grey[300],
+      [parseCssVar(theme.vars?.palette.Avatar.defaultBg || '--avatar-default-bg')]:
+        theme.vars?.palette.grey[300],
       ...theme.applyStyles('dark', {
-        [parseCssVar(theme.vars?.palette.Avatar.defaultBg || '--avatar-default-bg')]: theme.vars?.palette.grey[700],
+        [parseCssVar(theme.vars?.palette.Avatar.defaultBg || '--avatar-default-bg')]:
+          theme.vars?.palette.grey[700],
       }),
     }),
   },

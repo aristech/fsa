@@ -318,9 +318,10 @@ export function KanbanTaskCreateDialog({
                     </MenuItem>
                     {workOrders.map((workOrder: any) => {
                       // Get client name from the work order
-                      const clientName = typeof workOrder.clientId === 'object'
-                        ? workOrder.clientId?.name
-                        : workOrder.clientName || 'Unknown Client';
+                      const clientName =
+                        typeof workOrder.clientId === 'object'
+                          ? workOrder.clientId?.name
+                          : workOrder.clientName || 'Unknown Client';
 
                       return (
                         <MenuItem key={workOrder._id} value={workOrder._id}>

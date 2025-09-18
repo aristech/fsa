@@ -7,9 +7,7 @@ import { varAlpha } from 'minimal-shared/utils';
 export const bulletColor = { dark: '#282F37', light: '#EDEFF2' };
 
 function colorVars(theme: Theme, variant?: 'vertical' | 'mini' | 'horizontal') {
-  const {
-    vars: { palette } = { palette: {} as any },
-  } = theme;
+  const { vars: { palette } = { palette: {} as any } } = theme;
 
   return {
     '--nav-item-color': palette.text.secondary,

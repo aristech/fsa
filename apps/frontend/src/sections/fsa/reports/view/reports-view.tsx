@@ -282,7 +282,6 @@ export function ReportsView() {
             <EmptyContent
               title="No reports found"
               description="Get started by creating your first report"
-          
               action={
                 <Button
                   variant="contained"

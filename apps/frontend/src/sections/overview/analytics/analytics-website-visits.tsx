@@ -46,10 +46,16 @@ export function AnalyticsWebsiteVisits({ title, subheader, chart, sx, ...other }
         formatter: (value: number, { seriesIndex, dataPointIndex }: any) => {
           // If meta task names provided, render list; else use unit label
           const unit = t('analytics.visits', { defaultValue: 'visits' });
-          const names = seriesIndex === 0 ? meta.createdTaskNames?.[dataPointIndex] : meta.completedTaskNames?.[dataPointIndex];
+          const names =
+            seriesIndex === 0
+              ? meta.createdTaskNames?.[dataPointIndex]
+              : meta.completedTaskNames?.[dataPointIndex];
           if (Array.isArray(names) && names.length > 0) {
             const list = `\n- ${names.slice(0, 5).join('\n- ')}${names.length > 5 ? '\n…' : ''}`;
-            const label = seriesIndex === 0 ? t('analytics.created', { defaultValue: 'Created' }) : t('analytics.completed', { defaultValue: 'Completed' });
+            const label =
+              seriesIndex === 0
+                ? t('analytics.created', { defaultValue: 'Created' })
+                : t('analytics.completed', { defaultValue: 'Completed' });
             return `${value} ${label}:${list}`;
           }
           return `${value} ${unit}`;

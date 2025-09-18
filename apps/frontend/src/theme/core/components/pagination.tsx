@@ -46,7 +46,10 @@ const outlinedVariants = [
       borderColor: theme.vars?.palette.shared.buttonOutlined,
       [`&.${paginationItemClasses.selected}`]: {
         borderColor: 'currentColor',
-        backgroundColor: varAlpha('currentColor', theme.vars?.palette.action.selectedOpacity || '0.12'),
+        backgroundColor: varAlpha(
+          'currentColor',
+          theme.vars?.palette.action.selectedOpacity || '0.12'
+        ),
         '&:hover': {
           backgroundColor: varAlpha(
             'currentColor',

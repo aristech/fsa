@@ -70,19 +70,23 @@ function Item({ item, lastItem, colorMap, ...other }: ItemProps) {
       <TimelineSeparator>
         <TimelineDot
           color={
-            customColor ? undefined : (
-              (item.type === 'order1' && 'primary') ||
-              (item.type === 'order2' && 'success') ||
-              (item.type === 'order3' && 'info') ||
-              (item.type === 'order4' && 'warning') ||
-              'error'
-            )
+            customColor
+              ? undefined
+              : (item.type === 'order1' && 'primary') ||
+                (item.type === 'order2' && 'success') ||
+                (item.type === 'order3' && 'info') ||
+                (item.type === 'order4' && 'warning') ||
+                'error'
           }
-          sx={customColor ? {
-            backgroundColor: customColor,
-            color: 'white',
-            border: `2px solid ${customColor}33` // Add transparency for border
-          } : undefined}
+          sx={
+            customColor
+              ? {
+                  backgroundColor: customColor,
+                  color: 'white',
+                  border: `2px solid ${customColor}33`, // Add transparency for border
+                }
+              : undefined
+          }
         />
         {lastItem ? null : <TimelineConnector />}
       </TimelineSeparator>

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import type { ICalendarView } from 'src/types/calendar';
 import type { IconifyName } from 'src/components/iconify';
@@ -68,7 +68,10 @@ export function CalendarToolbar({
     >
       {viewOptions.map((option) => (
         <Tooltip key={option.value} title={option.label}>
-          <ToggleButton value={option.value} aria-label={`${option.label} ${t('calendar.view', { defaultValue: 'view' })}`}>
+          <ToggleButton
+            value={option.value}
+            aria-label={`${option.label} ${t('calendar.view', { defaultValue: 'view' })}`}
+          >
             <Iconify icon={option.icon} />
           </ToggleButton>
         </Tooltip>

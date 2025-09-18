@@ -178,9 +178,9 @@ export async function moveColumn(updateColumns: IKanbanColumn[]) {
           board: {
             ...board,
             columns: updateColumns,
-            tasks: board.tasks || {} // Keep the existing tasks with fallback
-          }
-        }
+            tasks: board.tasks || {}, // Keep the existing tasks with fallback
+          },
+        },
       };
     };
 
@@ -189,7 +189,8 @@ export async function moveColumn(updateColumns: IKanbanColumn[]) {
 
     // Also mutate any client-filtered endpoints
     mutate(
-      (key) => typeof key === 'string' && key.startsWith(KANBAN_ENDPOINT) && key.includes('clientId'),
+      (key) =>
+        typeof key === 'string' && key.startsWith(KANBAN_ENDPOINT) && key.includes('clientId'),
       updateFunction,
       false
     );

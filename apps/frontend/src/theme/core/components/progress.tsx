@@ -24,14 +24,19 @@ function getColorStyle(theme: Theme, colorKey: (typeof allColors)[number]) {
   }
 
   return {
-    backgroundColor: varAlpha(theme.vars?.palette[colorKey].mainChannel || '0 0 0', LINEAR_OPACITY.track),
+    backgroundColor: varAlpha(
+      theme.vars?.palette[colorKey].mainChannel || '0 0 0',
+      LINEAR_OPACITY.track
+    ),
   };
 }
 
 function getBufferStyle(theme: Theme, colorKey: (typeof allColors)[number]) {
   const isInherit = colorKey === 'inherit';
 
-  const gradientColor = isInherit ? 'currentColor' : theme.vars?.palette[colorKey].mainChannel || '0 0 0';
+  const gradientColor = isInherit
+    ? 'currentColor'
+    : theme.vars?.palette[colorKey].mainChannel || '0 0 0';
   const backgroundColor = isInherit
     ? 'currentColor'
     : varAlpha(theme.vars?.palette[colorKey].mainChannel || '0 0 0', LINEAR_OPACITY.track);

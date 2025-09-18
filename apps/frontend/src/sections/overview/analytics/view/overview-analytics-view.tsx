@@ -55,14 +55,20 @@ export function OverviewAnalyticsView() {
   const tasks: any[] = Array.isArray(kanbanResp?.tasks) ? kanbanResp!.tasks : [];
 
   // Work orders list (limited)
-  const { data: workOrdersResp } = useSWR('/api/v1/work-orders?limit=500&sort=-createdAt', async (url: string) => {
-    const res = await axiosInstance.get(url);
-    return res.data?.data?.workOrders || res.data?.data || [];
-  });
+  const { data: workOrdersResp } = useSWR(
+    '/api/v1/work-orders?limit=500&sort=-createdAt',
+    async (url: string) => {
+      const res = await axiosInstance.get(url);
+      return res.data?.data?.workOrders || res.data?.data || [];
+    }
+  );
   const workOrders: any[] = Array.isArray(workOrdersResp) ? workOrdersResp : [];
 
   // Fetch timeline data for work orders
-  const workOrderIds = workOrders.slice(0, 10).map(wo => wo._id).filter(Boolean); // Get top 10 work orders
+  const workOrderIds = workOrders
+    .slice(0, 10)
+    .map((wo) => wo._id)
+    .filter(Boolean); // Get top 10 work orders
   const { data: timelinesResp } = useSWR(
     workOrderIds.length > 0 ? ['work-order-timelines', ...workOrderIds] : null,
     async () => {
@@ -72,7 +78,7 @@ export function OverviewAnalyticsView() {
             const res = await axiosInstance.get(`/api/v1/work-orders/${id}/timeline?limit=5`);
             return {
               workOrderId: id,
-              timeline: res.data?.data?.timeline || []
+              timeline: res.data?.data?.timeline || [],
             };
           } catch {
             return { workOrderId: id, timeline: [] };
@@ -86,14 +92,17 @@ export function OverviewAnalyticsView() {
   // Notifications (for weekly messages count)
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
-  const { data: notificationsResp } = useSWR('/api/v1/notifications?limit=200&sort=-createdAt', async (url: string) => {
-    try {
-      const res = await axiosInstance.get(url);
-      return res.data?.data || [];
-    } catch {
-      return [] as any[];
+  const { data: notificationsResp } = useSWR(
+    '/api/v1/notifications?limit=200&sort=-createdAt',
+    async (url: string) => {
+      try {
+        const res = await axiosInstance.get(url);
+        return res.data?.data || [];
+      } catch {
+        return [] as any[];
+      }
     }
-  });
+  );
   const notifications: any[] = Array.isArray(notificationsResp) ? notificationsResp : [];
 
   // Time entries (for personnel radar) - stabilize since parameter
@@ -125,7 +134,9 @@ export function OverviewAnalyticsView() {
 
     // Try different name sources in order of preference
     if (personDoc?.user?.firstName || personDoc?.user?.lastName) {
-      return [personDoc.user.firstName, personDoc.user.lastName].filter(Boolean).join(' ') || 'Personnel';
+      return (
+        [personDoc.user.firstName, personDoc.user.lastName].filter(Boolean).join(' ') || 'Personnel'
+      );
     }
     if (personDoc?.user?.name) {
       return personDoc.user.name;
@@ -195,7 +206,7 @@ export function OverviewAnalyticsView() {
         rawAssignees: task.assignees,
         rawPersonnelIds: task.personnelIds,
         processedAssignees: assignees,
-        workOrderId: task.workOrderId || task.workOrder
+        workOrderId: task.workOrderId || task.workOrder,
       });
     }
 
@@ -216,9 +227,15 @@ export function OverviewAnalyticsView() {
     const isComplete = !!(
       task.completeStatus ||
       task.completed ||
-      String(task.status || '').toLowerCase().includes('done') ||
-      String(task.status || '').toLowerCase().includes('completed') ||
-      String(task.status || '').toLowerCase().includes('complete')
+      String(task.status || '')
+        .toLowerCase()
+        .includes('done') ||
+      String(task.status || '')
+        .toLowerCase()
+        .includes('completed') ||
+      String(task.status || '')
+        .toLowerCase()
+        .includes('complete')
     );
 
     const workOrderId = task.workOrderId || task.workOrder;
@@ -236,13 +253,15 @@ export function OverviewAnalyticsView() {
         console.log(`🔍 Assignee ${assigneeIndex} Processing:`, {
           assigneeRaw: a,
           personId,
-          personDoc: personDoc ? {
-            _id: personDoc._id,
-            user: personDoc.user,
-            firstName: personDoc.firstName,
-            lastName: personDoc.lastName
-          } : null,
-          resolvedName: name
+          personDoc: personDoc
+            ? {
+                _id: personDoc._id,
+                user: personDoc.user,
+                firstName: personDoc.firstName,
+                lastName: personDoc.lastName,
+              }
+            : null,
+          resolvedName: name,
         });
       }
 
@@ -252,7 +271,10 @@ export function OverviewAnalyticsView() {
       if (isComplete) {
         m.tasksCompleted += 1;
         if (createdAt && updatedAt) {
-          const days = Math.max(0, (updatedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+          const days = Math.max(
+            0,
+            (updatedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
+          );
           m.totalCompletionDays += days;
           m.completedCount += 1;
         }
@@ -277,19 +299,23 @@ export function OverviewAnalyticsView() {
         timeEntryId: te._id || te.id,
         personnelId: pid,
         personnelName: te.personnelName,
-        personDoc: personDoc ? {
-          _id: personDoc._id,
-          name: personDoc.name,
-          firstName: personDoc.firstName,
-          lastName: personDoc.lastName,
-          user: personDoc.user ? {
-            _id: personDoc.user._id,
-            name: personDoc.user.name,
-            firstName: personDoc.user.firstName,
-            lastName: personDoc.user.lastName,
-            email: personDoc.user.email
-          } : null
-        } : null,
+        personDoc: personDoc
+          ? {
+              _id: personDoc._id,
+              name: personDoc.name,
+              firstName: personDoc.firstName,
+              lastName: personDoc.lastName,
+              user: personDoc.user
+                ? {
+                    _id: personDoc.user._id,
+                    name: personDoc.user.name,
+                    firstName: personDoc.user.firstName,
+                    lastName: personDoc.user.lastName,
+                    email: personDoc.user.email,
+                  }
+                : null,
+            }
+          : null,
         resolvedName: name,
         durationData: {
           durationMinutes: te.durationMinutes,
@@ -297,8 +323,8 @@ export function OverviewAnalyticsView() {
           duration: te.duration,
           hours: te.hours,
           start: te.start,
-          end: te.end
-        }
+          end: te.end,
+        },
       });
     }
 
@@ -349,15 +375,19 @@ export function OverviewAnalyticsView() {
         name: data.name,
         tasksCompleted: data.tasksCompleted,
         hoursLogged: data.hoursLogged,
-        woParticipations: data.woSet.size
+        woParticipations: data.woSet.size,
       })),
       allRows: rows,
-      activeRowsCount: rows.filter(r => r.tasksCompleted > 0 || r.hoursLogged > 0 || r.woParticipations > 0).length
+      activeRowsCount: rows.filter(
+        (r) => r.tasksCompleted > 0 || r.hoursLogged > 0 || r.woParticipations > 0
+      ).length,
     });
   }
 
   // Filter out personnel with no activity and sort by activity
-  const activeRows = rows.filter(r => r.tasksCompleted > 0 || r.hoursLogged > 0 || r.woParticipations > 0);
+  const activeRows = rows.filter(
+    (r) => r.tasksCompleted > 0 || r.hoursLogged > 0 || r.woParticipations > 0
+  );
   const top = activeRows
     .sort((a, b) => {
       // Primary sort: tasks completed
@@ -387,7 +417,13 @@ export function OverviewAnalyticsView() {
     return mapping;
   })();
 
-  const categoriesRadar = ['Tasks Completed', 'Avg Completion Days', 'Hours Logged', 'Late Rate %', 'Work Orders'];
+  const categoriesRadar = [
+    'Tasks Completed',
+    'Avg Completion Days',
+    'Hours Logged',
+    'Late Rate %',
+    'Work Orders',
+  ];
   const tasksArr = top.map((r) => r.tasksCompleted);
   const avgDaysArr = top.map((r) => r.avgCompletionDays);
   const hoursArr = top.map((r) => r.hoursLogged);
@@ -402,12 +438,12 @@ export function OverviewAnalyticsView() {
     const max = Math.max(...capped);
 
     // If all values are the same, return middle values
-    if (max === min) return capped.map(() => max > 0 ? 80 : 20);
+    if (max === min) return capped.map(() => (max > 0 ? 80 : 20));
 
     // Normalize to 10-100 range for better radar visualization
     return capped.map((v) => {
       const ratio = (v - min) / (max - min);
-      const normalized = Math.round(10 + (ratio * 90)); // Scale to 10-100
+      const normalized = Math.round(10 + ratio * 90); // Scale to 10-100
       return invert ? 110 - normalized : normalized;
     });
   };
@@ -424,15 +460,32 @@ export function OverviewAnalyticsView() {
   }));
 
   // ----------------- Workload per client (pie) -----------------
-  const workloadByClient = workOrders.reduce((acc: Record<string, number>, wo: any) => {
-    const name = wo.clientName || wo.client?.name || (typeof wo.clientId === 'object' ? wo.clientId?.name : undefined) || 'Unknown client';
-    acc[name] = (acc[name] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  const workloadEntries = Object.entries(workloadByClient).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const workloadByClient = workOrders.reduce(
+    (acc: Record<string, number>, wo: any) => {
+      const name =
+        wo.clientName ||
+        wo.client?.name ||
+        (typeof wo.clientId === 'object' ? wo.clientId?.name : undefined) ||
+        'Unknown client';
+      acc[name] = (acc[name] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+  const workloadEntries = Object.entries(workloadByClient)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8);
   const workloadSeries = workloadEntries.map(([label, value]) => ({ label, value }));
-  const workloadColors = useMemo(() => workloadEntries.map(() => `#${Math.floor(Math.random()*16777215).toString(16).padStart(6,'0')}`), [workloadEntries.length]);
-
+  const workloadColors = useMemo(
+    () =>
+      workloadEntries.map(
+        () =>
+          `#${Math.floor(Math.random() * 16777215)
+            .toString(16)
+            .padStart(6, '0')}`
+      ),
+    [workloadEntries.length]
+  );
 
   // ----------------- Tasks created vs completed (line) -----------------
   const now = new Date();
@@ -458,7 +511,11 @@ export function OverviewAnalyticsView() {
     const end = new Date(w);
     end.setDate(end.getDate() + 7);
     return tasks.filter((task: any) => {
-      const done = !!task.completeStatus || String(task.status || '').toLowerCase().includes('done');
+      const done =
+        !!task.completeStatus ||
+        String(task.status || '')
+          .toLowerCase()
+          .includes('done');
       const u = task.updatedAt ? new Date(task.updatedAt) : null;
       return done && u && u >= start && u < end;
     }).length;
@@ -477,7 +534,11 @@ export function OverviewAnalyticsView() {
     return c && c >= weekStart && c < weekEnd;
   }).length;
   const weeklyTasksCompleted = tasks.filter((task: any) => {
-    const done = !!task.completeStatus || String(task.status || '').toLowerCase().includes('done');
+    const done =
+      !!task.completeStatus ||
+      String(task.status || '')
+        .toLowerCase()
+        .includes('done');
     const u = task.updatedAt ? new Date(task.updatedAt) : null;
     return done && u && u >= weekStart && u < weekEnd;
   }).length;
@@ -490,9 +551,17 @@ export function OverviewAnalyticsView() {
   const byClient: Record<string, { ontime: number; total: number }> = {};
   tasks.forEach((task: any) => {
     const clientName = (task as any).clientName || (task as any).clientCompany || 'Unknown';
-    const done = !!task.completeStatus || String(task.status || '').toLowerCase().includes('done');
+    const done =
+      !!task.completeStatus ||
+      String(task.status || '')
+        .toLowerCase()
+        .includes('done');
     if (!done) return;
-    const dueEnd = Array.isArray(task.due) ? (task.due[1] ? new Date(task.due[1]) : undefined) : undefined;
+    const dueEnd = Array.isArray(task.due)
+      ? task.due[1]
+        ? new Date(task.due[1])
+        : undefined
+      : undefined;
     const u = task.updatedAt ? new Date(task.updatedAt) : undefined;
     if (!byClient[clientName]) byClient[clientName] = { ontime: 0, total: 0 };
     byClient[clientName].total += 1;
@@ -500,30 +569,42 @@ export function OverviewAnalyticsView() {
   });
 
   // Prepare names per week for tooltip meta
-  const createdNamesByWeek = useMemo(() => weeks.map((w) => {
-      const start = new Date(w);
-      const end = new Date(w);
-      end.setDate(end.getDate() + 7);
-      return tasks
-        .filter((task: any) => {
-          const c = task.createdAt ? new Date(task.createdAt) : null;
-          return c && c >= start && c < end;
-        })
-        .map((task: any) => task.name || task.title || 'Untitled task');
-    }), [weeks, tasks]);
+  const createdNamesByWeek = useMemo(
+    () =>
+      weeks.map((w) => {
+        const start = new Date(w);
+        const end = new Date(w);
+        end.setDate(end.getDate() + 7);
+        return tasks
+          .filter((task: any) => {
+            const c = task.createdAt ? new Date(task.createdAt) : null;
+            return c && c >= start && c < end;
+          })
+          .map((task: any) => task.name || task.title || 'Untitled task');
+      }),
+    [weeks, tasks]
+  );
 
-  const completedNamesByWeek = useMemo(() => weeks.map((w) => {
-      const start = new Date(w);
-      const end = new Date(w);
-      end.setDate(end.getDate() + 7);
-      return tasks
-        .filter((task: any) => {
-          const done = !!task.completeStatus || String(task.status || '').toLowerCase().includes('done');
-          const u = task.updatedAt ? new Date(task.updatedAt) : null;
-          return done && u && u >= start && u < end;
-        })
-        .map((task: any) => task.name || task.title || 'Untitled task');
-    }), [weeks, tasks]);
+  const completedNamesByWeek = useMemo(
+    () =>
+      weeks.map((w) => {
+        const start = new Date(w);
+        const end = new Date(w);
+        end.setDate(end.getDate() + 7);
+        return tasks
+          .filter((task: any) => {
+            const done =
+              !!task.completeStatus ||
+              String(task.status || '')
+                .toLowerCase()
+                .includes('done');
+            const u = task.updatedAt ? new Date(task.updatedAt) : null;
+            return done && u && u >= start && u < end;
+          })
+          .map((task: any) => task.name || task.title || 'Untitled task');
+      }),
+    [weeks, tasks]
+  );
 
   // Compute taskIds (limit to 500 to avoid overload)
   const taskIds = useMemo(() => {
@@ -549,10 +630,13 @@ export function OverviewAnalyticsView() {
           }
         })
       );
-      return results.reduce((acc, { id, count }) => {
-        acc[id] = count;
-        return acc;
-      }, {} as Record<string, number>);
+      return results.reduce(
+        (acc, { id, count }) => {
+          acc[id] = count;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
     }
   );
 
@@ -565,12 +649,12 @@ export function OverviewAnalyticsView() {
 
   // Top clients by workload
 
-
   // ----------------- Tasks & Subtasks per Client -----------------
   const clientAgg = useMemo(() => {
     const clientMap = new Map<string, { tasks: number; subtasks: number }>();
     (tasks || []).forEach((task: any) => {
-      const clientName = (task as any).clientName || (task as any).clientCompany || 'Unknown client';
+      const clientName =
+        (task as any).clientName || (task as any).clientCompany || 'Unknown client';
       if (!clientMap.has(clientName)) clientMap.set(clientName, { tasks: 0, subtasks: 0 });
       const entry = clientMap.get(clientName)!;
       entry.tasks += 1;
@@ -579,9 +663,13 @@ export function OverviewAnalyticsView() {
     return clientMap;
   }, [tasks, subtaskCountByTask]);
 
-  const topClientAgg = useMemo(() => Array.from(clientAgg.entries())
-      .sort((a, b) => b[1].tasks - a[1].tasks)
-      .slice(0, 6), [clientAgg]);
+  const topClientAgg = useMemo(
+    () =>
+      Array.from(clientAgg.entries())
+        .sort((a, b) => b[1].tasks - a[1].tasks)
+        .slice(0, 6),
+    [clientAgg]
+  );
 
   const categoriesClients = topClientAgg.map(([name]) => name);
   const seriesClients = [
@@ -589,19 +677,18 @@ export function OverviewAnalyticsView() {
     { name: 'Subtasks', data: topClientAgg.map(([, v]) => v.subtasks) },
   ];
 
-
   // ----------------- Work Order Timeline (Combined) -----------------
   const workOrderTimeline = useMemo(() => {
     if (!timelinesResp || !workOrders.length) {
       return {
         entries: [],
-        colors: new Map()
+        colors: new Map(),
       };
     }
 
     // Create a map of work orders for easy lookup
     const workOrderMap = new Map();
-    workOrders.forEach(wo => {
+    workOrders.forEach((wo) => {
       workOrderMap.set(wo._id, wo);
     });
 
@@ -613,7 +700,7 @@ export function OverviewAnalyticsView() {
     };
 
     let colorIndex = 0;
-    workOrders.slice(0, 10).forEach(wo => {
+    workOrders.slice(0, 10).forEach((wo) => {
       workOrderColors.set(wo.title || wo.workOrderNumber || wo._id, generateColor(colorIndex++));
     });
 
@@ -634,7 +721,7 @@ export function OverviewAnalyticsView() {
           id: entry._id,
           type: workOrder.title || workOrder.workOrderNumber || workOrderId, // Use work order title as type to map to colors
           title: `${workOrder.title || workOrder.workOrderNumber || 'Work Order'}: ${entry.title}`,
-          time: entry.timestamp
+          time: entry.timestamp,
         });
       });
     });
@@ -644,7 +731,7 @@ export function OverviewAnalyticsView() {
 
     return {
       entries: allEntries.slice(0, 20), // Limit to 20 most recent entries
-      colors: workOrderColors
+      colors: workOrderColors,
     };
   }, [timelinesResp, workOrders]);
 
@@ -678,7 +765,10 @@ export function OverviewAnalyticsView() {
     }
   );
 
-  const woDurCategories = useMemo(() => top10WO.map((wo: any) => wo.title || wo.workOrderNumber || (wo._id || '').slice(-6)), [top10WO]);
+  const woDurCategories = useMemo(
+    () => top10WO.map((wo: any) => wo.title || wo.workOrderNumber || (wo._id || '').slice(-6)),
+    [top10WO]
+  );
 
   const { estSeries, actSeries } = useMemo(() => {
     const est: number[] = [];
@@ -813,7 +903,8 @@ export function OverviewAnalyticsView() {
               options: {
                 tooltip: {
                   y: {
-                    formatter: (val: number) => `${val} ${t('analytics.workOrders', { defaultValue: 'work orders' })}`,
+                    formatter: (val: number) =>
+                      `${val} ${t('analytics.workOrders', { defaultValue: 'work orders' })}`,
                   },
                 },
               },
@@ -829,7 +920,10 @@ export function OverviewAnalyticsView() {
               categories: categoriesLine,
               series: [
                 { name: t('analytics.created', { defaultValue: 'Created' }), data: createdSeries },
-                { name: t('analytics.completed', { defaultValue: 'Completed' }), data: completedSeries },
+                {
+                  name: t('analytics.completed', { defaultValue: 'Completed' }),
+                  data: completedSeries,
+                },
               ],
               options: {
                 meta: {
@@ -869,15 +963,20 @@ export function OverviewAnalyticsView() {
           />
         </Grid>
 
-       {/* Work Orders Estimated vs Actual */}
+        {/* Work Orders Estimated vs Actual */}
         <Grid size={{ xs: 12, md: 12, lg: 8 }}>
           <AnalyticsWebsiteVisits
             title={t('analytics.workOrdersEstVsAct')}
-            subheader={t('analytics.topRecentWorkOrders', { defaultValue: 'Top 10 recent work orders' })}
+            subheader={t('analytics.topRecentWorkOrders', {
+              defaultValue: 'Top 10 recent work orders',
+            })}
             chart={{
               categories: woDurCategories,
               series: [
-                { name: t('analytics.estimated', { defaultValue: 'Estimated (h)' }), data: estSeries },
+                {
+                  name: t('analytics.estimated', { defaultValue: 'Estimated (h)' }),
+                  data: estSeries,
+                },
                 { name: t('analytics.actual', { defaultValue: 'Actual (h)' }), data: actSeries },
               ],
               colors: ['#64b5f6', '#ef5350'],
@@ -897,10 +996,6 @@ export function OverviewAnalyticsView() {
             colorMap={workOrderTimeline.colors}
           />
         </Grid>
-
-     
-
-       
       </Grid>
     </DashboardContent>
   );

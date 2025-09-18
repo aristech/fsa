@@ -103,7 +103,7 @@ export function KanbanDetailsToolbar({
             onChangeWorkOrder?.(null);
           }}
         >
-         {t('noWorkOrder', { defaultValue: 'No Work Order' })}
+          {t('noWorkOrder', { defaultValue: 'No Work Order' })}
         </MenuItem>
         <Box
           component="div"
@@ -192,32 +192,43 @@ export function KanbanDetailsToolbar({
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Tooltip title="Create report from task">
             <IconButton onClick={onCreateReport} color="primary">
-              <Iconify sx={{
-                      minWidth: 40,
-                      height: 40,
-                      fontWeight: 600,
-                     
-                      borderRadius: '50%',
-                    }} icon="eva:file-text-fill" />
+              <Iconify
+                sx={{
+                  minWidth: 40,
+                  height: 40,
+                  fontWeight: 600,
+
+                  borderRadius: '50%',
+                }}
+                icon="eva:file-text-fill"
+              />
             </IconButton>
           </Tooltip>
-          
-           <Tooltip title={completed ? t('completed', { defaultValue: 'Completed' }) : t('markComplete', { defaultValue: 'Mark complete' })}>
-            <IconButton onClick={() => {
-              const next = !completed;
-              setCompleted(next);
-              onToggleComplete?.(next);
-            }}
-           
+
+          <Tooltip
+            title={
+              completed
+                ? t('completed', { defaultValue: 'Completed' })
+                : t('markComplete', { defaultValue: 'Mark complete' })
+            }
+          >
+            <IconButton
+              onClick={() => {
+                const next = !completed;
+                setCompleted(next);
+                onToggleComplete?.(next);
+              }}
             >
-              <Iconify  sx={{
-                      minWidth: 40,
-                      height: 40,
-                      fontWeight: 600,
-                      bgcolor: completed ? 'success.main' : '#fff',
-                      borderRadius: '50%',
-                    }} 
-                    icon={completed ? 'eva:checkmark-fill' : 'eva:checkmark-circle-2-outline'} />
+              <Iconify
+                sx={{
+                  minWidth: 40,
+                  height: 40,
+                  fontWeight: 600,
+                  bgcolor: completed ? 'success.main' : '#fff',
+                  borderRadius: '50%',
+                }}
+                icon={completed ? 'eva:checkmark-fill' : 'eva:checkmark-circle-2-outline'}
+              />
             </IconButton>
           </Tooltip>
           <Tooltip title="Delete task">

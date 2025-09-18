@@ -91,7 +91,15 @@ export function RHFUpload({ name, multiple, helperText, ...other }: RHFUploadPro
           }
         };
 
-        return <Upload {...uploadProps} value={field.value} onDrop={onDrop} onRemove={onRemove} {...other} />;
+        return (
+          <Upload
+            {...uploadProps}
+            value={field.value}
+            onDrop={onDrop}
+            onRemove={onRemove}
+            {...other}
+          />
+        );
       }}
     />
   );

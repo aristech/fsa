@@ -36,7 +36,7 @@ export function EmptyContent({
   slotProps,
   description,
   title = 'No data',
-  ...other 
+  ...other
 }: EmptyContentProps) {
   return (
     <ContentRoot filled={filled} sx={sx} {...other}>

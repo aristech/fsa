@@ -39,14 +39,11 @@ toast.dismiss(); // Dismiss all
 toast.dismiss(toastId); // Dismiss specific
 
 // 8. Promise-based toasts
-toast.promise(
-  fetch('/api/data'),
-  {
-    loading: 'Loading data...',
-    success: 'Data loaded successfully',
-    error: 'Failed to load data'
-  }
-);
+toast.promise(fetch('/api/data'), {
+  loading: 'Loading data...',
+  success: 'Data loaded successfully',
+  error: 'Failed to load data',
+});
 
 // Available Options for toast methods:
 interface ToastOptions {
@@ -70,13 +67,13 @@ interface ToastOptions {
 toast.error('Failed to save', {
   action: {
     label: 'Retry',
-    onClick: () => console.log('Retry clicked')
-  }
+    onClick: () => console.log('Retry clicked'),
+  },
 });
 
 // Example with description:
 toast.success('File uploaded', {
-  description: 'Your file has been uploaded successfully'
+  description: 'Your file has been uploaded successfully',
 });
 
 /**
@@ -88,8 +85,8 @@ toast.success('File uploaded', {
  */
 
 export const TOAST_DURATIONS = {
-  SHORT: 2000,    // 2 seconds
-  MEDIUM: 4000,   // 4 seconds (default for errors)
-  LONG: 6000,     // 6 seconds
-  SUCCESS: 3000,  // 3 seconds (default for success)
+  SHORT: 2000, // 2 seconds
+  MEDIUM: 4000, // 4 seconds (default for errors)
+  LONG: 6000, // 6 seconds
+  SUCCESS: 3000, // 3 seconds (default for success)
 } as const;

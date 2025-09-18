@@ -22,22 +22,25 @@ interface ReportAttachmentsTabProps {
 export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttachmentsTabProps) {
   const [uploading, setUploading] = useState(false);
 
-  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+  const handleFileUpload = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
 
-    setUploading(true);
-    try {
-      // In a real implementation, upload files to the server
-      // await ReportService.uploadAttachment(report._id, files[0]);
-      toast.success('File uploaded successfully');
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      toast.error('Failed to upload file');
-    } finally {
-      setUploading(false);
-    }
-  }, [report._id]);
+      setUploading(true);
+      try {
+        // In a real implementation, upload files to the server
+        // await ReportService.uploadAttachment(report._id, files[0]);
+        toast.success('File uploaded successfully');
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        toast.error('Failed to upload file');
+      } finally {
+        setUploading(false);
+      }
+    },
+    [report._id]
+  );
 
   const handlePhotoCapture = useCallback(() => {
     // In a real implementation, open camera for photo capture
@@ -61,10 +64,7 @@ export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttach
     return 'eva:attach-fill';
   };
 
-  const allAttachments = [
-    ...(report.attachments || []),
-    ...(report.photos || []),
-  ];
+  const allAttachments = [...(report.attachments || []), ...(report.photos || [])];
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -92,13 +92,7 @@ export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttach
               loading={uploading}
             >
               Upload
-              <input
-                type="file"
-                hidden
-                multiple
-                accept="*/*"
-                onChange={handleFileUpload}
-              />
+              <input type="file" hidden multiple accept="*/*" onChange={handleFileUpload} />
             </MobileButton>
           </Box>
         )}
@@ -122,15 +116,14 @@ export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttach
             >
               <Avatar
                 sx={{
-                  bgcolor: attachment.mimetype.startsWith('image/') ? 'primary.light' : 'secondary.light',
+                  bgcolor: attachment.mimetype.startsWith('image/')
+                    ? 'primary.light'
+                    : 'secondary.light',
                   width: 40,
                   height: 40,
                 }}
               >
-                <Iconify
-                  icon={getFileIcon(attachment.mimetype)}
-                  width={20}
-                />
+                <Iconify icon={getFileIcon(attachment.mimetype)} width={20} />
               </Avatar>
 
               <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -147,7 +140,8 @@ export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttach
                 </Typography>
 
                 <Typography variant="body2" color="text.secondary">
-                  {formatFileSize(attachment.size)} • Uploaded {dayjs(attachment.uploadedAt).format('MMM DD, YYYY')}
+                  {formatFileSize(attachment.size)} • Uploaded{' '}
+                  {dayjs(attachment.uploadedAt).format('MMM DD, YYYY')}
                 </Typography>
 
                 {attachment.uploadedByData && (
@@ -195,11 +189,7 @@ export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttach
             backgroundColor: 'background.neutral',
           }}
         >
-          <Iconify
-            icon="eva:image-outline"
-            width={48}
-            sx={{ color: 'text.disabled', mb: 2 }}
-          />
+          <Iconify icon="eva:image-outline" width={48} sx={{ color: 'text.disabled', mb: 2 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
             No Attachments
           </Typography>
@@ -226,13 +216,7 @@ export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttach
                 startIcon={<Iconify icon="eva:attach-fill" width={16} />}
               >
                 Upload File
-                <input
-                  type="file"
-                  hidden
-                  multiple
-                  accept="*/*"
-                  onChange={handleFileUpload}
-                />
+                <input type="file" hidden multiple accept="*/*" onChange={handleFileUpload} />
               </MobileButton>
             </Box>
           )}

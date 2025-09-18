@@ -121,5 +121,3 @@ function GridSteps({ steps }: { steps: Step[] }) {
 }
 
 export default FsaOnboarding;
-
-

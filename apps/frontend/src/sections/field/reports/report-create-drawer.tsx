@@ -1062,7 +1062,7 @@ export function ReportCreateDrawer({
 
         // Upload files and signatures after report creation
         const allUploadPromises = [];
-        
+
         // Upload regular attachments
         if (attachments.length > 0 && reportId) {
           const attachmentUpload = (async () => {
@@ -1092,14 +1092,16 @@ export function ReportCreateDrawer({
                 uploadedAt: new Date(),
                 uploadedBy: userId,
                 // Add embedded user data for historical purposes
-                uploadedByData: userId ? {
-                  _id: userId,
-                  name:
-                    `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
-                    user.email ||
-                    'Unknown User',
-                  email: user.email || '',
-                } : null,
+                uploadedByData: userId
+                  ? {
+                      _id: userId,
+                      name:
+                        `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+                        user.email ||
+                        'Unknown User',
+                      email: user.email || '',
+                    }
+                  : null,
               }));
 
               // Update report with attachment data
@@ -1123,12 +1125,15 @@ export function ReportCreateDrawer({
               const form = new FormData();
               form.append('scope', 'report');
               form.append('reportId', reportId);
-              
+
               // Convert base64 signatures to files
               signatures.forEach((signature, index) => {
                 if (signature.signatureData) {
                   // Remove data:image/png;base64, prefix if present
-                  const base64Data = signature.signatureData.replace(/^data:image\/[a-z]+;base64,/, '');
+                  const base64Data = signature.signatureData.replace(
+                    /^data:image\/[a-z]+;base64,/,
+                    ''
+                  );
                   const byteCharacters = atob(base64Data);
                   const byteNumbers = new Array(byteCharacters.length);
                   for (let i = 0; i < byteCharacters.length; i++) {
@@ -1163,14 +1168,16 @@ export function ReportCreateDrawer({
                 signatureType: signatures[index]?.type,
                 signerName: signatures[index]?.signerName,
                 // Add embedded user data for historical purposes
-                uploadedByData: userId ? {
-                  _id: userId,
-                  name:
-                    `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
-                    user.email ||
-                    'Unknown User',
-                  email: user.email || '',
-                } : null,
+                uploadedByData: userId
+                  ? {
+                      _id: userId,
+                      name:
+                        `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+                        user.email ||
+                        'Unknown User',
+                      email: user.email || '',
+                    }
+                  : null,
               }));
 
               // Update report with signature attachments

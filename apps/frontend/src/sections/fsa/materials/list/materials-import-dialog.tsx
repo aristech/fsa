@@ -90,7 +90,7 @@ export function MaterialsImportDialog({ open, onClose }: MaterialsImportDialogPr
     try {
       const materials = MaterialService.parseCSVToMaterials(csvContent);
       const result = await MaterialService.bulkImportMaterials(materials);
-      
+
       if (result.success) {
         setImportResult(result.data);
         if (result.data.success > 0) {
@@ -136,10 +136,14 @@ export function MaterialsImportDialog({ open, onClose }: MaterialsImportDialogPr
                   CSV Import Instructions
                 </Typography>
                 <Typography variant="body2">
-                  • Download the sample CSV file to see the required format<br />
-                  • Include headers: name, description, category, sku, unit, unitCost, quantity, etc.<br />
-                  • Custom fields should be prefixed with &quot;customField_&quot; (e.g., &quot;customField_weight&quot;)<br />
-                  • Required fields: name, unit, unitCost, quantity
+                  • Download the sample CSV file to see the required format
+                  <br />
+                  • Include headers: name, description, category, sku, unit, unitCost, quantity,
+                  etc.
+                  <br />
+                  • Custom fields should be prefixed with &quot;customField_&quot; (e.g.,
+                  &quot;customField_weight&quot;)
+                  <br />• Required fields: name, unit, unitCost, quantity
                 </Typography>
               </Alert>
 
@@ -151,7 +155,7 @@ export function MaterialsImportDialog({ open, onClose }: MaterialsImportDialogPr
                 >
                   Download Sample CSV
                 </Button>
-                
+
                 <Typography variant="body2" color="text.secondary">
                   Use this template to format your data correctly
                 </Typography>
@@ -179,20 +183,22 @@ export function MaterialsImportDialog({ open, onClose }: MaterialsImportDialogPr
                   style={{ display: 'none' }}
                   onChange={handleFileSelect}
                 />
-                
-                <Iconify icon="solar:cloud-upload-bold" sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-                
+
+                <Iconify
+                  icon="solar:cloud-upload-bold"
+                  sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
+                />
+
                 <Typography variant="h6" gutterBottom>
                   {csvContent ? 'CSV file loaded' : 'Click to upload CSV file'}
                 </Typography>
-                
+
                 <Typography variant="body2" color="text.secondary">
-                  {csvContent 
+                  {csvContent
                     ? `Ready to import ${csvContent.split('\n').length - 1} materials`
-                    : 'Drag and drop your CSV file here, or click to browse'
-                  }
+                    : 'Drag and drop your CSV file here, or click to browse'}
                 </Typography>
-                
+
                 {csvContent && (
                   <Chip
                     label="File Ready"
@@ -217,9 +223,7 @@ export function MaterialsImportDialog({ open, onClose }: MaterialsImportDialogPr
           {importResult && (
             <Stack spacing={2}>
               <Alert severity={importResult.failed === 0 ? 'success' : 'warning'}>
-                <Typography variant="subtitle2">
-                  Import Completed
-                </Typography>
+                <Typography variant="subtitle2">Import Completed</Typography>
                 <Typography variant="body2">
                   {importResult.success} materials imported successfully
                   {importResult.failed > 0 && `, ${importResult.failed} failed`}
@@ -232,7 +236,7 @@ export function MaterialsImportDialog({ open, onClose }: MaterialsImportDialogPr
                   color="success"
                   icon={<Iconify icon="solar:check-circle-bold" />}
                 />
-                
+
                 {importResult.failed > 0 && (
                   <Chip
                     label={`${importResult.failed} Failed`}
@@ -287,10 +291,8 @@ export function MaterialsImportDialog({ open, onClose }: MaterialsImportDialogPr
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={handleClose}>
-          {importResult ? 'Close' : 'Cancel'}
-        </Button>
-        
+        <Button onClick={handleClose}>{importResult ? 'Close' : 'Cancel'}</Button>
+
         {!importResult && (
           <Button
             onClick={handleImport}
