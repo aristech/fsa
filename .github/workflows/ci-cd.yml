@@ -137,7 +137,7 @@ jobs:
 
   deploy:
     name: Deploy to Production
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [build, test, security-scan]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment:
@@ -152,144 +152,127 @@ jobs:
       with:
         name: build-artifacts
 
-    - name: Setup SSH
-      uses: webfactory/ssh-agent@v0.9.0
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-    - name: Add server to known hosts
-      run: |
-        ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+        node-version: ${{ env.NODE_VERSION }}
 
     - name: Create deployment backup
       run: |
-        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} '
-          sudo systemctl stop fsa-backend fsa-frontend || true
+        # Create backup directory with timestamp
+        BACKUP_DIR="/var/backups/fsa-$(date +%Y%m%d-%H%M%S)"
+        sudo mkdir -p $BACKUP_DIR
 
-          # Create backup directory with timestamp
-          BACKUP_DIR="/var/backups/fsa-$(date +%Y%m%d-%H%M%S)"
-          sudo mkdir -p $BACKUP_DIR
+        # Backup current deployment
+        if [ -d "/var/www/progressnet.io" ]; then
+          sudo cp -r /var/www/progressnet.io $BACKUP_DIR/
+          echo "Backup created at $BACKUP_DIR"
+        fi
 
-          # Backup current deployment
-          if [ -d "/var/www/fsa" ]; then
-            sudo cp -r /var/www/fsa $BACKUP_DIR/
-            echo "Backup created at $BACKUP_DIR"
-          fi
-
-          # Keep only last 5 backups
-          sudo find /var/backups -name "fsa-*" -type d | sort -r | tail -n +6 | sudo xargs rm -rf
-        '
+        # Keep only last 5 backups
+        sudo find /var/backups -name "fsa-*" -type d | sort -r | tail -n +6 | sudo xargs rm -rf
 
     - name: Deploy application
       run: |
-        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} '
-          # Create deployment directory
-          sudo mkdir -p /var/www/progressnet.io-new
-          sudo chown -R $USER:$USER /var/www/progressnet.io-new
-        '
+        # Create deployment directory
+        sudo mkdir -p /var/www/progressnet.io-new
+        sudo chown -R $USER:$USER /var/www/progressnet.io-new
 
         # Copy application files
-        rsync -avz --delete \
-          --exclude=node_modules \
-          --exclude=.git \
-          --exclude=.next/cache \
-          . ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/progressnet.io-new/
+        cp -r . /var/www/progressnet.io-new/
+        rm -rf /var/www/progressnet.io-new/node_modules
+        rm -rf /var/www/progressnet.io-new/.git
+        rm -rf /var/www/progressnet.io-new/.next/cache
 
     - name: Install dependencies and build
       run: |
-        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} '
-          cd /var/www/progressnet.io-new
+        cd /var/www/progressnet.io-new
 
-          # Install dependencies
-          yarn install --production --frozen-lockfile
+        # Install dependencies
+        yarn install --production --frozen-lockfile
 
-          # Create environment files from secrets
-          echo "${{ secrets.ENV_BACK }}" > apps/backend/.env
-          echo "${{ secrets.ENV_FRONT }}" > apps/frontend/.env.local
+        # Create environment files from secrets
+        echo "${{ secrets.ENV_BACK }}" > apps/backend/.env
+        echo "${{ secrets.ENV_FRONT }}" > apps/frontend/.env.local
 
-          # Setup backend
-          cd apps/backend
-          npm run build
-          cd ../..
+        # Setup backend
+        cd apps/backend
+        npm run build
+        cd ../..
 
-          # Setup frontend
-          cd apps/frontend
-          npm run build
-          cd ../..
+        # Setup frontend
+        cd apps/frontend
+        npm run build
+        cd ../..
 
-          # Set proper ownership
-          sudo chown -R www-data:www-data /var/www/progressnet.io-new
-        '
+        # Set proper ownership
+        sudo chown -R www-data:www-data /var/www/progressnet.io-new
 
     - name: Health check and deploy
       run: |
-        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} '
-          # Atomic deployment switch
-          sudo rm -rf /var/www/progressnet.io-old
-          if [ -d "/var/www/progressnet.io" ]; then
-            sudo mv /var/www/progressnet.io /var/www/progressnet.io-old
-          fi
-          sudo mv /var/www/progressnet.io-new /var/www/progressnet.io
+        # Atomic deployment switch
+        sudo rm -rf /var/www/progressnet.io-old
+        if [ -d "/var/www/progressnet.io" ]; then
+          sudo mv /var/www/progressnet.io /var/www/progressnet.io-old
+        fi
+        sudo mv /var/www/progressnet.io-new /var/www/progressnet.io
 
-          # Restart PM2 processes
-          cd /var/www/progressnet.io
+        # Restart PM2 processes
+        cd /var/www/progressnet.io
 
-          # Start or restart backend
-          pm2 delete progressnet-backend 2>/dev/null || true
-          pm2 start ecosystem.config.js --only progressnet-backend
+        # Start or restart backend
+        pm2 delete progressnet-backend 2>/dev/null || true
+        pm2 start ecosystem.config.js --only progressnet-backend
 
-          # Start or restart frontend
-          pm2 delete progressnet-frontend 2>/dev/null || true
-          pm2 start ecosystem.config.js --only progressnet-frontend
+        # Start or restart frontend
+        pm2 delete progressnet-frontend 2>/dev/null || true
+        pm2 start ecosystem.config.js --only progressnet-frontend
 
-          # Save PM2 configuration
-          pm2 save
+        # Save PM2 configuration
+        pm2 save
 
-          # Wait for services to start
-          sleep 10
+        # Wait for services to start
+        sleep 10
 
-          # Health check on port 4005
-          if curl -f http://localhost:4005/health; then
-            echo "Backend health check passed"
+        # Health check on port 4005
+        if curl -f http://localhost:4005/health; then
+          echo "Backend health check passed"
 
-            # Check if frontend is responding on port 4004
-            if curl -f http://localhost:4004; then
-              echo "Frontend health check passed"
-              echo "Deployment successful"
-              sudo rm -rf /var/www/progressnet.io-old
-            else
-              echo "Frontend health check failed, rolling back"
-              exit 1
-            fi
+          # Check if frontend is responding on port 4004
+          if curl -f http://localhost:4004; then
+            echo "Frontend health check passed"
+            echo "Deployment successful"
+            sudo rm -rf /var/www/progressnet.io-old
           else
-            echo "Backend health check failed, rolling back"
+            echo "Frontend health check failed, rolling back"
             exit 1
           fi
-        '
+        else
+          echo "Backend health check failed, rolling back"
+          exit 1
+        fi
 
     - name: Rollback on failure
       if: failure()
       run: |
-        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} '
-          echo "Rolling back deployment..."
+        echo "Rolling back deployment..."
 
-          # Restore from previous version if available
-          if [ -d "/var/www/progressnet.io-old" ]; then
-            sudo rm -rf /var/www/progressnet.io
-            sudo mv /var/www/progressnet.io-old /var/www/progressnet.io
+        # Restore from previous version if available
+        if [ -d "/var/www/progressnet.io-old" ]; then
+          sudo rm -rf /var/www/progressnet.io
+          sudo mv /var/www/progressnet.io-old /var/www/progressnet.io
 
-            # Restart PM2 processes with old version
-            cd /var/www/progressnet.io
-            pm2 restart progressnet-backend
-            pm2 restart progressnet-frontend
-            echo "Rollback completed using previous version"
-          else
-            echo "No previous version available for rollback"
-          fi
+          # Restart PM2 processes with old version
+          cd /var/www/progressnet.io
+          pm2 restart progressnet-backend
+          pm2 restart progressnet-frontend
+          echo "Rollback completed using previous version"
+        else
+          echo "No previous version available for rollback"
+        fi
 
-          # Clean up failed deployment
-          sudo rm -rf /var/www/progressnet.io-new
-        '
+        # Clean up failed deployment
+        sudo rm -rf /var/www/progressnet.io-new
 
     - name: Notify deployment status
       if: always()
