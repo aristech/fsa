@@ -126,6 +126,7 @@ async function start() {
     console.log(`🚀 Server running on http://localhost:${config.PORT}`);
     console.log(`📚 API Documentation: http://localhost:${config.PORT}/docs`);
     console.log(`🔌 WebSocket server ready for real-time communication`);
+    console.log(`✅ Server startup completed successfully`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
