@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'progressnet-backend',
       script: './apps/backend/dist/server.js',
-      cwd: '/var/www/progressnet.io',
+      cwd: '/var/www/progressnet.io-app',
       instances: 1,
       exec_mode: 'fork',
       env: {
@@ -23,7 +23,7 @@ module.exports = {
       name: 'progressnet-frontend',
       script: 'node_modules/.bin/next',
       args: 'start',
-      cwd: '/var/www/progressnet.io/apps/frontend',
+      cwd: '/var/www/progressnet.io-app/apps/frontend',
       instances: 1,
       exec_mode: 'fork',
       env: {

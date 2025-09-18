@@ -163,9 +163,9 @@ jobs:
         BACKUP_DIR="/var/backups/fsa-$(date +%Y%m%d-%H%M%S)"
         sudo mkdir -p $BACKUP_DIR
 
-        # Backup current deployment
-        if [ -d "/var/www/progressnet.io" ]; then
-          sudo cp -r /var/www/progressnet.io $BACKUP_DIR/
+        # Backup current deployment (app directory, not runner)
+        if [ -d "/var/www/progressnet.io-app" ]; then
+          sudo cp -r /var/www/progressnet.io-app $BACKUP_DIR/
           echo "Backup created at $BACKUP_DIR"
         fi
 
@@ -174,19 +174,19 @@ jobs:
 
     - name: Deploy application
       run: |
-        # Create deployment directory
-        sudo mkdir -p /var/www/progressnet.io-new
-        sudo chown -R $USER:$USER /var/www/progressnet.io-new
+        # Create deployment directory (separate from runner directory)
+        sudo mkdir -p /var/www/progressnet.io-app-new
+        sudo chown -R $USER:$USER /var/www/progressnet.io-app-new
 
-        # Copy application files
-        cp -r . /var/www/progressnet.io-new/
-        rm -rf /var/www/progressnet.io-new/node_modules
-        rm -rf /var/www/progressnet.io-new/.git
-        rm -rf /var/www/progressnet.io-new/.next/cache
+        # Copy application files from current working directory (GitHub runner workspace)
+        cp -r . /var/www/progressnet.io-app-new/
+        rm -rf /var/www/progressnet.io-app-new/node_modules
+        rm -rf /var/www/progressnet.io-app-new/.git
+        rm -rf /var/www/progressnet.io-app-new/.next/cache
 
     - name: Install dependencies and setup
       run: |
-        cd /var/www/progressnet.io-new
+        cd /var/www/progressnet.io-app-new
 
         # Copy build artifacts from GitHub Actions build
         cp -r apps/backend/dist/ apps/backend/dist/ 2>/dev/null || echo "Backend dist not found in artifacts"
@@ -221,7 +221,7 @@ jobs:
         fi
 
         # Set proper ownership
-        sudo chown -R www-data:www-data /var/www/progressnet.io-new
+        sudo chown -R www-data:www-data /var/www/progressnet.io-app-new
 
     - name: Health check and deploy
       run: |
@@ -233,15 +233,15 @@ jobs:
         # Ensure PM2 home directory exists
         mkdir -p ~/.pm2
 
-        # Atomic deployment switch
-        sudo rm -rf /var/www/progressnet.io-old
-        if [ -d "/var/www/progressnet.io" ]; then
-          sudo mv /var/www/progressnet.io /var/www/progressnet.io-old
+        # Atomic deployment switch (app directory only)
+        sudo rm -rf /var/www/progressnet.io-app-old
+        if [ -d "/var/www/progressnet.io-app" ]; then
+          sudo mv /var/www/progressnet.io-app /var/www/progressnet.io-app-old
         fi
-        sudo mv /var/www/progressnet.io-new /var/www/progressnet.io
+        sudo mv /var/www/progressnet.io-app-new /var/www/progressnet.io-app
 
         # Restart PM2 processes
-        cd /var/www/progressnet.io
+        cd /var/www/progressnet.io-app
 
         # Stop existing processes gracefully
         pm2 stop progressnet-backend 2>/dev/null || true
@@ -269,7 +269,7 @@ jobs:
           if curl -f http://localhost:4004; then
             echo "Frontend health check passed"
             echo "Deployment successful"
-            sudo rm -rf /var/www/progressnet.io-old
+            sudo rm -rf /var/www/progressnet.io-app-old
           else
             echo "Frontend health check failed, rolling back"
             exit 1
@@ -285,12 +285,12 @@ jobs:
         echo "Rolling back deployment..."
 
         # Restore from previous version if available
-        if [ -d "/var/www/progressnet.io-old" ]; then
-          sudo rm -rf /var/www/progressnet.io
-          sudo mv /var/www/progressnet.io-old /var/www/progressnet.io
+        if [ -d "/var/www/progressnet.io-app-old" ]; then
+          sudo rm -rf /var/www/progressnet.io-app
+          sudo mv /var/www/progressnet.io-app-old /var/www/progressnet.io-app
 
           # Restart PM2 processes with old version
-          cd /var/www/progressnet.io
+          cd /var/www/progressnet.io-app
           pm2 restart progressnet-backend
           pm2 restart progressnet-frontend
           echo "Rollback completed using previous version"
@@ -299,7 +299,7 @@ jobs:
         fi
 
         # Clean up failed deployment
-        sudo rm -rf /var/www/progressnet.io-new
+        sudo rm -rf /var/www/progressnet.io-app-new
 
     - name: Notify deployment status
       if: always()
