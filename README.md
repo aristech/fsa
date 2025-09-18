@@ -147,7 +147,7 @@ The application uses MongoDB with the following main collections:
 - **Aggregations**: Recompute task and work order totals on write operations.
 - **Realtime**: Emit `time:created|updated|deleted` to task rooms.
 
-### Frontend Scope
+### Time Entry System Frontend Scope
 - **API client/actions** for time entries.
 - **Task details – Time tab**: entry form, list, totals, and cost per personnel and overall.
 - **Work order rollups**: display actual duration and labor cost.
