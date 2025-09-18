@@ -184,26 +184,41 @@ jobs:
         rm -rf /var/www/progressnet.io-new/.git
         rm -rf /var/www/progressnet.io-new/.next/cache
 
-    - name: Install dependencies and build
+    - name: Install dependencies and setup
       run: |
         cd /var/www/progressnet.io-new
 
-        # Install dependencies
+        # Copy build artifacts from GitHub Actions build
+        cp -r apps/backend/dist/ apps/backend/dist/ 2>/dev/null || echo "Backend dist not found in artifacts"
+        cp -r apps/frontend/.next/ apps/frontend/.next/ 2>/dev/null || echo "Frontend .next not found in artifacts"
+
+        # Install only production dependencies
         yarn install --production --frozen-lockfile
 
         # Create environment files from secrets
         echo "${{ secrets.ENV_BACK }}" > apps/backend/.env
         echo "${{ secrets.ENV_FRONT }}" > apps/frontend/.env.local
 
-        # Setup backend
-        cd apps/backend
-        npm run build
-        cd ../..
+        # If build artifacts don't exist, build with dev dependencies
+        if [ ! -d "apps/backend/dist" ] || [ ! -d "apps/frontend/.next" ]; then
+          echo "Build artifacts missing, building on server..."
 
-        # Setup frontend
-        cd apps/frontend
-        npm run build
-        cd ../..
+          # Install dev dependencies temporarily for building
+          yarn install --frozen-lockfile
+
+          # Build backend
+          cd apps/backend
+          npm run build
+          cd ../..
+
+          # Build frontend
+          cd apps/frontend
+          npm run build
+          cd ../..
+
+          # Remove dev dependencies after build
+          yarn install --production --frozen-lockfile
+        fi
 
         # Set proper ownership
         sudo chown -R www-data:www-data /var/www/progressnet.io-new
