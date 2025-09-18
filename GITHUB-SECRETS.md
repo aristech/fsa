@@ -66,5 +66,14 @@ NEXT_PUBLIC_APP_VERSION=1.0.0
 - ✅ No manual deployment scripts
 - ✅ Simple PM2 ecosystem configuration
 - ✅ Automated CI/CD with GitHub Actions
+- ✅ Tests simplified (no MongoDB dependency)
+
+## 🔄 **CI/CD Pipeline:**
+1. **Lint & Type Check** - Code quality validation
+2. **Build** - Compile both apps
+3. **Tests** - Unit tests (when added)
+4. **Security Scan** - npm audit + Snyk (optional)
+5. **Deploy** - PM2 deployment with health checks
+6. **Rollback** - Automatic on failure
 
 Ready to deploy! 🚀

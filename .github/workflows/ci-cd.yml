@@ -83,20 +83,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint-and-typecheck
 
-    services:
-      mongodb:
-        image: mongo:6.0
-        env:
-          MONGO_INITDB_ROOT_USERNAME: testuser
-          MONGO_INITDB_ROOT_PASSWORD: testpass
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -111,22 +97,12 @@ jobs:
       run: |
         yarn install --frozen-lockfile
 
-    - name: Wait for MongoDB
+    - name: Run unit tests (if available)
       run: |
-        until mongosh --host localhost:27017 --eval "print('MongoDB is ready')"; do
-          echo "Waiting for MongoDB..."
-          sleep 2
-        done
-
-    - name: Run backend tests (placeholder)
-      run: |
-        echo "Backend tests would run here"
-        # npm run test --workspace=apps/backend
-
-    - name: Run frontend tests (placeholder)
-      run: |
-        echo "Frontend tests would run here"
-        # npm run test --workspace=apps/frontend
+        echo "✅ Unit tests placeholder - add actual tests when ready"
+        echo "Backend test command would be: npm run test --workspace=apps/backend"
+        echo "Frontend test command would be: npm run test --workspace=apps/frontend"
+        echo "Skipping MongoDB integration tests - production DB is secured"
 
   security-scan:
     name: Security Scan

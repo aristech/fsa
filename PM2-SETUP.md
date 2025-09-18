@@ -119,4 +119,27 @@ curl http://localhost:4004
 curl http://localhost:4005/health
 ```
 
+## 📝 **Future Enhancements:**
+
+### **Adding Tests:**
+When you're ready to add tests, update your package.json files:
+
+**Backend:**
+```json
+"scripts": {
+  "test": "jest --detectOpenHandles",
+  "test:watch": "jest --watch"
+}
+```
+
+**Frontend:**
+```json
+"scripts": {
+  "test": "jest",
+  "test:watch": "jest --watch"
+}
+```
+
+Then uncomment the test commands in `.github/workflows/ci-cd.yml`.
+
 No server scripts needed - just PM2 managing your apps! 🚀
