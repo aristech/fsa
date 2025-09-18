@@ -63,8 +63,8 @@ export async function userRoutes(fastify: FastifyInstance) {
 
         // Add recently active users
         recentlyActiveUsers.forEach(user => {
-          if (!onlineUserIds.has(user._id.toString())) {
-            onlineUserIds.add(user._id.toString());
+          if (!onlineUserIds.has((user._id as any)?.toString())) {
+            onlineUserIds.add((user._id as any)?.toString());
             onlineUsers.push({
               ...user,
               onlineReason: 'recent_login'
@@ -74,15 +74,15 @@ export async function userRoutes(fastify: FastifyInstance) {
 
         // Add users with active time tracking
         activeSessionUsers.forEach(user => {
-          if (!onlineUserIds.has(user._id.toString())) {
-            onlineUserIds.add(user._id.toString());
+          if (!onlineUserIds.has((user._id as any)?.toString())) {
+            onlineUserIds.add((user._id as any)?.toString());
             onlineUsers.push({
               ...user,
               onlineReason: 'active_tracking'
             });
           } else {
             // Update reason if user is both recently active AND has active tracking
-            const existingUser = onlineUsers.find(u => u._id.toString() === user._id.toString());
+            const existingUser = onlineUsers.find(u => u._id.toString() === (user._id as any)?.toString());
             if (existingUser && existingUser.onlineReason === 'recent_login') {
               existingUser.onlineReason = 'recent_login_and_tracking';
             }

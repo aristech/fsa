@@ -54,14 +54,14 @@ async function canUserAccessTaskTimeEntry(
     }
 
     console.log('Personnel found:', {
-      personnelId: personnel._id,
+      personnelId: (Array.isArray(personnel) ? personnel[0] : personnel)?._id?.toString() || '',
       userId: personnel.userId,
       tenantId: personnel.tenantId
     });
 
     // Check if this personnel is assigned to the task
     // The frontend stores Personnel IDs in task.assignees, not Technician IDs
-    const personnelIdStr = personnel._id.toString();
+    const personnelIdStr = (Array.isArray(personnel) ? personnel[0] : personnel)?._id?.toString() || '';
     const isAssigned = task.assignees?.includes(personnelIdStr) || false;
 
     console.log('Assignment check:', {
@@ -191,10 +191,11 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
       }
 
       // Check for active session in database
+      const personnelRecord = Array.isArray(personnel) ? personnel[0] : personnel;
       const activeSession = await CheckInSession.findActiveSession(
         tenantId,
         taskId,
-        personnel._id.toString()
+        personnelRecord?._id?.toString() || ''
       );
 
       return reply.send({
@@ -241,7 +242,7 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
       // Allow admins to log time for any task
       const { User } = await import("../models");
       const currentUser = (await User.findById(userId).lean()) as any;
-      const isAdmin = currentUser && (currentUser.role === "admin" || currentUser.role === "superuser");
+      const isAdmin = currentUser && ((currentUser as any).role === "admin" || (currentUser as any).role === "superuser");
 
       if (!isAdmin) {
         const canAccess = await canUserAccessTaskTimeEntry(userId, body.taskId);
@@ -271,7 +272,7 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
       }
 
       // Auto-determine personnelId from authenticated user if not provided
-      let personnelId = body.personnelId;
+      let personnelId: string = body.personnelId || '';
       if (!personnelId) {
         // First, try to find personnel record for the current user
         let personnel = (await Personnel.findOne({
@@ -306,7 +307,7 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
             });
           }
         } else {
-          personnelId = personnel._id.toString();
+          personnelId = (Array.isArray(personnel) ? personnel[0] : personnel)?._id?.toString() || '';
         }
       }
 
@@ -444,7 +445,7 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
       // Check if user can edit this time entry (must be assigned to the task or admin)
       const { User } = await import("../models");
       const currentUser = (await User.findById(user.id).lean()) as any;
-      const isAdmin = currentUser && (currentUser.role === "admin" || currentUser.role === "superuser");
+      const isAdmin = currentUser && ((currentUser as any).role === "admin" || (currentUser as any).role === "superuser");
 
       if (!isAdmin) {
         const canAccess = await canUserAccessTaskTimeEntry(user.id, existing.taskId);
@@ -546,7 +547,7 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
       // Check if user can delete this time entry (must be assigned to the task or admin)
       const { User } = await import("../models");
       const currentUser = (await User.findById(user.id).lean()) as any;
-      const isAdmin = currentUser && (currentUser.role === "admin" || currentUser.role === "superuser");
+      const isAdmin = currentUser && ((currentUser as any).role === "admin" || (currentUser as any).role === "superuser");
 
       if (!isAdmin) {
         const canAccess = await canUserAccessTaskTimeEntry(user.id, existing.taskId);
@@ -639,7 +640,7 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
       const existingSession = await CheckInSession.findActiveSession(
         tenantId,
         body.taskId,
-        personnel._id.toString()
+        (Array.isArray(personnel) ? personnel[0] : personnel)?._id?.toString() || ''
       );
 
       if (existingSession) {
@@ -659,7 +660,7 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
         tenantId,
         taskId: body.taskId,
         workOrderId,
-        personnelId: personnel._id.toString(),
+        personnelId: (Array.isArray(personnel) ? personnel[0] : personnel)?._id?.toString() || '',
         userId: userId,
         checkInTime: new Date(),
         notes: body.notes,
@@ -672,7 +673,7 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
       realtimeService.emitToTask(body.taskId, "notification", {
         type: "checkin",
         message: "User checked in",
-        data: { taskId: body.taskId, personnelId: personnel._id },
+        data: { taskId: body.taskId, personnelId: (Array.isArray(personnel) ? personnel[0] : personnel)?._id?.toString() || '' },
       });
 
         return reply.code(201).send({ success: true, data: session });
@@ -745,7 +746,7 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
         _id: body.sessionId,
         tenantId,
         taskId: body.taskId,
-        personnelId: personnel._id.toString(),
+        personnelId: (Array.isArray(personnel) ? personnel[0] : personnel)?._id?.toString() || '',
         isActive: true,
       });
 
@@ -783,7 +784,7 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
         tenantId,
         taskId: body.taskId,
         workOrderId: body.workOrderId || session.workOrderId,
-        personnelId: personnel._id.toString(),
+        personnelId: (Array.isArray(personnel) ? personnel[0] : personnel)?._id?.toString() || '',
         date: new Date(body.date),
         hours,
         days,
@@ -874,7 +875,7 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
       const session = await CheckInSession.findOne({
         _id: body.sessionId,
         tenantId,
-        personnelId: personnel._id.toString(),
+        personnelId: (Array.isArray(personnel) ? personnel[0] : personnel)?._id?.toString() || '',
         isActive: true,
       });
 
@@ -918,7 +919,7 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
       // Get all active sessions for this user
       const activeSessions = await CheckInSession.findActiveSessionsForUser(
         tenantId,
-        personnel._id.toString()
+        (Array.isArray(personnel) ? personnel[0] : personnel)?._id?.toString() || ''
       );
 
       return reply.send({ success: true, data: activeSessions });
@@ -958,7 +959,7 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
         return {
           ...session,
           personnel: personnel ? {
-            _id: personnel._id,
+            _id: (Array.isArray(personnel) ? personnel[0] : personnel)?._id?.toString() || '',
             name: personnel.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
             firstName: user?.firstName || personnel.firstName,
             lastName: user?.lastName || personnel.lastName,
@@ -1004,7 +1005,7 @@ export async function timeEntryRoutes(fastify: FastifyInstance) {
       // Check if user owns the session or is admin
       const { User } = await import("../models");
       const currentUser = await User.findById(user.id).lean();
-      const isAdmin = currentUser && (currentUser.role === "admin" || currentUser.role === "superuser");
+      const isAdmin = currentUser && ((currentUser as any).role === "admin" || (currentUser as any).role === "superuser");
       const ownsSession = session.userId === user.id;
 
       if (!ownsSession && !isAdmin) {

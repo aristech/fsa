@@ -147,7 +147,7 @@ export async function personnelRoutes(fastify: FastifyInstance) {
       }
 
       // Generate unique employee ID
-      let employeeId: string;
+      let employeeId: string = '';
       let unique = false;
       while (!unique) {
         const idCandidate = `EMP-${Math.floor(Math.random() * 900000 + 100000)}`;

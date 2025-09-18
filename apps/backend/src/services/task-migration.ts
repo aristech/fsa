@@ -100,7 +100,7 @@ export class TaskMigrationService {
 
     // Migrate each task
     let migratedCount = 0;
-    const defaultColumnId = statuses[0]._id.toString(); // First column as fallback
+    const defaultColumnId = (statuses[0] as any)?._id?.toString() || ''; // First column as fallback
 
     for (const task of tasksToMigrate) {
       const taskStatus = task.status;
@@ -152,7 +152,7 @@ export class TaskMigrationService {
 
       // Count tasks with invalid columnId references
       const allTasks = await Task.find({
-        columnId: { $exists: true, $ne: null, $ne: "" },
+        columnId: { $exists: true, $ne: null, $nin: [""] },
       }).lean();
 
       let invalidReferences = 0;

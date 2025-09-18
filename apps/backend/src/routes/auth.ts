@@ -88,7 +88,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         message: "Logged out successfully",
       });
     } catch (error) {
-      fastify.log.error("Error during logout:", error);
+      fastify.log.error({ error }, "Error during logout");
       return reply.status(500).send({
         success: false,
         message: "Internal server error during logout",
@@ -637,7 +637,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         message: "Heartbeat updated",
       });
     } catch (error) {
-      fastify.log.error("Error updating heartbeat:", error);
+      fastify.log.error({ error }, "Error updating heartbeat");
       return reply.status(500).send({
         success: false,
         message: "Failed to update heartbeat",

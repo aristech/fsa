@@ -56,14 +56,7 @@ const CheckInSessionSchema = new Schema<ICheckInSession>(
     autoCheckoutAfter: { type: Date }, // Optional auto-checkout
   },
   {
-    timestamps: true,
-    // Ensure only one active session per user per task
-    index: [
-      { tenantId: 1, taskId: 1, personnelId: 1, isActive: 1 },
-      { tenantId: 1, personnelId: 1, isActive: 1 }, // All active sessions for a user
-      { tenantId: 1, taskId: 1, isActive: 1 }, // All active sessions for a task
-      { lastHeartbeat: 1, isActive: 1 }, // For cleanup of stale sessions
-    ]
+    timestamps: true
   }
 );
 
@@ -85,7 +78,8 @@ CheckInSessionSchema.virtual('duration').get(function() {
 
 // Virtual for hours worked
 CheckInSessionSchema.virtual('hoursWorked').get(function() {
-  return this.duration / (1000 * 60 * 60);
+  const duration = this.get('duration') as number;
+  return duration / (1000 * 60 * 60);
 });
 
 // Method to check if session is stale (no heartbeat for X minutes)
@@ -155,6 +149,4 @@ CheckInSessionSchema.statics.cleanupStaleSessions = async function(
   return staleSessions.length;
 };
 
-export const CheckInSession =
-  (mongoose.models.CheckInSession as ICheckInSessionModel) ||
-  mongoose.model<ICheckInSession, ICheckInSessionModel>("CheckInSession", CheckInSessionSchema);
+export const CheckInSession = mongoose.model<ICheckInSession, ICheckInSessionModel>("CheckInSession", CheckInSessionSchema);

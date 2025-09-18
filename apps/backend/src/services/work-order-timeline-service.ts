@@ -78,7 +78,7 @@ export class WorkOrderTimelineService {
         .skip(offset)
         .lean();
 
-      return timeline;
+      return timeline as any[];
     } catch (error) {
       console.error('Error fetching work order timeline:', error);
       return [];

@@ -23,20 +23,20 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
 
       // Process all multipart parts
       for await (const part of parts) {
-        if (part.file) {
+        if ('file' in part && part.file) {
           // This is a file part
-          
-          const buf = await part.toBuffer();
+
+          const buf = await (part as any).toBuffer();
           files.push({
             fieldname: part.fieldname,
-            filename: part.filename,
-            encoding: part.encoding,
-            mimetype: part.mimetype,
+            filename: (part as any).filename,
+            encoding: (part as any).encoding,
+            mimetype: (part as any).mimetype,
             buffer: buf,
           });
         } else {
           // This is a form field
-          const value = part.value as string;
+          const value = (part as any).value as string;
           
           
           if (part.fieldname === "scope") {
@@ -93,7 +93,7 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
       await fs.mkdir(baseDir, { recursive: true });
 
       fastify.log.info(
-        { tenantId, scopeDir, ownerId, baseDir, fileCount: parts.length },
+        { tenantId, scopeDir, ownerId, baseDir, fileCount: files.length },
         "uploads: saving files to directory",
       );
 

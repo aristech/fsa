@@ -1,0 +1,329 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '20'
+  YARN_VERSION: '1.22.22'
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
+
+    - name: Install dependencies
+      run: |
+        yarn install --frozen-lockfile
+
+    - name: Lint frontend
+      run: |
+        npm run lint --workspace=apps/frontend
+
+    - name: Type check frontend
+      run: |
+        npm run typecheck --workspace=apps/frontend
+
+    - name: Check Prettier formatting
+      run: |
+        npm run fm:check --workspace=apps/frontend
+
+  build:
+    name: Build Applications
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
+
+    - name: Install dependencies
+      run: |
+        yarn install --frozen-lockfile
+
+    - name: Build backend
+      run: |
+        npm run build --workspace=apps/backend
+
+    - name: Build frontend
+      run: |
+        npm run build --workspace=apps/frontend
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: |
+          apps/backend/dist/
+          apps/frontend/.next/
+        retention-days: 7
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+
+    services:
+      mongodb:
+        image: mongo:6.0
+        env:
+          MONGO_INITDB_ROOT_USERNAME: testuser
+          MONGO_INITDB_ROOT_PASSWORD: testpass
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
+
+    - name: Install dependencies
+      run: |
+        yarn install --frozen-lockfile
+
+    - name: Wait for MongoDB
+      run: |
+        until mongosh --host localhost:27017 --eval "print('MongoDB is ready')"; do
+          echo "Waiting for MongoDB..."
+          sleep 2
+        done
+
+    - name: Run backend tests (placeholder)
+      run: |
+        echo "Backend tests would run here"
+        # npm run test --workspace=apps/backend
+
+    - name: Run frontend tests (placeholder)
+      run: |
+        echo "Frontend tests would run here"
+        # npm run test --workspace=apps/frontend
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
+
+    - name: Install dependencies
+      run: |
+        yarn install --frozen-lockfile
+
+    - name: Run npm audit
+      run: |
+        npm audit --audit-level moderate
+
+    - name: Run Snyk security scan
+      uses: snyk/actions/node@master
+      continue-on-error: true
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, test, security-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-artifacts
+
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Add server to known hosts
+      run: |
+        ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Create deployment backup
+      run: |
+        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} '
+          sudo systemctl stop fsa-backend fsa-frontend || true
+
+          # Create backup directory with timestamp
+          BACKUP_DIR="/var/backups/fsa-$(date +%Y%m%d-%H%M%S)"
+          sudo mkdir -p $BACKUP_DIR
+
+          # Backup current deployment
+          if [ -d "/var/www/fsa" ]; then
+            sudo cp -r /var/www/fsa $BACKUP_DIR/
+            echo "Backup created at $BACKUP_DIR"
+          fi
+
+          # Keep only last 5 backups
+          sudo find /var/backups -name "fsa-*" -type d | sort -r | tail -n +6 | sudo xargs rm -rf
+        '
+
+    - name: Deploy application
+      run: |
+        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} '
+          # Create deployment directory
+          sudo mkdir -p /var/www/progressnet.io-new
+          sudo chown -R $USER:$USER /var/www/progressnet.io-new
+        '
+
+        # Copy application files
+        rsync -avz --delete \
+          --exclude=node_modules \
+          --exclude=.git \
+          --exclude=.next/cache \
+          . ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/progressnet.io-new/
+
+    - name: Install dependencies and build
+      run: |
+        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} '
+          cd /var/www/progressnet.io-new
+
+          # Install dependencies
+          yarn install --production --frozen-lockfile
+
+          # Create environment files from secrets
+          echo "${{ secrets.ENV_BACK }}" > apps/backend/.env
+          echo "${{ secrets.ENV_FRONT }}" > apps/frontend/.env.local
+
+          # Setup backend
+          cd apps/backend
+          npm run build
+          cd ../..
+
+          # Setup frontend
+          cd apps/frontend
+          npm run build
+          cd ../..
+
+          # Set proper ownership
+          sudo chown -R www-data:www-data /var/www/progressnet.io-new
+        '
+
+    - name: Health check and deploy
+      run: |
+        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} '
+          # Atomic deployment switch
+          sudo rm -rf /var/www/progressnet.io-old
+          if [ -d "/var/www/progressnet.io" ]; then
+            sudo mv /var/www/progressnet.io /var/www/progressnet.io-old
+          fi
+          sudo mv /var/www/progressnet.io-new /var/www/progressnet.io
+
+          # Restart PM2 processes using ecosystem file
+          cd /var/www/progressnet.io
+          pm2 reload ecosystem.config.js --update-env
+
+          # Wait for services to start
+          sleep 10
+
+          # Health check on port 4005
+          if curl -f http://localhost:4005/health; then
+            echo "Backend health check passed"
+
+            # Check if frontend is responding on port 4004
+            if curl -f http://localhost:4004; then
+              echo "Frontend health check passed"
+              echo "Deployment successful"
+              sudo rm -rf /var/www/progressnet.io-old
+            else
+              echo "Frontend health check failed, rolling back"
+              exit 1
+            fi
+          else
+            echo "Backend health check failed, rolling back"
+            exit 1
+          fi
+        '
+
+    - name: Rollback on failure
+      if: failure()
+      run: |
+        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} '
+          echo "Rolling back deployment..."
+
+          # Restore from previous version if available
+          if [ -d "/var/www/progressnet.io-old" ]; then
+            sudo rm -rf /var/www/progressnet.io
+            sudo mv /var/www/progressnet.io-old /var/www/progressnet.io
+
+            # Restart PM2 processes with old version
+            cd /var/www/progressnet.io
+            pm2 restart progressnet-backend
+            pm2 restart progressnet-frontend
+            echo "Rollback completed using previous version"
+          else
+            echo "No previous version available for rollback"
+          fi
+
+          # Clean up failed deployment
+          sudo rm -rf /var/www/progressnet.io-new
+        '
+
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "✅ Deployment successful"
+        else
+          echo "❌ Deployment failed and rolled back"
+        fi
+
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: always()
+
+    steps:
+    - name: Remove build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-artifacts
+    - name: Cleanup artifacts
+      run: |
+        rm -rf apps/backend/dist/ apps/frontend/.next/ || true
