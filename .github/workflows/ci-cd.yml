@@ -225,6 +225,14 @@ jobs:
 
     - name: Health check and deploy
       run: |
+        # Setup PM2 log directory with proper permissions
+        sudo mkdir -p /var/log/pm2
+        sudo chown -R $USER:$USER /var/log/pm2
+        sudo chmod 755 /var/log/pm2
+
+        # Ensure PM2 home directory exists
+        mkdir -p ~/.pm2
+
         # Atomic deployment switch
         sudo rm -rf /var/www/progressnet.io-old
         if [ -d "/var/www/progressnet.io" ]; then
@@ -235,19 +243,23 @@ jobs:
         # Restart PM2 processes
         cd /var/www/progressnet.io
 
-        # Start or restart backend
+        # Stop existing processes gracefully
+        pm2 stop progressnet-backend 2>/dev/null || true
+        pm2 stop progressnet-frontend 2>/dev/null || true
         pm2 delete progressnet-backend 2>/dev/null || true
+        pm2 delete progressnet-frontend 2>/dev/null || true
+
+        # Start backend
         pm2 start ecosystem.config.js --only progressnet-backend
 
-        # Start or restart frontend
-        pm2 delete progressnet-frontend 2>/dev/null || true
+        # Start frontend
         pm2 start ecosystem.config.js --only progressnet-frontend
 
         # Save PM2 configuration
         pm2 save
 
         # Wait for services to start
-        sleep 10
+        sleep 15
 
         # Health check on port 4005
         if curl -f http://localhost:4005/health; then
