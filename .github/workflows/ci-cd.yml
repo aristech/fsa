@@ -188,9 +188,11 @@ jobs:
       run: |
         cd /var/www/progressnet.io-app-new
 
-        # Copy build artifacts from GitHub Actions build
-        cp -r apps/backend/dist/ apps/backend/dist/ 2>/dev/null || echo "Backend dist not found in artifacts"
-        cp -r apps/frontend/.next/ apps/frontend/.next/ 2>/dev/null || echo "Frontend .next not found in artifacts"
+        # Remove any existing build directories to avoid conflicts
+        rm -rf apps/backend/dist apps/frontend/.next
+
+        # Note: Build artifacts should already be present from GitHub Actions upload
+        # They get downloaded to the current directory by the download-artifact action
 
         # Install only production dependencies
         yarn install --production --frozen-lockfile
@@ -199,26 +201,24 @@ jobs:
         echo "${{ secrets.ENV_BACK }}" > apps/backend/.env
         echo "${{ secrets.ENV_FRONT }}" > apps/frontend/.env.local
 
-        # Always install dev dependencies first for TypeScript support
+        # Always install all dependencies and do a fresh build
         yarn install --frozen-lockfile
 
-        # If build artifacts don't exist, build them
-        if [ ! -d "apps/backend/dist" ] || [ ! -d "apps/frontend/.next" ]; then
-          echo "Build artifacts missing, building on server..."
+        # Always build fresh to avoid manifest issues
+        echo "Building applications on server..."
 
-          # Build backend
-          cd apps/backend
-          npm run build
-          cd ../..
+        # Build backend
+        cd apps/backend
+        npm run build
+        cd ../..
 
-          # Build frontend
-          cd apps/frontend
-          npm run build
-          cd ../..
-        fi
+        # Build frontend with clean slate
+        cd apps/frontend
+        rm -rf .next
+        npm run build
+        cd ../..
 
-        # Keep dev dependencies for Next.js TypeScript config support
-        # Don't remove them as frontend needs TypeScript at runtime
+        echo "✅ Build completed successfully"
 
         # Set proper ownership (keep user access, add www-data group)
         sudo chown -R $USER:www-data /var/www/progressnet.io-app-new

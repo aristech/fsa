@@ -81,25 +81,43 @@ async function start() {
     // Register plugins and routes
     await registerPlugins();
 
-    // Ensure superusers exist (from env)
-    await ensureSuperUsers();
-
-    // Ensure indexes and drop legacy ones
-    await fixWorkOrderIndexes();
-
-    // Migrate tasks to use columnId architecture
-    await TaskMigrationService.migrateTasksToColumnIds();
-    const migrationValid = await TaskMigrationService.verifyMigration();
-    if (!migrationValid) {
-      console.warn(
-        "⚠️  Task migration verification failed - some tasks may not display correctly",
-      );
-    }
-
-    // Start server
+    // Start server first
     await fastify.listen({
       port: config.PORT,
       host: "0.0.0.0",
+    });
+
+    // Run startup operations after server is listening (non-blocking)
+    setImmediate(async () => {
+      try {
+        // Ensure superusers exist (from env)
+        await ensureSuperUsers();
+        console.log("✅ Superuser bootstrap completed");
+      } catch (error) {
+        console.error("❌ Superuser bootstrap failed:", error);
+      }
+
+      try {
+        // Ensure indexes and drop legacy ones
+        await fixWorkOrderIndexes();
+      } catch (error) {
+        console.error("❌ Index maintenance failed:", error);
+      }
+
+      try {
+        // Migrate tasks to use columnId architecture
+        await TaskMigrationService.migrateTasksToColumnIds();
+        const migrationValid = await TaskMigrationService.verifyMigration();
+        if (!migrationValid) {
+          console.warn(
+            "⚠️  Task migration verification failed - some tasks may not display correctly",
+          );
+        } else {
+          console.log("✅ Task migration verification successful");
+        }
+      } catch (error) {
+        console.error("❌ Task migration failed:", error);
+      }
     });
 
     // Initialize real-time service with the HTTP server
