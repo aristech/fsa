@@ -3,7 +3,7 @@
 import React from 'react';
 
 import { styled } from '@mui/material/styles';
-import { Box, Chip, alpha, Divider, useTheme, Typography } from '@mui/material';
+import { Box, Chip, alpha, Divider, Typography } from '@mui/material';
 
 import { Iconify } from '../iconify';
 import { MobileButton } from './mobile-button';
@@ -32,10 +32,10 @@ const TaskInfo = styled(Box)(({ theme }) => ({
   gap: theme.spacing(1),
 }));
 
-const TaskActions = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  gap: theme.spacing(1),
-}));
+// const TaskActions = styled(Box)(({ theme }) => ({
+//   display: 'flex',
+//   gap: theme.spacing(1),
+// }));
 
 const TaskDetail = styled(Box)(({ theme }) => ({
   display: 'flex',
@@ -111,7 +111,7 @@ export function MobileTaskDetail({
   onComplete,
   onDelete,
 }: MobileTaskDetailProps) {
-  const theme = useTheme();
+  // const theme = useTheme();
 
   if (!task) return null;
 

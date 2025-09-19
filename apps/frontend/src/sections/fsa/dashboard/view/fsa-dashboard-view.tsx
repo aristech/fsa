@@ -49,7 +49,7 @@ export function FsaDashboardView() {
         if (isMounted) {
           setHasAnyData(anyData);
         }
-      } catch (e) {
+      } catch {
         // If calls fail (permissions or network), default to showing dashboard to avoid blocking
         if (isMounted) setHasAnyData(true);
       } finally {

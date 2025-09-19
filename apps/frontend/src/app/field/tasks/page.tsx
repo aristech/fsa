@@ -114,7 +114,7 @@ export default function FieldTasksPage() {
     }
 
     return filtered;
-  }, [allTasks, searchTerm, filters, board?.columns]);
+  }, [allTasks, searchTerm, filters]);
 
   const handleFilterChange = useCallback((key: string, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));

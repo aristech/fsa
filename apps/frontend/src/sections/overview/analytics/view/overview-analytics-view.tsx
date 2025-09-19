@@ -52,7 +52,10 @@ export function OverviewAnalyticsView() {
     const res = await axiosInstance.get(url);
     return res.data?.data?.board || res.data?.board || null;
   });
-  const tasks: any[] = Array.isArray(kanbanResp?.tasks) ? kanbanResp!.tasks : [];
+  const tasks: any[] = useMemo(() => 
+    Array.isArray(kanbanResp?.tasks) ? kanbanResp!.tasks : [], 
+    [kanbanResp]
+  );
 
   // Work orders list (limited)
   const { data: workOrdersResp } = useSWR(
@@ -62,7 +65,10 @@ export function OverviewAnalyticsView() {
       return res.data?.data?.workOrders || res.data?.data || [];
     }
   );
-  const workOrders: any[] = Array.isArray(workOrdersResp) ? workOrdersResp : [];
+  const workOrders: any[] = useMemo(() => 
+    Array.isArray(workOrdersResp) ? workOrdersResp : [], 
+    [workOrdersResp]
+  );
 
   // Fetch timeline data for work orders
   const workOrderIds = workOrders
@@ -460,21 +466,27 @@ export function OverviewAnalyticsView() {
   }));
 
   // ----------------- Workload per client (pie) -----------------
-  const workloadByClient = workOrders.reduce(
-    (acc: Record<string, number>, wo: any) => {
-      const name =
-        wo.clientName ||
-        wo.client?.name ||
-        (typeof wo.clientId === 'object' ? wo.clientId?.name : undefined) ||
-        'Unknown client';
-      acc[name] = (acc[name] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
+  const workloadByClient = useMemo(() => 
+    workOrders.reduce(
+      (acc: Record<string, number>, wo: any) => {
+        const name =
+          wo.clientName ||
+          wo.client?.name ||
+          (typeof wo.clientId === 'object' ? wo.clientId?.name : undefined) ||
+          'Unknown client';
+        acc[name] = (acc[name] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    ), 
+    [workOrders]
   );
-  const workloadEntries = Object.entries(workloadByClient)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8);
+  const workloadEntries = useMemo(() => 
+    Object.entries(workloadByClient)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8),
+    [workloadByClient]
+  );
   const workloadSeries = workloadEntries.map(([label, value]) => ({ label, value }));
   const workloadColors = useMemo(
     () =>
@@ -484,18 +496,21 @@ export function OverviewAnalyticsView() {
             .toString(16)
             .padStart(6, '0')}`
       ),
-    [workloadEntries.length]
+    [workloadEntries]
   );
 
   // ----------------- Tasks created vs completed (line) -----------------
-  const now = new Date();
-  const weeks: Date[] = [];
-  const wStart = startOfWeek(now);
-  for (let i = 8; i >= 0; i -= 1) {
-    const d = new Date(wStart);
-    d.setDate(d.getDate() - i * 7);
-    weeks.push(d);
-  }
+  const weeks: Date[] = useMemo(() => {
+    const now = new Date();
+    const weeksArray: Date[] = [];
+    const wStart = startOfWeek(now);
+    for (let i = 8; i >= 0; i -= 1) {
+      const d = new Date(wStart);
+      d.setDate(d.getDate() - i * 7);
+      weeksArray.push(d);
+    }
+    return weeksArray;
+  }, []);
   const categoriesLine = weeks.map((w) => formatWeekLabel(w));
   const createdSeries = weeks.map((w) => {
     const start = new Date(w);
@@ -522,6 +537,7 @@ export function OverviewAnalyticsView() {
   });
 
   // ----------------- Widget summaries (weekly) -----------------
+  const now = new Date();
   const weekStart = startOfWeek(now);
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 7);

@@ -10,7 +10,6 @@ import {
   Card,
   Chip,
   alpha,
-  useTheme,
   Typography,
   CardContent,
   CardActions,
@@ -247,7 +246,7 @@ export function MobileCard({
   children,
   ...props
 }: MobileCardProps) {
-  const _theme = useTheme();
+  // const _theme = useTheme();
   const cardRef = useRef<HTMLDivElement>(null);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [startX, setStartX] = useState(0);

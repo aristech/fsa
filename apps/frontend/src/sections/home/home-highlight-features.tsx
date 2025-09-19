@@ -14,8 +14,8 @@ import Typography from '@mui/material/Typography';
 import { styled, useTheme } from '@mui/material/styles';
 
 import { CONFIG } from 'src/global-config';
-import { primaryColorPresets } from 'src/theme/with-settings';
 import { useTranslate } from 'src/locales';
+import { primaryColorPresets } from 'src/theme/with-settings';
 
 import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
@@ -221,7 +221,7 @@ const ScrollContent = styled(m.div)(({ theme }) => ({
 // ----------------------------------------------------------------------
 
 type ItemProps = BoxProps & {
-  item: (typeof ITEMS)[number];
+  item: ReturnType<typeof getItems>[number];
 };
 
 function Item({ item, sx, ...other }: ItemProps) {

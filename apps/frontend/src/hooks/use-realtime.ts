@@ -79,6 +79,7 @@ export function useRealtimeEvent<K extends keyof RealtimeEvents>(
         unsubscribe();
       };
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [event].concat(deps as any[])
   );
 }

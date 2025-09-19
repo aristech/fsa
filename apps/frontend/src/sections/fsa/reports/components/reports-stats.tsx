@@ -15,7 +15,7 @@ interface ReportsStatsProps {
 }
 
 export function ReportsStats({ stats }: ReportsStatsProps) {
-  const { summary, byType, byStatus } = stats;
+  const { summary } = stats;
 
   const statCards = [
     {

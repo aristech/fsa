@@ -45,23 +45,6 @@ toast.promise(fetch('/api/data'), {
   error: 'Failed to load data',
 });
 
-// Available Options for toast methods:
-interface ToastOptions {
-  id?: string | number;
-  duration?: number;
-  dismissible?: boolean;
-  description?: string;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
-  cancel?: {
-    label: string;
-    onClick?: () => void;
-  };
-  onDismiss?: () => void;
-  onAutoClose?: () => void;
-}
 
 // Example with action button:
 toast.error('Failed to save', {

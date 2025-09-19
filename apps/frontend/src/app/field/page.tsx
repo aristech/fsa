@@ -48,7 +48,7 @@ export default function FieldDashboard() {
         setMaterials(
           Array.isArray(materialsRes.data?.data) ? materialsRes.data.data : materialsRes.data || []
         );
-      } catch (_e) {
+      } catch {
         // Soft-fail to empty lists
         setTasks([]);
         setMaterials([]);

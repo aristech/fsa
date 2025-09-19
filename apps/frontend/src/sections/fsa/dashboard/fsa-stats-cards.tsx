@@ -63,7 +63,7 @@ export function FsaStatsCards() {
       try {
         const response = await axiosInstance.get(url);
         return response.data;
-      } catch (_error) {
+      } catch {
         // Fallback if endpoint doesn't exist - use active sessions as proxy for online status
         console.log('Online users endpoint not available, falling back to active sessions');
         return { data: [] };

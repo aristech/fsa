@@ -4,7 +4,7 @@ import type { IReport, ReportSearchParams } from 'src/lib/models/Report';
 
 import dayjs from 'dayjs';
 import useSWR, { mutate } from 'swr';
-import { useState, useCallback } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 
 import { Box, Fab, Chip, alpha, useTheme, Typography, InputAdornment } from '@mui/material';
 
@@ -85,7 +85,7 @@ export default function FieldReportsPage() {
   );
 
   const reports = reportsData?.data || [];
-  const pagination = reportsData?.pagination || { total: 0, pages: 1, page: 1 };
+  const pagination = useMemo(() => reportsData?.pagination || { total: 0, pages: 1, page: 1 }, [reportsData?.pagination]);
 
   // Handlers
   const handleFilterChange = useCallback((key: keyof ReportSearchParams, value: any) => {

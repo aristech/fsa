@@ -91,7 +91,8 @@ export function MaterialsCreateView({ open, onClose }: MaterialsCreateViewProps)
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      const { customFieldKey: _, customFieldValue: __, ...createData } = data;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { customFieldKey: _key, customFieldValue: _value, ...createData } = data;
       createData.customFields = customFields;
 
       await MaterialService.createMaterial(createData);

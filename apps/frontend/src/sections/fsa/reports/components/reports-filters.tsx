@@ -52,7 +52,7 @@ const sortOptions = [
 ];
 
 export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps) {
-  const [searchTerm, setSearchTerm] = useState(filters.search || '');
+  // const [searchTerm, setSearchTerm] = useState(filters.search || '');
   const [selectedTypes, setSelectedTypes] = useState<string[]>(filters.type ? [filters.type] : []);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(
     filters.status ? [filters.status] : []
@@ -62,14 +62,14 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
   );
 
   // Handle search change
-  const handleSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-  }, []);
+  // const handleSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+  //   setSearchTerm(event.target.value);
+  // }, []);
 
   // Handle search submit
-  const handleSearchSubmit = useCallback(() => {
-    onFiltersChange({ search: searchTerm || undefined });
-  }, [searchTerm, onFiltersChange]);
+  // const handleSearchSubmit = useCallback(() => {
+  //   onFiltersChange({ search: searchTerm || undefined });
+  // }, [searchTerm, onFiltersChange]);
 
   // Handle type change
   const handleTypeChange = useCallback(
@@ -132,22 +132,22 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
   );
 
   // Handle clear filters
-  const handleClearFilters = useCallback(() => {
-    setSearchTerm('');
-    setSelectedTypes([]);
-    setSelectedStatuses([]);
-    setSelectedPriorities([]);
-    onFiltersChange({
-      search: undefined,
-      type: undefined,
-      status: undefined,
-      priority: undefined,
-      dateFrom: undefined,
-      dateTo: undefined,
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-    });
-  }, [onFiltersChange]);
+  // const handleClearFilters = useCallback(() => {
+  //   setSearchTerm('');
+  //   setSelectedTypes([]);
+  //   setSelectedStatuses([]);
+  //   setSelectedPriorities([]);
+  //   onFiltersChange({
+  //     search: undefined,
+  //     type: undefined,
+  //     status: undefined,
+  //     priority: undefined,
+  //     dateFrom: undefined,
+  //     dateTo: undefined,
+  //     sortBy: 'createdAt',
+  //     sortOrder: 'desc',
+  //   });
+  // }, [onFiltersChange]);
 
   // Count active filters
   const activeFiltersCount = [
@@ -333,7 +333,6 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
                 <Chip
                   label={`Search: "${filters.search}"`}
                   onDelete={() => {
-                    setSearchTerm('');
                     onFiltersChange({ search: undefined });
                   }}
                   size="small"

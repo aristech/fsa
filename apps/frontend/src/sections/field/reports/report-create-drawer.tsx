@@ -596,7 +596,7 @@ export function ReportCreateDrawer({
     };
 
     fetchTaskMaterials();
-  }, [formData.taskIds, materials]);
+  }, [formData.taskIds, materials, allTasks]);
 
   // Debug selectedMaterials changes
   useEffect(() => {
@@ -635,7 +635,7 @@ export function ReportCreateDrawer({
       setSignatures([]);
       setReportStatus('draft');
     }
-  }, [open]);
+  }, [open, initialData]);
 
   const handleFieldChange = useCallback((field: keyof CreateReportData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -1237,6 +1237,10 @@ export function ReportCreateDrawer({
     validateStep,
     onSuccess,
     onClose,
+    user?._id,
+    user?.email,
+    user?.firstName,
+    user?.lastName,
   ]);
 
   const renderHeader = () => (

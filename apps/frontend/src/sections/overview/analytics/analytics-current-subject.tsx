@@ -40,14 +40,17 @@ function getInitials(name?: string) {
 export function AnalyticsCurrentSubject({ title, subheader, chart, sx, ...other }: Props) {
   const theme = useTheme();
 
-  const chartColors = chart.colors ?? [
-    theme.palette.primary.main,
-    theme.palette.warning.main,
-    theme.palette.info.main,
-    theme.palette.success.main,
-    theme.palette.error.main,
-    theme.palette.secondary.main,
-  ];
+  const chartColors = useMemo(() => 
+    chart.colors ?? [
+      theme.palette.primary.main,
+      theme.palette.warning.main,
+      theme.palette.info.main,
+      theme.palette.success.main,
+      theme.palette.error.main,
+      theme.palette.secondary.main,
+    ],
+    [chart.colors, theme.palette]
+  );
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 

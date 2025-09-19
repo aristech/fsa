@@ -117,7 +117,8 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      const { customFieldKey: _, customFieldValue: __, ...updateData } = data;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { customFieldKey: _key, customFieldValue: _value, ...updateData } = data;
       updateData.customFields = customFields;
 
       await MaterialService.updateMaterial(material._id, updateData);

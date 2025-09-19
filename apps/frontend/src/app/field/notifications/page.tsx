@@ -17,7 +17,6 @@ import {
   Avatar,
   Button,
   ListItem,
-  useTheme,
   IconButton,
   Typography,
   CardContent,
@@ -68,7 +67,7 @@ interface NotificationCounts {
 }
 
 export default function FieldNotificationsPage() {
-  const _theme = useTheme();
+  // const _theme = useTheme();
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [counts, setCounts] = useState<NotificationCounts>({

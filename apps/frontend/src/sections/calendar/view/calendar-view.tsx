@@ -14,7 +14,6 @@ import { useBoolean, useSetState } from 'minimal-shared/hooks';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
-import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 
 import { fIsAfter, fIsBetween } from 'src/utils/format-time';
@@ -39,7 +38,7 @@ import { CalendarFiltersResult } from '../calendar-filters-result';
 // ----------------------------------------------------------------------
 
 export function CalendarView() {
-  const theme = useTheme();
+  // const theme = useTheme();
   const { t, currentLang } = useTranslate('common');
 
   const openFilters = useBoolean();
@@ -52,7 +51,7 @@ export function CalendarView() {
   const [openCreateTask, setOpenCreateTask] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState<any>(null);
 
-  const { events, eventsLoading, eventsError, eventsEmpty } = useGetEvents();
+  const { events, eventsLoading } = useGetEvents();
 
   const filters = useSetState<ICalendarFilters>({ colors: [], startDate: null, endDate: null });
   const { state: currentFilters } = filters;

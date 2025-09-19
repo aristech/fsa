@@ -39,7 +39,7 @@ export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttach
         setUploading(false);
       }
     },
-    [report._id]
+    []
   );
 
   const handlePhotoCapture = useCallback(() => {

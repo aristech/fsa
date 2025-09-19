@@ -3,7 +3,7 @@
 import React, { useRef, useState, useCallback } from 'react';
 
 import { styled } from '@mui/material/styles';
-import { Box, alpha, useTheme, Typography, CircularProgress } from '@mui/material';
+import { Box, alpha, Typography, CircularProgress } from '@mui/material';
 
 import { Iconify } from '../iconify';
 
@@ -174,7 +174,7 @@ export function MobileList({
   showDividers = true,
   spacing = 0,
 }: MobileListProps) {
-  const theme = useTheme();
+  // const theme = useTheme();
   const listRef = useRef<HTMLDivElement>(null);
 
   // Pull to refresh state
@@ -440,7 +440,7 @@ export function useMobileList<T>({
         setData((prev) => [...prev, ...newData]);
         setPage((prev) => prev + 1);
         setHasMore(newData.length === pageSize);
-      } catch (err) {
+      } catch {
         setError(true);
       } finally {
         setLoading(false);
@@ -459,7 +459,7 @@ export function useMobileList<T>({
         const newData = await refreshFunction();
         setData(newData);
         setHasMore(newData.length === pageSize);
-      } catch (err) {
+      } catch {
         setError(true);
       } finally {
         setLoading(false);

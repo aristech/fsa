@@ -190,7 +190,7 @@ export function MaterialsList({ filters, onFilters, onImport, onCreate }: Materi
 
   const dataFiltered = materials;
 
-  const notFound = !loading && !materials.length;
+  // const notFound = !loading && !materials.length;
 
   return (
     <Card>

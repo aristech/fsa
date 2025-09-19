@@ -230,7 +230,7 @@ export function KanbanTableView() {
       console.error('Failed to update task:', error);
       toast.error(t('failedToUpdateTask', { defaultValue: 'Failed to update task' }));
     }
-  }, []);
+  }, [t]);
 
   const handleDeleteTask = useCallback(async () => {
     if (!selectedTask) return;
@@ -245,7 +245,7 @@ export function KanbanTableView() {
       console.error('Failed to delete task:', error);
       toast.error(t('failedToDeleteTask', { defaultValue: 'Failed to delete task' }));
     }
-  }, [selectedTask, taskDetailsDialog]);
+  }, [selectedTask, taskDetailsDialog, t]);
 
   // Show loading state
   if (boardLoading) {

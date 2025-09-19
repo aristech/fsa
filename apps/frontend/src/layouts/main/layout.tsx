@@ -4,27 +4,20 @@ import type { Breakpoint } from '@mui/material/styles';
 import type { FooterProps } from './footer';
 import type { MainSectionProps, HeaderSectionProps, LayoutSectionProps } from '../core';
 
+import { allLangs } from '@/locales';
 import { useBoolean } from 'minimal-shared/hooks';
 
 import Box from '@mui/material/Box';
-import Alert from '@mui/material/Alert';
-import Button from '@mui/material/Button';
 
-import { paths } from 'src/routes/paths';
 import { usePathname } from 'src/routes/hooks';
 
 import { Logo } from 'src/components/logo';
 
-import { NavMobile } from './nav/mobile';
-import { NavDesktop } from './nav/desktop';
 import { Footer, HomeFooter } from './footer';
 import { MenuButton } from '../components/menu-button';
-import { navData as mainNavData } from '../nav-config-main';
 import { SignInButton } from '../components/sign-in-button';
-import { SettingsButton } from '../components/settings-button';
-import { MainSection, HeaderSection, LayoutSection } from '../core';
-import { allLangs } from '@/locales';
 import { LanguagePopover } from '../components/language-popover';
+import { MainSection, HeaderSection, LayoutSection } from '../core';
 
 // ----------------------------------------------------------------------
 
@@ -49,7 +42,7 @@ export function MainLayout({
 }: MainLayoutProps) {
   const pathname = usePathname();
 
-  const { value: open, onFalse: onClose, onTrue: onOpen } = useBoolean();
+  const { onTrue: onOpen } = useBoolean();
 
   const isHomePage = pathname === '/';
 

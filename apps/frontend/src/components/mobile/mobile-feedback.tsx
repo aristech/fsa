@@ -111,6 +111,13 @@ const StyledToast = styled(Alert)(({ theme }) => ({
 function Toast({ toast, onClose }: { toast: ToastProps; onClose: () => void }) {
   const [isExiting, setIsExiting] = useState(false);
 
+  const handleClose = useCallback(() => {
+    setIsExiting(true);
+    setTimeout(() => {
+      onClose();
+    }, 300);
+  }, [onClose]);
+
   useEffect(() => {
     if (toast.duration && toast.duration > 0) {
       const timer = setTimeout(() => {
@@ -120,29 +127,22 @@ function Toast({ toast, onClose }: { toast: ToastProps; onClose: () => void }) {
       return () => clearTimeout(timer);
     }
     return undefined;
-  }, [toast.duration]);
+  }, [toast.duration, handleClose]);
 
-  const handleClose = () => {
-    setIsExiting(true);
-    setTimeout(() => {
-      onClose();
-    }, 300);
-  };
-
-  const getIcon = () => {
-    switch (toast.type) {
-      case 'success':
-        return 'eva:checkmark-circle-fill';
-      case 'error':
-        return 'eva:alert-circle-fill';
-      case 'warning':
-        return 'eva:alert-triangle-fill';
-      case 'info':
-        return 'eva:info-fill';
-      default:
-        return 'eva:info-fill';
-    }
-  };
+  // const getIcon = () => {
+  //   switch (toast.type) {
+  //     case 'success':
+  //       return 'eva:checkmark-circle-fill';
+  //     case 'error':
+  //       return 'eva:alert-circle-fill';
+  //     case 'warning':
+  //       return 'eva:alert-triangle-fill';
+  //     case 'info':
+  //       return 'eva:info-fill';
+  //     default:
+  //       return 'eva:info-fill';
+  //   }
+  // };
 
   return (
     <ToastContainer toastPosition={toast.position || 'top'} isExiting={isExiting}>

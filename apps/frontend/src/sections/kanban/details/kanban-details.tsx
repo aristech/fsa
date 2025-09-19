@@ -111,7 +111,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       equipment: (task as any)?.equipment || [],
       tags: task.tags || task.labels || [],
     }),
-    [task]
+    [task, t]
   );
 
   const [taskName, setTaskName] = useState(task.name);
@@ -230,7 +230,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       // Revert to original name on error
       setTaskName(task.name);
     }
-  }, [onUpdateTask, task, taskName]);
+  }, [onUpdateTask, task, taskName, t]);
 
   const handleKeyUpTaskName = useCallback(
     async (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -260,7 +260,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       // Revert to original description on error
       setTaskDescription(task.description || '');
     }
-  }, [taskDescription, task, onUpdateTask]);
+  }, [taskDescription, task, onUpdateTask, t]);
   // Keep local tags in sync with incoming task changes
   useEffect(() => {
     setTags(task.tags || task.labels || []);
@@ -346,7 +346,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           setStatus(task.columnId || task.status);
         });
     },
-    [task, onUpdateTask]
+    [task, onUpdateTask, t]
   );
   // Persist date changes (start/end)
   useEffect(() => {
@@ -377,7 +377,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         toast.error(t('failedToUpdateSubtask', { defaultValue: 'Failed to update subtask' }));
       }
     },
-    [task.id]
+    [task.id, t]
   );
 
   const handleCreateSubtask = useCallback(async () => {
@@ -392,7 +392,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       console.error('Failed to create subtask:', error);
       toast.error(t('failedToCreateSubtask', { defaultValue: 'Failed to create subtask' }));
     }
-  }, [task.id, newSubtaskTitle]);
+  }, [task.id, newSubtaskTitle, t]);
 
   const handleDeleteSubtask = useCallback(
     async (subtaskId: string) => {
@@ -405,7 +405,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         toast.error(t('failedToDeleteSubtask', { defaultValue: 'Failed to delete subtask' }));
       }
     },
-    [task.id]
+    [task.id, t]
   );
 
   const renderToolbar = () => (

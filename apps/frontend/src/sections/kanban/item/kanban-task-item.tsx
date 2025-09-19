@@ -91,7 +91,7 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
   );
   const subtaskCount = subtaskData?.data?.length || 0;
 
-  const attachmentsCount = task.attachments?.length || 0;
+  // const attachmentsCount = task.attachments?.length || 0;
 
   const startDate = (task as any).startDate || task.due?.[0];
   const dueDate = (task as any).endDate || task.due?.[1];

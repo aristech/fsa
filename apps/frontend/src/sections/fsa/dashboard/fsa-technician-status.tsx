@@ -188,7 +188,7 @@ export function FsaTechnicianStatus() {
         // Enhanced status determination logic
         let status = 'offline';
         let statusDetails = '';
-        const isInField = false;
+        // const isInField = false;
 
         // Check if session exists and is recent
         if (activeSession) {
