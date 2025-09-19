@@ -6,11 +6,18 @@ console.log('🔍 Loading environment variables...');
 console.log('Current working directory:', process.cwd());
 console.log('.env file exists:', existsSync('.env'));
 
-const dotenvResult = dotenv.config();
+// Try to load .env from the backend directory first, then current directory
+let dotenvResult = dotenv.config({ path: './apps/backend/.env' });
 if (dotenvResult.error) {
-  console.error('❌ Error loading .env file:', dotenvResult.error);
+  console.log('Apps/backend/.env not found, trying current directory...');
+  dotenvResult = dotenv.config();
+  if (dotenvResult.error) {
+    console.error('❌ No .env file found in any location');
+  } else {
+    console.log('✅ Environment file loaded from current directory');
+  }
 } else {
-  console.log('✅ Environment file loaded successfully');
+  console.log('✅ Environment file loaded from apps/backend/.env');
 }
 
 export const config = {
