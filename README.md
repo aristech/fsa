@@ -1,6 +1,6 @@
 # FSA - Field Service Application
 
-A comprehensive field service management system built with modern web technologies.
+A comprehensive field service management system built with modern web technologies
 
 ## 🏗️ Architecture
 
