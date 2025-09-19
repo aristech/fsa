@@ -197,9 +197,14 @@ jobs:
         # Install only production dependencies
         yarn install --production --frozen-lockfile
 
-        # Create environment files from secrets
-        echo "${{ secrets.ENV_BACK }}" > apps/backend/.env
-        echo "${{ secrets.ENV_FRONT }}" > apps/frontend/.env.local
+        # Create environment files from secrets (using cat with EOF to handle special characters)
+        cat > apps/backend/.env << "EOF"
+        ${{ secrets.ENV_BACK }}
+        EOF
+
+        cat > apps/frontend/.env.local << "EOF"
+        ${{ secrets.ENV_FRONT }}
+        EOF
 
         # Always install all dependencies and do a fresh build
         yarn install --frozen-lockfile
