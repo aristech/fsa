@@ -19,7 +19,7 @@ export async function fixWorkOrderIndexes() {
     // Ensure the compound unique index exists (idempotent)
     await collection.createIndex(
       { tenantId: 1, workOrderNumber: 1 },
-      { unique: true, name: "tenant_workOrderNumber_unique" },
+      { unique: true },
     );
     console.log(
       "✅ Ensured compound unique index (tenantId, workOrderNumber) on workorders",
