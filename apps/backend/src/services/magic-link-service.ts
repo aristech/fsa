@@ -89,7 +89,7 @@ export class MagicLinkService {
       await magicLinkRecord.save();
 
       // Generate the magic link URL
-      const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const baseUrl = config.FRONTEND_URL;
       const magicLink = `${baseUrl}/auth/jwt/verify-account?token=${token}`;
 
       return {

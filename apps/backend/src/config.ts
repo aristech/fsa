@@ -37,6 +37,10 @@ export const config = {
   // API
   API_PREFIX: process.env.API_PREFIX || '/api/v1',
 
+  // URLs
+  FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
+  BACKEND_URL: process.env.BACKEND_URL || 'http://localhost:3001',
+
   // File Upload
   MAX_FILE_SIZE_MB: parseInt(process.env.MAX_FILE_SIZE_MB || '10', 10),
   MAX_FILES_PER_REQUEST: parseInt(process.env.MAX_FILES_PER_REQUEST || '10', 10),
