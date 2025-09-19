@@ -35,6 +35,11 @@ async function registerPlugins() {
         return callback(null, true);
       }
 
+      // Allow progressnet.io domains
+      if (origin.endsWith('.progressnet.io') || origin === 'https://progressnet.io') {
+        return callback(null, true);
+      }
+
       // Reject other origins
       return callback(new Error("Not allowed by CORS"), false);
     },
