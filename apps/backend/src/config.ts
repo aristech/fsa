@@ -1,7 +1,17 @@
 import dotenv from 'dotenv';
+import { existsSync } from 'fs';
 
 // Load environment variables
-dotenv.config();
+console.log('🔍 Loading environment variables...');
+console.log('Current working directory:', process.cwd());
+console.log('.env file exists:', existsSync('.env'));
+
+const dotenvResult = dotenv.config();
+if (dotenvResult.error) {
+  console.error('❌ Error loading .env file:', dotenvResult.error);
+} else {
+  console.log('✅ Environment file loaded successfully');
+}
 
 export const config = {
   // Server

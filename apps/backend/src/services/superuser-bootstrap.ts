@@ -11,11 +11,24 @@ import { User } from '../models/User';
 export async function ensureSuperUsers() {
   console.log('🔍 Starting superuser bootstrap...');
 
+  // Debug: Log what environment variables we're seeing
+  console.log('🔍 Environment variables check:');
+  console.log('SUPERADMIN_NAME:', process.env.SUPERADMIN_NAME ? '✅ Set' : '❌ Not set');
+  console.log('SUPERADMIN_EMAIL:', process.env.SUPERADMIN_EMAIL ? '✅ Set' : '❌ Not set');
+  console.log('SUPERADMIN_PASSWORD:', process.env.SUPERADMIN_PASSWORD ? '✅ Set' : '❌ Not set');
+  console.log('SUPERADMINS:', process.env.SUPERADMINS ? '✅ Set' : '❌ Not set');
+
   const single = {
     name: process.env.SUPERADMIN_NAME,
     email: process.env.SUPERADMIN_EMAIL,
     password: process.env.SUPERADMIN_PASSWORD,
   };
+
+  console.log('🔍 Single superadmin config:', {
+    name: single.name || '(not set)',
+    email: single.email || '(not set)',
+    password: single.password ? '***' : '(not set)'
+  });
 
   let list: Array<{ name: string; email: string; password: string }> = [];
 
