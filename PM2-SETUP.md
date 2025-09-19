@@ -142,4 +142,7 @@ When you're ready to add tests, update your package.json files:
 
 Then uncomment the test commands in `.github/workflows/ci-cd.yml`.
 
+## ✅ **Super Admin Setup:**
+Using individual environment variables (SUPERADMIN_NAME, SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD) for reliable user creation.
+
 No server scripts needed - just PM2 managing your apps! 🚀
