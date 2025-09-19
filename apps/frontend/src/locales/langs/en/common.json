@@ -280,5 +280,51 @@
   "overdue": "Overdue",
   "createTask": "Create task",
   "adjustFiltersOrCreateTask": "Try adjusting your filters or create a new task",
-  "fieldLocation": "Field Location"
+  "fieldLocation": "Field Location",
+  "home": {
+    "hero": {
+      "title": "Streamline your field service operations with",
+      "subtitle": "Complete field service management platform for modern businesses. Track work orders, manage personnel, and deliver exceptional service.",
+      "customers": "500+ Field Service Teams",
+      "getStarted": "Get Started",
+      "freeTrial": "Free Trial",
+      "viewDemo": "View Demo",
+      "learnMore": "Learn More",
+      "trustedBy": "Trusted By"
+    },
+    "features": {
+      "title": "Why Choose",
+      "subtitle": "ProgressNet FSA?",
+      "caption": "Field Service Excellence",
+      "workOrderManagement": {
+        "title": "Work Order Management",
+        "description": "Efficiently manage and track work orders from creation to completion."
+      },
+      "realTimeTracking": {
+        "title": "Real-time Tracking",
+        "description": "Monitor field personnel locations and task progress in real-time."
+      },
+      "analytics": {
+        "title": "Comprehensive Analytics",
+        "description": "Get insights into performance, costs, and customer satisfaction."
+      }
+    },
+    "capabilities": {
+      "title": "Key",
+      "subtitle": "Capabilities",
+      "caption": "Field Service Features",
+      "mobileApp": {
+        "title": "Mobile Field App",
+        "description": "Access work orders, track time, and update progress on the go."
+      },
+      "scheduling": {
+        "title": "Smart Scheduling",
+        "description": "Optimize routes and schedules for maximum efficiency."
+      },
+      "customerPortal": {
+        "title": "Customer Portal",
+        "description": "Let customers track service requests and view progress."
+      }
+    }
+  }
 }

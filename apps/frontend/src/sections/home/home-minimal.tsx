@@ -33,8 +33,8 @@ export function HomeMinimal({ sx, ...other }: BoxProps) {
   const renderDescription = () => (
     <>
       <SectionTitle
-        caption="Visualizing Success"
-        title="What's in"
+        caption="Field Service Excellence"
+        title="Why Choose"
         txtGradient="ProgressNet FSA?"
         sx={{ mb: { xs: 5, md: 8 }, textAlign: { xs: 'center', md: 'left' } }}
       />
@@ -132,8 +132,8 @@ export function HomeMinimal({ sx, ...other }: BoxProps) {
 
 const ITEMS = [
   {
-    title: 'Branding',
-    description: 'Consistent design makes it easy to brand your own.',
+    title: 'Work Order Management',
+    description: 'Efficiently manage and track work orders from creation to completion.',
     icon: (
       <svg
         width="48"
@@ -163,8 +163,8 @@ const ITEMS = [
     ),
   },
   {
-    title: 'UI & UX design',
-    description: 'The kit is built on the principles of the atomic design system.',
+    title: 'Real-time Tracking',
+    description: 'Monitor field personnel locations and task progress in real-time.',
     icon: (
       <svg
         width="48"
@@ -194,8 +194,8 @@ const ITEMS = [
     ),
   },
   {
-    title: 'Development',
-    description: 'Easy to customize and extend, saving you time and money.',
+    title: 'Comprehensive Analytics',
+    description: 'Get insights into performance, costs, and customer satisfaction.',
     icon: (
       <svg
         width="48"

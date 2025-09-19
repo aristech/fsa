@@ -76,9 +76,9 @@ export function HomeHero({ sx, ...other }: BoxProps) {
         ]}
       >
         <Box component="span" sx={{ width: 1, opacity: 0.24 }}>
-          Boost your building
+          Streamline your field service
         </Box>
-        process with
+        operations with
         <Box
           component={m.span}
           animate={{ backgroundPosition: '200% center' }}
@@ -116,7 +116,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
           }),
         ]}
       >
-        {`The starting point for your next project is based on MUI. \nEasy customization helps you build apps faster and better.`}
+        {`Complete field service management platform for modern businesses. \nTrack work orders, manage personnel, and deliver exceptional service.`}
       </Typography>
     </m.div>
   );
@@ -141,7 +141,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
             },
           }}
         />
-        160+ Happy customers
+        500+ Field Service Teams
       </Box>
     </m.div>
   );
@@ -167,7 +167,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
             sx={{ height: 52 }}
           >
             <span>
-              Live preview
+              Get Started
               <Box
                 component="small"
                 sx={[
@@ -181,7 +181,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
                   }),
                 ]}
               >
-                v{CONFIG.appVersion}
+                Free Trial
               </Box>
             </span>
           </Button>
@@ -196,7 +196,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
             sx={{ gap: 0.75, alignItems: 'center', display: 'inline-flex' }}
           >
             <Iconify width={16} icon="eva:external-link-fill" />
-            Try free version
+            View Demo
           </Link>
         </Stack>
       </m.div>
@@ -212,7 +212,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
           startIcon={<Iconify width={24} icon="solar:figma-outline" />}
           sx={{ height: 52, borderColor: 'currentColor' }}
         >
-          Figma preview
+          Learn More
         </Button>
       </m.div>
     </Box>
@@ -222,7 +222,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
     <Stack spacing={3} sx={{ textAlign: 'center' }}>
       <m.div {...motionProps}>
         <Typography variant="overline" sx={{ opacity: 0.4 }}>
-          Available For
+          Trusted By
         </Typography>
       </m.div>
 

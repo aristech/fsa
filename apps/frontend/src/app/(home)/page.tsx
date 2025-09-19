@@ -5,8 +5,8 @@ import { HomeView } from 'src/sections/home/view';
 // ----------------------------------------------------------------------
 
 export const metadata: Metadata = {
-  title: 'ProgressNet FSA: The starting point for your next project',
-  description: 'The starting point for your next project with ProgressNet FSA.',
+  title: 'ProgressNet FSA: Complete Field Service Management Platform',
+  description: 'Streamline your field service operations with ProgressNet FSA. Track work orders, manage personnel, and deliver exceptional service.',
 };
 
 export default function Page() {

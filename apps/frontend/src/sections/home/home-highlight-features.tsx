@@ -61,7 +61,7 @@ export function HomeHighlightFeatures({ sx, ...other }: BoxProps) {
               },
             ]}
           >
-            <SectionTitle caption="App Features" title="Highlight" txtGradient="features" />
+            <SectionTitle caption="Field Service Features" title="Key" txtGradient="Capabilities" />
 
             <SvgIcon
               component={m.svg}
@@ -92,15 +92,15 @@ export function HomeHighlightFeatures({ sx, ...other }: BoxProps) {
 
 const ITEMS = [
   {
-    title: 'Dark mode',
-    subtitle: 'A dark theme that feels easier on the eyes.',
-    icon: 'solar:cloudy-moon-bold-duotone',
+    title: 'Mobile Field App',
+    subtitle: 'Access work orders, track time, and update progress on the go.',
+    icon: 'solar:smartphone-2-bold-duotone',
     imgUrl: [`${CONFIG.assetsDir}/assets/images/home/highlight-darkmode.webp`],
   },
   {
-    title: 'Color presets',
-    subtitle: 'Express your own style with just one click.',
-    icon: 'solar:pallete-2-bold-duotone',
+    title: 'Smart Scheduling',
+    subtitle: 'Optimize routes and schedules for maximum efficiency.',
+    icon: 'solar:calendar-bold-duotone',
     imgUrl: [
       `${CONFIG.assetsDir}/assets/images/home/highlight-presets-1.webp`,
       `${CONFIG.assetsDir}/assets/images/home/highlight-presets-2.webp`,
@@ -110,9 +110,9 @@ const ITEMS = [
     ],
   },
   {
-    title: 'Right-to-left',
-    subtitle: 'Support languages such as Arabic, Persian, and Hebrew.',
-    icon: 'solar:align-right-bold-duotone',
+    title: 'Customer Portal',
+    subtitle: 'Let customers track service requests and view progress.',
+    icon: 'solar:users-group-rounded-bold-duotone',
     imgUrl: [`${CONFIG.assetsDir}/assets/images/home/highlight-rtl.webp`],
   },
 ] as const;
