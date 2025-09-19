@@ -36,4 +36,4 @@ build
 tsconfig.tsbuildinfo
 .ncurc.js
 
-uploads/*
+**/*uploads/*
