@@ -19,6 +19,7 @@ import { paths } from 'src/routes/paths';
 import { RouterLink } from 'src/routes/components';
 
 import { CONFIG } from 'src/global-config';
+import { useTranslate } from 'src/locales';
 
 import { Iconify } from 'src/components/iconify';
 import { varFade, MotionContainer } from 'src/components/animate';
@@ -36,6 +37,7 @@ const motionProps: MotionProps = {
 };
 
 export function HomeHero({ sx, ...other }: BoxProps) {
+  const { t } = useTranslate();
   const scrollProgress = useScrollPercent();
 
   const mdUp = useMediaQuery((theme) => theme.breakpoints.up(mdKey));
@@ -76,9 +78,8 @@ export function HomeHero({ sx, ...other }: BoxProps) {
         ]}
       >
         <Box component="span" sx={{ width: 1, opacity: 0.24 }}>
-          Streamline your field service
+          {t('home.hero.title')}
         </Box>
-        operations with
         <Box
           component={m.span}
           animate={{ backgroundPosition: '200% center' }}
@@ -116,7 +117,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
           }),
         ]}
       >
-        {`Complete field service management platform for modern businesses. \nTrack work orders, manage personnel, and deliver exceptional service.`}
+        {t('home.hero.subtitle')}
       </Typography>
     </m.div>
   );
@@ -141,7 +142,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
             },
           }}
         />
-        500+ Field Service Teams
+        {t('home.hero.customers')}
       </Box>
     </m.div>
   );
@@ -167,7 +168,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
             sx={{ height: 52 }}
           >
             <span>
-              Get Started
+              {t('home.hero.getStarted')}
               <Box
                 component="small"
                 sx={[
@@ -181,7 +182,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
                   }),
                 ]}
               >
-                Free Trial
+                {t('home.hero.freeTrial')}
               </Box>
             </span>
           </Button>
@@ -196,7 +197,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
             sx={{ gap: 0.75, alignItems: 'center', display: 'inline-flex' }}
           >
             <Iconify width={16} icon="eva:external-link-fill" />
-            View Demo
+            {t('home.hero.viewDemo')}
           </Link>
         </Stack>
       </m.div>
@@ -212,7 +213,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
           startIcon={<Iconify width={24} icon="solar:figma-outline" />}
           sx={{ height: 52, borderColor: 'currentColor' }}
         >
-          Learn More
+          {t('home.hero.learnMore')}
         </Button>
       </m.div>
     </Box>
@@ -222,7 +223,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
     <Stack spacing={3} sx={{ textAlign: 'center' }}>
       <m.div {...motionProps}>
         <Typography variant="overline" sx={{ opacity: 0.4 }}>
-          Trusted By
+          {t('home.hero.trustedBy')}
         </Typography>
       </m.div>
 

@@ -11,6 +11,7 @@ import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 
 import { CONFIG } from 'src/global-config';
+import { useTranslate } from 'src/locales';
 
 import { varFade, MotionViewport } from 'src/components/animate';
 
@@ -30,17 +31,19 @@ const renderLines = () => (
 );
 
 export function HomeMinimal({ sx, ...other }: BoxProps) {
+  const { t } = useTranslate();
+  
   const renderDescription = () => (
     <>
       <SectionTitle
-        caption="Field Service Excellence"
-        title="Why Choose"
-        txtGradient="ProgressNet FSA?"
+        caption={t('home.features.caption')}
+        title={t('home.features.title')}
+        txtGradient={t('home.features.subtitle')}
         sx={{ mb: { xs: 5, md: 8 }, textAlign: { xs: 'center', md: 'left' } }}
       />
 
       <Stack spacing={6} sx={{ maxWidth: { sm: 560, md: 400 }, mx: { xs: 'auto', md: 'unset' } }}>
-        {ITEMS.map((item) => (
+        {getItems(t).map((item) => (
           <Box
             component={m.div}
             variants={varFade('inUp', { distance: 24 })}
@@ -130,10 +133,10 @@ export function HomeMinimal({ sx, ...other }: BoxProps) {
 
 // ----------------------------------------------------------------------
 
-const ITEMS = [
+const getItems = (t: any) => [
   {
-    title: 'Work Order Management',
-    description: 'Efficiently manage and track work orders from creation to completion.',
+    title: t('home.features.workOrderManagement.title'),
+    description: t('home.features.workOrderManagement.description'),
     icon: (
       <svg
         width="48"
@@ -163,8 +166,8 @@ const ITEMS = [
     ),
   },
   {
-    title: 'Real-time Tracking',
-    description: 'Monitor field personnel locations and task progress in real-time.',
+    title: t('home.features.realTimeTracking.title'),
+    description: t('home.features.realTimeTracking.description'),
     icon: (
       <svg
         width="48"
@@ -194,8 +197,8 @@ const ITEMS = [
     ),
   },
   {
-    title: 'Comprehensive Analytics',
-    description: 'Get insights into performance, costs, and customer satisfaction.',
+    title: t('home.features.analytics.title'),
+    description: t('home.features.analytics.description'),
     icon: (
       <svg
         width="48"

@@ -2,7 +2,6 @@
 
 import type { Breakpoint } from '@mui/material/styles';
 import type { FooterProps } from './footer';
-import type { NavMainProps } from './nav/types';
 import type { MainSectionProps, HeaderSectionProps, LayoutSectionProps } from '../core';
 
 import { useBoolean } from 'minimal-shared/hooks';
@@ -24,6 +23,8 @@ import { navData as mainNavData } from '../nav-config-main';
 import { SignInButton } from '../components/sign-in-button';
 import { SettingsButton } from '../components/settings-button';
 import { MainSection, HeaderSection, LayoutSection } from '../core';
+import { allLangs } from '@/locales';
+import { LanguagePopover } from '../components/language-popover';
 
 // ----------------------------------------------------------------------
 
@@ -33,9 +34,7 @@ export type MainLayoutProps = LayoutBaseProps & {
   layoutQuery?: Breakpoint;
   slotProps?: {
     header?: HeaderSectionProps;
-    nav?: {
-      data?: NavMainProps['data'];
-    };
+    
     main?: MainSectionProps;
     footer?: FooterProps;
   };
@@ -54,15 +53,10 @@ export function MainLayout({
 
   const isHomePage = pathname === '/';
 
-  const navData = slotProps?.nav?.data ?? mainNavData;
 
   const renderHeader = () => {
     const headerSlots: HeaderSectionProps['slots'] = {
-      topArea: (
-        <Alert severity="info" sx={{ display: 'none', borderRadius: 0 }}>
-          This is an info Alert.
-        </Alert>
-      ),
+    
       leftArea: (
         <>
           {/** @slot Nav mobile */}
@@ -74,7 +68,7 @@ export function MainLayout({
               [theme.breakpoints.up(layoutQuery)]: { display: 'none' },
             })}
           />
-          <NavMobile data={navData} open={open} onClose={onClose} />
+      
 
           {/** @slot Logo */}
           <Logo />
@@ -83,34 +77,16 @@ export function MainLayout({
       rightArea: (
         <>
           {/** @slot Nav desktop */}
-          <NavDesktop
-            data={navData}
-            sx={(theme) => ({
-              display: 'none',
-              [theme.breakpoints.up(layoutQuery)]: { mr: 2.5, display: 'flex' },
-            })}
-          />
+         
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
-            {/** @slot Settings button */}
-            <SettingsButton />
+         
 
             {/** @slot Sign in button */}
             <SignInButton />
 
-            {/** @slot Purchase button */}
-            <Button
-              variant="contained"
-              rel="noopener noreferrer"
-              target="_blank"
-              href={paths.minimalStore}
-              sx={(theme) => ({
-                display: 'none',
-                [theme.breakpoints.up(layoutQuery)]: { display: 'inline-flex' },
-              })}
-            >
-              Purchase
-            </Button>
+            {/** @slot Language popover */}
+          <LanguagePopover data={allLangs} />
           </Box>
         </>
       ),

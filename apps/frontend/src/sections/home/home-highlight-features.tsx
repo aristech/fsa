@@ -15,6 +15,7 @@ import { styled, useTheme } from '@mui/material/styles';
 
 import { CONFIG } from 'src/global-config';
 import { primaryColorPresets } from 'src/theme/with-settings';
+import { useTranslate } from 'src/locales';
 
 import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
@@ -33,6 +34,7 @@ const renderLines = () => (
 );
 
 export function HomeHighlightFeatures({ sx, ...other }: BoxProps) {
+  const { t } = useTranslate();
   const containerRoot = useClientRect<HTMLDivElement>();
 
   return (
@@ -61,7 +63,7 @@ export function HomeHighlightFeatures({ sx, ...other }: BoxProps) {
               },
             ]}
           >
-            <SectionTitle caption="Field Service Features" title="Key" txtGradient="Capabilities" />
+            <SectionTitle caption={t('home.capabilities.caption')} title={t('home.capabilities.title')} txtGradient={t('home.capabilities.subtitle')} />
 
             <SvgIcon
               component={m.svg}
@@ -83,23 +85,23 @@ export function HomeHighlightFeatures({ sx, ...other }: BoxProps) {
         </Container>
       </MotionViewport>
 
-      <ScrollableContent containerRoot={containerRoot} />
+      <ScrollableContent containerRoot={containerRoot} t={t} />
     </Box>
   );
 }
 
 // ----------------------------------------------------------------------
 
-const ITEMS = [
+const getItems = (t: any) => [
   {
-    title: 'Mobile Field App',
-    subtitle: 'Access work orders, track time, and update progress on the go.',
+    title: t('home.capabilities.mobileApp.title'),
+    subtitle: t('home.capabilities.mobileApp.description'),
     icon: 'solar:smartphone-2-bold-duotone',
     imgUrl: [`${CONFIG.assetsDir}/assets/images/home/highlight-darkmode.webp`],
   },
   {
-    title: 'Smart Scheduling',
-    subtitle: 'Optimize routes and schedules for maximum efficiency.',
+    title: t('home.capabilities.scheduling.title'),
+    subtitle: t('home.capabilities.scheduling.description'),
     icon: 'solar:calendar-bold-duotone',
     imgUrl: [
       `${CONFIG.assetsDir}/assets/images/home/highlight-presets-1.webp`,
@@ -110,8 +112,8 @@ const ITEMS = [
     ],
   },
   {
-    title: 'Customer Portal',
-    subtitle: 'Let customers track service requests and view progress.',
+    title: t('home.capabilities.customerPortal.title'),
+    subtitle: t('home.capabilities.customerPortal.description'),
     icon: 'solar:users-group-rounded-bold-duotone',
     imgUrl: [`${CONFIG.assetsDir}/assets/images/home/highlight-rtl.webp`],
   },
@@ -119,9 +121,10 @@ const ITEMS = [
 
 type ScrollContentProps = {
   containerRoot: UseClientRectReturn;
+  t: any;
 };
 
-function ScrollableContent({ containerRoot }: ScrollContentProps) {
+function ScrollableContent({ containerRoot, t }: ScrollContentProps) {
   const theme = useTheme();
   const isRtl = theme.direction === 'rtl';
 
@@ -174,7 +177,7 @@ function ScrollableContent({ containerRoot }: ScrollContentProps) {
           sx={{ ml: `${containerRoot.left}px` }}
           transition={{ ease: 'linear', duration: 0.25 }}
         >
-          {ITEMS.map((item) => (
+          {getItems(t).map((item) => (
             <Item key={item.title} item={item} />
           ))}
         </ScrollContent>
