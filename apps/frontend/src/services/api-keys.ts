@@ -63,7 +63,9 @@ export const apiKeysApi = {
   },
 
   // Create a new API key
-  createApiKey: async (data: ApiKeyFormData): Promise<{
+  createApiKey: async (
+    data: ApiKeyFormData
+  ): Promise<{
     success: boolean;
     data: ApiKey;
     apiKey: string;
@@ -74,7 +76,10 @@ export const apiKeysApi = {
   },
 
   // Update an API key
-  updateApiKey: async (id: string, data: Partial<ApiKeyFormData>): Promise<{
+  updateApiKey: async (
+    id: string,
+    data: Partial<ApiKeyFormData>
+  ): Promise<{
     success: boolean;
     data: ApiKey;
   }> => {

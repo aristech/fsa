@@ -34,5 +34,6 @@ export type StreamEvent = {
 export type ChatContext = {
   userId: string;
   tenantId: string;
+  token?: string;
   emitEvent?: (event: { type: string; data: any }) => void;
 };

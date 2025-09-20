@@ -11,6 +11,8 @@ import CardContent from '@mui/material/CardContent';
 
 import { Iconify } from 'src/components/iconify';
 
+import { AISettingsView } from 'src/sections/settings/ai-settings';
+
 type Props = {
   webhooksHref: string;
   apiKeysHref: string;
@@ -19,6 +21,11 @@ type Props = {
 export function SettingsView({ webhooksHref, apiKeysHref }: Props) {
   return (
     <Grid container spacing={3}>
+      {/* AI Settings */}
+      <Grid size={{ xs: 12 }}>
+        <AISettingsView />
+      </Grid>
+
       <Grid size={{ xs: 12, md: 6 }}>
         <Card>
           <CardHeader title="Webhooks" subheader="Create and manage outbound webhooks" />

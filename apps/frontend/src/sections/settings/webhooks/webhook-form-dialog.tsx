@@ -228,7 +228,9 @@ export function WebhookFormDialog({ open, webhook, onClose, onSubmit }: Props) {
                 value={field.value || 10000}
                 onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 10000)}
                 error={!!errors.timeoutMs}
-                helperText={errors.timeoutMs?.message || 'Request timeout in milliseconds (1000-30000)'}
+                helperText={
+                  errors.timeoutMs?.message || 'Request timeout in milliseconds (1000-30000)'
+                }
                 fullWidth
                 sx={{ mt: 2 }}
               />

@@ -166,100 +166,100 @@ export function ApiKeysView() {
           ) : (
             <TableContainer component={Paper} variant="outlined">
               <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>User</TableCell>
-                  <TableCell>Permissions</TableCell>
-                  <TableCell>Last Used</TableCell>
-                  <TableCell>Usage</TableCell>
-                  <TableCell>Expires</TableCell>
-                  <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {apiKeys.map((k) => (
-                  <TableRow key={k._id}>
-                    <TableCell>
-                      <Typography variant="subtitle2">{k.name}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {k.userId.firstName} {k.userId.lastName}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {k.userId.email}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={0.5} flexWrap="wrap">
-                        {k.permissions.map((p) => (
-                          <Chip
-                            key={p}
-                            label={p === '*' ? 'All' : p}
-                            size="small"
-                            variant="outlined"
-                            color={p === '*' ? 'primary' : 'default'}
-                          />
-                        ))}
-                      </Stack>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString() : 'Never'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {k.usageCount?.toLocaleString?.() ?? 0}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      {k.expiresAt ? (
-                        <Chip
-                          label={new Date(k.expiresAt).toLocaleDateString()}
-                          size="small"
-                          color={
-                            isExpired(k.expiresAt)
-                              ? 'error'
-                              : isExpiringSoon(k.expiresAt)
-                                ? 'warning'
-                                : 'default'
-                          }
-                        />
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          Never
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell align="right">
-                      <Stack direction="row" spacing={1} justifyContent="flex-end">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleTestApiKey(k)}
-                          title="Test API Key"
-                        >
-                          <Iconify icon="solar:play-bold" />
-                        </IconButton>
-                        <IconButton size="small" onClick={() => handleEdit(k)} title="Edit">
-                          <Iconify icon="solar:pen-bold" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => setDeleteDialog({ open: true, data: k })}
-                          title="Delete"
-                        >
-                          <Iconify icon="solar:trash-bin-trash-bold" />
-                        </IconButton>
-                      </Stack>
-                    </TableCell>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Name</TableCell>
+                    <TableCell>User</TableCell>
+                    <TableCell>Permissions</TableCell>
+                    <TableCell>Last Used</TableCell>
+                    <TableCell>Usage</TableCell>
+                    <TableCell>Expires</TableCell>
+                    <TableCell align="right">Actions</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {apiKeys.map((k) => (
+                    <TableRow key={k._id}>
+                      <TableCell>
+                        <Typography variant="subtitle2">{k.name}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {k.userId.firstName} {k.userId.lastName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {k.userId.email}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                          {k.permissions.map((p) => (
+                            <Chip
+                              key={p}
+                              label={p === '*' ? 'All' : p}
+                              size="small"
+                              variant="outlined"
+                              color={p === '*' ? 'primary' : 'default'}
+                            />
+                          ))}
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString() : 'Never'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {k.usageCount?.toLocaleString?.() ?? 0}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {k.expiresAt ? (
+                          <Chip
+                            label={new Date(k.expiresAt).toLocaleDateString()}
+                            size="small"
+                            color={
+                              isExpired(k.expiresAt)
+                                ? 'error'
+                                : isExpiringSoon(k.expiresAt)
+                                  ? 'warning'
+                                  : 'default'
+                            }
+                          />
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            Never
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleTestApiKey(k)}
+                            title="Test API Key"
+                          >
+                            <Iconify icon="solar:play-bold" />
+                          </IconButton>
+                          <IconButton size="small" onClick={() => handleEdit(k)} title="Edit">
+                            <Iconify icon="solar:pen-bold" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => setDeleteDialog({ open: true, data: k })}
+                            title="Delete"
+                          >
+                            <Iconify icon="solar:trash-bin-trash-bold" />
+                          </IconButton>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
         </CardContent>
       </Card>

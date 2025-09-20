@@ -63,7 +63,11 @@ export function HomeHighlightFeatures({ sx, ...other }: BoxProps) {
               },
             ]}
           >
-            <SectionTitle caption={t('home.capabilities.caption')} title={t('home.capabilities.title')} txtGradient={t('home.capabilities.subtitle')} />
+            <SectionTitle
+              caption={t('home.capabilities.caption')}
+              title={t('home.capabilities.title')}
+              txtGradient={t('home.capabilities.subtitle')}
+            />
 
             <SvgIcon
               component={m.svg}
@@ -92,32 +96,33 @@ export function HomeHighlightFeatures({ sx, ...other }: BoxProps) {
 
 // ----------------------------------------------------------------------
 
-const getItems = (t: any) => [
-  {
-    title: t('home.capabilities.mobileApp.title'),
-    subtitle: t('home.capabilities.mobileApp.description'),
-    icon: 'solar:smartphone-2-bold-duotone',
-    imgUrl: [`${CONFIG.assetsDir}/assets/images/home/highlight-darkmode.webp`],
-  },
-  {
-    title: t('home.capabilities.scheduling.title'),
-    subtitle: t('home.capabilities.scheduling.description'),
-    icon: 'solar:calendar-bold-duotone',
-    imgUrl: [
-      `${CONFIG.assetsDir}/assets/images/home/highlight-presets-1.webp`,
-      `${CONFIG.assetsDir}/assets/images/home/highlight-presets-2.webp`,
-      `${CONFIG.assetsDir}/assets/images/home/highlight-presets-3.webp`,
-      `${CONFIG.assetsDir}/assets/images/home/highlight-presets-4.webp`,
-      `${CONFIG.assetsDir}/assets/images/home/highlight-presets-5.webp`,
-    ],
-  },
-  {
-    title: t('home.capabilities.customerPortal.title'),
-    subtitle: t('home.capabilities.customerPortal.description'),
-    icon: 'solar:users-group-rounded-bold-duotone',
-    imgUrl: [`${CONFIG.assetsDir}/assets/images/home/highlight-rtl.webp`],
-  },
-] as const;
+const getItems = (t: any) =>
+  [
+    {
+      title: t('home.capabilities.mobileApp.title'),
+      subtitle: t('home.capabilities.mobileApp.description'),
+      icon: 'solar:smartphone-2-bold-duotone',
+      imgUrl: [`${CONFIG.assetsDir}/assets/images/home/highlight-darkmode.webp`],
+    },
+    {
+      title: t('home.capabilities.scheduling.title'),
+      subtitle: t('home.capabilities.scheduling.description'),
+      icon: 'solar:calendar-bold-duotone',
+      imgUrl: [
+        `${CONFIG.assetsDir}/assets/images/home/highlight-presets-1.webp`,
+        `${CONFIG.assetsDir}/assets/images/home/highlight-presets-2.webp`,
+        `${CONFIG.assetsDir}/assets/images/home/highlight-presets-3.webp`,
+        `${CONFIG.assetsDir}/assets/images/home/highlight-presets-4.webp`,
+        `${CONFIG.assetsDir}/assets/images/home/highlight-presets-5.webp`,
+      ],
+    },
+    {
+      title: t('home.capabilities.customerPortal.title'),
+      subtitle: t('home.capabilities.customerPortal.description'),
+      icon: 'solar:users-group-rounded-bold-duotone',
+      imgUrl: [`${CONFIG.assetsDir}/assets/images/home/highlight-rtl.webp`],
+    },
+  ] as const;
 
 type ScrollContentProps = {
   containerRoot: UseClientRectReturn;

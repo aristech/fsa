@@ -31,11 +31,12 @@ import { Iconify } from 'src/components/iconify';
 export function FloatingChat() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
-  const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<string[]>([]);
+  const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<any[]>([]);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteAnchor, setAutocompleteAnchor] = useState<HTMLElement | null>(null);
   const [cursorPosition, setCursorPosition] = useState(0);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const [currentSymbol, setCurrentSymbol] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
   const actualInputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
@@ -62,6 +63,38 @@ export function FloatingChat() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [hasToken, setHasToken] = useState<boolean>(false);
+
+  // Helper function to format suggestions for display
+  const formatSuggestionDisplay = useCallback((suggestion: any, symbol: string): string => {
+    if (typeof suggestion === 'string') {
+      return suggestion; // Legacy format
+    }
+
+    // Format based on symbol type and database object
+    switch (symbol) {
+      case '/':
+        return `/${suggestion.title || suggestion.name || 'Untitled Task'}`;
+      case '@':
+        return `@${suggestion.employeeId || suggestion.firstName + ' ' + suggestion.lastName || 'Unknown Person'}`;
+      case '#':
+        return `#${suggestion.title || suggestion.workOrderNumber || 'Unknown Work Order'}`;
+      case '+':
+        return `+${suggestion.title || suggestion.name || 'Unknown Project'}`;
+      case '&':
+        return `&${suggestion.name || suggestion.company || 'Unknown Client'}`;
+      default:
+        return suggestion.toString();
+    }
+  }, []);
+
+  // Helper function to get the replacement text when user selects a suggestion
+  const formatSuggestionReplacement = useCallback(
+    (suggestion: any, symbol: string): string => 
+      // Always return the formatted display text for replacement
+       formatSuggestionDisplay(suggestion, symbol)
+    ,
+    [formatSuggestionDisplay]
+  );
 
   // Symbol detection and autocomplete
   const detectSymbolAtCursor = useCallback((text: string, cursorPos: number) => {
@@ -114,16 +147,19 @@ export function FloatingChat() {
 
         if (data.success && data.suggestions) {
           setAutocompleteSuggestions(data.suggestions);
+          setCurrentSymbol(symbol);
           setShowAutocomplete(data.suggestions.length > 0);
           setSelectedSuggestionIndex(-1);
         } else {
           setAutocompleteSuggestions([]);
+          setCurrentSymbol('');
           setShowAutocomplete(false);
           setSelectedSuggestionIndex(-1);
         }
       } catch (err) {
         console.warn('[FloatingChat] Autocomplete error:', err);
         setAutocompleteSuggestions([]);
+        setCurrentSymbol('');
         setShowAutocomplete(false);
         setSelectedSuggestionIndex(-1);
       }
@@ -150,35 +186,38 @@ export function FloatingChat() {
       } else {
         setShowAutocomplete(false);
         setAutocompleteSuggestions([]);
+        setCurrentSymbol('');
       }
     },
     [detectSymbolAtCursor, fetchAutocompleteSuggestions]
   );
 
   const handleSuggestionClick = useCallback(
-    (suggestion: string) => {
+    (suggestion: any) => {
       const symbolInfo = detectSymbolAtCursor(input, cursorPosition);
       if (symbolInfo) {
+        const replacementText = formatSuggestionReplacement(suggestion, symbolInfo.symbol);
         const beforeSymbol = input.substring(0, symbolInfo.startPos);
         const afterSymbol = input.substring(cursorPosition);
-        const newInput = beforeSymbol + suggestion + ' ' + afterSymbol;
+        const newInput = beforeSymbol + replacementText + ' ' + afterSymbol;
 
         setInput(newInput);
         setShowAutocomplete(false);
         setAutocompleteSuggestions([]);
         setSelectedSuggestionIndex(-1);
+        setCurrentSymbol('');
 
         // Focus back to input and set cursor position
         setTimeout(() => {
           if (actualInputRef.current) {
             actualInputRef.current.focus();
-            const newCursorPos = beforeSymbol.length + suggestion.length + 1;
+            const newCursorPos = beforeSymbol.length + replacementText.length + 1;
             actualInputRef.current.setSelectionRange(newCursorPos, newCursorPos);
           }
         }, 0);
       }
     },
-    [input, cursorPosition, detectSymbolAtCursor]
+    [input, cursorPosition, detectSymbolAtCursor, formatSuggestionReplacement]
   );
 
   useEffect(() => {
@@ -620,12 +659,14 @@ export function FloatingChat() {
                             primary={
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Chip
-                                  label={suggestion.charAt(0)}
+                                  label={currentSymbol}
                                   size="small"
                                   color="primary"
                                   sx={{ minWidth: 24, height: 20, fontSize: '0.75rem' }}
                                 />
-                                <Typography variant="body2">{suggestion.substring(1)}</Typography>
+                                <Typography variant="body2">
+                                  {formatSuggestionDisplay(suggestion, currentSymbol).substring(1)}
+                                </Typography>
                               </Box>
                             }
                           />

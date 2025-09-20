@@ -73,7 +73,9 @@ export const webhooksApi = {
   },
 
   // Create a new webhook
-  createWebhook: async (data: WebhookFormData): Promise<{
+  createWebhook: async (
+    data: WebhookFormData
+  ): Promise<{
     success: boolean;
     data: Webhook;
     secretKey: string;
@@ -84,7 +86,10 @@ export const webhooksApi = {
   },
 
   // Update a webhook
-  updateWebhook: async (id: string, data: Partial<WebhookFormData>): Promise<{
+  updateWebhook: async (
+    id: string,
+    data: Partial<WebhookFormData>
+  ): Promise<{
     success: boolean;
     data: Webhook;
   }> => {
@@ -105,7 +110,11 @@ export const webhooksApi = {
   },
 
   // Get webhook logs
-  getWebhookLogs: async (id: string, page = 1, limit = 50): Promise<{
+  getWebhookLogs: async (
+    id: string,
+    page = 1,
+    limit = 50
+  ): Promise<{
     success: boolean;
     data: {
       logs: WebhookLog[];
@@ -128,7 +137,9 @@ export const webhooksApi = {
   },
 
   // Regenerate webhook secret
-  regenerateSecret: async (id: string): Promise<{
+  regenerateSecret: async (
+    id: string
+  ): Promise<{
     success: boolean;
     data: Webhook;
     secretKey: string;

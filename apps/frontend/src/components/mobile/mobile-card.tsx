@@ -5,15 +5,7 @@ import type { CardProps } from '@mui/material';
 import React, { useRef, useState } from 'react';
 
 import { styled } from '@mui/material/styles';
-import {
-  Box,
-  Card,
-  Chip,
-  alpha,
-  Typography,
-  CardContent,
-  CardActions,
-} from '@mui/material';
+import { Box, Card, Chip, alpha, Typography, CardContent, CardActions } from '@mui/material';
 
 import { Iconify } from '../iconify';
 

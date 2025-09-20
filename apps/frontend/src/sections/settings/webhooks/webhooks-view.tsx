@@ -161,76 +161,78 @@ export function WebhooksView() {
             <TableContainer component={Paper} variant="outlined">
               <Table>
                 <TableHead>
-                <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Topics</TableCell>
-                  <TableCell>Delivery URL</TableCell>
-                  <TableCell>Last Triggered</TableCell>
-                  <TableCell>Failures</TableCell>
-                  <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {webhooks.map((w) => (
-                  <TableRow key={w._id}>
-                    <TableCell>
-                      <Typography variant="subtitle2">{w.name}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={w.status ? 'Active' : 'Inactive'}
-                        color={w.status ? 'success' : 'default'}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={0.5} flexWrap="wrap">
-                        {w.topics.map((t) => (
-                          <Chip key={t} label={t} size="small" variant="outlined" />
-                        ))}
-                      </Stack>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {w.deliveryUrl}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {w.lastTriggeredAt ? new Date(w.lastTriggeredAt).toLocaleString() : 'Never'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={w.failureCount}
-                        size="small"
-                        color={w.failureCount > 0 ? 'error' : 'default'}
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <Stack direction="row" spacing={1} justifyContent="flex-end">
-                        <IconButton size="small" onClick={() => handleTest(w)} title="Test">
-                          <Iconify icon="solar:play-bold" />
-                        </IconButton>
-                        <IconButton size="small" onClick={() => handleEdit(w)} title="Edit">
-                          <Iconify icon="solar:pen-bold" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDelete(w)}
-                          title="Delete"
-                        >
-                          <Iconify icon="solar:trash-bin-trash-bold" />
-                        </IconButton>
-                      </Stack>
-                    </TableCell>
+                  <TableRow>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Topics</TableCell>
+                    <TableCell>Delivery URL</TableCell>
+                    <TableCell>Last Triggered</TableCell>
+                    <TableCell>Failures</TableCell>
+                    <TableCell align="right">Actions</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {webhooks.map((w) => (
+                    <TableRow key={w._id}>
+                      <TableCell>
+                        <Typography variant="subtitle2">{w.name}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={w.status ? 'Active' : 'Inactive'}
+                          color={w.status ? 'success' : 'default'}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                          {w.topics.map((t) => (
+                            <Chip key={t} label={t} size="small" variant="outlined" />
+                          ))}
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {w.deliveryUrl}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {w.lastTriggeredAt
+                            ? new Date(w.lastTriggeredAt).toLocaleString()
+                            : 'Never'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={w.failureCount}
+                          size="small"
+                          color={w.failureCount > 0 ? 'error' : 'default'}
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          <IconButton size="small" onClick={() => handleTest(w)} title="Test">
+                            <Iconify icon="solar:play-bold" />
+                          </IconButton>
+                          <IconButton size="small" onClick={() => handleEdit(w)} title="Edit">
+                            <Iconify icon="solar:pen-bold" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDelete(w)}
+                            title="Delete"
+                          >
+                            <Iconify icon="solar:trash-bin-trash-bold" />
+                          </IconButton>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
         </CardContent>
       </Card>

@@ -22,7 +22,8 @@ import { Iconify } from 'src/components/iconify';
 
 export function AIAssistantView() {
   const [input, setInput] = useState('');
-  const { messages, send, stop, isStreaming, error, clearMessages, retryLastMessage } = useChatStream();
+  const { messages, send, stop, isStreaming, error, clearMessages, retryLastMessage } =
+    useChatStream();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -109,8 +110,8 @@ export function AIAssistantView() {
             AI Assistant
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Ask questions about your work orders, projects, and tasks. I can help you find information,
-            get updates, and understand your field service operations.
+            Ask questions about your work orders, projects, and tasks. I can help you find
+            information, get updates, and understand your field service operations.
           </Typography>
         </Box>
 
@@ -152,7 +153,7 @@ export function AIAssistantView() {
                 <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent="center">
                   {[
                     'Show me my recent work orders',
-                    'What\'s on my kanban board?',
+                    "What's on my kanban board?",
                     'List high priority work orders',
                   ].map((prompt) => (
                     <Button
@@ -218,11 +219,7 @@ export function AIAssistantView() {
                   endAdornment: (
                     <InputAdornment position="end">
                       {isStreaming ? (
-                        <IconButton
-                          onClick={stop}
-                          color="error"
-                          size="small"
-                        >
+                        <IconButton onClick={stop} color="error" size="small">
                           <Iconify icon="solar:stop-bold" width={20} />
                         </IconButton>
                       ) : (

@@ -16,7 +16,8 @@ except ImportError:
 
 from main import LocalNLPProcessor, Intent
 import json
-from typing import Optional, List
+import re
+from typing import Optional, List, Dict
 
 app = FastAPI(title="FSA Local NLP Service", version="1.0.0")
 
@@ -32,8 +33,27 @@ app.add_middleware(
 # Initialize the processor
 processor = LocalNLPProcessor()
 
+def parse_entities_from_text(text: str) -> Dict[str, str]:
+    """Parse entity={id} patterns from text and return as dictionary"""
+    entities = {}
+    valid_entity_types = ['task', 'work_order', 'personnel', 'project', 'client']
+
+    # Find all entity={id} patterns
+    matches = re.findall(r'(\w+)=\{([^}]+)\}', text)
+
+    for entity_type, entity_id in matches:
+        if entity_type in valid_entity_types:
+            entities[entity_type] = entity_id
+            print(f"[EntityParser] Found {entity_type}={entity_id}")
+        else:
+            print(f"[EntityParser] Invalid entity type: {entity_type}")
+
+    return entities
+
 class ProcessRequest(BaseModel):
-    text: str
+    text: Optional[str] = None
+    originalTxt: Optional[str] = None
+    parsedTxt: Optional[str] = None
     user_id: Optional[str] = None
     tenant_id: Optional[str] = None
 
@@ -67,11 +87,29 @@ async def health_check():
 async def process_text(request: ProcessRequest):
     """Process natural language text for task operations"""
     try:
-        if not request.text.strip():
+        # Handle both legacy string format and new structured payload
+        if request.originalTxt and request.parsedTxt:
+            # New structured payload format
+            text_to_process = request.parsedTxt
+
+            # Parse entities from the parsed text
+            entities = parse_entities_from_text(request.parsedTxt)
+            print(f"[LocalNLP] Processing structured payload:")
+            print(f"  Original: {request.originalTxt}")
+            print(f"  Parsed: {request.parsedTxt}")
+            print(f"  Entities: {entities}")
+        elif request.text:
+            # Legacy string format
+            text_to_process = request.text
+            print(f"[LocalNLP] Processing legacy text: {request.text}")
+        else:
+            raise HTTPException(status_code=400, detail="Either 'text' or both 'originalTxt' and 'parsedTxt' must be provided")
+
+        if not text_to_process.strip():
             raise HTTPException(status_code=400, detail="Text cannot be empty")
 
         # Process the text
-        result = processor.process(request.text)
+        result = processor.process(text_to_process)
 
         # Convert to response format
         entities = [

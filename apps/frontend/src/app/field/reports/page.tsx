@@ -85,7 +85,10 @@ export default function FieldReportsPage() {
   );
 
   const reports = reportsData?.data || [];
-  const pagination = useMemo(() => reportsData?.pagination || { total: 0, pages: 1, page: 1 }, [reportsData?.pagination]);
+  const pagination = useMemo(
+    () => reportsData?.pagination || { total: 0, pages: 1, page: 1 },
+    [reportsData?.pagination]
+  );
 
   // Handlers
   const handleFilterChange = useCallback((key: keyof ReportSearchParams, value: any) => {

@@ -205,7 +205,8 @@ export const endpoints = {
     test: (id: string) => axiosInstance.post(`/api/v1/webhooks/${id}/test`),
     logs: (id: string, params: any) => axiosInstance.get(`/api/v1/webhooks/${id}/logs`, { params }),
     topics: () => axiosInstance.get('/api/v1/webhooks/topics'),
-    regenerateSecret: (id: string) => axiosInstance.post(`/api/v1/webhooks/${id}/regenerate-secret`),
+    regenerateSecret: (id: string) =>
+      axiosInstance.post(`/api/v1/webhooks/${id}/regenerate-secret`),
   },
   apiKey: {
     list: () => axiosInstance.get('/api/v1/api-keys'),

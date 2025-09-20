@@ -229,9 +229,9 @@ export function generateAutocompleteTool(): ToolDef {
             success: true,
             symbol: parsedArgs.symbol,
             query: parsedArgs.query,
-            suggestions,
-            count: suggestions.length,
-            message: `Found ${suggestions.length} suggestions for ${parsedArgs.symbol}${parsedArgs.query}`,
+            suggestions: results, // Return the full database results with _id
+            count: results.length,
+            message: `Found ${results.length} suggestions for ${parsedArgs.symbol}${parsedArgs.query}`,
           }),
         };
       } catch (error: any) {

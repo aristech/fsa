@@ -27,7 +27,7 @@ export type MainLayoutProps = LayoutBaseProps & {
   layoutQuery?: Breakpoint;
   slotProps?: {
     header?: HeaderSectionProps;
-    
+
     main?: MainSectionProps;
     footer?: FooterProps;
   };
@@ -46,10 +46,8 @@ export function MainLayout({
 
   const isHomePage = pathname === '/';
 
-
   const renderHeader = () => {
     const headerSlots: HeaderSectionProps['slots'] = {
-    
       leftArea: (
         <>
           {/** @slot Nav mobile */}
@@ -61,7 +59,6 @@ export function MainLayout({
               [theme.breakpoints.up(layoutQuery)]: { display: 'none' },
             })}
           />
-      
 
           {/** @slot Logo */}
           <Logo />
@@ -70,16 +67,13 @@ export function MainLayout({
       rightArea: (
         <>
           {/** @slot Nav desktop */}
-         
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
-         
-
             {/** @slot Sign in button */}
             <SignInButton />
 
             {/** @slot Language popover */}
-          <LanguagePopover data={allLangs} />
+            <LanguagePopover data={allLangs} />
           </Box>
         </>
       ),

@@ -2,6 +2,209 @@ import type { ChatMessage, ToolDef, ChatContext } from "../../types/ai";
 import { OpenAILLM } from "./llm";
 import { LocalNLPService, type LocalNLPResult } from "./local-nlp-service";
 import { generateDynamicTools } from "./dynamic-tools";
+import { AISettingsService } from "../ai-settings-service";
+import { Types } from "mongoose";
+
+/**
+ * Validate and parse entity IDs from parsed text
+ */
+const validateAndParseEntities = (
+  parsedText: string,
+): { isValid: boolean; entities: Array<{ type: string; id: string }> } => {
+  const entities: Array<{ type: string; id: string }> = [];
+  const validEntityTypes = [
+    "task",
+    "work_order",
+    "personnel",
+    "project",
+    "client",
+  ];
+
+  // Find all entity={id} patterns
+  const entityMatches = parsedText.match(/(\w+)=\{([^}]+)\}/g) || [];
+
+  for (const match of entityMatches) {
+    const [, entityType, id] = match.match(/(\w+)=\{([^}]+)\}/) || [];
+
+    if (!entityType || !id) {
+      console.warn(`[EntityValidation] Invalid entity format: ${match}`);
+      return { isValid: false, entities: [] };
+    }
+
+    // Check if entity type is valid
+    if (!validEntityTypes.includes(entityType)) {
+      console.warn(`[EntityValidation] Invalid entity type: ${entityType}`);
+      return { isValid: false, entities: [] };
+    }
+
+    // Check if ID is a valid MongoDB ObjectId
+    if (!Types.ObjectId.isValid(id)) {
+      console.warn(`[EntityValidation] Invalid MongoDB ObjectId: ${id}`);
+      return { isValid: false, entities: [] };
+    }
+
+    entities.push({ type: entityType, id });
+    console.log(`[EntityValidation] Valid entity: ${entityType}={${id}}`);
+  }
+
+  return { isValid: true, entities };
+};
+
+/**
+ * Create structured payload for Local NLP with resolved symbols
+ */
+const createStructuredPayload = async (
+  originalText: string,
+  ctx: ChatContext,
+): Promise<{ originalTxt: string; parsedTxt: string }> => {
+  console.log(
+    `[SymbolResolution] Creating structured payload for: "${originalText}"`,
+  );
+
+  // Precise symbol detection for different types
+  const symbolMatches = [];
+
+  // Task IDs: /10, /123 (numbers only)
+  const taskMatches = originalText.match(/(\/\d+)(?=\s|$)/g) || [];
+  symbolMatches.push(...taskMatches);
+
+  // Personnel: @John, @John Doe (names)
+  const personnelMatches =
+    originalText.match(
+      /(@[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω\s]*?)(?=\s+(?:for|in|with|due|at|from|by|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|title|$)|$)/g,
+    ) || [];
+  symbolMatches.push(...personnelMatches);
+
+  // Work Orders: #Garden, #Garden Care (descriptions)
+  const workOrderMatches =
+    originalText.match(
+      /(#[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω\s]*?)(?=\s+(?:for|in|with|due|at|from|by|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|title|$)|$)/g,
+    ) || [];
+  symbolMatches.push(...workOrderMatches);
+
+  // Projects: +Project Name
+  const projectMatches =
+    originalText.match(
+      /(\+[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω\s]*?)(?=\s+(?:for|in|with|due|at|from|by|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|title|$)|$)/g,
+    ) || [];
+  symbolMatches.push(...projectMatches);
+
+  // Clients: &Client Name
+  const clientMatches =
+    originalText.match(
+      /(&[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω\s]*?)(?=\s+(?:for|in|with|due|at|from|by|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|title|$)|$)/g,
+    ) || [];
+  symbolMatches.push(...clientMatches);
+
+  if (symbolMatches.length === 0) {
+    return {
+      originalTxt: originalText,
+      parsedTxt: originalText,
+    };
+  }
+
+  let parsedText = originalText;
+  const resolvedSymbols: Array<{ original: string; resolved: string }> = [];
+
+  // Resolve each symbol using autocomplete
+  for (const symbolMatch of symbolMatches) {
+    const symbolType = symbolMatch[0]; // @, #, /, +, &
+    const query = symbolMatch.substring(1).trim(); // Remove symbol prefix
+
+    try {
+      // Call autocomplete service
+      const response = await fetch(
+        `${process.env.API_URL || "http://localhost:3001"}/api/v1/autocomplete?symbol=${encodeURIComponent(symbolType)}&query=${encodeURIComponent(query)}&limit=1&token=${ctx.token || ""}`,
+      );
+
+      if (response.ok) {
+        const data = (await response.json()) as any;
+
+        if (data.success && data.suggestions && data.suggestions.length > 0) {
+          const suggestion = data.suggestions[0];
+
+          // Extract the actual MongoDB ObjectId from the suggestion
+          let entityId: string;
+          if (typeof suggestion === "object" && suggestion._id) {
+            entityId = suggestion._id;
+          } else if (typeof suggestion === "object" && suggestion.id) {
+            entityId = suggestion.id;
+          } else if (symbolType === "/" && Types.ObjectId.isValid(query)) {
+            // For task IDs, if the query itself is a valid ObjectId, use it
+            entityId = query;
+          } else {
+            // Fallback: try to extract ID from string representation
+            const idMatch = suggestion
+              .toString()
+              .match(/ObjectId\('([^']+)'\)|"_id"\s*:\s*"([^"]+)"/);
+            entityId = idMatch
+              ? idMatch[1] || idMatch[2]
+              : suggestion.toString();
+          }
+
+          // Create structured replacement based on symbol type
+          let replacement: string;
+          switch (symbolType) {
+            case "/":
+              replacement = `task={${entityId}}`;
+              break;
+            case "@":
+              replacement = `personnel={${entityId}}`;
+              break;
+            case "#":
+              replacement = `work_order={${entityId}}`;
+              break;
+            case "+":
+              replacement = `project={${entityId}}`;
+              break;
+            case "&":
+              replacement = `client={${entityId}}`;
+              break;
+            default:
+              replacement = symbolMatch;
+          }
+
+          resolvedSymbols.push({
+            original: symbolMatch,
+            resolved: replacement,
+          });
+          console.log(
+            `[SymbolResolution] Resolved ${symbolMatch} -> ${replacement}`,
+          );
+        }
+      }
+    } catch (error) {
+      console.warn(`[SymbolResolution] Error resolving ${symbolMatch}:`, error);
+    }
+  }
+
+  // Replace symbols in the text
+  resolvedSymbols.forEach(({ original, resolved }) => {
+    parsedText = parsedText.replace(original, resolved);
+  });
+
+  // Validate entities in the parsed text
+  const validation = validateAndParseEntities(parsedText);
+
+  if (!validation.isValid) {
+    console.warn(
+      `[SymbolResolution] Entity validation failed, returning original text`,
+    );
+    return {
+      originalTxt: originalText,
+      parsedTxt: originalText,
+    };
+  }
+
+  const payload = {
+    originalTxt: originalText,
+    parsedTxt: parsedText,
+  };
+
+  console.log(`[SymbolResolution] Structured payload:`, payload);
+  console.log(`[SymbolResolution] Validated entities:`, validation.entities);
+  return payload;
+};
 
 // ----------------------------------------------------------------------
 
@@ -29,9 +232,37 @@ let tools: ToolDef[] | null = null;
 
 // Initialize shared instances
 const initializeServices = () => {
-  if (!openaiLLM) openaiLLM = new OpenAILLM();
   if (!localNLPService) localNLPService = new LocalNLPService();
   if (!tools) tools = generateDynamicTools();
+};
+
+// Initialize OpenAI LLM with user's API key
+const initializeOpenAI = async (ctx: ChatContext): Promise<OpenAILLM> => {
+  try {
+    // Get user's AI settings
+    const settings = await AISettingsService.getSettings(
+      ctx.userId,
+      ctx.tenantId,
+    );
+
+    if (settings?.openaiApiKey) {
+      console.log(
+        `[AIServiceRouter] Using user's OpenAI API key for user ${ctx.userId}`,
+      );
+      return new OpenAILLM(settings.openaiApiKey);
+    } else {
+      console.log(
+        `[AIServiceRouter] No user API key found, using environment variable for user ${ctx.userId}`,
+      );
+      return new OpenAILLM(); // Falls back to environment variable
+    }
+  } catch (error) {
+    console.warn(
+      `[AIServiceRouter] Failed to get user settings, using environment variable:`,
+      error,
+    );
+    return new OpenAILLM(); // Falls back to environment variable
+  }
 };
 
 /**
@@ -111,15 +342,22 @@ const processWithLocalNLP = async (
       throw new Error("Local NLP service not available");
     }
 
-    // Process with local NLP
+    // Create structured payload with resolved symbols
+    const structuredPayload = await createStructuredPayload(
+      lastMessage.content,
+      ctx,
+    );
+
+    // Process with local NLP using structured payload
     console.log("[AIServiceRouter] Processing with local NLP:", {
-      text: lastMessage.content,
+      originalText: structuredPayload.originalTxt,
+      parsedText: structuredPayload.parsedTxt,
       userId: ctx.userId,
       tenantId: ctx.tenantId,
     });
 
     const nlpResult: LocalNLPResult = await localNLPService!.processText(
-      lastMessage.content,
+      structuredPayload,
       ctx.userId,
       ctx.tenantId,
     );
@@ -167,10 +405,49 @@ const processWithLocalNLP = async (
         responseMessage = "❌ Task creation tool not available";
       }
     } else if (nlpResult.intent === "update_task") {
-      // Handle task updates (you'll need to implement this based on your local NLP capabilities)
-      responseMessage = `✅ Task update processed using local NLP service!\n\nIntent: ${nlpResult.intent}\nTitle: ${nlpResult.title}`;
+      // Find the update_task tool
+      const updateTaskTool = tools!.find((tool) => tool.name === "update_task");
+      if (updateTaskTool) {
+        // Extract task ID from entities
+        const taskEntity = nlpResult.entities?.find((e) => e.type === "task");
+        if (!taskEntity) {
+          responseMessage = "❌ Task ID not found in update request";
+        } else {
+          const taskArgs = {
+            id: taskEntity.value, // Use the task ID from entities
+            title: nlpResult.title,
+            description: nlpResult.description,
+            priority: nlpResult.priority,
+            assignees: nlpResult.assignees || [],
+            dueDate: nlpResult.due_date,
+            startDate: nlpResult.start_date,
+            estimatedHours: nlpResult.estimated_hours,
+            workOrderNumber: nlpResult.work_order,
+            projectName: nlpResult.project,
+            clientName: nlpResult.client,
+          };
+
+          // Execute the tool
+          const toolResult = await updateTaskTool.handler(taskArgs, ctx);
+          toolCalls.push({
+            name: "update_task",
+            arguments: taskArgs,
+            result:
+              typeof toolResult === "string"
+                ? toolResult
+                : toolResult.content || JSON.stringify(toolResult),
+          });
+
+          responseMessage = `✅ Task updated successfully using local NLP service!`;
+        }
+      } else {
+        responseMessage = "❌ Task update tool not available";
+      }
     } else {
-      responseMessage = `✅ Request processed using local NLP service!\n\nIntent: ${nlpResult.intent}\nConfidence: ${(nlpResult.confidence * 100).toFixed(1)}%`;
+      // For unknown intents, don't show the user - just throw error to fall back to OpenAI
+      throw new Error(
+        `Local NLP service cannot handle intent: ${nlpResult.intent}`,
+      );
     }
 
     return {
@@ -194,7 +471,9 @@ const processWithOpenAI = async (
   initializeServices();
 
   try {
-    const response = await openaiLLM!.chat(messages, tools!, false);
+    // Initialize OpenAI with user's API key
+    const userOpenAI = await initializeOpenAI(ctx);
+    const response = await userOpenAI.chat(messages, tools!, false);
     const choice = (response as any).choices?.[0];
 
     if (!choice) {
@@ -299,9 +578,9 @@ export const processChat = async (
     );
     return await processWithLocalNLP(messages, ctx);
   } catch (error) {
-    console.warn(
-      "[AIServiceRouter] Local NLP failed, falling back to OpenAI:",
-      error,
+    console.log(
+      "[AIServiceRouter] Local NLP not suitable for this request, using OpenAI:",
+      (error as Error).message,
     );
     // Fall through to OpenAI
   }
@@ -379,9 +658,9 @@ export const processChatStream = async (
     }
     return;
   } catch (error) {
-    console.warn(
-      "[AIServiceRouter] Local NLP failed in stream, falling back to OpenAI:",
-      error,
+    console.log(
+      "[AIServiceRouter] Local NLP not suitable for this request, using OpenAI:",
+      (error as Error).message,
     );
     // Fall through to OpenAI streaming
   }
@@ -453,7 +732,9 @@ const processWithOpenAIStream = async (
   initializeServices();
 
   try {
-    const stream = await openaiLLM!.chat(messages, tools!, true);
+    // Initialize OpenAI with user's API key
+    const userOpenAI = await initializeOpenAI(ctx);
+    const stream = await userOpenAI.chat(messages, tools!, true);
     let accumulatedContent = "";
     let toolCalls: any[] = [];
 

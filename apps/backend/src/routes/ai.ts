@@ -91,6 +91,9 @@ async function authenticateSSE(request: FastifyRequest, reply: FastifyReply) {
       permissions: decoded.permissions || [],
     };
 
+    // Attach token to request
+    (request as any).token = token;
+
     // Get tenant info - simplified for SSE
     (request as any).context = {
       user: {
@@ -146,6 +149,15 @@ export async function aiRoutes(fastify: FastifyInstance) {
       if (typeof (reply.raw as any).flushHeaders === "function") {
         (reply.raw as any).flushHeaders();
       }
+
+      // Handle client disconnect
+      reply.raw.on("close", () => {
+        console.log("[AI] Client disconnected, stopping stream");
+      });
+
+      reply.raw.on("error", (error) => {
+        console.log("[AI] Connection error:", error.message);
+      });
 
       // Get language from query parameters with fallback
       const language = (request.query as any).lang || "en";
@@ -226,6 +238,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
         const ctx: ChatContext = {
           userId: user.id,
           tenantId: tenant._id.toString(),
+          token: (request as any).token,
           emitEvent: (event: { type: string; data: any }) => {
             // Emit real-time events for task updates
             const eventData: StreamEvent = {
@@ -416,12 +429,23 @@ USER: ${userPermissions.includes("*") ? "Admin" : "Standard"}`,
           );
         }
 
+        // Check if connection is still alive before starting
+        if (reply.raw.destroyed) {
+          console.log("[AI] Connection closed before streaming started");
+          return;
+        }
+
         // Start streaming chat
         await streamChat({
           messages: messagesWithSystem,
           ctx,
           tools: availableTools,
           onToken: (token: string) => {
+            // Check if connection is still alive before sending token
+            if (reply.raw.destroyed) {
+              console.log("[AI] Connection closed during streaming, stopping");
+              return;
+            }
             // small batching is handled by client; we just forward tokens
             const event: StreamEvent = {
               type: "token",
@@ -430,6 +454,11 @@ USER: ${userPermissions.includes("*") ? "Admin" : "Standard"}`,
             reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
           },
           onToolCall: (toolCall: any) => {
+            // Check if connection is still alive before sending tool call
+            if (reply.raw.destroyed) {
+              console.log("[AI] Connection closed during tool call, stopping");
+              return;
+            }
             const event: StreamEvent = {
               type: "tool_delta",
               data: JSON.stringify(toolCall),
@@ -437,6 +466,11 @@ USER: ${userPermissions.includes("*") ? "Admin" : "Standard"}`,
             reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
           },
           onComplete: (result) => {
+            // Check if connection is still alive before completing
+            if (reply.raw.destroyed) {
+              console.log("[AI] Connection closed before completion");
+              return;
+            }
             console.log("[AI] Stream complete", {
               serviceUsed: result.serviceUsed,
             });
@@ -447,6 +481,11 @@ USER: ${userPermissions.includes("*") ? "Admin" : "Standard"}`,
             reply.raw.end();
           },
           onError: (error) => {
+            // Check if connection is still alive before sending error
+            if (reply.raw.destroyed) {
+              console.log("[AI] Connection closed before error handling");
+              return;
+            }
             console.error("[AI] Stream error:", error?.message || error);
             const errorEvent: StreamEvent = {
               type: "error",

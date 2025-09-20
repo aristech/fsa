@@ -52,8 +52,8 @@ export function OverviewAnalyticsView() {
     const res = await axiosInstance.get(url);
     return res.data?.data?.board || res.data?.board || null;
   });
-  const tasks: any[] = useMemo(() => 
-    Array.isArray(kanbanResp?.tasks) ? kanbanResp!.tasks : [], 
+  const tasks: any[] = useMemo(
+    () => (Array.isArray(kanbanResp?.tasks) ? kanbanResp!.tasks : []),
     [kanbanResp]
   );
 
@@ -65,8 +65,8 @@ export function OverviewAnalyticsView() {
       return res.data?.data?.workOrders || res.data?.data || [];
     }
   );
-  const workOrders: any[] = useMemo(() => 
-    Array.isArray(workOrdersResp) ? workOrdersResp : [], 
+  const workOrders: any[] = useMemo(
+    () => (Array.isArray(workOrdersResp) ? workOrdersResp : []),
     [workOrdersResp]
   );
 
@@ -466,25 +466,27 @@ export function OverviewAnalyticsView() {
   }));
 
   // ----------------- Workload per client (pie) -----------------
-  const workloadByClient = useMemo(() => 
-    workOrders.reduce(
-      (acc: Record<string, number>, wo: any) => {
-        const name =
-          wo.clientName ||
-          wo.client?.name ||
-          (typeof wo.clientId === 'object' ? wo.clientId?.name : undefined) ||
-          'Unknown client';
-        acc[name] = (acc[name] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    ), 
+  const workloadByClient = useMemo(
+    () =>
+      workOrders.reduce(
+        (acc: Record<string, number>, wo: any) => {
+          const name =
+            wo.clientName ||
+            wo.client?.name ||
+            (typeof wo.clientId === 'object' ? wo.clientId?.name : undefined) ||
+            'Unknown client';
+          acc[name] = (acc[name] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
     [workOrders]
   );
-  const workloadEntries = useMemo(() => 
-    Object.entries(workloadByClient)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8),
+  const workloadEntries = useMemo(
+    () =>
+      Object.entries(workloadByClient)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8),
     [workloadByClient]
   );
   const workloadSeries = workloadEntries.map(([label, value]) => ({ label, value }));

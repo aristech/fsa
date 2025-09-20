@@ -22,25 +22,22 @@ interface ReportAttachmentsTabProps {
 export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttachmentsTabProps) {
   const [uploading, setUploading] = useState(false);
 
-  const handleFileUpload = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const files = event.target.files;
-      if (!files || files.length === 0) return;
+  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-      setUploading(true);
-      try {
-        // In a real implementation, upload files to the server
-        // await ReportService.uploadAttachment(report._id, files[0]);
-        toast.success('File uploaded successfully');
-      } catch (error) {
-        console.error('Error uploading file:', error);
-        toast.error('Failed to upload file');
-      } finally {
-        setUploading(false);
-      }
-    },
-    []
-  );
+    setUploading(true);
+    try {
+      // In a real implementation, upload files to the server
+      // await ReportService.uploadAttachment(report._id, files[0]);
+      toast.success('File uploaded successfully');
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error('Failed to upload file');
+    } finally {
+      setUploading(false);
+    }
+  }, []);
 
   const handlePhotoCapture = useCallback(() => {
     // In a real implementation, open camera for photo capture

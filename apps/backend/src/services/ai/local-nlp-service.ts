@@ -134,7 +134,7 @@ export class LocalNLPService {
   }
 
   async processText(
-    text: string,
+    text: string | { originalTxt: string; parsedTxt: string },
     userId?: string,
     tenantId?: string,
   ): Promise<LocalNLPResult> {
@@ -145,16 +145,23 @@ export class LocalNLPService {
         throw new Error("Local NLP server not available");
       }
 
+      // Handle both string and structured payload
+      const payload =
+        typeof text === "string"
+          ? { text, user_id: userId, tenant_id: tenantId }
+          : {
+              originalTxt: text.originalTxt,
+              parsedTxt: text.parsedTxt,
+              user_id: userId,
+              tenant_id: tenantId,
+            };
+
       const response = await fetch(`${this.nlpServerUrl}/process`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          text,
-          user_id: userId,
-          tenant_id: tenantId,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {

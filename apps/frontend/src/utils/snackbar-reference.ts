@@ -45,7 +45,6 @@ toast.promise(fetch('/api/data'), {
   error: 'Failed to load data',
 });
 
-
 // Example with action button:
 toast.error('Failed to save', {
   action: {

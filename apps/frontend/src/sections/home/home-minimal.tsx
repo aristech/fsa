@@ -32,7 +32,7 @@ const renderLines = () => (
 
 export function HomeMinimal({ sx, ...other }: BoxProps) {
   const { t } = useTranslate();
-  
+
   const renderDescription = () => (
     <>
       <SectionTitle
