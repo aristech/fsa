@@ -77,6 +77,9 @@ jobs:
         run: |
           cd apps/backend/src/services/ai/local-nlp
 
+          # Ensure no processes are using port 8001 (cleanup from any previous runs)
+          lsof -ti:8001 | xargs kill -9 2>/dev/null || true
+
           # Create virtual environment (handle PEP 668)
           python3 -m venv nlp_env
 
@@ -84,7 +87,7 @@ jobs:
           ./nlp_env/bin/pip install --upgrade pip
           ./nlp_env/bin/pip install -r requirements.txt
 
-          # Test the setup using virtual environment Python
+          # Test the setup using virtual environment Python (standalone test, no server)
           ./nlp_env/bin/python main.py "test build setup" > /dev/null
           echo "✅ Local NLP service setup completed"
 
@@ -330,6 +333,11 @@ jobs:
           # Start local NLP service with proper environment
           cd apps/backend/src/services/ai/local-nlp
 
+          # Ensure port 8001 is completely free before starting
+          echo "Cleaning up any processes using port 8001..."
+          lsof -ti:8001 | xargs kill -9 2>/dev/null || true
+          sleep 1
+
           # Stop any existing NLP service
           if [ -f "/var/www/progressnet.io-app/pids/nlp-service.pid" ]; then
             OLD_PID=$(cat /var/www/progressnet.io-app/pids/nlp-service.pid)
@@ -341,8 +349,9 @@ jobs:
             rm -f /var/www/progressnet.io-app/pids/nlp-service.pid
           fi
 
-          # Kill any remaining python server processes
+          # Kill any remaining python server processes and processes using port 8001
           pkill -f "python.*server.py" || true
+          lsof -ti:8001 | xargs kill -9 2>/dev/null || true
           sleep 2
 
           # Create log directory in app space to avoid permission issues
@@ -398,8 +407,8 @@ jobs:
           fi
 
           # Check NLP service
-          if curl -f http://localhost:8000/health >/dev/null 2>&1; then
-            echo "✅ NLP service health check passed (port 8000)"
+          if curl -f http://localhost:8001/health >/dev/null 2>&1; then
+            echo "✅ NLP service health check passed (port 8001)"
           else
             echo "⚠️  NLP service health check failed - checking service status"
             if [ -f "/var/www/progressnet.io-app/pids/nlp-service.pid" ]; then
@@ -415,7 +424,7 @@ jobs:
           echo "Deployment completed - services should be running"
           echo "Backend: http://localhost:4005"
           echo "Frontend: http://localhost:4004"
-          echo "NLP Service: http://localhost:8000"
+          echo "NLP Service: http://localhost:8001"
           sudo rm -rf /var/www/progressnet.io-app-old
 
       - name: Rollback on failure
@@ -454,8 +463,9 @@ jobs:
             rm -f /var/www/progressnet.io-app/pids/nlp-service.pid
           fi
 
-          # Kill any remaining python server processes
+          # Kill any remaining python server processes and processes using port 8001
           pkill -f "python.*server.py" || true
+          lsof -ti:8001 | xargs kill -9 2>/dev/null || true
 
           # Restart NLP service with old version if rollback successful
           if [ -d "/var/www/progressnet.io-app/apps/backend/src/services/ai/local-nlp" ]; then
