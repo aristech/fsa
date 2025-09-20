@@ -2,7 +2,8 @@
 
 import type { CSSObject } from '@mui/material/styles';
 
-import { useState } from 'react';
+import { mutate } from 'swr';
+import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 
 import Box from '@mui/material/Box';
@@ -53,6 +54,25 @@ export function KanbanView() {
 
   const [columnFixed, setColumnFixed] = useState(false);
   const [tableView, setTableView] = useState(false);
+
+  // Listen for kanban refresh events from AI
+  useEffect(() => {
+    const handleKanbanRefresh = (event: CustomEvent) => {
+      console.log('[KanbanView] Refresh event received:', event.detail);
+
+      // Trigger SWR revalidation to refresh the kanban data
+      mutate('/api/v1/kanban');
+
+      // Show a subtle notification
+      console.log(`[KanbanView] Refreshing kanban after ${event.detail.type}`);
+    };
+
+    window.addEventListener('kanban-refresh', handleKanbanRefresh as EventListener);
+
+    return () => {
+      window.removeEventListener('kanban-refresh', handleKanbanRefresh as EventListener);
+    };
+  }, []);
 
   const renderLoading = () => (
     <Box sx={{ gap: 'var(--kanban-column-gap)', display: 'flex', alignItems: 'flex-start' }}>

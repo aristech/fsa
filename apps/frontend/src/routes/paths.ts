@@ -57,6 +57,7 @@ export const paths = {
     root: ROOTS.DASHBOARD,
     mail: `${ROOTS.DASHBOARD}/mail`,
     chat: `${ROOTS.DASHBOARD}/chat`,
+    ai: `${ROOTS.DASHBOARD}/ai`,
     blank: `${ROOTS.DASHBOARD}/blank`,
     kanban: `${ROOTS.DASHBOARD}/kanban`,
     calendar: `${ROOTS.DASHBOARD}/calendar`,
@@ -65,6 +66,18 @@ export const paths = {
     general: {
       app: `${ROOTS.DASHBOARD}/app`,
       analytics: `${ROOTS.DASHBOARD}/analytics`,
+    },
+    user: {
+      root: `${ROOTS.DASHBOARD}/user`,
+      profile: `${ROOTS.DASHBOARD}/user/profile`,
+      account: `${ROOTS.DASHBOARD}/user/account`,
+      cards: `${ROOTS.DASHBOARD}/user/cards`,
+      list: `${ROOTS.DASHBOARD}/user/list`,
+    },
+    product: {
+      root: `${ROOTS.DASHBOARD}/product`,
+      details: (id: string) => `${ROOTS.DASHBOARD}/product/${id}`,
+      edit: (id: string) => `${ROOTS.DASHBOARD}/product/${id}/edit`,
     },
     // Field Service Automation (using existing dashboard structure)
     fsa: {

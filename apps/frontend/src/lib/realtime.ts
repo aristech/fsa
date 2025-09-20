@@ -45,8 +45,23 @@ class RealtimeClient {
   }
 
   // Connection management
-  connect(token?: string): Promise<void> {
+  async connect(token?: string): Promise<void> {
     if (this.socket?.connected || this.isConnecting) {
+      return Promise.resolve();
+    }
+
+    // Check if WebSocket server is available first
+    try {
+      const response = await fetch(`${CONFIG.serverUrl}/socket.io/`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(3000), // 3 second timeout
+      });
+      if (!response.ok) {
+        console.warn('🔌 WebSocket server not available - skipping connection');
+        return Promise.resolve();
+      }
+    } catch {
+      console.warn('🔌 WebSocket server not available - skipping connection');
       return Promise.resolve();
     }
 
@@ -88,13 +103,18 @@ class RealtimeClient {
         resolve();
       });
 
-      this.socket.on('connect_error', (error) => {
-        console.error('🔌 Connection error:', error.message);
+      this.socket.on('connect_error', (err) => {
+        console.warn('🔌 WebSocket connection failed:', err.message);
+        console.warn('🔌 This is normal if the WebSocket server is not running');
         this.isConnecting = false;
         this.reconnectAttempts++;
 
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-          reject(new Error(`Failed to connect after ${this.maxReconnectAttempts} attempts`));
+          console.warn(
+            '🔌 WebSocket connection failed after maximum attempts - continuing without real-time features'
+          );
+          // Don't reject the promise, just log the warning and continue
+          resolve();
         }
       });
 
@@ -216,8 +236,8 @@ class RealtimeClient {
       console.log(`🔌 Reconnected after ${attemptNumber} attempts`);
     });
 
-    this.socket.on('reconnect_error', (error) => {
-      console.error('🔌 Reconnection error:', error);
+    this.socket.on('reconnect_error', (err) => {
+      console.error('🔌 Reconnection error:', err);
     });
 
     this.socket.on('reconnect_failed', () => {
@@ -234,7 +254,10 @@ if (typeof window !== 'undefined') {
   // Try to connect when the module loads
   const token = sessionStorage.getItem('jwt_access_token');
   if (token) {
-    realtimeClient.connect(token).catch(console.error);
+    realtimeClient.connect(token).catch((err) => {
+      console.warn('🔌 Auto-connect failed:', err.message);
+      console.warn('🔌 Real-time features will not be available');
+    });
   }
 
   // Listen for storage events to handle login/logout
@@ -242,7 +265,9 @@ if (typeof window !== 'undefined') {
     if (event.key === 'jwt_access_token') {
       if (event.newValue) {
         // Token added - connect
-        realtimeClient.connect(event.newValue).catch(console.error);
+        realtimeClient.connect(event.newValue).catch((err) => {
+          console.warn('🔌 Auto-connect failed:', err.message);
+        });
       } else {
         // Token removed - disconnect
         realtimeClient.disconnect();

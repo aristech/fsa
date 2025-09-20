@@ -85,18 +85,6 @@ export function CheckoutOrderComplete({ onResetCart, onDownloadPDF, slotProps, .
           }}
         >
           <Button
-            component={RouterLink}
-            href={paths.product.root}
-            size="large"
-            color="inherit"
-            variant="outlined"
-            onClick={onResetCart}
-            startIcon={<Iconify icon="eva:arrow-ios-back-fill" />}
-          >
-            Continue shopping
-          </Button>
-
-          <Button
             size="large"
             variant="contained"
             startIcon={<Iconify icon="eva:cloud-download-fill" />}

@@ -43,7 +43,7 @@ export function DocsView() {
       </Box>
 
       <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Card>
             <CardHeader title="Quick links" />
             <CardContent>
@@ -58,7 +58,7 @@ export function DocsView() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <Card id="environments">
             <CardHeader title="Setup Environments" subheader="Local, staging, and production" />
             <CardContent>

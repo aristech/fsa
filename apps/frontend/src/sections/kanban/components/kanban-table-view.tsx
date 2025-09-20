@@ -2,8 +2,9 @@
 
 import type { IKanbanTask } from 'src/types/kanban';
 
+import { mutate } from 'swr';
 import { useBoolean } from 'minimal-shared/hooks';
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 
 import {
   Box,
@@ -160,6 +161,25 @@ export function KanbanTableView() {
   const { board, boardLoading, boardError } = useGetBoard();
   const { t } = useTranslate('common');
 
+  // Listen for kanban refresh events from AI
+  useEffect(() => {
+    const handleKanbanRefresh = (event: CustomEvent) => {
+      console.log('[KanbanTableView] Refresh event received:', event.detail);
+
+      // Trigger SWR revalidation to refresh the kanban data
+      mutate('/api/v1/kanban');
+
+      // Show a subtle notification
+      console.log(`[KanbanTableView] Refreshing kanban after ${event.detail.type}`);
+    };
+
+    window.addEventListener('kanban-refresh', handleKanbanRefresh as EventListener);
+
+    return () => {
+      window.removeEventListener('kanban-refresh', handleKanbanRefresh as EventListener);
+    };
+  }, []);
+
   // Extract tasks and columns from board data
   const tasks = useMemo(() => Object.values(board?.tasks || {}).flat(), [board?.tasks]);
   const columns = board?.columns || [];
@@ -220,17 +240,20 @@ export function KanbanTableView() {
     [taskDetailsDialog]
   );
 
-  const handleUpdateTask = useCallback(async (taskData: IKanbanTask) => {
-    try {
-      const columnId = taskData.columnId || 'default';
-      await updateTask(columnId, taskData);
-      setSelectedTask(taskData);
-      toast.success(t('taskUpdatedSuccessfully', { defaultValue: 'Task updated successfully' }));
-    } catch (error) {
-      console.error('Failed to update task:', error);
-      toast.error(t('failedToUpdateTask', { defaultValue: 'Failed to update task' }));
-    }
-  }, [t]);
+  const handleUpdateTask = useCallback(
+    async (taskData: IKanbanTask) => {
+      try {
+        const columnId = taskData.columnId || 'default';
+        await updateTask(columnId, taskData);
+        setSelectedTask(taskData);
+        toast.success(t('taskUpdatedSuccessfully', { defaultValue: 'Task updated successfully' }));
+      } catch (error) {
+        console.error('Failed to update task:', error);
+        toast.error(t('failedToUpdateTask', { defaultValue: 'Failed to update task' }));
+      }
+    },
+    [t]
+  );
 
   const handleDeleteTask = useCallback(async () => {
     if (!selectedTask) return;

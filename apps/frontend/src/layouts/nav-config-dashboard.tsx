@@ -94,6 +94,7 @@ export function useNavData(): NavSectionProps['data'] {
       items: [
         { title: t('management.projectsTasks'), path: paths.dashboard.kanban, icon: ICONS.kanban },
         { title: t('management.calendar'), path: paths.dashboard.calendar, icon: ICONS.calendar },
+        { title: 'AI Assistant', path: paths.dashboard.ai, icon: ICONS.chat },
         // {
         //   title: t('management.chat'),
         //   path: paths.dashboard.chat,

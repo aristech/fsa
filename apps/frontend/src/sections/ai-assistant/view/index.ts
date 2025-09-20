@@ -1,0 +1,1 @@
+export { AIAssistantView } from './ai-assistant-view';

@@ -27,7 +27,8 @@ export type ApiKeyFormData = zod.infer<typeof schema>;
 
 export type ApiKey = Partial<ApiKeyFormData> & { _id: string };
 
-type User = { _id: string; firstName: string; lastName: string; email: string; role: string };
+import { apiKeysApi } from 'src/services/api-keys';
+import { usersApi, type User } from 'src/services/users';
 
 type Props = {
   open: boolean;
@@ -35,9 +36,6 @@ type Props = {
   onClose: () => void;
   onSubmit: (data: ApiKeyFormData) => void;
 };
-
-import { apiKeysApi } from 'src/services/api-keys';
-import { usersApi, type User } from 'src/services/users';
 
 // ----------------------------------------------------------------------
 

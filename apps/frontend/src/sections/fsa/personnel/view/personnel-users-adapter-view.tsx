@@ -92,9 +92,7 @@ function mapPersonnelToUserItem(person: PersonnelApi): { row: IUserItem; editHre
     isActive: person.isActive,
   };
 
-  const editHref = user ? paths.dashboard.user.edit(user._id) : paths.dashboard.user.list;
-
-  return { row, editHref };
+  return { row, editHref: `#` };
 }
 
 // ----------------------------------------------------------------------
@@ -265,7 +263,7 @@ export function PersonnelUsersAdapterView() {
           heading="Personnel"
           links={[
             { name: 'Dashboard', href: paths.dashboard.root },
-            { name: 'Personnel', href: paths.dashboard.user.root },
+            { name: 'Personnel', href: paths.dashboard.fsa.personnel.root },
             { name: 'List' },
           ]}
           action={

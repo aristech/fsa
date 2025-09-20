@@ -15,7 +15,12 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import CircularProgress from '@mui/material/CircularProgress';
 
-import { apiKeysApi, type ApiKey, type ApiKeyStatus, type ApiKeyUsageStats } from 'src/services/api-keys';
+import {
+  apiKeysApi,
+  type ApiKey,
+  type ApiKeyStatus,
+  type ApiKeyUsageStats,
+} from 'src/services/api-keys';
 
 // ----------------------------------------------------------------------
 
@@ -30,12 +35,6 @@ export function ApiKeyTestDialog({ open, apiKey, onClose }: Props) {
   const [usageStats, setUsageStats] = useState<ApiKeyUsageStats | null>(null);
   const [status, setStatus] = useState<ApiKeyStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (open && apiKey) {
-      loadApiKeyData();
-    }
-  }, [open, apiKey, loadApiKeyData]);
 
   const loadApiKeyData = useCallback(async () => {
     if (!apiKey) return;
@@ -63,6 +62,12 @@ export function ApiKeyTestDialog({ open, apiKey, onClose }: Props) {
       setLoading(false);
     }
   }, [apiKey]);
+
+  useEffect(() => {
+    if (open && apiKey) {
+      loadApiKeyData();
+    }
+  }, [open, apiKey, loadApiKeyData]);
 
   const handleClose = () => {
     setUsageStats(null);
@@ -117,7 +122,8 @@ export function ApiKeyTestDialog({ open, apiKey, onClose }: Props) {
                 </Stack>
 
                 <Typography variant="body2" color="text.secondary" gutterBottom>
-                  <strong>Rate Limit:</strong> {status.rateLimitPerHour.toLocaleString()} requests/hour
+                  <strong>Rate Limit:</strong> {status.rateLimitPerHour.toLocaleString()}{' '}
+                  requests/hour
                 </Typography>
 
                 {status.expiresAt && (
@@ -139,7 +145,8 @@ export function ApiKeyTestDialog({ open, apiKey, onClose }: Props) {
                     <strong>Total Usage:</strong> {usageStats.totalUsage.toLocaleString()} requests
                   </Typography>
                   <Typography variant="body2">
-                    <strong>Average Daily Usage:</strong> {usageStats.avgUsagePerDay.toLocaleString()} requests/day
+                    <strong>Average Daily Usage:</strong>{' '}
+                    {usageStats.avgUsagePerDay.toLocaleString()} requests/day
                   </Typography>
                   <Typography variant="body2">
                     <strong>Days Since Creation:</strong> {usageStats.daysSinceCreation} days
@@ -191,7 +198,8 @@ export function ApiKeyTestDialog({ open, apiKey, onClose }: Props) {
               >
                 curl -H &quot;Authorization: Bearer YOUR_API_KEY&quot; \\{'\n'}
                 {'     '}-H &quot;Content-Type: application/json&quot; \\{'\n'}
-                {'     '}{window.location.origin}/api/v1/public/work-orders
+                {'     '}
+                {window.location.origin}/api/v1/public/work-orders
               </Box>
               <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
                 Replace YOUR_API_KEY with your actual API key
