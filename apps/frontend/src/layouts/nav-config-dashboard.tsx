@@ -182,11 +182,21 @@ export function useNavData(): NavSectionProps['data'] {
       ],
     },
     /**
-     * Item state
+     * Settings
      */
     {
       subheader: t('settings.title'),
-      items: [],
+      items: [
+        {
+          title: 'Settings',
+          path: paths.dashboard.settings.root,
+          icon: ICONS.params,
+          children: [
+            { title: 'Webhooks', path: paths.dashboard.settings.webhooks },
+            { title: 'API Keys', path: paths.dashboard.settings.apiKeys },
+          ],
+        },
+      ],
     },
   ];
 }

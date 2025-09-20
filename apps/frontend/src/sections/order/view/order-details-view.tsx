@@ -11,7 +11,6 @@ import Divider from '@mui/material/Divider';
 
 import { paths } from 'src/routes/paths';
 
-import { ORDER_STATUS_OPTIONS } from 'src/_mock';
 import { DashboardContent } from 'src/layouts/dashboard';
 
 import { OrderDetailsItems } from '../order-details-items';
@@ -41,9 +40,9 @@ export function OrderDetailsView({ order }: Props) {
         status={status}
         createdAt={order?.createdAt}
         orderNumber={order?.orderNumber}
-        backHref={paths.dashboard.order.root}
+        backHref={paths.dashboard.fsa.workOrders.root}
         onChangeStatus={handleChangeStatus}
-        statusOptions={ORDER_STATUS_OPTIONS}
+        statusOptions={[]}
       />
 
       <Grid container spacing={3}>

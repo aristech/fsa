@@ -12,7 +12,6 @@ import InputBase, { inputBaseClasses } from '@mui/material/InputBase';
 
 import { fAdd, today } from 'src/utils/format-time';
 
-import { _mock } from 'src/_mock';
 import { useClient } from 'src/contexts/client-context';
 
 // ----------------------------------------------------------------------
@@ -39,7 +38,7 @@ export function KanbanTaskAdd({ status, openAddTask, onAddTask, onCloseAddTask }
       comments: [],
       assignee: [],
       due: [today(), fAdd({ days: 1 })],
-      reporter: { id: _mock.id(16), name: _mock.fullName(16), avatarUrl: _mock.image.avatar(16) },
+      reporter: { id: '16', name: 'John Doe', avatarUrl: 'https://via.placeholder.com/150' },
       // Add client information if available
       ...(selectedClient && {
         clientId: selectedClient._id,

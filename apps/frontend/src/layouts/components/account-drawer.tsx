@@ -19,8 +19,6 @@ import { paths } from 'src/routes/paths';
 import { usePathname } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
 
-import { _mock } from 'src/_mock';
-
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
@@ -178,7 +176,8 @@ export function AccountDrawer({ data = [], sx, ...other }: AccountDrawerProps) {
               justifyContent: 'center',
             }}
           >
-            {Array.from({ length: 3 }, (_, index) => (
+            {/* TODO: Add accounts */}
+            {/* {Array.from({ length: 3 }, (_, index) => (
               <Tooltip
                 key={_mock.fullName(index + 1)}
                 title={`Switch to: ${_mock.fullName(index + 1)}`}
@@ -189,7 +188,7 @@ export function AccountDrawer({ data = [], sx, ...other }: AccountDrawerProps) {
                   onClick={() => {}}
                 />
               </Tooltip>
-            ))}
+            ))} */}
 
             <Tooltip title="Add account">
               <IconButton

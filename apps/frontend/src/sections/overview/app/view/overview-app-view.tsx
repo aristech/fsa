@@ -7,7 +7,6 @@ import { useTheme } from '@mui/material/styles';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 import { SeoIllustration } from 'src/assets/illustrations';
-import { _appAuthors, _appRelated, _appFeatured, _appInvoices, _appInstalled } from 'src/_mock';
 
 import { svgColorClasses } from 'src/components/svg-color';
 
@@ -48,7 +47,7 @@ export function OverviewAppView() {
         </Grid>
 
         <Grid size={{ xs: 12, md: 4 }}>
-          <AppFeatured list={_appFeatured} />
+          <AppFeatured list={[]} />
         </Grid>
 
         <Grid size={{ xs: 12, md: 4 }}>
@@ -156,7 +155,7 @@ export function OverviewAppView() {
         <Grid size={{ xs: 12, lg: 8 }}>
           <AppNewInvoices
             title="New Invoices"
-            tableData={_appInvoices}
+            tableData={[]}
             headCells={[
               { id: 'id', label: 'Invoice ID' },
               { id: 'category', label: 'Category' },
@@ -168,15 +167,15 @@ export function OverviewAppView() {
         </Grid>
 
         <Grid size={{ xs: 12, md: 6, lg: 4 }}>
-          <AppTopRelated title="Related applications" list={_appRelated} />
+          <AppTopRelated title="Related applications" list={[]} />
         </Grid>
 
         <Grid size={{ xs: 12, md: 6, lg: 4 }}>
-          <AppTopInstalledCountries title="Top installed countries" list={_appInstalled} />
+          <AppTopInstalledCountries title="Top installed countries" list={[]} />
         </Grid>
 
         <Grid size={{ xs: 12, md: 6, lg: 4 }}>
-          <AppTopAuthors title="Top authors" list={_appAuthors} />
+          <AppTopAuthors title="Top authors" list={[]} />
         </Grid>
 
         <Grid size={{ xs: 12, md: 6, lg: 4 }}>

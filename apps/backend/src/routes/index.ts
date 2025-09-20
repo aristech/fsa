@@ -19,6 +19,10 @@ import { materialsRoutes } from "./materials";
 import { taskMaterialsRoutes } from "./task-materials";
 import { reportsRoutes } from "./reports";
 import { userRoutes } from "./users";
+import { webhookRoutes } from "./webhooks";
+import { apiKeyRoutes } from "./api-keys";
+import { publicApiRoutes } from "./public-api";
+import { webhookTestRoutes } from "./webhook-test";
 
 export async function registerRoutes(fastify: FastifyInstance) {
   // Health check
@@ -46,4 +50,8 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(taskMaterialsRoutes, { prefix: "/api/v1/tasks" });
   await fastify.register(reportsRoutes, { prefix: "/api/v1/reports" });
   await fastify.register(userRoutes, { prefix: "/api/v1/users" });
+  await fastify.register(webhookRoutes, { prefix: "/api/v1/webhooks" });
+  await fastify.register(apiKeyRoutes, { prefix: "/api/v1/api-keys" });
+  await fastify.register(publicApiRoutes, { prefix: "/api/v1/public" });
+  await fastify.register(webhookTestRoutes, { prefix: "/api/v1/test" });
 }

@@ -50,7 +50,7 @@ function CheckoutContainer({ children }: CheckoutProviderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const activeStep = pathname.includes(paths.product.checkout)
+  const activeStep = pathname.includes(paths.dashboard.fsa.workOrders.root)
     ? Number(searchParams.get('step') ?? 0)
     : null;
 
@@ -101,7 +101,9 @@ function CheckoutContainer({ children }: CheckoutProviderProps) {
       const targetStep = stepNumbers[type];
       const queryString = new URLSearchParams({ step: `${targetStep}` }).toString();
       const redirectPath =
-        targetStep === 0 ? paths.product.checkout : `${paths.product.checkout}?${queryString}`;
+        targetStep === 0
+          ? paths.dashboard.fsa.workOrders.root
+          : `${paths.dashboard.fsa.workOrders.root}?${queryString}`;
 
       router.push(redirectPath);
     },

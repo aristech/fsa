@@ -40,6 +40,12 @@ async function registerPlugins() {
         return callback(null, true);
       }
 
+      // For API key authenticated requests, allow all HTTPS origins
+      // API key authentication provides the security layer
+      if (origin.startsWith('https://')) {
+        return callback(null, true);
+      }
+
       // Reject other origins
       return callback(new Error("Not allowed by CORS"), false);
     },

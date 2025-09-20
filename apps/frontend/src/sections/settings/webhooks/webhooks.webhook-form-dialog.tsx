@@ -1,0 +1,212 @@
+'use client';
+
+import { z as zod } from 'zod';
+import { useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+import Chip from '@mui/material/Chip';
+import Dialog from '@mui/material/Dialog';
+import Button from '@mui/material/Button';
+import Switch from '@mui/material/Switch';
+import TextField from '@mui/material/TextField';
+import DialogTitle from '@mui/material/DialogTitle';
+import Autocomplete from '@mui/material/Autocomplete';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import FormControlLabel from '@mui/material/FormControlLabel';
+
+// ----------------------------------------------------------------------
+
+const schema = zod.object({
+  name: zod.string().min(1, 'Name is required'),
+  status: zod.boolean(),
+  topics: zod.array(zod.string()).min(1, 'Select at least one topic'),
+  deliveryUrl: zod.string().url('Valid URL is required'),
+  secret: zod.string().min(1, 'Secret is required'),
+  apiVersion: zod.string().min(1, 'API Version is required'),
+});
+
+export type WebhookFormData = zod.infer<typeof schema>;
+
+type Webhook = WebhookFormData & { _id: string };
+
+type Props = {
+  open: boolean;
+  webhook: Webhook | null;
+  onClose: () => void;
+  onSubmit: (data: WebhookFormData) => void;
+};
+
+const TOPICS = [
+  'work_order.created',
+  'work_order.updated',
+  'task.created',
+  'task.updated',
+  'user.created',
+  'user.updated',
+];
+
+const API_VERSIONS = ['2023-10-01', '2023-09-01'];
+
+export function WebhookFormDialog({ open, webhook, onClose, onSubmit }: Props) {
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<WebhookFormData>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      name: '',
+      status: true,
+      topics: [],
+      deliveryUrl: '',
+      secret: '',
+      apiVersion: API_VERSIONS[0],
+    },
+  });
+
+  useEffect(() => {
+    if (webhook) {
+      reset({
+        name: webhook.name,
+        status: webhook.status,
+        topics: webhook.topics,
+        deliveryUrl: webhook.deliveryUrl,
+        secret: webhook.secret,
+        apiVersion: webhook.apiVersion,
+      });
+    } else {
+      reset({
+        name: '',
+        status: true,
+        topics: [],
+        deliveryUrl: '',
+        secret: '',
+        apiVersion: API_VERSIONS[0],
+      });
+    }
+  }, [webhook, reset]);
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle>{webhook ? 'Edit Webhook' : 'Create Webhook'}</DialogTitle>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <DialogContent>
+          <Controller
+            name="name"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="Name"
+                error={!!errors.name}
+                helperText={errors.name?.message}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+            )}
+          />
+          <Controller
+            name="status"
+            control={control}
+            render={({ field }) => (
+              <FormControlLabel
+                sx={{ mt: 2 }}
+                control={<Switch checked={field.value} onChange={field.onChange} />}
+                label="Active"
+              />
+            )}
+          />
+          <Controller
+            name="topics"
+            control={control}
+            render={({ field }) => (
+              <Autocomplete
+                multiple
+                options={TOPICS}
+                value={field.value}
+                onChange={(_, v) => field.onChange(v)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Topics"
+                    error={!!errors.topics}
+                    helperText={errors.topics?.message}
+                    sx={{ mt: 2 }}
+                  />
+                )}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip
+                      {...getTagProps({ index })}
+                      key={option}
+                      label={option}
+                      variant="outlined"
+                    />
+                  ))
+                }
+              />
+            )}
+          />
+          <Controller
+            name="deliveryUrl"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="Delivery URL"
+                error={!!errors.deliveryUrl}
+                helperText={errors.deliveryUrl?.message}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+            )}
+          />
+          <Controller
+            name="secret"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="Secret"
+                type="password"
+                error={!!errors.secret}
+                helperText={errors.secret?.message}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+            )}
+          />
+          <Controller
+            name="apiVersion"
+            control={control}
+            render={({ field }) => (
+              <Autocomplete
+                options={API_VERSIONS}
+                value={field.value}
+                onChange={(_, v) => field.onChange(v)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="API Version"
+                    error={!!errors.apiVersion}
+                    helperText={errors.apiVersion?.message}
+                    sx={{ mt: 2 }}
+                  />
+                )}
+              />
+            )}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="contained" disabled={isSubmitting}>
+            {webhook ? 'Update' : 'Create'}
+          </Button>
+        </DialogActions>
+      </form>
+    </Dialog>
+  );
+}

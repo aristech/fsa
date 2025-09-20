@@ -22,7 +22,6 @@ import { paths } from 'src/routes/paths';
 import { fIsAfter, fIsBetween } from 'src/utils/format-time';
 
 import { DashboardContent } from 'src/layouts/dashboard';
-import { _orders, ORDER_STATUS_OPTIONS } from 'src/_mock';
 
 import { Label } from 'src/components/label';
 import { toast } from 'src/components/snackbar';
@@ -48,7 +47,7 @@ import { OrderTableFiltersResult } from '../order-table-filters-result';
 
 // ----------------------------------------------------------------------
 
-const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, ...ORDER_STATUS_OPTIONS];
+const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, ...[]];
 
 const TABLE_HEAD: TableHeadCellProps[] = [
   { id: 'orderNumber', label: 'Order', width: 88 },
@@ -67,7 +66,7 @@ export function OrderListView() {
 
   const confirmDialog = useBoolean();
 
-  const [tableData, setTableData] = useState<IOrderItem[]>(_orders);
+  const [tableData, setTableData] = useState<IOrderItem[]>([]);
 
   const filters = useSetState<IOrderTableFilters>({
     name: '',
@@ -158,7 +157,7 @@ export function OrderListView() {
           heading="List"
           links={[
             { name: 'Dashboard', href: paths.dashboard.root },
-            { name: 'Order', href: paths.dashboard.order.root },
+            { name: 'Order', href: paths.dashboard.fsa.workOrders.root },
             { name: 'List' },
           ]}
           sx={{ mb: { xs: 3, md: 5 } }}
@@ -268,7 +267,7 @@ export function OrderListView() {
                         selected={table.selected.includes(row.id)}
                         onSelectRow={() => table.onSelectRow(row.id)}
                         onDeleteRow={() => handleDeleteRow(row.id)}
-                        detailsHref={paths.dashboard.order.details(row.id)}
+                        detailsHref={paths.dashboard.fsa.workOrders.details(row.id)}
                       />
                     ))}
 

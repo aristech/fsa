@@ -14,6 +14,7 @@ import { AssignmentPermissionService } from "../services/assignment-permission-s
 import { EntityCleanupService } from "../services/entity-cleanup-service";
 import { WorkOrderAssignmentService } from "../services/work-order-assignment-service";
 import { WorkOrderTimelineService } from "../services/work-order-timeline-service";
+import { WebhookService } from "../services/webhook-service";
 
 export async function workOrderRoutes(fastify: FastifyInstance) {
   // Apply authentication middleware to all routes
@@ -408,6 +409,32 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
             console.error('Error propagating work order assignments:', error);
             // Don't fail work order creation if assignment propagation fails
           }
+        }
+
+        // Trigger webhook for work order creation
+        try {
+          await WebhookService.triggerWebhooks(
+            tenant._id.toString(),
+            'work_order.created',
+            {
+              workOrder: {
+                _id: workOrder._id,
+                workOrderNumber: workOrder.workOrderNumber,
+                title: workOrder.title,
+                description: workOrder.description,
+                status: workOrder.status,
+                priority: workOrder.priority,
+                clientId: workOrder.clientId,
+                personnelIds: workOrder.personnelIds,
+                createdAt: workOrder.createdAt,
+                createdBy: workOrder.createdBy,
+              }
+            },
+            workOrder._id.toString()
+          );
+        } catch (error) {
+          console.error('Error triggering work order creation webhooks:', error);
+          // Don't fail work order creation if webhook fails
         }
 
         return reply.code(201).send({
