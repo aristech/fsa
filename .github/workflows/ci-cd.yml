@@ -246,16 +246,31 @@ jobs:
           # Verify all packages installed correctly on ARM64
           ./nlp_env/bin/python -c "import fastapi, uvicorn, pydantic; print('✅ All packages imported successfully on ARM64')"
 
-          cd ../../../../../../..
+          # Return to deployment root directory
+          cd /var/www/progressnet.io-app-new
 
           # Create environment files from secrets (using cat with EOF to handle special characters)
+          # Debug: Check current directory and structure
+          echo "Current directory: $(pwd)"
+          echo "Directory structure:"
+          ls -la
+          echo "Apps directory:"
+          ls -la apps/ || echo "Apps directory not found - creating it"
+
+          # Ensure directories exist
+          mkdir -p apps/backend apps/frontend
+
+          echo "Creating backend .env file..."
           cat > apps/backend/.env << "EOF"
           ${{ secrets.ENV_BACK }}
           EOF
 
+          echo "Creating frontend .env.local file..."
           cat > apps/frontend/.env.local << "EOF"
           ${{ secrets.ENV_FRONT }}
           EOF
+
+          echo "✅ Environment files created successfully"
 
           # Always install all dependencies and do a fresh build
           yarn install --frozen-lockfile
