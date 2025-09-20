@@ -331,30 +331,33 @@ jobs:
           cd apps/backend/src/services/ai/local-nlp
 
           # Stop any existing NLP service
-          if [ -f "/var/run/nlp-service.pid" ]; then
-            OLD_PID=$(cat /var/run/nlp-service.pid)
+          if [ -f "/var/www/progressnet.io-app/pids/nlp-service.pid" ]; then
+            OLD_PID=$(cat /var/www/progressnet.io-app/pids/nlp-service.pid)
             if kill -0 $OLD_PID 2>/dev/null; then
               echo "Stopping existing NLP service (PID: $OLD_PID)"
               kill $OLD_PID
               sleep 3
             fi
-            rm -f /var/run/nlp-service.pid
+            rm -f /var/www/progressnet.io-app/pids/nlp-service.pid
           fi
 
           # Kill any remaining python server processes
           pkill -f "python.*server.py" || true
           sleep 2
 
-          # Create log directory
-          sudo mkdir -p /var/log
-          sudo touch /var/log/nlp-service.log
-          sudo chown $USER:$USER /var/log/nlp-service.log
+          # Create log directory in app space to avoid permission issues
+          mkdir -p /var/www/progressnet.io-app/logs
+          touch /var/www/progressnet.io-app/logs/nlp-service.log
 
           # Start NLP service with virtual environment (explicit path)
           echo "Starting local NLP service with virtual environment..."
-          nohup ./nlp_env/bin/python server.py > /var/log/nlp-service.log 2>&1 &
+
+          # Create PID file in app directory instead of /var/run
+          mkdir -p /var/www/progressnet.io-app/pids
+
+          nohup ./nlp_env/bin/python server.py > /var/www/progressnet.io-app/logs/nlp-service.log 2>&1 &
           NLP_PID=$!
-          echo $NLP_PID > /var/run/nlp-service.pid
+          echo $NLP_PID > /var/www/progressnet.io-app/pids/nlp-service.pid
           echo "Local NLP service started with PID $NLP_PID"
 
           # Wait a moment and verify it's running
@@ -363,7 +366,9 @@ jobs:
             echo "✅ Local NLP service is running successfully"
           else
             echo "❌ Local NLP service failed to start"
-            cat /var/log/nlp-service.log || true
+            echo "=== NLP Service Log ==="
+            cat /var/www/progressnet.io-app/logs/nlp-service.log || true
+            echo "======================="
             exit 1
           fi
 
@@ -397,8 +402,8 @@ jobs:
             echo "✅ NLP service health check passed (port 8000)"
           else
             echo "⚠️  NLP service health check failed - checking service status"
-            if [ -f "/var/run/nlp-service.pid" ]; then
-              NLP_PID=$(cat /var/run/nlp-service.pid)
+            if [ -f "/var/www/progressnet.io-app/pids/nlp-service.pid" ]; then
+              NLP_PID=$(cat /var/www/progressnet.io-app/pids/nlp-service.pid)
               if kill -0 $NLP_PID 2>/dev/null; then
                 echo "NLP service process is running but not responding to HTTP requests"
               else
@@ -434,8 +439,8 @@ jobs:
 
           # Stop local NLP service gracefully
           echo "Stopping local NLP service during rollback..."
-          if [ -f "/var/run/nlp-service.pid" ]; then
-            NLP_PID=$(cat /var/run/nlp-service.pid)
+          if [ -f "/var/www/progressnet.io-app/pids/nlp-service.pid" ]; then
+            NLP_PID=$(cat /var/www/progressnet.io-app/pids/nlp-service.pid)
             if kill -0 $NLP_PID 2>/dev/null; then
               echo "Stopping local NLP service (PID: $NLP_PID)"
               kill $NLP_PID
@@ -446,7 +451,7 @@ jobs:
                 kill -9 $NLP_PID
               fi
             fi
-            rm -f /var/run/nlp-service.pid
+            rm -f /var/www/progressnet.io-app/pids/nlp-service.pid
           fi
 
           # Kill any remaining python server processes
@@ -457,8 +462,10 @@ jobs:
             cd /var/www/progressnet.io-app/apps/backend/src/services/ai/local-nlp
             if [ -d "nlp_env" ]; then
               echo "Restarting NLP service with previous version..."
-              nohup ./nlp_env/bin/python server.py > /var/log/nlp-service.log 2>&1 &
-              echo $! > /var/run/nlp-service.pid
+              # Ensure PID directory exists
+              mkdir -p /var/www/progressnet.io-app/pids
+              nohup ./nlp_env/bin/python server.py > /var/www/progressnet.io-app/logs/nlp-service.log 2>&1 &
+              echo $! > /var/www/progressnet.io-app/pids/nlp-service.pid
               echo "NLP service restarted with previous version"
             fi
           fi
