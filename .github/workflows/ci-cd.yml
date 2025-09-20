@@ -2,13 +2,14 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 env:
-  NODE_VERSION: '20'
-  YARN_VERSION: '1.22.22'
+  NODE_VERSION: "20"
+  YARN_VERSION: "1.22.22"
+  PYTHON_VERSION: "3.11"
 
 jobs:
   lint-and-typecheck:
@@ -16,31 +17,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'yarn'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "yarn"
 
-    - name: Install dependencies
-      run: |
-        yarn install --frozen-lockfile
+      - name: Install dependencies
+        run: |
+          yarn install --frozen-lockfile
 
-    - name: Lint frontend
-      run: |
-        npm run lint --workspace=apps/frontend
+      - name: Lint frontend
+        run: |
+          npm run lint --workspace=apps/frontend
 
-    - name: Type check frontend
-      run: |
-        npm run typecheck --workspace=apps/frontend
+      - name: Type check frontend
+        run: |
+          npm run typecheck --workspace=apps/frontend
 
-    - name: Auto-fix formatting and check
-      run: |
-        npm run fm:fix --workspace=apps/frontend || true
-        echo "Formatting issues auto-fixed"
+      - name: Auto-fix formatting and check
+        run: |
+          npm run fm:fix --workspace=apps/frontend || true
+          echo "Formatting issues auto-fixed"
 
   build:
     name: Build Applications
@@ -48,35 +49,44 @@ jobs:
     needs: lint-and-typecheck
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'yarn'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "yarn"
 
-    - name: Install dependencies
-      run: |
-        yarn install --frozen-lockfile
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Build backend
-      run: |
-        npm run build --workspace=apps/backend
+      - name: Install dependencies
+        run: |
+          yarn install --frozen-lockfile
+          # Install Python dependencies for local NLP service
+          cd apps/backend/src/services/ai/local-nlp
+          pip install -r requirements.txt
+          cd ../../../../../../..
 
-    - name: Build frontend
-      run: |
-        npm run build --workspace=apps/frontend
+      - name: Build backend
+        run: |
+          npm run build --workspace=apps/backend
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-artifacts
-        path: |
-          apps/backend/dist/
-          apps/frontend/.next/
-        retention-days: 7
+      - name: Build frontend
+        run: |
+          npm run build --workspace=apps/frontend
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            apps/backend/dist/
+            apps/frontend/.next/
+          retention-days: 7
 
   test:
     name: Run Tests
@@ -84,25 +94,25 @@ jobs:
     needs: lint-and-typecheck
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'yarn'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "yarn"
 
-    - name: Install dependencies
-      run: |
-        yarn install --frozen-lockfile
+      - name: Install dependencies
+        run: |
+          yarn install --frozen-lockfile
 
-    - name: Run unit tests (if available)
-      run: |
-        echo "✅ Unit tests placeholder - add actual tests when ready"
-        echo "Backend test command would be: npm run test --workspace=apps/backend"
-        echo "Frontend test command would be: npm run test --workspace=apps/frontend"
-        echo "Skipping MongoDB integration tests - production DB is secured"
+      - name: Run unit tests (if available)
+        run: |
+          echo "✅ Unit tests placeholder - add actual tests when ready"
+          echo "Backend test command would be: npm run test --workspace=apps/backend"
+          echo "Frontend test command would be: npm run test --workspace=apps/frontend"
+          echo "Skipping MongoDB integration tests - production DB is secured"
 
   security-scan:
     name: Security Scan
@@ -110,30 +120,30 @@ jobs:
     needs: lint-and-typecheck
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'yarn'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "yarn"
 
-    - name: Install dependencies
-      run: |
-        yarn install --frozen-lockfile
+      - name: Install dependencies
+        run: |
+          yarn install --frozen-lockfile
 
-    - name: Run npm audit
-      run: |
-        npm audit --audit-level moderate
+      - name: Run npm audit
+        run: |
+          npm audit --audit-level moderate
 
-    - name: Run Snyk security scan
-      uses: snyk/actions/node@master
-      continue-on-error: true
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      with:
-        args: --severity-threshold=high
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
 
   deploy:
     name: Deploy to Production
@@ -144,166 +154,193 @@ jobs:
       name: production
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: build-artifacts
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
 
-    - name: Create deployment backup
-      run: |
-        # Create backup directory with timestamp
-        BACKUP_DIR="/var/backups/fsa-$(date +%Y%m%d-%H%M%S)"
-        sudo mkdir -p $BACKUP_DIR
+      - name: Create deployment backup
+        run: |
+          # Create backup directory with timestamp
+          BACKUP_DIR="/var/backups/fsa-$(date +%Y%m%d-%H%M%S)"
+          sudo mkdir -p $BACKUP_DIR
 
-        # Backup current deployment (app directory, not runner)
-        if [ -d "/var/www/progressnet.io-app" ]; then
-          sudo cp -r /var/www/progressnet.io-app $BACKUP_DIR/
-          echo "Backup created at $BACKUP_DIR"
-        fi
+          # Backup current deployment (app directory, not runner)
+          if [ -d "/var/www/progressnet.io-app" ]; then
+            sudo cp -r /var/www/progressnet.io-app $BACKUP_DIR/
+            echo "Backup created at $BACKUP_DIR"
+          fi
 
-        # Keep only last 5 backups
-        sudo find /var/backups -name "fsa-*" -type d | sort -r | tail -n +6 | sudo xargs rm -rf
+          # Keep only last 5 backups
+          sudo find /var/backups -name "fsa-*" -type d | sort -r | tail -n +6 | sudo xargs rm -rf
 
-    - name: Deploy application
-      run: |
-        # Create deployment directory (separate from runner directory)
-        sudo mkdir -p /var/www/progressnet.io-app-new
-        sudo chown -R $USER:$USER /var/www/progressnet.io-app-new
+      - name: Deploy application
+        run: |
+          # Create deployment directory (separate from runner directory)
+          sudo mkdir -p /var/www/progressnet.io-app-new
+          sudo chown -R $USER:$USER /var/www/progressnet.io-app-new
 
-        # Copy application files from current working directory (GitHub runner workspace)
-        cp -r . /var/www/progressnet.io-app-new/
-        rm -rf /var/www/progressnet.io-app-new/node_modules
-        rm -rf /var/www/progressnet.io-app-new/.git
-        rm -rf /var/www/progressnet.io-app-new/.next/cache
+          # Copy application files from current working directory (GitHub runner workspace)
+          cp -r . /var/www/progressnet.io-app-new/
+          rm -rf /var/www/progressnet.io-app-new/node_modules
+          rm -rf /var/www/progressnet.io-app-new/.git
+          rm -rf /var/www/progressnet.io-app-new/.next/cache
 
-    - name: Install dependencies and setup
-      run: |
-        cd /var/www/progressnet.io-app-new
+      - name: Install dependencies and setup
+        run: |
+          cd /var/www/progressnet.io-app-new
 
-        # Remove any existing build directories to avoid conflicts
-        rm -rf apps/backend/dist apps/frontend/.next
+          # Remove any existing build directories to avoid conflicts
+          rm -rf apps/backend/dist apps/frontend/.next
 
-        # Note: Build artifacts should already be present from GitHub Actions upload
-        # They get downloaded to the current directory by the download-artifact action
+          # Note: Build artifacts should already be present from GitHub Actions upload
+          # They get downloaded to the current directory by the download-artifact action
 
-        # Install only production dependencies
-        yarn install --production --frozen-lockfile
+          # Install only production dependencies
+          yarn install --production --frozen-lockfile
 
-        # Create environment files from secrets (using cat with EOF to handle special characters)
-        cat > apps/backend/.env << "EOF"
-        ${{ secrets.ENV_BACK }}
-        EOF
+          # Install Python dependencies for local NLP service
+          cd apps/backend/src/services/ai/local-nlp
+          pip3 install -r requirements.txt
+          cd ../../../../../../..
 
-        cat > apps/frontend/.env.local << "EOF"
-        ${{ secrets.ENV_FRONT }}
-        EOF
+          # Create environment files from secrets (using cat with EOF to handle special characters)
+          cat > apps/backend/.env << "EOF"
+          ${{ secrets.ENV_BACK }}
+          EOF
 
-        # Always install all dependencies and do a fresh build
-        yarn install --frozen-lockfile
+          cat > apps/frontend/.env.local << "EOF"
+          ${{ secrets.ENV_FRONT }}
+          EOF
 
-        # Always build fresh to avoid manifest issues
-        echo "Building applications on server..."
+          # Always install all dependencies and do a fresh build
+          yarn install --frozen-lockfile
 
-        # Build backend
-        cd apps/backend
-        npm run build
-        cd ../..
+          # Always build fresh to avoid manifest issues
+          echo "Building applications on server..."
 
-        # Build frontend with clean slate
-        cd apps/frontend
-        rm -rf .next
-        npm run build
-        cd ../..
+          # Build backend
+          cd apps/backend
+          npm run build
+          cd ../..
 
-        echo "✅ Build completed successfully"
+          # Build frontend with clean slate
+          cd apps/frontend
+          rm -rf .next
+          npm run build
+          cd ../..
 
-        # Set proper ownership (keep user access, add www-data group)
-        sudo chown -R $USER:www-data /var/www/progressnet.io-app-new
-        sudo chmod -R 755 /var/www/progressnet.io-app-new
+          echo "✅ Build completed successfully"
 
-    - name: Health check and deploy
-      run: |
-        # Setup PM2 log directory with proper permissions
-        sudo mkdir -p /var/log/pm2
-        sudo chown -R $USER:$USER /var/log/pm2
-        sudo chmod 755 /var/log/pm2
+          # Set proper ownership (keep user access, add www-data group)
+          sudo chown -R $USER:www-data /var/www/progressnet.io-app-new
+          sudo chmod -R 755 /var/www/progressnet.io-app-new
 
-        # Ensure PM2 home directory exists
-        mkdir -p ~/.pm2
+      - name: Health check and deploy
+        run: |
+          # Setup PM2 log directory with proper permissions
+          sudo mkdir -p /var/log/pm2
+          sudo chown -R $USER:$USER /var/log/pm2
+          sudo chmod 755 /var/log/pm2
 
-        # Atomic deployment switch (app directory only)
-        sudo rm -rf /var/www/progressnet.io-app-old
-        if [ -d "/var/www/progressnet.io-app" ]; then
-          sudo mv /var/www/progressnet.io-app /var/www/progressnet.io-app-old
-        fi
-        sudo mv /var/www/progressnet.io-app-new /var/www/progressnet.io-app
+          # Ensure PM2 home directory exists
+          mkdir -p ~/.pm2
 
-        # Restart PM2 processes
-        cd /var/www/progressnet.io-app
+          # Atomic deployment switch (app directory only)
+          sudo rm -rf /var/www/progressnet.io-app-old
+          if [ -d "/var/www/progressnet.io-app" ]; then
+            sudo mv /var/www/progressnet.io-app /var/www/progressnet.io-app-old
+          fi
+          sudo mv /var/www/progressnet.io-app-new /var/www/progressnet.io-app
 
-        # Stop existing processes gracefully
-        pm2 stop progressnet-backend 2>/dev/null || true
-        pm2 stop progressnet-frontend 2>/dev/null || true
-        pm2 delete progressnet-backend 2>/dev/null || true
-        pm2 delete progressnet-frontend 2>/dev/null || true
-
-        # Start backend
-        pm2 start ecosystem.config.js --only progressnet-backend
-
-        # Start frontend
-        pm2 start ecosystem.config.js --only progressnet-frontend
-
-        # Save PM2 configuration
-        pm2 save
-
-        # Wait for services to start
-        sleep 15
-
-        # Temporarily disable health checks to allow fixed deployment to succeed
-        echo "⚠️  Health checks temporarily disabled for deployment fix"
-        echo "Backend should be running on port 4005"
-        echo "Frontend should be running on port 4004"
-        echo "Deployment completed - manual verification needed"
-        sudo rm -rf /var/www/progressnet.io-app-old
-
-    - name: Rollback on failure
-      if: failure()
-      run: |
-        echo "Rolling back deployment..."
-
-        # Restore from previous version if available
-        if [ -d "/var/www/progressnet.io-app-old" ]; then
-          sudo rm -rf /var/www/progressnet.io-app
-          sudo mv /var/www/progressnet.io-app-old /var/www/progressnet.io-app
-
-          # Restart PM2 processes with old version
+          # Restart PM2 processes
           cd /var/www/progressnet.io-app
-          pm2 restart progressnet-backend
-          pm2 restart progressnet-frontend
-          echo "Rollback completed using previous version"
-        else
-          echo "No previous version available for rollback"
-        fi
 
-        # Clean up failed deployment
-        sudo rm -rf /var/www/progressnet.io-app-new
+          # Stop existing processes gracefully
+          pm2 stop progressnet-backend 2>/dev/null || true
+          pm2 stop progressnet-frontend 2>/dev/null || true
+          pm2 delete progressnet-backend 2>/dev/null || true
+          pm2 delete progressnet-frontend 2>/dev/null || true
 
-    - name: Notify deployment status
-      if: always()
-      run: |
-        if [ "${{ job.status }}" == "success" ]; then
-          echo "✅ Deployment successful"
-        else
-          echo "❌ Deployment failed and rolled back"
-        fi
+          # Start backend
+          pm2 start ecosystem.config.js --only progressnet-backend
+
+          # Start frontend
+          pm2 start ecosystem.config.js --only progressnet-frontend
+
+          # Start local NLP service (if not already running)
+          cd apps/backend/src/services/ai/local-nlp
+          if ! pgrep -f "python.*server.py" > /dev/null; then
+            echo "Starting local NLP service..."
+            nohup python3 server.py > /var/log/nlp-service.log 2>&1 &
+            echo $! > /var/run/nlp-service.pid
+            echo "Local NLP service started with PID $(cat /var/run/nlp-service.pid)"
+          else
+            echo "Local NLP service already running"
+          fi
+          cd ../../../../../../..
+
+          # Save PM2 configuration
+          pm2 save
+
+          # Wait for services to start
+          sleep 15
+
+          # Temporarily disable health checks to allow fixed deployment to succeed
+          echo "⚠️  Health checks temporarily disabled for deployment fix"
+          echo "Backend should be running on port 4005"
+          echo "Frontend should be running on port 4004"
+          echo "Deployment completed - manual verification needed"
+          sudo rm -rf /var/www/progressnet.io-app-old
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "Rolling back deployment..."
+
+          # Restore from previous version if available
+          if [ -d "/var/www/progressnet.io-app-old" ]; then
+            sudo rm -rf /var/www/progressnet.io-app
+            sudo mv /var/www/progressnet.io-app-old /var/www/progressnet.io-app
+
+            # Restart PM2 processes with old version
+            cd /var/www/progressnet.io-app
+            pm2 restart progressnet-backend
+            pm2 restart progressnet-frontend
+            echo "Rollback completed using previous version"
+          else
+            echo "No previous version available for rollback"
+          fi
+
+          # Stop local NLP service if running
+          if [ -f "/var/run/nlp-service.pid" ]; then
+            NLP_PID=$(cat /var/run/nlp-service.pid)
+            if kill -0 $NLP_PID 2>/dev/null; then
+              echo "Stopping local NLP service (PID: $NLP_PID)"
+              kill $NLP_PID
+              rm -f /var/run/nlp-service.pid
+            fi
+          fi
+
+          # Clean up failed deployment
+          sudo rm -rf /var/www/progressnet.io-app-new
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment successful"
+          else
+            echo "❌ Deployment failed and rolled back"
+          fi
 
   cleanup:
     name: Cleanup
@@ -312,10 +349,10 @@ jobs:
     if: always()
 
     steps:
-    - name: Remove build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: build-artifacts
-    - name: Cleanup artifacts
-      run: |
-        rm -rf apps/backend/dist/ apps/frontend/.next/ || true
+      - name: Remove build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+      - name: Cleanup artifacts
+        run: |
+          rm -rf apps/backend/dist/ apps/frontend/.next/ || true

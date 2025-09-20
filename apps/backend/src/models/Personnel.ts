@@ -59,6 +59,7 @@ const PersonnelSchema: Schema = new Schema(
       required: [true, "Employee ID is required"],
       unique: true,
       trim: true,
+      index: true, // Add index for faster searches
     },
     roleId: {
       type: Schema.Types.ObjectId,
@@ -154,11 +155,30 @@ const PersonnelSchema: Schema = new Schema(
 
 // ----------------------------------------------------------------------
 
-// Pre-save hook to set mobileOptimized based on environmentAccess
-PersonnelSchema.pre("save", function (next) {
+// Pre-save hook to set mobileOptimized based on environmentAccess and populate employeeId with full name
+PersonnelSchema.pre("save", async function (next) {
   if (this.environmentAccess === "field" || this.environmentAccess === "all") {
     this.mobileOptimized = true;
   }
+
+  // Populate employeeId with user's full name if userId is present and employeeId is not set
+  if (this.userId && !this.employeeId) {
+    try {
+      const User = mongoose.model("User");
+      const user = await User.findById(this.userId).select(
+        "firstName lastName",
+      );
+      if (user) {
+        this.employeeId = `${user.firstName} ${user.lastName}`.trim();
+      }
+    } catch (error) {
+      console.warn(
+        "Failed to populate employeeId with full name for personnel:",
+        error,
+      );
+    }
+  }
+
   next();
 });
 

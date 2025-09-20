@@ -196,8 +196,17 @@ const WorkOrderSchema = new Schema<IWorkOrder>(
 // ----------------------------------------------------------------------
 
 // Indexes for better performance
-// Ensure workOrderNumber uniqueness per tenant
-WorkOrderSchema.index({ tenantId: 1, workOrderNumber: 1 }, { unique: true });
+// Ensure workOrderNumber uniqueness per tenant (only when present)
+WorkOrderSchema.index(
+  { tenantId: 1, workOrderNumber: 1 },
+  {
+    name: "tenantId_1_workOrderNumber_1",
+    unique: true,
+    partialFilterExpression: {
+      workOrderNumber: { $exists: true, $type: "string", $gt: "" },
+    },
+  },
+);
 WorkOrderSchema.index({ tenantId: 1, clientId: 1 });
 WorkOrderSchema.index({ tenantId: 1, personnelIds: 1 });
 WorkOrderSchema.index({ tenantId: 1, status: 1 });
