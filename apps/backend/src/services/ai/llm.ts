@@ -14,7 +14,12 @@ export class OpenAILLM {
   private maxTokens: number;
   private temperature: number;
 
-  constructor(apiKey?: string, model?: string, maxTokens?: number, temperature?: number) {
+  constructor(
+    apiKey?: string,
+    model?: string,
+    maxTokens?: number,
+    temperature?: number,
+  ) {
     const key = apiKey || process.env.OPENAI_API_KEY;
     if (!key) {
       throw new Error(
@@ -26,7 +31,9 @@ export class OpenAILLM {
     this.maxTokens = maxTokens || 1024;
     this.temperature = temperature !== undefined ? temperature : 0.7;
 
-    console.log(`[OpenAILLM] Initialized with model: ${this.defaultModel}, maxTokens: ${this.maxTokens}, temperature: ${this.temperature}`);
+    console.log(
+      `[OpenAILLM] Initialized with model: ${this.defaultModel}, maxTokens: ${this.maxTokens}, temperature: ${this.temperature}`,
+    );
   }
 
   private async processQueue() {
@@ -48,7 +55,7 @@ export class OpenAILLM {
         try {
           await request();
         } catch (error) {
-          console.error('[OpenAI] Queue request failed:', error);
+          console.error("[OpenAI] Queue request failed:", error);
         }
       }
     }
@@ -57,13 +64,13 @@ export class OpenAILLM {
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private async retryWithBackoff<T>(
     operation: () => Promise<T>,
     maxRetries = 3,
-    baseDelay = 1000
+    baseDelay = 1000,
   ): Promise<T> {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
@@ -73,17 +80,19 @@ export class OpenAILLM {
         if (error?.status === 429) {
           if (attempt === maxRetries) {
             throw new Error(
-              `Rate limit exceeded. Please try again later. Your organization has reached the token limit for gpt-4o-mini.`
+              `Rate limit exceeded. Please try again later. Your organization has reached the token limit for gpt-4o-mini.`,
             );
           }
 
           // Extract retry delay from error if available
-          const retryAfter = error?.headers?.['retry-after'];
+          const retryAfter = error?.headers?.["retry-after"];
           const delay = retryAfter
             ? parseInt(retryAfter) * 1000
             : baseDelay * Math.pow(2, attempt);
 
-          console.log(`[OpenAI] Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+          console.log(
+            `[OpenAI] Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`,
+          );
           await this.sleep(delay);
           continue;
         }
@@ -93,7 +102,7 @@ export class OpenAILLM {
       }
     }
 
-    throw new Error('Maximum retry attempts exceeded');
+    throw new Error("Maximum retry attempts exceeded");
   }
 
   async chat(messages: ChatMessage[], tools?: ToolDef[], stream = false) {
@@ -145,13 +154,15 @@ export class OpenAILLM {
         };
       });
 
-      console.log(`[OpenAILLM] Making request with model: ${this.defaultModel}, stream: ${stream}, messages count: ${openaiMessages.length}`);
+      console.log(
+        `[OpenAILLM] Making request with model: ${this.defaultModel}, stream: ${stream}, messages count: ${openaiMessages.length}`,
+      );
 
       const request = {
         model: this.defaultModel,
         messages: openaiMessages,
         tools: toolSpecs,
-        tool_choice: tools && tools.length > 0 ? "auto" : undefined,
+        tool_choice: tools && tools.length > 0 ? ("auto" as const) : undefined,
         stream,
         temperature: this.temperature,
         max_tokens: this.maxTokens,
@@ -162,7 +173,7 @@ export class OpenAILLM {
         temperature: request.temperature,
         max_tokens: request.max_tokens,
         tools_count: toolSpecs?.length || 0,
-        stream: request.stream
+        stream: request.stream,
       });
 
       const response = await this.client.chat.completions.create(request);

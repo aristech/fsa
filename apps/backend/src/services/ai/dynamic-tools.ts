@@ -9,6 +9,7 @@ import {
   generateAutocompleteTool,
 } from "./validation-tools";
 import { generateLocalTaskTool } from "./local-task-tool";
+import { generateDynamicAPITools } from "./dynamic-api-tools";
 
 // Import all models
 import {
@@ -432,8 +433,29 @@ function generateDynamicFilters(
 // Tool Registry Generation
 // ----------------------------------------------------------------------
 
-export function generateDynamicTools(): ToolDef[] {
+export async function generateDynamicTools(userId?: string, tenantId?: string): Promise<ToolDef[]> {
   const tools: ToolDef[] = [];
+
+  // If user context is provided, use new dynamic API tools
+  if (userId && tenantId) {
+    console.log("[Dynamic Tools] Using new dynamic API tools system");
+    const dynamicAPITools = await generateDynamicAPITools(userId, tenantId);
+    tools.push(...dynamicAPITools);
+
+    // Still add local NLP task tool (preferred for simple operations)
+    tools.push(generateLocalTaskTool());
+
+    // Add utility tools
+    tools.push(generateValidationTool());
+    tools.push(generateDataLookupTool());
+    tools.push(generateAutocompleteTool());
+
+    console.log(`[Dynamic Tools] Generated ${tools.length} total tools`);
+    return tools;
+  }
+
+  // Fallback to legacy system if no user context
+  console.log("[Dynamic Tools] Falling back to legacy tool system");
 
   // Only generate tools for essential models to reduce token usage
   const essentialModels = MODEL_REGISTRY.filter((config) =>
@@ -566,14 +588,24 @@ function generateKanbanTool(): ToolDef {
             .lean(),
         ]);
 
+        console.log(`[AI Tool] Kanban data found: ${projects.length} projects, ${tasks.length} tasks`);
+        console.log(`[AI Tool] Available statuses:`, statuses.map((s: any) => ({ id: s._id.toString(), name: s.name })));
+
+        // Check task columnIds for debugging (columnId is the actual field used, not statusId)
+        const taskColumnIds = tasks.map((t: any) => t.columnId?.toString()).filter(Boolean);
+        const uniqueTaskColumnIds = [...new Set(taskColumnIds)];
+        console.log(`[AI Tool] Unique task columnIds found:`, uniqueTaskColumnIds);
+
         // Group by status
         const columns = statuses.map((status: any) => {
           const statusProjects = projects.filter(
-            (p: any) => p.statusId?.toString() === status._id.toString(),
+            (p: any) => p.columnId?.toString() === status._id.toString(),
           );
           const statusTasks = tasks.filter(
-            (t: any) => t.statusId?.toString() === status._id.toString(),
+            (t: any) => t.columnId?.toString() === status._id.toString(),
           );
+
+          console.log(`[AI Tool] Status "${status.name}" (${status._id}): ${statusProjects.length} projects, ${statusTasks.length} tasks`);
 
           return {
             id: status._id,
@@ -612,6 +644,38 @@ function generateKanbanTool(): ToolDef {
             ),
           };
         });
+
+        // Add orphaned tasks/projects without columnId to the first column
+        const orphanedProjects = projects.filter((p: any) => !p.columnId);
+        const orphanedTasks = tasks.filter((t: any) => !t.columnId);
+
+        if ((orphanedProjects.length > 0 || orphanedTasks.length > 0) && columns.length > 0) {
+          console.log(`[AI Tool] Adding ${orphanedProjects.length} orphaned projects and ${orphanedTasks.length} orphaned tasks to first column`);
+          columns[0].items.push(
+            ...orphanedProjects.map((p: any) => ({
+              id: p._id,
+              type: "project",
+              title: p.title,
+              description: p.description,
+              priority: p.priority,
+              client: p.clientId,
+              createdAt: p.createdAt,
+              updatedAt: p.updatedAt,
+            })),
+            ...orphanedTasks.map((t: any) => ({
+              id: t._id,
+              type: "task",
+              title: t.title,
+              description: t.description,
+              priority: t.priority,
+              project: t.projectId,
+              client: t.clientId,
+              assignees: t.assignees,
+              createdAt: t.createdAt,
+              updatedAt: t.updatedAt,
+            }))
+          );
+        }
 
         return {
           content: JSON.stringify({

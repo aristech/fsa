@@ -1,7 +1,15 @@
 import { FastifyInstance } from "fastify";
 import mongoose from "mongoose";
 import { authenticate } from "../middleware/auth";
-import { Report, Task, Material, Client, WorkOrder, User } from "../models";
+import {
+  Report,
+  Task,
+  Material,
+  Client,
+  WorkOrder,
+  User,
+  TimeEntry,
+} from "../models";
 import { AuthenticatedRequest } from "../types";
 import { PermissionService } from "../services/permission-service";
 
@@ -26,7 +34,10 @@ export async function reportsRoutes(fastify: FastifyInstance) {
       } = request.query as any;
 
       // Get user permissions and apply filtering
-      const userPermissions = await PermissionService.getUserPermissions(user.id, user.tenantId);
+      const userPermissions = await PermissionService.getUserPermissions(
+        user.id,
+        user.tenantId,
+      );
       if (!userPermissions) {
         return reply.code(403).send({
           success: false,
@@ -56,7 +67,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
       const query = PermissionService.getReportFilter(
         userPermissions,
         user.tenantId,
-        baseFilter
+        baseFilter,
       );
 
       const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -102,7 +113,10 @@ export async function reportsRoutes(fastify: FastifyInstance) {
       const user = (request as AuthenticatedRequest).user;
 
       // Get user permissions to check access to specific report
-      const userPermissions = await PermissionService.getUserPermissions(user.id, user.tenantId);
+      const userPermissions = await PermissionService.getUserPermissions(
+        user.id,
+        user.tenantId,
+      );
       if (!userPermissions) {
         return reply.code(403).send({
           success: false,
@@ -114,7 +128,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
       const reportFilter = PermissionService.getReportFilter(
         userPermissions,
         user.tenantId,
-        { _id: id }
+        { _id: id },
       );
 
       const report = await Report.findOne(reportFilter)
@@ -202,7 +216,6 @@ export async function reportsRoutes(fastify: FastifyInstance) {
 
       // Transfer time entries from tasks to report
       if (reportData.taskIds && reportData.taskIds.length > 0) {
-        const TimeEntry = mongoose.model("TimeEntry");
         const timeEntries = await TimeEntry.find({
           taskId: { $in: reportData.taskIds },
           tenantId: user.tenantId,
@@ -268,12 +281,10 @@ export async function reportsRoutes(fastify: FastifyInstance) {
         user.role === "admin";
 
       if (!canEdit) {
-        return reply
-          .code(403)
-          .send({
-            success: false,
-            message: "Not authorized to edit this report",
-          });
+        return reply.code(403).send({
+          success: false,
+          message: "Not authorized to edit this report",
+        });
       }
 
       // Prevent editing of approved reports (unless admin)
@@ -334,22 +345,18 @@ export async function reportsRoutes(fastify: FastifyInstance) {
         const canDelete =
           report.createdBy.toString() === user.id || user.role === "admin";
         if (!canDelete) {
-          return reply
-            .code(403)
-            .send({
-              success: false,
-              message: "Not authorized to delete this report",
-            });
+          return reply.code(403).send({
+            success: false,
+            message: "Not authorized to delete this report",
+          });
         }
 
         // Prevent deletion of approved reports (unless admin)
         if (report.status === "approved" && user.role !== "admin") {
-          return reply
-            .code(403)
-            .send({
-              success: false,
-              message: "Cannot delete approved reports",
-            });
+          return reply.code(403).send({
+            success: false,
+            message: "Cannot delete approved reports",
+          });
         }
 
         await Report.findByIdAndDelete(id);
@@ -386,12 +393,10 @@ export async function reportsRoutes(fastify: FastifyInstance) {
         }
 
         if (report.status !== "draft") {
-          return reply
-            .code(400)
-            .send({
-              success: false,
-              message: "Only draft reports can be submitted",
-            });
+          return reply.code(400).send({
+            success: false,
+            message: "Only draft reports can be submitted",
+          });
         }
 
         // Check if user can submit this report
@@ -400,12 +405,10 @@ export async function reportsRoutes(fastify: FastifyInstance) {
           report.assignedTo?.toString() === user.id;
 
         if (!canSubmit) {
-          return reply
-            .code(403)
-            .send({
-              success: false,
-              message: "Not authorized to submit this report",
-            });
+          return reply.code(403).send({
+            success: false,
+            message: "Not authorized to submit this report",
+          });
         }
 
         report.status = "submitted";

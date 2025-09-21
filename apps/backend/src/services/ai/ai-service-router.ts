@@ -64,38 +64,38 @@ const createStructuredPayload = async (
   // Precise symbol detection for different types
   const symbolMatches = [];
 
-  // Tasks: /123 (IDs) or /TaskName (names)
+  // Tasks: /123 (IDs) or /TaskName (names) - includes full Greek Unicode support
   const taskMatches =
     originalText.match(
-      /(\/(?:\d+|[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω\s]*?))(?=\s+(?:for|in|with|due|at|from|by|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|title|$)|$)/g,
+      /(\/(?:\d+|[A-Za-z\u0370-\u03FF\u1F00-\u1FFF][A-Za-z\u0370-\u03FF\u1F00-\u1FFF\s]*?))(?=\s+(?:for|in|with|due|at|from|by|today|tomorrow|now|this|next|σήμερα|αύριο|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|title|$)|$)/g,
     ) || [];
   symbolMatches.push(...taskMatches);
 
-  // Personnel: @John, @John Doe (names)
+  // Personnel: @John, @John Doe (names) - includes full Greek Unicode support
   const personnelMatches =
     originalText.match(
-      /(@[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω\s]*?)(?=\s+(?:for|in|with|due|at|from|by|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|title|$)|$)/g,
+      /(@[A-Za-z\u0370-\u03FF\u1F00-\u1FFF][A-Za-z\u0370-\u03FF\u1F00-\u1FFF\s]*?)(?=\s+(?:for|in|with|due|at|from|by|today|tomorrow|now|this|next|σήμερα|αύριο|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|title|$)|$)/g,
     ) || [];
   symbolMatches.push(...personnelMatches);
 
-  // Work Orders: #Garden, #Garden Care (descriptions)
+  // Work Orders: #Garden, #Garden Care (descriptions) - includes full Greek Unicode support
   const workOrderMatches =
     originalText.match(
-      /(#[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω\s]*?)(?=\s+(?:for|in|with|due|at|from|by|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|title|$)|$)/g,
+      /(#[A-Za-z\u0370-\u03FF\u1F00-\u1FFF][A-Za-z\u0370-\u03FF\u1F00-\u1FFF\s]*?)(?=\s+(?:for|in|with|due|at|from|by|today|tomorrow|now|this|next|σήμερα|αύριο|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|title|$)|$)/g,
     ) || [];
   symbolMatches.push(...workOrderMatches);
 
-  // Projects: +Project Name
+  // Projects: +Project Name - includes full Greek Unicode support
   const projectMatches =
     originalText.match(
-      /(\+[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω\s]*?)(?=\s+(?:for|in|with|due|at|from|by|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|title|$)|$)/g,
+      /(\+[A-Za-z\u0370-\u03FF\u1F00-\u1FFF][A-Za-z\u0370-\u03FF\u1F00-\u1FFF\s]*?)(?=\s+(?:for|in|with|due|at|from|by|today|tomorrow|now|this|next|σήμερα|αύριο|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|title|$)|$)/g,
     ) || [];
   symbolMatches.push(...projectMatches);
 
-  // Clients: &Client Name
+  // Clients: &Client Name - includes full Greek Unicode support
   const clientMatches =
     originalText.match(
-      /(&[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω\s]*?)(?=\s+(?:for|in|with|due|at|from|by|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|title|$)|$)/g,
+      /(&[A-Za-z\u0370-\u03FF\u1F00-\u1FFF][A-Za-z\u0370-\u03FF\u1F00-\u1FFF\s]*?)(?=\s+(?:for|in|with|due|at|from|by|today|tomorrow|now|this|next|σήμερα|αύριο|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|title|$)|$)/g,
     ) || [];
   symbolMatches.push(...clientMatches);
 
@@ -211,6 +211,92 @@ const createStructuredPayload = async (
 
 // ----------------------------------------------------------------------
 
+/**
+ * Post-processes JSON responses to make them more human-readable
+ */
+const postProcessResponse = async (
+  content: string,
+  userOpenAI: any,
+): Promise<string> => {
+  try {
+    // Try to parse as JSON
+    const parsed = JSON.parse(content);
+
+    // Check if it contains technical IDs that should be made human-readable
+    const hasIds = JSON.stringify(parsed).match(/[a-f0-9]{24}/g); // MongoDB ObjectId pattern
+
+    if (!hasIds) {
+      return content; // No IDs found, return as-is
+    }
+
+    console.log("[AIServiceRouter] Post-processing JSON response with IDs");
+
+    // Filter out technical fields to save tokens
+    const cleanData = filterTechnicalFields(parsed);
+
+    // Send to OpenAI for human-friendly formatting
+    const formatPrompt = `Please format this data in a clear, human-readable way. Replace technical IDs with meaningful names and organize the information nicely. Focus on the most important information for the user:
+
+${JSON.stringify(cleanData, null, 2)}`;
+
+    const formatMessages = [
+      {
+        role: "user" as const,
+        content: formatPrompt,
+      },
+    ];
+
+    const stream = await userOpenAI.chat(formatMessages, [], true);
+    let formattedContent = "";
+
+    for await (const chunk of stream as any) {
+      if (chunk.choices?.[0]?.delta?.content) {
+        formattedContent += chunk.choices[0].delta.content;
+      }
+    }
+
+    return formattedContent.trim() || content;
+  } catch (error) {
+    console.warn("[AIServiceRouter] Post-processing failed:", error);
+    return content; // Return original if processing fails
+  }
+};
+
+/**
+ * Filters out technical fields from JSON data to save tokens
+ */
+const filterTechnicalFields = (data: any): any => {
+  if (Array.isArray(data)) {
+    return data.map(filterTechnicalFields);
+  }
+
+  if (typeof data === "object" && data !== null) {
+    const filtered: any = {};
+
+    for (const [key, value] of Object.entries(data)) {
+      // Skip only internal technical fields, but keep business data
+      if (key.match(/^(__v|tenantId)$/)) {
+        continue;
+      }
+
+      // Keep important IDs if they're part of business logic
+      if (key === "_id" && typeof value === "string") {
+        filtered["id"] = value; // Rename _id to id for clarity
+        continue;
+      }
+
+      // Include all other fields, recursively filter objects
+      filtered[key] = filterTechnicalFields(value);
+    }
+
+    return filtered;
+  }
+
+  return data;
+};
+
+// ----------------------------------------------------------------------
+
 export interface AIServiceResult {
   message: string;
   usage?: {
@@ -234,9 +320,22 @@ let localNLPService: LocalNLPService | null = null;
 let tools: ToolDef[] | null = null;
 
 // Initialize shared instances
-const initializeServices = () => {
+const initializeServices = async (ctx?: ChatContext) => {
   if (!localNLPService) localNLPService = new LocalNLPService();
-  if (!tools) tools = generateDynamicTools();
+
+  // Generate dynamic tools based on user context
+  if (ctx && (!tools || tools.length === 0)) {
+    console.log(
+      "[AIServiceRouter] Generating dynamic tools for user:",
+      ctx.userId,
+    );
+    tools = await generateDynamicTools(ctx.userId, ctx.tenantId);
+    console.log(`[AIServiceRouter] Generated ${tools.length} tools`);
+  } else if (!tools) {
+    // Fallback to legacy tools if no context
+    console.log("[AIServiceRouter] Using legacy tool generation");
+    tools = await generateDynamicTools();
+  }
 };
 
 // Initialize OpenAI LLM with user's API key
@@ -342,7 +441,7 @@ const processWithLocalNLP = async (
   messages: ChatMessage[],
   ctx: ChatContext,
 ): Promise<AIServiceResult> => {
-  initializeServices();
+  await initializeServices(ctx);
 
   const lastMessage = messages[messages.length - 1];
   if (!lastMessage || lastMessage.role !== "user") {
@@ -476,15 +575,15 @@ const processWithLocalNLP = async (
         nlpResult = {
           intent: "create_task",
           title: taskTitle,
-          description: description,
+          description: description || undefined,
           priority: "medium",
           assignees: [],
           work_order: workOrderId,
-          project: null,
-          client: null,
-          due_date: dueDate,
-          start_date: null,
-          estimated_hours: null,
+          project: undefined,
+          client: undefined,
+          due_date: dueDate || undefined,
+          start_date: undefined,
+          estimated_hours: undefined,
           entities: [],
           confidence: 0.8,
           success: true,
@@ -664,12 +763,39 @@ const processWithOpenAI = async (
   messages: ChatMessage[],
   ctx: ChatContext,
 ): Promise<AIServiceResult> => {
-  initializeServices();
+  await initializeServices(ctx);
 
   try {
     // Initialize OpenAI with user's API key
     const userOpenAI = await initializeOpenAI(ctx);
-    const response = await userOpenAI.chat(messages, tools!, false);
+
+    // Add system message with contextual suggestions requirement
+    const systemMessage: ChatMessage = {
+      role: "system",
+      content: `
+You are an AI assistant for a Field Service Application (FSA). You can assist only with FSA entities: work orders, tasks, personnel, users, clients, projects, analytics.
+
+STRICT ID & NAME RULES
+- Never show 24-char hex ObjectIds in any response. If you see them, resolve to human-readable names or redact.
+- For personnel, DO NOT read names from the personnel model. Personnel are linked to users by _id. To display a personnel name:
+  1) Resolve the personnel ObjectId to its linked user _id, then
+  2) Fetch the user’s {firstName, lastName} and display the "FirstName LastName".
+- Use the tool "resolve_entities_to_names" whenever you have any IDs (users or personnel). Pass arrays of IDs and replace the IDs with names in your final output.
+- Common fields to sanitize: createdBy, updatedBy, assignedTo, assignees[], personnel, owner, requestedBy, approvedBy, any "user*" or "personnel*" field, and nested audit/history actors.
+
+DATA ACCESS & SCHEMA
+- If unsure about parameters, first call "inspect_api_schema".
+- Work order filters (exact values): status=["created","assigned","in-progress","completed","cancelled","on-hold"]; priority=["low","medium","high","urgent"].
+
+OFF-TOPIC
+- If a request is not FSA-related, redirect to FSA topics.
+
+RESPONSE ENDING
+- Always finish with 3 actionable suggestions relevant to the context.`,
+    };
+
+    const messagesWithSystem = [systemMessage, ...messages];
+    const response = await userOpenAI.chat(messagesWithSystem, tools!, false);
     const choice = (response as any).choices?.[0];
 
     if (!choice) {
@@ -712,7 +838,7 @@ const executeToolCalls = async (
   toolCalls: any[],
   ctx: ChatContext,
 ): Promise<Array<{ name: string; arguments: any; result: string }>> => {
-  initializeServices();
+  await initializeServices(ctx);
 
   const results: Array<{ name: string; arguments: any; result: string }> = [];
 
@@ -767,57 +893,73 @@ export const processChat = async (
     tenantId: ctx.tenantId,
   });
 
-  // Try local NLP first for ALL requests (prioritize local service)
-  try {
-    console.log(
-      "[AIServiceRouter] Attempting local NLP first for all requests",
-    );
-    return await processWithLocalNLP(messages, ctx);
-  } catch (error) {
-    console.log(
-      "[AIServiceRouter] Local NLP not suitable for this request, using OpenAI:",
-      (error as Error).message,
-    );
-    // Fall through to OpenAI
-  }
+  // Get user's AI settings to check preferences
+  const settings = await AISettingsService.getSettings(
+    ctx.userId!,
+    ctx.tenantId!,
+  );
+  const useOpenAI =
+    settings?.openaiApiKey && settings.openaiApiKey.trim() !== "";
+  const useLocalNLP = settings?.useLocalNLP ?? true; // Default to true if not set
 
-  // Use OpenAI as fallback
-  try {
-    console.log("[AIServiceRouter] Using OpenAI as fallback");
-    return await processWithOpenAI(messages, ctx);
-  } catch (error) {
-    const errorMessage = (error as Error).message;
+  console.log("[AIServiceRouter] AI Settings:", {
+    hasOpenAIKey: !!useOpenAI,
+    useLocalNLP,
+    preferredModel: settings?.preferredModel,
+  });
 
-    // Check if it's a rate limit error
-    if (
-      errorMessage.includes("Rate limit exceeded") ||
-      errorMessage.includes("token limit")
-    ) {
-      console.warn(
-        "[AIServiceRouter] OpenAI rate limited, trying local NLP again as last resort",
-      );
+  // Priority 1: Try OpenAI if user has API key (regardless of useLocalNLP setting)
+  if (useOpenAI) {
+    try {
+      console.log("[AIServiceRouter] Using OpenAI (user has API key)");
+      return await processWithOpenAI(messages, ctx);
+    } catch (error) {
+      const errorMessage = (error as Error).message;
+      console.log("[AIServiceRouter] OpenAI failed:", errorMessage);
 
-      // Try local NLP one more time as last resort
-      try {
-        return await processWithLocalNLP(messages, ctx);
-      } catch (fallbackError) {
-        console.error(
-          "[AIServiceRouter] Both services failed after rate limit:",
-          {
-            error,
-            fallbackError,
-          },
+      // If OpenAI fails due to rate limits/tokens but user allows local NLP, try it
+      if (
+        useLocalNLP &&
+        (errorMessage.includes("Rate limit exceeded") ||
+          errorMessage.includes("token limit"))
+      ) {
+        console.log(
+          "[AIServiceRouter] OpenAI rate limited, trying local NLP fallback",
         );
-        throw new Error(
-          `AI services unavailable. OpenAI rate limited: ${errorMessage}. Local NLP: ${(fallbackError as Error).message}`,
-        );
+        try {
+          return await processWithLocalNLP(messages, ctx);
+        } catch (nlpError) {
+          console.log(
+            "[AIServiceRouter] Local NLP fallback also failed:",
+            (nlpError as Error).message,
+          );
+        }
       }
+      // Re-throw OpenAI error if no fallback or fallback failed
+      throw error;
     }
-
-    // If OpenAI fails for other reasons, throw the error
-    console.error("[AIServiceRouter] OpenAI failed:", error);
-    throw new Error(`AI services unavailable. OpenAI: ${errorMessage}`);
   }
+
+  // Priority 2: Try local NLP if user enables it and no OpenAI key
+  if (useLocalNLP) {
+    try {
+      console.log(
+        "[AIServiceRouter] Using local NLP (no OpenAI key or user disabled OpenAI)",
+      );
+      return await processWithLocalNLP(messages, ctx);
+    } catch (error) {
+      console.log(
+        "[AIServiceRouter] Local NLP failed:",
+        (error as Error).message,
+      );
+      throw error;
+    }
+  }
+
+  // Priority 3: No options available
+  throw new Error(
+    "No AI service available. Please configure OpenAI API key or enable local NLP in settings.",
+  );
 };
 
 /**
@@ -835,81 +977,103 @@ export const processChatStream = async (
 ): Promise<void> => {
   const isTaskRequest = isTaskManagementRequest(messages);
 
-  // Try local NLP first for ALL requests (prioritize local service)
-  try {
-    console.log(
-      "[AIServiceRouter] Attempting local NLP first for all requests (stream)",
-    );
-    const result = await processWithLocalNLP(messages, ctx);
+  // Get user's AI settings to check preferences
+  const settings = await AISettingsService.getSettings(
+    ctx.userId!,
+    ctx.tenantId!,
+  );
+  const useOpenAI =
+    settings?.openaiApiKey && settings.openaiApiKey.trim() !== "";
+  const useLocalNLP = settings?.useLocalNLP ?? true; // Default to true if not set
 
-    // Simulate streaming by sending the result in chunks
-    const words = result.message.split(" ");
-    for (let i = 0; i < words.length; i++) {
-      setTimeout(() => {
-        callbacks.onToken(words[i] + (i < words.length - 1 ? " " : ""));
-        if (i === words.length - 1) {
-          callbacks.onComplete(result);
-        }
-      }, i * 50); // 50ms delay between words
-    }
-    return;
-  } catch (error) {
-    console.log(
-      "[AIServiceRouter] Local NLP not suitable for this request, using OpenAI:",
-      (error as Error).message,
-    );
-    // Fall through to OpenAI streaming
-  }
+  console.log("[AIServiceRouter] AI Settings (stream):", {
+    hasOpenAIKey: !!useOpenAI,
+    useLocalNLP,
+    preferredModel: settings?.preferredModel,
+  });
 
-  // Use OpenAI streaming as fallback
-  try {
-    console.log("[AIServiceRouter] Using OpenAI streaming as fallback");
-    await processWithOpenAIStream(messages, ctx, callbacks);
-  } catch (error) {
-    const errorMessage = (error as Error).message;
-
-    // Check if it's a rate limit error
-    if (
-      errorMessage.includes("Rate limit exceeded") ||
-      errorMessage.includes("token limit")
-    ) {
-      console.warn(
-        "[AIServiceRouter] OpenAI streaming rate limited, trying local NLP again as last resort",
+  // Priority 1: Try OpenAI streaming if user has API key
+  if (useOpenAI) {
+    try {
+      console.log(
+        "[AIServiceRouter] Using OpenAI streaming (user has API key)",
       );
+      await processWithOpenAIStream(messages, ctx, callbacks);
+      return;
+    } catch (error) {
+      const errorMessage = (error as Error).message;
+      console.log("[AIServiceRouter] OpenAI streaming failed:", errorMessage);
 
-      try {
-        const result = await processWithLocalNLP(messages, ctx);
-
-        // Simulate streaming
-        const words = result.message.split(" ");
-        for (let i = 0; i < words.length; i++) {
-          setTimeout(() => {
-            callbacks.onToken(words[i] + (i < words.length - 1 ? " " : ""));
-            if (i === words.length - 1) {
-              callbacks.onComplete(result);
-            }
-          }, i * 50);
+      // If OpenAI fails due to rate limits but user allows local NLP, try it
+      if (
+        useLocalNLP &&
+        (errorMessage.includes("Rate limit exceeded") ||
+          errorMessage.includes("token limit"))
+      ) {
+        console.log(
+          "[AIServiceRouter] OpenAI rate limited, trying local NLP fallback (stream)",
+        );
+        try {
+          const result = await processWithLocalNLP(messages, ctx);
+          // Simulate streaming by sending the result in chunks
+          const words = result.message.split(" ");
+          for (let i = 0; i < words.length; i++) {
+            setTimeout(() => {
+              callbacks.onToken(words[i] + (i < words.length - 1 ? " " : ""));
+              if (i === words.length - 1) {
+                callbacks.onComplete(result);
+              }
+            }, i * 50); // 50ms delay between words
+          }
+          return;
+        } catch (nlpError) {
+          console.log(
+            "[AIServiceRouter] Local NLP fallback also failed (stream):",
+            (nlpError as Error).message,
+          );
         }
-      } catch (fallbackError) {
-        console.error(
-          "[AIServiceRouter] Both streaming services failed after rate limit:",
-          {
-            error,
-            fallbackError,
-          },
-        );
-        callbacks.onError(
-          new Error(
-            `AI services unavailable. OpenAI rate limited: ${errorMessage}. Local NLP: ${(fallbackError as Error).message}`,
-          ),
-        );
       }
-    } else {
-      // If OpenAI streaming fails for other reasons, throw the error
-      console.error("[AIServiceRouter] OpenAI streaming failed:", error);
+      // Re-throw OpenAI error if no fallback or fallback failed
       callbacks.onError(error as Error);
+      return;
     }
   }
+
+  // Priority 2: Try local NLP if user enables it and no OpenAI key
+  if (useLocalNLP) {
+    try {
+      console.log(
+        "[AIServiceRouter] Using local NLP (stream - no OpenAI key or user disabled OpenAI)",
+      );
+      const result = await processWithLocalNLP(messages, ctx);
+
+      // Simulate streaming by sending the result in chunks
+      const words = result.message.split(" ");
+      for (let i = 0; i < words.length; i++) {
+        setTimeout(() => {
+          callbacks.onToken(words[i] + (i < words.length - 1 ? " " : ""));
+          if (i === words.length - 1) {
+            callbacks.onComplete(result);
+          }
+        }, i * 50); // 50ms delay between words
+      }
+      return;
+    } catch (error) {
+      console.log(
+        "[AIServiceRouter] Local NLP failed (stream):",
+        (error as Error).message,
+      );
+      callbacks.onError(error as Error);
+      return;
+    }
+  }
+
+  // Priority 3: No options available
+  callbacks.onError(
+    new Error(
+      "No AI service available. Please configure OpenAI API key or enable local NLP in settings.",
+    ),
+  );
 };
 
 /**
@@ -925,15 +1089,113 @@ const processWithOpenAIStream = async (
     onError: (error: Error) => void;
   },
 ): Promise<void> => {
-  initializeServices();
+  await initializeServices(ctx);
 
   try {
     // Initialize OpenAI with user's API key
     console.log(`[AIServiceRouter] Initializing OpenAI for streaming...`);
     const userOpenAI = await initializeOpenAI(ctx);
 
+    // Process symbols in the last user message before sending to OpenAI
+    let processedMessages = [...messages];
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage && lastMessage.role === "user") {
+      try {
+        const structuredPayload = await createStructuredPayload(
+          lastMessage.content,
+          ctx,
+        );
+        if (structuredPayload.parsedTxt !== structuredPayload.originalTxt) {
+          console.log(
+            "[AIServiceRouter] Symbol resolution applied before OpenAI:",
+            {
+              original: structuredPayload.originalTxt,
+              parsed: structuredPayload.parsedTxt,
+            },
+          );
+          // Replace the last message with the parsed version
+          processedMessages = [
+            ...messages.slice(0, -1),
+            { ...lastMessage, content: structuredPayload.parsedTxt },
+          ];
+        }
+      } catch (symbolError) {
+        console.warn(
+          "[AIServiceRouter] Symbol resolution failed, using original message:",
+          symbolError,
+        );
+      }
+    }
+
+    // Add system message with contextual suggestions requirement
+    const systemMessage: ChatMessage = {
+      role: "system",
+      content: `You are an AI assistant specifically for a Field Service Application (FSA). You can only help with FSA-related tasks like work orders, tasks, personnel, clients, projects, and analytics.
+
+🚫 **For non-FSA questions**: Politely redirect users back to field service topics with a helpful message.
+
+💡 **ID Resolution Strategy**: When processing any data, automatically detect and resolve user IDs to names using the lookup_user_names tool.
+
+IMPORTANT INSTRUCTIONS:
+
+1. **Use Correct API Parameters**: Before using any data tools, if you're unsure about available filters or parameter names, use the inspect_api_schema tool first to get the correct schema information.
+
+2. **Valid Work Order Parameters**:
+   - status: "created", "assigned", "in-progress", "completed", "cancelled", "on-hold"
+   - priority: "low", "medium", "high", "urgent"
+   - Use exact values - "high priority" should use priority: "high"
+
+3. **AUTOMATICALLY RESOLVE ALL IDs**: Always convert technical IDs to human names:
+   - SCAN your response for any 24-character hex IDs (like 68c27e63dd643a18a2dda773)
+   - If you find user IDs anywhere (in history, audit trails, created by, etc.), use the lookup_user_names tool
+   - Replace "User ID (68c27e63dd643a18a2dda773)" with "Created by: John Smith"
+   - Replace "Personnel ID: 68c32ed257cb02ba1ba41aa1" with "Assigned to: Jane Doe"
+   - Look for populated name, firstName, lastName, title, company fields first
+   - Use the lookup tool as a fallback for any remaining IDs
+   - Never show raw 24-character IDs in your final response
+
+4. **Handle Off-Topic Questions**: For questions unrelated to field service (like "how to make coffee"), respond with:
+
+---
+
+## 🎯 I'm Your Field Service Assistant
+
+I'm designed specifically to help you with **Field Service Application** tasks. I can't help with general questions like cooking, weather, or other topics.
+
+### 🔧 What I Can Help With:
+- **Work Orders**: View, create, update work order status
+- **Tasks**: Manage task assignments, priorities, and progress
+- **Personnel**: Check team assignments and availability
+- **Clients**: View client information and work history
+- **Analytics**: Generate reports and insights on your operations
+- **Projects**: Track project progress and details
+
+**Suggestions:**
+- Show me my recent work orders
+- List high priority tasks
+- View team assignments for this week
+
+---
+
+5. **Always Provide Contextual Suggestions**: For FSA-related responses, end with at least 3 contextual suggestions in this format:
+
+**Suggestions:**
+- [First relevant action based on the data shown]
+- [Second relevant action the user might want to take]
+- [Third helpful follow-up or related query]
+
+For example:
+- If showing work orders: "Create a new work order", "Update work order status", "View work order details"
+- If showing tasks: "Assign task to someone", "Update task priority", "Mark task as completed"
+- If showing analytics: "Filter by date range", "Export this data", "View detailed breakdown"
+
+Make suggestions specific and actionable based on the context of what you're showing the user.`,
+    };
+
+    const messagesWithSystem = [systemMessage, ...processedMessages];
+
     console.log(`[AIServiceRouter] Creating stream request...`);
-    const stream = await userOpenAI.chat(messages, tools!, true);
+    const stream = await userOpenAI.chat(messagesWithSystem, tools!, true);
     let accumulatedContent = "";
     let toolCalls: any[] = [];
 
@@ -1024,18 +1286,26 @@ const processWithOpenAIStream = async (
         let finalMessage = accumulatedContent;
         if (!accumulatedContent.trim() && toolCallResults.length > 0) {
           // Generate a user-friendly response from tool results
-          const toolSummaries = toolCallResults.map((tool) => {
-            // Extract meaningful content from tool results
-            try {
-              const parsed = JSON.parse(tool.result);
-              if (parsed.content) {
-                return parsed.content;
+          const toolSummaries = await Promise.all(
+            toolCallResults.map(async (tool) => {
+              // Extract meaningful content from tool results
+              try {
+                const parsed = JSON.parse(tool.result);
+                if (parsed.content) {
+                  return parsed.content;
+                }
+
+                // Post-process JSON responses to make them human-readable
+                const processedResult = await postProcessResponse(
+                  tool.result,
+                  userOpenAI,
+                );
+                return processedResult;
+              } catch {
+                return tool.result;
               }
-              return tool.result;
-            } catch {
-              return tool.result;
-            }
-          });
+            }),
+          );
 
           finalMessage = toolSummaries.join("\n\n");
 

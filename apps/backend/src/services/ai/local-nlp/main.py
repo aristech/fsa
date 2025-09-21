@@ -250,6 +250,23 @@ class LocalNLPProcessor:
     # ---------- Intent ----------
 
     def _detect_intent(self, text: str) -> Intent:
+        # First, detect query/list operations and return UNKNOWN (let OpenAI handle them)
+        query_patterns = [
+            r'\b(show|list|display|get|find|search|view|see|give|me|δείξε|εμφάνισε|βρες|ψάξε|πες)\b.*\b(task|tasks|εργασία|εργασίες)\b',
+            r'\btask[s]?\b.*\b(with|status|priority|due|assigned|με|κατάσταση|προτεραιότητα)\b',
+            r'\bhow\s+many\b.*\btask',
+            r'\bwhat\b.*\btask',
+            r'\bwhich\b.*\btask',
+            r'\bwhere\b.*\btask',
+            r'\bτι\b.*\bεργασία',
+            r'\bπόσα\b.*\bεργασία',
+            r'\bποια\b.*\bεργασία',
+        ]
+
+        for pattern in query_patterns:
+            if re.search(pattern, text, re.IGNORECASE):
+                return Intent.UNKNOWN  # Let OpenAI handle queries
+
         # First check if we have a structured task entity with valid MongoDB ObjectId
         # This indicates an update operation regardless of keywords
         task_entity_match = re.search(r'task=\{([^}]+)\}', text)
@@ -277,8 +294,9 @@ class LocalNLPProcessor:
             if re.search(pattern, text, re.IGNORECASE):
                 return Intent.UPDATE_TASK
 
-        # Heuristic: task with contextual prepositions suggests creation
-        if re.search(r'\btask\b', text) and any(w in text for w in ['for', 'in', 'with', 'about']):
+        # More conservative heuristic: only consider creation if we have strong creation indicators
+        # Remove the aggressive "task with preposition" rule and replace with more specific checks
+        if re.search(r'\b(create|add|new|make|schedule)\b', text, re.IGNORECASE) and re.search(r'\btask\b', text, re.IGNORECASE):
             return Intent.CREATE_TASK
 
         # Greek heuristic: imperative verbs near domain markers (#, @, +, &, /)
@@ -376,8 +394,8 @@ class LocalNLPProcessor:
         clean = self._strip_dates_times(clean)
 
         # 5) Strip common command words (EN/GR)
-        stop = r'\b(create|add|new|make|schedule|task|title|for|in|with|about|due|at|on|from|by|a|an|the|' \
-               r'δημιούργησε|πρόσθεσε|νέα|κάνε|προγραμμάτισε|φτιάξε|εργασία|για|σε|με|μέχρι|στις|στη|στο|' \
+        stop = r'\b(create|add|new|make|schedule|task|title|update|edit|modify|change|for|in|with|about|due|at|on|from|by|a|an|the|' \
+               r'δημιούργησε|πρόσθεσε|νέα|κάνε|προγραμμάτισε|φτιάξε|εργασία|ενημέρωσε|τροποποίησε|άλλαξε|για|σε|με|μέχρι|στις|στη|στο|' \
                r'έως|ως|από|τίτλος|καταχώρισε)\b'
         clean = re.sub(stop, ' ', clean, flags=re.IGNORECASE)
 
