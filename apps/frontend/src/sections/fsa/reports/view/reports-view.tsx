@@ -16,6 +16,7 @@ import {
   IconButton,
 } from '@mui/material';
 
+import { useTranslate } from 'src/locales/use-locales';
 import { useClient } from 'src/contexts/client-context';
 import { ReportService } from 'src/lib/services/report-service';
 
@@ -34,6 +35,7 @@ import { ReportDetailsDrawer } from '../components/report-details-drawer';
 // ----------------------------------------------------------------------
 
 export function ReportsView() {
+  const { t } = useTranslate('dashboard');
   const { selectedClient } = useClient();
   const [reports, setReports] = useState<IReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,11 +72,11 @@ export function ReportsView() {
       }
     } catch (error) {
       console.error('Error loading reports:', error);
-      toast.error('Failed to load reports');
+      toast.error(t('reports.failedToLoad'));
     } finally {
       setLoading(false);
     }
-  }, [filters, selectedClient]);
+  }, [filters, selectedClient, t]);
 
   // Load data on mount and when filters change
   useEffect(() => {
@@ -103,9 +105,9 @@ export function ReportsView() {
     (newReport: IReport) => {
       setReports((prev) => [newReport, ...prev]);
       createDrawer.onFalse();
-      toast.success('Report created successfully');
+      toast.success(t('reports.reportCreated'));
     },
-    [createDrawer]
+    [createDrawer, t]
   );
 
   // Handle report deletion
@@ -126,22 +128,70 @@ export function ReportsView() {
         setReports((prev) => prev.filter((report) => report._id !== reportToDelete._id));
         setDeleteConfirmOpen(false);
         setReportToDelete(null);
-        toast.success('Report deleted successfully');
+        toast.success(t('reports.reportDeleted'));
       } else {
-        toast.error(response.message || 'Failed to delete report');
+        toast.error(response.message || t('reports.failedToDelete'));
       }
     } catch (error) {
       console.error('Error deleting report:', error);
-      toast.error('Failed to delete report');
+      toast.error(t('reports.failedToDelete'));
     } finally {
       setDeleteLoading(false);
     }
-  }, [reportToDelete]);
+  }, [reportToDelete, t]);
 
   // Handle filters change
   const handleFiltersChange = useCallback((newFilters: Partial<ReportSearchParams>) => {
     setFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
   }, []);
+
+  // Convert reports to CSV format
+  const convertReportsToCSV = useCallback(
+    (reportsData: IReport[]) => {
+      const headers = [
+        t('reports.table.id'),
+        t('reports.table.type'),
+        t('reports.table.status'),
+        t('reports.table.priority'),
+        t('reports.table.location'),
+        t('reports.table.reportDate'),
+        t('reports.table.createdBy'),
+        t('reports.table.client'),
+        t('reports.table.workOrder'),
+        t('reports.table.totalCost'),
+        t('reports.table.totalHours'),
+        t('reports.table.materialsCount'),
+        t('reports.table.timeEntriesCount'),
+        t('reports.table.createdAt'),
+        t('reports.table.updatedAt'),
+      ];
+
+      const rows = reportsData.map((report) => [
+        report._id,
+        report.type,
+        report.status,
+        report.priority,
+        report.location || '',
+        new Date(report.reportDate).toLocaleDateString(),
+        report.createdBy?.name ||
+          report.createdByData?.name ||
+          report.createdBy?.email ||
+          report.createdByData?.email ||
+          'Unknown User',
+        report.client?.name || report.clientData?.name || '',
+        report.workOrder?.number || report.workOrderData?.number || '',
+        report.totalCost.toFixed(2),
+        report.totalHours?.toFixed(2) || '0',
+        report.materialsUsed.length.toString(),
+        report.timeEntries.length.toString(),
+        new Date(report.createdAt).toLocaleString(),
+        new Date(report.updatedAt).toLocaleString(),
+      ]);
+
+      return [headers, ...rows];
+    },
+    [t]
+  );
 
   // Handle CSV export
   const handleExportCSV = useCallback(async () => {
@@ -159,58 +209,13 @@ export function ReportsView() {
           ? `reports-export-${selectedClient.name}.csv`
           : 'reports-export.csv';
         downloadCSV(csvData, filename);
-        toast.success('Reports exported successfully');
+        toast.success(t('reports.reportExportSuccess'));
       }
     } catch (error) {
       console.error('Error exporting reports:', error);
-      toast.error('Failed to export reports');
+      toast.error(t('reports.failedToExport'));
     }
-  }, [filters, selectedClient]);
-
-  // Convert reports to CSV format
-  const convertReportsToCSV = (reportsData: IReport[]) => {
-    const headers = [
-      'ID',
-      'Type',
-      'Status',
-      'Priority',
-      'Location',
-      'Report Date',
-      'Created By',
-      'Client',
-      'Work Order',
-      'Total Cost',
-      'Total Hours',
-      'Materials Count',
-      'Time Entries Count',
-      'Created At',
-      'Updated At',
-    ];
-
-    const rows = reportsData.map((report) => [
-      report._id,
-      report.type,
-      report.status,
-      report.priority,
-      report.location || '',
-      new Date(report.reportDate).toLocaleDateString(),
-      report.createdBy?.name ||
-        report.createdByData?.name ||
-        report.createdBy?.email ||
-        report.createdByData?.email ||
-        'Unknown User',
-      report.client?.name || report.clientData?.name || '',
-      report.workOrder?.number || report.workOrderData?.number || '',
-      report.totalCost.toFixed(2),
-      report.totalHours?.toFixed(2) || '0',
-      report.materialsUsed.length.toString(),
-      report.timeEntries.length.toString(),
-      new Date(report.createdAt).toLocaleString(),
-      new Date(report.updatedAt).toLocaleString(),
-    ]);
-
-    return [headers, ...rows];
-  };
+  }, [filters, selectedClient, convertReportsToCSV, t]);
 
   // Download CSV file
   const downloadCSV = (data: string[][], filename: string) => {
@@ -238,15 +243,15 @@ export function ReportsView() {
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box>
             <Typography variant="h4" sx={{ mb: 1 }}>
-              Reports
+              {t('reports.title')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Manage and track all field service reports
+              {t('reports.subtitle')}
             </Typography>
           </Box>
 
           <Stack direction="row" spacing={2}>
-            <Tooltip title="Export to CSV">
+            <Tooltip title={t('reports.exportToCSV')}>
               <IconButton onClick={handleExportCSV} color="primary">
                 <Iconify icon="eva:download-fill" />
               </IconButton>
@@ -257,7 +262,7 @@ export function ReportsView() {
               startIcon={<Iconify icon="eva:plus-fill" />}
               onClick={createDrawer.onTrue}
             >
-              Create Report
+              {t('reports.createReport')}
             </Button>
           </Stack>
         </Box>
@@ -280,15 +285,15 @@ export function ReportsView() {
             />
           ) : (
             <EmptyContent
-              title="No reports found"
-              description="Get started by creating your first report"
+              title={t('reports.noReportsFound')}
+              description={t('reports.noReportsDescription')}
               action={
                 <Button
                   variant="contained"
                   startIcon={<Iconify icon="eva:plus-fill" />}
                   onClick={createDrawer.onTrue}
                 >
-                  Create Report
+                  {t('reports.createReport')}
                 </Button>
               }
             />
@@ -315,10 +320,10 @@ export function ReportsView() {
       {/* Delete Confirmation Dialog */}
       <ConfirmationDialog
         open={deleteConfirmOpen}
-        title="Delete Report"
-        message={`Are you sure you want to delete this ${reportToDelete?.type} report? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('reports.deleteReport')}
+        message={t('reports.deleteConfirmMessage', { type: reportToDelete?.type })}
+        confirmText={t('reports.delete')}
+        cancelText={t('reports.cancel')}
         confirmColor="error"
         onConfirm={handleConfirmDelete}
         onCancel={() => {

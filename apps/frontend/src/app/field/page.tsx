@@ -330,10 +330,16 @@ export default function FieldDashboard() {
                   }
                   timestamp={dueTime}
                   badge={task.attachmentsCount > 0 ? task.attachmentsCount : undefined}
-                  onTap={() => console.log('Navigate to task:', task._id)}
+                  onTap={() => {
+                    /* Navigate to task */
+                  }}
                   swipeable
-                  onSwipeRight={() => console.log('Start task:', task._id)}
-                  onSwipeLeft={() => console.log('Complete task:', task._id)}
+                  onSwipeRight={() => {
+                    /* Start task */
+                  }}
+                  onSwipeLeft={() => {
+                    /* Complete task */
+                  }}
                 >
                   <Stack
                     direction="row"
@@ -396,9 +402,13 @@ export default function FieldDashboard() {
                 priority="high"
                 badge={`${material.quantity}`}
                 timestamp={material.location}
-                onTap={() => console.log('View material:', material._id)}
+                onTap={() => {
+                  /* View material */
+                }}
                 swipeable
-                onSwipeRight={() => console.log('Request material:', material._id)}
+                onSwipeRight={() => {
+                  /* Request material */
+                }}
               />
             ))}
           </Box>

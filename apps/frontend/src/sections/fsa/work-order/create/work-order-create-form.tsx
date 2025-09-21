@@ -213,17 +213,6 @@ export function WorkOrderCreateForm({ id }: Props) {
               form.append('files', file);
             });
 
-            console.log(
-              '🔧 WORK ORDER FORM: Uploading with scope:',
-              'workOrder',
-              'workOrderId:',
-              workOrderId
-            );
-            console.log('🔧 WORK ORDER FORM: FormData entries:');
-            for (const [key, value] of form.entries()) {
-              console.log(`  ${key}:`, value instanceof File ? `File(${value.name})` : value);
-            }
-
             const uploadResponse = await axiosInstance.post('/api/v1/uploads', form, {
               headers: {
                 'Content-Type': undefined, // Let browser set multipart boundary

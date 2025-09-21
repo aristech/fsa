@@ -79,19 +79,13 @@ export function PersonnelQuickEditForm({ open, onClose, personnel }: PersonnelQu
   const handleSave = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/v1/personnel/${personnel._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          roleId: roleId || undefined,
-          hourlyRate,
-          isActive,
-        }),
+      const response = await axiosInstance.put(`/api/v1/personnel/${personnel._id}`, {
+        roleId: roleId || undefined,
+        hourlyRate,
+        isActive,
       });
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data.success) {
         onClose();

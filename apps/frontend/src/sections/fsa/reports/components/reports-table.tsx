@@ -26,6 +26,8 @@ import {
   TablePagination,
 } from '@mui/material';
 
+import { useTranslate } from 'src/locales/use-locales';
+
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 
@@ -44,6 +46,7 @@ export function ReportsTable({
   onReportUpdate,
   onReportDelete,
 }: ReportsTableProps) {
+  const { t } = useTranslate('dashboard');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -344,14 +347,14 @@ export function ReportsTable({
           <ListItemIcon>
             <Iconify icon="eva:eye-fill" />
           </ListItemIcon>
-          <ListItemText>View Details</ListItemText>
+          <ListItemText>{t('reports.table.view')}</ListItemText>
         </MenuItem>
 
         <MenuItem
           onClick={() => {
             if (selectedReport) {
               // Handle edit action
-              handleRowClick(selectedReport);
+              onReportUpdate(selectedReport);
             }
             handleMenuClose();
           }}
@@ -359,7 +362,7 @@ export function ReportsTable({
           <ListItemIcon>
             <Iconify icon="eva:edit-fill" />
           </ListItemIcon>
-          <ListItemText>Edit Report</ListItemText>
+          <ListItemText>{t('reports.table.edit')}</ListItemText>
         </MenuItem>
 
         <MenuItem
@@ -374,7 +377,7 @@ export function ReportsTable({
           <ListItemIcon>
             <Iconify icon="eva:download-fill" />
           </ListItemIcon>
-          <ListItemText>Export PDF</ListItemText>
+          <ListItemText>{t('reports.table.exportPdf')}</ListItemText>
         </MenuItem>
 
         <MenuItem
@@ -389,7 +392,7 @@ export function ReportsTable({
           <ListItemIcon>
             <Iconify icon="eva:trash-2-fill" sx={{ color: 'error.main' }} />
           </ListItemIcon>
-          <ListItemText>Delete Report</ListItemText>
+          <ListItemText>{t('reports.table.delete')}</ListItemText>
         </MenuItem>
       </Menu>
     </>

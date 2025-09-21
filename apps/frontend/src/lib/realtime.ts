@@ -2,6 +2,7 @@ import type { Socket } from 'socket.io-client';
 
 import { io } from 'socket.io-client';
 
+import axiosInstance from 'src/lib/axios';
 import { CONFIG } from 'src/global-config';
 
 export interface RealtimeEvents {
@@ -52,14 +53,9 @@ class RealtimeClient {
 
     // Check if WebSocket server is available first
     try {
-      const response = await fetch(`${CONFIG.serverUrl}/socket.io/`, {
-        method: 'GET',
-        signal: AbortSignal.timeout(3000), // 3 second timeout
+      await axiosInstance.get('/socket.io/', {
+        timeout: 3000, // 3 second timeout
       });
-      if (!response.ok) {
-        console.warn('🔌 WebSocket server not available - skipping connection');
-        return Promise.resolve();
-      }
     } catch {
       console.warn('🔌 WebSocket server not available - skipping connection');
       return Promise.resolve();
@@ -91,7 +87,6 @@ class RealtimeClient {
       this.setupEventHandlers();
 
       this.socket.on('connect', () => {
-        console.log('🔌 Connected to real-time server');
         this.isConnecting = false;
         this.reconnectAttempts = 0;
 
@@ -119,7 +114,6 @@ class RealtimeClient {
       });
 
       this.socket.on('disconnect', (reason) => {
-        console.log('🔌 Disconnected:', reason);
         this.isConnecting = false;
 
         if (reason === 'io server disconnect') {
@@ -132,7 +126,6 @@ class RealtimeClient {
 
   disconnect(): void {
     if (this.socket) {
-      console.log('🔌 Disconnecting from real-time server');
       this.socket.disconnect();
       this.socket = null;
     }
@@ -151,7 +144,6 @@ class RealtimeClient {
 
     this.socket.emit('join:task', taskId);
     this.currentTaskRooms.add(taskId);
-    console.log(`📝 Joined task room: ${taskId}`);
   }
 
   leaveTaskRoom(taskId: string): void {
@@ -161,7 +153,6 @@ class RealtimeClient {
 
     this.socket.emit('leave:task', taskId);
     this.currentTaskRooms.delete(taskId);
-    console.log(`📝 Left task room: ${taskId}`);
   }
 
   // Typing indicators
@@ -233,7 +224,7 @@ class RealtimeClient {
 
     // Connection status events
     this.socket.on('reconnect', (attemptNumber) => {
-      console.log(`🔌 Reconnected after ${attemptNumber} attempts`);
+      // Reconnected successfully
     });
 
     this.socket.on('reconnect_error', (err) => {

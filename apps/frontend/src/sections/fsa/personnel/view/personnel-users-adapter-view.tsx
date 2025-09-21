@@ -126,15 +126,6 @@ export function PersonnelUsersAdapterView() {
       const selectedRole = roleOptions.find((r) => r.name === selectedRoleName);
       const roleQuery = selectedRole ? `&roleId=${encodeURIComponent(selectedRole.id)}` : '';
 
-      // Debug logging
-      if (currentFilters.role.length > 0) {
-        console.log('Role filter debug:', {
-          selectedRoleName,
-          selectedRole,
-          roleOptions,
-          roleQuery,
-        });
-      }
       const searchQuery = currentFilters.name
         ? `&q=${encodeURIComponent(currentFilters.name)}`
         : '';
@@ -154,7 +145,6 @@ export function PersonnelUsersAdapterView() {
 
       if (Array.isArray(rolesJson?.data)) {
         const mappedRoles = rolesJson.data.map((r: RoleApi) => ({ id: r._id, name: r.name }));
-        console.log('Roles loaded:', mappedRoles);
         setRoleOptions(mappedRoles);
       }
 

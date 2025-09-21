@@ -3,6 +3,8 @@ import { authenticate } from "../middleware/auth";
 import { requirePermission } from "../middleware/permission-guard";
 import { ApiKey } from "../models/ApiKey";
 import { User } from "../models/User";
+import { Personnel } from "../models/Personnel";
+import { Role } from "../models/Role";
 import { API_PERMISSIONS } from "../middleware/api-key-auth";
 import { AuthenticatedRequest } from "../types";
 
@@ -21,6 +23,13 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
       const apiKeys = await ApiKey.find({ tenantId: tenant._id })
         .select('-keyHash') // Don't expose key hashes
         .populate('userId', 'firstName lastName email')
+        .populate({
+          path: 'personnelId',
+          populate: [
+            { path: 'userId', select: 'firstName lastName email' },
+            { path: 'roleId', select: 'name permissions' }
+          ]
+        })
         .sort({ createdAt: -1 });
 
       reply.send({
@@ -46,7 +55,14 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
 
       const apiKey = await ApiKey.findOne({ _id: id, tenantId: tenant._id })
         .select('-keyHash')
-        .populate('userId', 'firstName lastName email');
+        .populate('userId', 'firstName lastName email')
+        .populate({
+          path: 'personnelId',
+          populate: [
+            { path: 'userId', select: 'firstName lastName email' },
+            { path: 'roleId', select: 'name permissions' }
+          ]
+        });
 
       if (!apiKey) {
         reply.status(404).send({
@@ -77,49 +93,57 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
       const { tenant, user } = req.context!;
       const keyData = request.body as {
         name: string;
-        permissions: string[];
+        personnelId: string; // Required - personnel to create key for
         expiresAt?: string;
         rateLimitPerHour?: number;
-        userId?: string; // Allow creating keys for other users (admin only)
       };
 
-      // Validate permissions
-      const invalidPermissions = keyData.permissions.filter(
-        permission => !API_PERMISSIONS.includes(permission as any)
-      );
+      // Validate and fetch personnel
+      const personnel = await Personnel.findOne({
+        _id: keyData.personnelId,
+        tenantId: tenant._id
+      }).populate('roleId', 'name permissions').populate('userId', 'firstName lastName email');
 
-      if (invalidPermissions.length > 0) {
-        reply.status(400).send({
+      if (!personnel) {
+        reply.status(404).send({
           success: false,
-          error: `Invalid permissions: ${invalidPermissions.join(', ')}`,
-          validPermissions: API_PERMISSIONS,
+          error: "Personnel not found",
         });
         return;
       }
 
-      // Check if user is trying to create key for another user
-      let targetUserId = user.id;
-      if (keyData.userId && keyData.userId !== user.id) {
-        // Only allow if user has admin permissions
+      // Check if user has permission to create API keys for this personnel
+      // Allow if it's for themselves or if they have admin permissions
+      if (personnel.userId.toString() !== user.id) {
         if (!user.permissions.includes('*') && !user.permissions.includes('users.write')) {
           reply.status(403).send({
             success: false,
-            error: "Insufficient permissions to create API keys for other users",
+            error: "Insufficient permissions to create API keys for other personnel",
           });
           return;
         }
+      }
 
-        // Verify target user exists and belongs to same tenant
-        const targetUser = await User.findOne({ _id: keyData.userId, tenantId: tenant._id });
-        if (!targetUser) {
-          reply.status(404).send({
-            success: false,
-            error: "Target user not found",
-          });
-          return;
-        }
+      // Derive permissions from personnel's role
+      let permissions: string[] = [];
+      if (personnel.roleId && (personnel.roleId as any).permissions) {
+        permissions = (personnel.roleId as any).permissions;
+      } else {
+        // Fallback to basic permissions if no role
+        permissions = ['work_orders.read', 'tasks.read'];
+      }
 
-        targetUserId = keyData.userId;
+      // Validate that derived permissions are valid API permissions
+      const validPermissions = permissions.filter(
+        permission => API_PERMISSIONS.includes(permission as any)
+      );
+
+      if (validPermissions.length === 0) {
+        reply.status(400).send({
+          success: false,
+          error: "Personnel role has no valid API permissions",
+        });
+        return;
       }
 
       // Generate API key
@@ -149,11 +173,12 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
 
       const apiKey = new ApiKey({
         tenantId: tenant._id,
-        userId: targetUserId,
+        personnelId: keyData.personnelId,
+        userId: personnel.userId._id, // Keep for backward compatibility
         name: keyData.name,
         keyHash: hash,
         keyPrefix: prefix,
-        permissions: keyData.permissions,
+        permissions: validPermissions,
         expiresAt,
         rateLimitPerHour: keyData.rateLimitPerHour ?? 1000,
         usageCount: 0,
@@ -162,8 +187,14 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
 
       await apiKey.save();
 
-      // Populate user info for response
-      await apiKey.populate('userId', 'firstName lastName email');
+      // Populate personnel and user info for response
+      await apiKey.populate({
+        path: 'personnelId',
+        populate: [
+          { path: 'userId', select: 'firstName lastName email' },
+          { path: 'roleId', select: 'name permissions' }
+        ]
+      });
 
       // Return API key without hash, but include the plaintext key once
       const responseData = apiKey.toObject();
@@ -193,27 +224,12 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
       const { id } = request.params as { id: string };
       const updateData = request.body as {
         name?: string;
-        permissions?: string[];
         expiresAt?: string;
         rateLimitPerHour?: number;
         isActive?: boolean;
       };
 
-      // Validate permissions if provided
-      if (updateData.permissions) {
-        const invalidPermissions = updateData.permissions.filter(
-          permission => !API_PERMISSIONS.includes(permission as any)
-        );
-
-        if (invalidPermissions.length > 0) {
-          reply.status(400).send({
-            success: false,
-            error: `Invalid permissions: ${invalidPermissions.join(', ')}`,
-            validPermissions: API_PERMISSIONS,
-          });
-          return;
-        }
-      }
+      // Permissions are derived from personnel role and cannot be updated directly
 
       // Parse expiration date if provided
       let updateFields: any = { ...updateData };
@@ -249,7 +265,20 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
       }
 
       // Only allow updating own keys unless user has admin permissions
-      if (existingApiKey.userId !== user.id) {
+      // Check both userId (legacy) and personnelId (new)
+      let isOwner = existingApiKey.userId === user.id;
+
+      if (!isOwner && existingApiKey.personnelId) {
+        // Check if current user is the personnel linked to this API key
+        const linkedPersonnel = await Personnel.findOne({
+          _id: existingApiKey.personnelId,
+          userId: user.id,
+          tenantId: tenant._id
+        });
+        isOwner = !!linkedPersonnel;
+      }
+
+      if (!isOwner) {
         if (!user.permissions.includes('*') && !user.permissions.includes('users.write')) {
           reply.status(403).send({
             success: false,
@@ -263,7 +292,15 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
         id,
         { $set: updateFields },
         { new: true }
-      ).select('-keyHash').populate('userId', 'firstName lastName email');
+      ).select('-keyHash')
+       .populate('userId', 'firstName lastName email')
+       .populate({
+         path: 'personnelId',
+         populate: [
+           { path: 'userId', select: 'firstName lastName email' },
+           { path: 'roleId', select: 'name permissions' }
+         ]
+       });
 
       reply.send({
         success: true,
@@ -297,7 +334,20 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
       }
 
       // Only allow deleting own keys unless user has admin permissions
-      if (existingApiKey.userId !== user.id) {
+      // Check both userId (legacy) and personnelId (new)
+      let isOwner = existingApiKey.userId === user.id;
+
+      if (!isOwner && existingApiKey.personnelId) {
+        // Check if current user is the personnel linked to this API key
+        const linkedPersonnel = await Personnel.findOne({
+          _id: existingApiKey.personnelId,
+          userId: user.id,
+          tenantId: tenant._id
+        });
+        isOwner = !!linkedPersonnel;
+      }
+
+      if (!isOwner) {
         if (!user.permissions.includes('*') && !user.permissions.includes('users.write')) {
           reply.status(403).send({
             success: false,
@@ -352,7 +402,20 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
       }
 
       // Only allow viewing own key stats unless user has admin permissions
-      if (apiKey.userId !== user.id) {
+      // Check both userId (legacy) and personnelId (new)
+      let isOwner = apiKey.userId === user.id;
+
+      if (!isOwner && apiKey.personnelId) {
+        // Check if current user is the personnel linked to this API key
+        const linkedPersonnel = await Personnel.findOne({
+          _id: apiKey.personnelId,
+          userId: user.id,
+          tenantId: tenant._id
+        });
+        isOwner = !!linkedPersonnel;
+      }
+
+      if (!isOwner) {
         if (!user.permissions.includes('*') && !user.permissions.includes('users.read')) {
           reply.status(403).send({
             success: false,
@@ -395,7 +458,14 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
 
       const apiKey = await ApiKey.findOne({ _id: id, tenantId: tenant._id })
         .select('-keyHash')
-        .populate('userId', 'firstName lastName email');
+        .populate('userId', 'firstName lastName email')
+        .populate({
+          path: 'personnelId',
+          populate: [
+            { path: 'userId', select: 'firstName lastName email' },
+            { path: 'roleId', select: 'name permissions' }
+          ]
+        });
 
       if (!apiKey) {
         reply.status(404).send({

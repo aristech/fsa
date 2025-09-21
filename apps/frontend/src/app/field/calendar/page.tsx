@@ -135,26 +135,9 @@ export default function FieldCalendarPage() {
     const transformedTasks = allTasks
       .map((task, index) => {
         const transformed = transformKanbanTaskToCalendarTask(task);
-        if (transformed) {
-          console.log(`Task ${index} transformed:`, {
-            id: transformed.id,
-            title: transformed.title,
-            startTime: transformed.startTime,
-            endTime: transformed.endTime,
-            status: transformed.status,
-            priority: transformed.priority,
-          });
-        } else {
-          console.log(`Task ${index} filtered out:`, task);
-        }
         return transformed;
       })
       .filter((task): task is CalendarTask => task !== null);
-
-    console.log('Transformed calendar tasks:', transformedTasks);
-    console.log('Number of calendar tasks:', transformedTasks.length);
-    console.log('Current date:', new Date().toISOString());
-    console.log('Selected date:', selectedDate.toISOString());
 
     // Add a test task for debugging
     const testTask: CalendarTask = {
@@ -172,9 +155,8 @@ export default function FieldCalendarPage() {
     };
 
     const finalTasks = [...transformedTasks, testTask];
-    console.log('Final tasks with test task:', finalTasks);
     return finalTasks;
-  }, [board?.tasks, selectedDate]);
+  }, [board?.tasks]);
 
   const handleViewChange = useCallback((view: CalendarView) => {
     setCurrentView(view);
@@ -199,7 +181,6 @@ export default function FieldCalendarPage() {
 
   const handleDateSelect = useCallback((date: Date) => {
     setSelectedDate(date);
-    console.log('Selected date:', date);
     // TODO: Filter tasks for selected date or show date-specific view
   }, []);
 
@@ -212,19 +193,17 @@ export default function FieldCalendarPage() {
 
   const handleTaskCreate = useCallback(
     (date: Date) => {
-      console.log('Create new task for date:', date);
       taskCreateDialog.onTrue();
     },
     [taskCreateDialog]
   );
 
   const handleTaskUpdate = useCallback((updatedTask: IKanbanTask) => {
-    console.log('Task updated:', updatedTask);
     setSelectedTask(updatedTask);
   }, []);
 
   const handleConvertToReport = useCallback((task: IKanbanTask) => {
-    console.log('Converting task to report:', task);
+    // TODO: Implement task to report conversion
   }, []);
 
   return (

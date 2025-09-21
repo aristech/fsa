@@ -16,6 +16,8 @@ import {
 
 import { fCurrency } from 'src/utils/format-number';
 
+import { useTranslate } from 'src/locales/use-locales';
+
 import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
@@ -30,6 +32,7 @@ interface MaterialsTableRowProps {
 // ----------------------------------------------------------------------
 
 export function MaterialsTableRow({ row, selected, onSelectRow, onEdit }: MaterialsTableRowProps) {
+  const { t } = useTranslate('dashboard');
   const theme = useTheme();
 
   const getStatusColor = () => {
@@ -97,7 +100,7 @@ export function MaterialsTableRow({ row, selected, onSelectRow, onEdit }: Materi
             {row.quantity} {row.unit}
           </Typography>
           {isLowStock && (
-            <Tooltip title="Low stock warning">
+            <Tooltip title={t('materials.status.lowStock')}>
               <Iconify
                 icon="solar:danger-triangle-bold"
                 sx={{ color: 'error.main', width: 16, height: 16 }}
@@ -130,7 +133,7 @@ export function MaterialsTableRow({ row, selected, onSelectRow, onEdit }: Materi
       </TableCell>
 
       <TableCell align="right">
-        <Tooltip title="Edit">
+        <Tooltip title={t('materials.table.edit')}>
           <IconButton onClick={onEdit}>
             <Iconify icon="solar:pen-bold" />
           </IconButton>

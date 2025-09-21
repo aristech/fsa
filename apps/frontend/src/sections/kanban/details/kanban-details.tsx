@@ -1,3 +1,5 @@
+'use client';
+
 import type { IKanbanTask } from 'src/types/kanban';
 
 import dayjs from 'dayjs';
@@ -117,7 +119,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
   const [taskName, setTaskName] = useState(task.name);
   const [priority, setPriority] = useState(task.priority);
   const [status, setStatus] = useState(task.columnId || task.status);
-  const [taskDescription, setTaskDescription] = useState(task.description);
+  const [taskDescription, setTaskDescription] = useState(task.description || '');
   const [tags, setTags] = useState<string[]>(task.tags || task.labels || []);
   // Fetch subtasks from backend
   const { data: subtasksData } = useSWR(`/api/v1/subtasks/${task.id}`, async (url) => {
@@ -182,7 +184,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     setTaskName(task.name);
     setPriority(task.priority);
     setStatus(task.columnId || task.status);
-    setTaskDescription(task.description);
+    setTaskDescription(task.description || '');
     setTags(task.tags || task.labels || []);
   }, [task]);
 

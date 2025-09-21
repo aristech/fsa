@@ -145,7 +145,6 @@ export function KanbanTaskCreateDialog({
           )
           .filter(Boolean); // Remove any null/undefined values
 
-        console.log('Auto-populating assignees from work order:', personnelIds.length, 'personnel');
         setValue('assignees', personnelIds);
       }
       // Also auto-select client from the selected work order
@@ -245,7 +244,6 @@ export function KanbanTaskCreateDialog({
 
   const handleSubmitClick = () => {
     // Debug helper - can be removed in production
-    console.log('Submit button clicked');
   };
 
   return (

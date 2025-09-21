@@ -3,7 +3,6 @@
 import type { AISettingsFormData } from 'src/types/ai-settings';
 
 import { z as zod } from 'zod';
-import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { useState, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,54 +23,65 @@ import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
+import { useTranslate } from 'src/locales/use-locales';
 import { aiSettingsApi } from 'src/services/ai-settings';
 
+import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { Form, RHFSelect, RHFTextField } from 'src/components/hook-form';
 
 // ----------------------------------------------------------------------
 
-const schema = zod.object({
-  openaiApiKey: zod.string().min(1, 'OpenAI API Key is required'),
-  preferredModel: zod.string().min(1, 'Preferred model is required'),
-  maxTokens: zod.number().min(1).max(4000),
-  temperature: zod.number().min(0).max(2),
-  useLocalNLP: zod.boolean(),
-  language: zod.string().min(1, 'Language is required'),
-});
+const createSchema = (t: any) =>
+  zod.object({
+    openaiApiKey: zod.string().min(1, t('settings.ai.form.validation.apiKeyRequired')),
+    preferredModel: zod.string().min(1, t('settings.ai.form.validation.modelRequired')),
+    maxTokens: zod
+      .number()
+      .min(1, t('settings.ai.form.validation.maxTokensMin'))
+      .max(4000, t('settings.ai.form.validation.maxTokensMax')),
+    temperature: zod
+      .number()
+      .min(0, t('settings.ai.form.validation.temperatureMin'))
+      .max(2, t('settings.ai.form.validation.temperatureMax')),
+    useLocalNLP: zod.boolean(),
+    language: zod.string().min(1, t('settings.ai.form.validation.languageRequired')),
+  });
 
 type Props = {
   onClose: () => void;
   onSuccess: () => void;
 };
 
-const MODELS = [
-  { value: 'gpt-4o', label: 'GPT-4o (Latest)' },
-  { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Fast & Cost-effective)' },
-  { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
-  { value: 'gpt-4', label: 'GPT-4' },
-  { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
+const createModels = (t: any) => [
+  { value: 'gpt-5', label: t('settings.ai.models.gpt5') },
+  { value: 'gpt-4o', label: t('settings.ai.models.gpt4o') },
+  { value: 'gpt-4o-mini', label: t('settings.ai.models.gpt4oMini') },
+  { value: 'gpt-4-turbo', label: t('settings.ai.models.gpt4Turbo') },
+  { value: 'gpt-4', label: t('settings.ai.models.gpt4') },
+  { value: 'gpt-3.5-turbo', label: t('settings.ai.models.gpt35Turbo') },
 ];
 
-const LANGUAGES = [
-  { value: 'en', label: 'English' },
-  { value: 'el', label: 'Greek (Ελληνικά)' },
-  { value: 'es', label: 'Spanish' },
-  { value: 'fr', label: 'French' },
-  { value: 'de', label: 'German' },
-  { value: 'it', label: 'Italian' },
+const createLanguages = (t: any) => [
+  { value: 'en', label: t('settings.ai.languages.en') },
+  { value: 'el', label: t('settings.ai.languages.el') },
+  { value: 'es', label: t('settings.ai.languages.es') },
+  { value: 'fr', label: t('settings.ai.languages.fr') },
+  { value: 'de', label: t('settings.ai.languages.de') },
+  { value: 'it', label: t('settings.ai.languages.it') },
 ];
 
 export function AISettingsForm({ onClose, onSuccess }: Props) {
+  const { t } = useTranslate('dashboard');
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
 
   const methods = useForm<AISettingsFormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(createSchema(t)),
     defaultValues: {
       openaiApiKey: '',
-      preferredModel: 'gpt-4o-mini',
+      preferredModel: 'gpt-4o',
       maxTokens: 1000,
       temperature: 0.7,
       useLocalNLP: true,
@@ -147,15 +157,15 @@ export function AISettingsForm({ onClose, onSuccess }: Props) {
       const response = await aiSettingsApi.update(data);
 
       if (response.success) {
-        toast.success('AI settings saved successfully!');
+        toast.success(t('settings.ai.settingsUpdated'));
         onSuccess();
         onClose();
       } else {
-        toast.error(response.message || 'Failed to save AI settings');
+        toast.error(response.message || t('settings.ai.failedToUpdate'));
       }
     } catch (error: any) {
       console.error('Failed to save AI settings:', error);
-      toast.error(error.response?.data?.message || 'Failed to save AI settings');
+      toast.error(error.response?.data?.message || t('settings.ai.failedToUpdate'));
     } finally {
       setLoading(false);
     }
@@ -164,7 +174,7 @@ export function AISettingsForm({ onClose, onSuccess }: Props) {
   if (loading) {
     return (
       <Box sx={{ p: 3, textAlign: 'center' }}>
-        <Typography>Loading AI settings...</Typography>
+        <Typography>{t('settings.ai.loading')}</Typography>
       </Box>
     );
   }
@@ -172,17 +182,14 @@ export function AISettingsForm({ onClose, onSuccess }: Props) {
   return (
     <Form methods={methods} onSubmit={handleSubmit(onSubmit)}>
       <Card>
-        <CardHeader
-          title="AI Assistant Settings"
-          subheader="Configure your AI assistant preferences and OpenAI API key"
-        />
+        <CardHeader title={t('settings.ai.title')} subheader={t('settings.ai.subtitle')} />
         <CardContent>
           <Grid container spacing={3}>
             {/* OpenAI API Key */}
             <Grid size={{ xs: 12 }}>
               <RHFTextField
                 name="openaiApiKey"
-                label="OpenAI API Key"
+                label={t('settings.ai.form.openaiApiKey')}
                 type={showApiKey ? 'text' : 'password'}
                 placeholder="sk-..."
                 slotProps={{
@@ -231,8 +238,8 @@ export function AISettingsForm({ onClose, onSuccess }: Props) {
 
             {/* Preferred Model */}
             <Grid size={{ xs: 12, md: 6 }}>
-              <RHFSelect name="preferredModel" label="Preferred Model">
-                {MODELS.map((model) => (
+              <RHFSelect name="preferredModel" label={t('settings.ai.form.preferredModel')}>
+                {createModels(t).map((model) => (
                   <MenuItem key={model.value} value={model.value}>
                     {model.label}
                   </MenuItem>
@@ -242,8 +249,8 @@ export function AISettingsForm({ onClose, onSuccess }: Props) {
 
             {/* Language */}
             <Grid size={{ xs: 12, md: 6 }}>
-              <RHFSelect name="language" label="Response Language">
-                {LANGUAGES.map((lang) => (
+              <RHFSelect name="language" label={t('settings.ai.form.language')}>
+                {createLanguages(t).map((lang) => (
                   <MenuItem key={lang.value} value={lang.value}>
                     {lang.label}
                   </MenuItem>
@@ -254,11 +261,11 @@ export function AISettingsForm({ onClose, onSuccess }: Props) {
             {/* Max Tokens */}
             <Grid size={{ xs: 12, md: 6 }}>
               <FormControl fullWidth error={!!errors.maxTokens}>
-                <InputLabel>Max Tokens</InputLabel>
+                <InputLabel>{t('settings.ai.form.maxTokens')}</InputLabel>
                 <Select
                   value={watch('maxTokens')}
                   onChange={(e) => setValue('maxTokens', Number(e.target.value))}
-                  label="Max Tokens"
+                  label={t('settings.ai.form.maxTokens')}
                 >
                   <MenuItem value={500}>500</MenuItem>
                   <MenuItem value={1000}>1000</MenuItem>
@@ -273,7 +280,7 @@ export function AISettingsForm({ onClose, onSuccess }: Props) {
             <Grid size={{ xs: 12, md: 6 }}>
               <Box>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                  Temperature: {watch('temperature')}
+                  {t('settings.ai.form.temperature')}: {watch('temperature')}
                 </Typography>
                 <Slider
                   value={watch('temperature')}
@@ -304,7 +311,7 @@ export function AISettingsForm({ onClose, onSuccess }: Props) {
                 }
                 label={
                   <Box>
-                    <Typography variant="subtitle2">Use Local NLP Service</Typography>
+                    <Typography variant="subtitle2">{t('settings.ai.form.useLocalNLP')}</Typography>
                     <Typography variant="caption" color="text.secondary">
                       Enable local processing for simple tasks to reduce API costs and improve speed
                     </Typography>
@@ -318,10 +325,10 @@ export function AISettingsForm({ onClose, onSuccess }: Props) {
 
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 3 }}>
         <Button variant="outlined" onClick={onClose}>
-          Cancel
+          {t('settings.common.cancel')}
         </Button>
         <Button type="submit" variant="contained" disabled={isSubmitting || loading}>
-          {isSubmitting ? 'Saving...' : 'Save Settings'}
+          {isSubmitting ? t('settings.common.saving') : t('settings.common.save')}
         </Button>
       </Box>
     </Form>

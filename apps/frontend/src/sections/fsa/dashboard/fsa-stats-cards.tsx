@@ -65,7 +65,6 @@ export function FsaStatsCards() {
         return response.data;
       } catch {
         // Fallback if endpoint doesn't exist - use active sessions as proxy for online status
-        console.log('Online users endpoint not available, falling back to active sessions');
         return { data: [] };
       }
     },
@@ -112,28 +111,28 @@ export function FsaStatsCards() {
       {
         title: t('dashboard.totalWorkOrders', { defaultValue: 'Total Work Orders' }),
         value: workOrders.length,
-        icon: 'solar:clipboard-list-bold-duotone',
+        icon: 'solar:clipboard-list-bold',
         color: 'primary',
         loading: workOrdersLoading,
       },
       {
         title: t('dashboard.completedToday', { defaultValue: 'Completed Today' }),
         value: completedToday,
-        icon: 'solar:check-circle-bold-duotone',
+        icon: 'solar:check-circle-bold',
         color: 'success',
         loading: workOrdersLoading,
       },
       {
         title: t('dashboard.techniciansOnline', { defaultValue: 'Technicians Online' }),
         value: techniciansOnline,
-        icon: 'solar:users-group-rounded-bold-duotone',
+        icon: 'solar:users-group-rounded-bold',
         color: 'info',
         loading: personnelLoading || onlineUsersLoading,
       },
       {
         title: t('dashboard.activeTimeTracking', { defaultValue: 'Active Time Tracking' }),
         value: personnelBeingTracked,
-        icon: 'solar:clock-circle-bold-duotone',
+        icon: 'solar:clock-circle-bold',
         color: 'warning',
         loading: sessionsLoading,
       },

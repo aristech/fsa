@@ -28,7 +28,7 @@ const AISettingsSchema = new Schema<IAISettings>(
     },
     preferredModel: {
       type: String,
-      enum: ["gpt-4", "gpt-4-turbo", "gpt-3.5-turbo", "gpt-4o", "gpt-4o-mini"],
+      enum: ["gpt-5", "gpt-4", "gpt-4-turbo", "gpt-3.5-turbo", "gpt-4o", "gpt-4o-mini"],
       default: "gpt-4o-mini",
     },
     maxTokens: {

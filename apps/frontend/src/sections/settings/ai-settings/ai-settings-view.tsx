@@ -2,8 +2,7 @@
 
 import type { AISettings } from 'src/types/ai-settings';
 
-import { toast } from 'sonner';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -18,8 +17,10 @@ import Typography from '@mui/material/Typography';
 import CardContent from '@mui/material/CardContent';
 import DialogTitle from '@mui/material/DialogTitle';
 
+import { useTranslate } from 'src/locales/use-locales';
 import { aiSettingsApi } from 'src/services/ai-settings';
 
+import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 
 import { AISettingsForm } from './ai-settings-form';
@@ -27,11 +28,12 @@ import { AISettingsForm } from './ai-settings-form';
 // ----------------------------------------------------------------------
 
 export function AISettingsView() {
+  const { t } = useTranslate('dashboard');
   const [settings, setSettings] = useState<AISettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [openForm, setOpenForm] = useState(false);
 
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       setLoading(true);
       const response = await aiSettingsApi.get();
@@ -40,15 +42,15 @@ export function AISettingsView() {
       }
     } catch (error) {
       console.error('Failed to load AI settings:', error);
-      toast.error('Failed to load AI settings');
+      toast.error(t('settings.ai.failedToLoad'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     loadSettings();
-  }, []);
+  }, [loadSettings]);
 
   const handleOpenForm = () => {
     setOpenForm(true);
@@ -64,25 +66,26 @@ export function AISettingsView() {
 
   const getModelLabel = (model?: string) => {
     const models: Record<string, string> = {
-      'gpt-4o': 'GPT-4o (Latest)',
-      'gpt-4o-mini': 'GPT-4o Mini (Fast & Cost-effective)',
-      'gpt-4-turbo': 'GPT-4 Turbo',
-      'gpt-4': 'GPT-4',
-      'gpt-3.5-turbo': 'GPT-3.5 Turbo',
+      'gpt-5': t('settings.ai.models.gpt5'),
+      'gpt-4o': t('settings.ai.models.gpt4o'),
+      'gpt-4o-mini': t('settings.ai.models.gpt4oMini'),
+      'gpt-4-turbo': t('settings.ai.models.gpt4Turbo'),
+      'gpt-4': t('settings.ai.models.gpt4'),
+      'gpt-3.5-turbo': t('settings.ai.models.gpt35Turbo'),
     };
-    return models[model || ''] || model || 'Not set';
+    return models[model || ''] || model || t('settings.ai.notSet');
   };
 
   const getLanguageLabel = (lang?: string) => {
     const languages: Record<string, string> = {
-      en: 'English',
-      el: 'Greek (Ελληνικά)',
-      es: 'Spanish',
-      fr: 'French',
-      de: 'German',
-      it: 'Italian',
+      en: t('settings.ai.languages.en'),
+      el: t('settings.ai.languages.el'),
+      es: t('settings.ai.languages.es'),
+      fr: t('settings.ai.languages.fr'),
+      de: t('settings.ai.languages.de'),
+      it: t('settings.ai.languages.it'),
     };
-    return languages[lang || ''] || lang || 'Not set';
+    return languages[lang || ''] || lang || t('settings.ai.notSet');
   };
 
   const hasApiKey = settings?.openaiApiKey && settings.openaiApiKey.length > 0;
@@ -92,7 +95,7 @@ export function AISettingsView() {
       <Card>
         <CardContent>
           <Box sx={{ textAlign: 'center', py: 3 }}>
-            <Typography>Loading AI settings...</Typography>
+            <Typography>{t('settings.ai.loading')}</Typography>
           </Box>
         </CardContent>
       </Card>
@@ -103,15 +106,15 @@ export function AISettingsView() {
     <>
       <Card>
         <CardHeader
-          title="AI Assistant Settings"
-          subheader="Configure your AI assistant preferences and OpenAI API key"
+          title={t('settings.ai.title')}
+          subheader={t('settings.ai.subtitle')}
           action={
             <Button
               variant="contained"
               startIcon={<Iconify icon="solar:settings-bold" />}
               onClick={handleOpenForm}
             >
-              Configure
+              {t('settings.ai.configure')}
             </Button>
           }
         />
@@ -121,11 +124,11 @@ export function AISettingsView() {
             <Grid size={{ xs: 12, md: 6 }}>
               <Box>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                  OpenAI API Key
+                  {t('settings.ai.openaiApiKey')}
                 </Typography>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Chip
-                    label={hasApiKey ? 'Configured' : 'Not configured'}
+                    label={hasApiKey ? t('settings.ai.configured') : t('settings.ai.notConfigured')}
                     color={hasApiKey ? 'success' : 'warning'}
                     size="small"
                   />
@@ -142,7 +145,7 @@ export function AISettingsView() {
             <Grid size={{ xs: 12, md: 6 }}>
               <Box>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                  Preferred Model
+                  {t('settings.ai.preferredModel')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {getModelLabel(settings?.preferredModel)}
@@ -154,7 +157,7 @@ export function AISettingsView() {
             <Grid size={{ xs: 12, md: 6 }}>
               <Box>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                  Response Language
+                  {t('settings.ai.responseLanguage')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {getLanguageLabel(settings?.language)}
@@ -166,7 +169,7 @@ export function AISettingsView() {
             <Grid size={{ xs: 12, md: 6 }}>
               <Box>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                  Max Tokens
+                  {t('settings.ai.maxTokens')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {settings?.maxTokens || 1000}
@@ -178,7 +181,7 @@ export function AISettingsView() {
             <Grid size={{ xs: 12, md: 6 }}>
               <Box>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                  Temperature
+                  {t('settings.ai.temperature')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {settings?.temperature || 0.7}
@@ -190,10 +193,12 @@ export function AISettingsView() {
             <Grid size={{ xs: 12, md: 6 }}>
               <Box>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                  Local NLP Service
+                  {t('settings.ai.localNlpService')}
                 </Typography>
                 <Chip
-                  label={settings?.useLocalNLP ? 'Enabled' : 'Disabled'}
+                  label={
+                    settings?.useLocalNLP ? t('settings.ai.enabled') : t('settings.ai.disabled')
+                  }
                   color={settings?.useLocalNLP ? 'success' : 'default'}
                   size="small"
                 />
@@ -206,7 +211,7 @@ export function AISettingsView() {
               <Stack direction="row" spacing={1} alignItems="center">
                 <Iconify icon="solar:info-circle-bold" color="warning.main" />
                 <Typography variant="body2" color="warning.darker">
-                  Configure your OpenAI API key to use the AI assistant features.
+                  {t('settings.ai.configureApiKeyMessage')}
                 </Typography>
               </Stack>
             </Box>
@@ -226,7 +231,7 @@ export function AISettingsView() {
       >
         <DialogTitle>
           <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6">AI Assistant Settings</Typography>
+            <Typography variant="h6">{t('settings.ai.title')}</Typography>
             <IconButton onClick={handleCloseForm}>
               <Iconify icon="solar:close-circle-bold" />
             </IconButton>

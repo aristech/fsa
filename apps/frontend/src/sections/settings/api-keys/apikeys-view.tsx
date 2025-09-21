@@ -76,12 +76,11 @@ export function ApiKeysView() {
   };
 
   const handleEdit = (row: ApiKey) => {
-    // adapt to form model shape (userId is string)
+    // adapt to form model shape (personnelId is string)
     const adapted: ApiKeyFormModel = {
       _id: row._id,
       name: row.name,
-      userId: row.userId._id,
-      permissions: row.permissions,
+      personnelId: row.personnelId?._id || row.userId?._id || '', // Fallback for legacy keys
       expiresAt: row.expiresAt,
     };
     setEditing(adapted);
@@ -169,7 +168,7 @@ export function ApiKeysView() {
                 <TableHead>
                   <TableRow>
                     <TableCell>Name</TableCell>
-                    <TableCell>User</TableCell>
+                    <TableCell>Personnel</TableCell>
                     <TableCell>Permissions</TableCell>
                     <TableCell>Last Used</TableCell>
                     <TableCell>Usage</TableCell>
@@ -184,12 +183,29 @@ export function ApiKeysView() {
                         <Typography variant="subtitle2">{k.name}</Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2">
-                          {k.userId.firstName} {k.userId.lastName}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {k.userId.email}
-                        </Typography>
+                        {k.personnelId ? (
+                          <>
+                            <Typography variant="body2">
+                              {k.personnelId.user.name} {k.personnelId.role && `(${k.personnelId.role.name})`}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {k.personnelId.user.email} • {k.personnelId.employeeId}
+                            </Typography>
+                          </>
+                        ) : k.userId ? (
+                          <>
+                            <Typography variant="body2">
+                              {k.userId.firstName} {k.userId.lastName} (Legacy)
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {k.userId.email}
+                            </Typography>
+                          </>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            Unknown User
+                          </Typography>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Stack direction="row" spacing={0.5} flexWrap="wrap">

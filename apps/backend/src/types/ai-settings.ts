@@ -3,6 +3,7 @@ export interface AISettings {
   tenantId: string;
   openaiApiKey?: string;
   preferredModel?:
+    | "gpt-5"
     | "gpt-4"
     | "gpt-4-turbo"
     | "gpt-3.5-turbo"

@@ -1,7 +1,7 @@
 'use client';
 
 import useSWR from 'swr';
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
@@ -11,6 +11,7 @@ import { useTranslate } from 'src/locales/use-locales';
 import axiosInstance, { endpoints } from 'src/lib/axios';
 import { DashboardContent } from 'src/layouts/dashboard';
 
+import { AnalyticsTaskOverview } from '../analytics-task-overview';
 import { AnalyticsCurrentVisits } from '../analytics-current-visits';
 import { AnalyticsOrderTimeline } from '../analytics-order-timeline';
 import { AnalyticsWebsiteVisits } from '../analytics-website-visits';
@@ -45,7 +46,10 @@ export function OverviewAnalyticsView() {
     const res = await axiosInstance.get(url);
     return res.data?.data || [];
   });
-  const personnel: any[] = Array.isArray(personnelResp) ? personnelResp : [];
+  const personnel: any[] = useMemo(
+    () => (Array.isArray(personnelResp) ? personnelResp : []),
+    [personnelResp]
+  );
 
   // Kanban tasks
   const { data: kanbanResp } = useSWR(endpoints.kanban, async (url: string) => {
@@ -128,34 +132,41 @@ export function OverviewAnalyticsView() {
       }
     }
   );
-  const timeEntries: any[] = Array.isArray(timeResp) ? timeResp : [];
+  const timeEntries: any[] = useMemo(() => (Array.isArray(timeResp) ? timeResp : []), [timeResp]);
 
   // Maps
-  const personnelById = new Map<string, any>();
-  personnel.forEach((p) => personnelById.set(p._id, p));
+  const personnelById = useMemo(() => {
+    const map = new Map<string, any>();
+    personnel.forEach((p) => map.set(p._id, p));
+    return map;
+  }, [personnel]);
 
   // Helper function to resolve personnel name consistently
-  const resolvePersonnelName = (personId: string, fallbackName?: string) => {
-    const personDoc = personnelById.get(personId);
+  const resolvePersonnelName = useCallback(
+    (personId: string, fallbackName?: string) => {
+      const personDoc = personnelById.get(personId);
 
-    // Try different name sources in order of preference
-    if (personDoc?.user?.firstName || personDoc?.user?.lastName) {
-      return (
-        [personDoc.user.firstName, personDoc.user.lastName].filter(Boolean).join(' ') || 'Personnel'
-      );
-    }
-    if (personDoc?.user?.name) {
-      return personDoc.user.name;
-    }
-    if (personDoc?.name) {
-      return personDoc.name;
-    }
-    if (personDoc?.firstName || personDoc?.lastName) {
-      return [personDoc.firstName, personDoc.lastName].filter(Boolean).join(' ') || 'Personnel';
-    }
+      // Try different name sources in order of preference
+      if (personDoc?.user?.firstName || personDoc?.user?.lastName) {
+        return (
+          [personDoc.user.firstName, personDoc.user.lastName].filter(Boolean).join(' ') ||
+          'Personnel'
+        );
+      }
+      if (personDoc?.user?.name) {
+        return personDoc.user.name;
+      }
+      if (personDoc?.name) {
+        return personDoc.name;
+      }
+      if (personDoc?.firstName || personDoc?.lastName) {
+        return [personDoc.firstName, personDoc.lastName].filter(Boolean).join(' ') || 'Personnel';
+      }
 
-    return fallbackName || 'Personnel';
-  };
+      return fallbackName || 'Personnel';
+    },
+    [personnelById]
+  );
 
   // ----------------- Personnel performance (radar) -----------------
   const agg = new Map<
@@ -203,19 +214,6 @@ export function OverviewAnalyticsView() {
       assignees = [task.assignee];
     }
 
-    // Debug logging for first few tasks
-    if (process.env.NODE_ENV === 'development' && taskIndex < 3) {
-      console.log(`🔍 Task ${taskIndex} Debug:`, {
-        taskTitle: task.title || task.name,
-        taskId: task._id || task.id,
-        rawAssignee: task.assignee,
-        rawAssignees: task.assignees,
-        rawPersonnelIds: task.personnelIds,
-        processedAssignees: assignees,
-        workOrderId: task.workOrderId || task.workOrder,
-      });
-    }
-
     const createdAt = task.createdAt ? new Date(task.createdAt) : undefined;
     const updatedAt = task.updatedAt ? new Date(task.updatedAt) : undefined;
 
@@ -253,24 +251,6 @@ export function OverviewAnalyticsView() {
       // Use consistent name resolution
       const name = a.name || resolvePersonnelName(personId);
 
-      // Debug logging for assignee processing
-      if (process.env.NODE_ENV === 'development' && taskIndex < 3) {
-        const personDoc = personnelById.get(personId);
-        console.log(`🔍 Assignee ${assigneeIndex} Processing:`, {
-          assigneeRaw: a,
-          personId,
-          personDoc: personDoc
-            ? {
-                _id: personDoc._id,
-                user: personDoc.user,
-                firstName: personDoc.firstName,
-                lastName: personDoc.lastName,
-              }
-            : null,
-          resolvedName: name,
-        });
-      }
-
       const m = upsert(personId, name);
       if (workOrderId) m.woSet.add(String(workOrderId));
 
@@ -294,45 +274,8 @@ export function OverviewAnalyticsView() {
     const pid = te.personnelId || te.userId || te.technicianId || te.personnel;
     if (!pid) return;
 
-    const personDoc = personnelById.get(pid);
-
     // Use the consistent name resolution helper
     const name = resolvePersonnelName(pid, te.personnelName);
-
-    // Debug logging for first few time entries
-    if (process.env.NODE_ENV === 'development' && teIndex < 3) {
-      console.log(`🔍 TimeEntry ${teIndex} Debug:`, {
-        timeEntryId: te._id || te.id,
-        personnelId: pid,
-        personnelName: te.personnelName,
-        personDoc: personDoc
-          ? {
-              _id: personDoc._id,
-              name: personDoc.name,
-              firstName: personDoc.firstName,
-              lastName: personDoc.lastName,
-              user: personDoc.user
-                ? {
-                    _id: personDoc.user._id,
-                    name: personDoc.user.name,
-                    firstName: personDoc.user.firstName,
-                    lastName: personDoc.user.lastName,
-                    email: personDoc.user.email,
-                  }
-                : null,
-            }
-          : null,
-        resolvedName: name,
-        durationData: {
-          durationMinutes: te.durationMinutes,
-          minutes: te.minutes,
-          duration: te.duration,
-          hours: te.hours,
-          start: te.start,
-          end: te.end,
-        },
-      });
-    }
 
     const m = upsert(pid, name);
 
@@ -369,26 +312,6 @@ export function OverviewAnalyticsView() {
       woParticipations: v.woSet.size,
     };
   });
-
-  // Debug logging for personnel performance
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🔍 Personnel Performance Debug:', {
-      totalPersonnel: personnel.length,
-      totalTasks: tasks.length,
-      totalTimeEntries: timeEntries.length,
-      personnelAggregation: Array.from(agg.entries()).map(([id, data]) => ({
-        id,
-        name: data.name,
-        tasksCompleted: data.tasksCompleted,
-        hoursLogged: data.hoursLogged,
-        woParticipations: data.woSet.size,
-      })),
-      allRows: rows,
-      activeRowsCount: rows.filter(
-        (r) => r.tasksCompleted > 0 || r.hoursLogged > 0 || r.woParticipations > 0
-      ).length,
-    });
-  }
 
   // Filter out personnel with no activity and sort by activity
   const activeRows = rows.filter(
@@ -501,6 +424,107 @@ export function OverviewAnalyticsView() {
     [workloadEntries]
   );
 
+  // ----------------- Task Status Overview -----------------
+  const taskStatusOverview = useMemo(() => {
+    const statusCounts: Record<string, number> = {};
+    const priorityCounts: Record<string, number> = {};
+    const assigneeCounts: Record<string, number> = {};
+
+    tasks.forEach((task: any) => {
+      // Count by status
+      const status = task.status || 'unknown';
+      statusCounts[status] = (statusCounts[status] || 0) + 1;
+
+      // Count by priority
+      const priority = task.priority || 'medium';
+      priorityCounts[priority] = (priorityCounts[priority] || 0) + 1;
+
+      // Count by assignee
+      const assignees = Array.isArray(task.assignee)
+        ? task.assignee
+        : task.assignee
+          ? [task.assignee]
+          : [];
+      if (assignees.length === 0) {
+        assigneeCounts['Unassigned'] = (assigneeCounts['Unassigned'] || 0) + 1;
+      } else {
+        assignees.forEach((assignee: any) => {
+          const name = assignee.name || assignee.firstName + ' ' + assignee.lastName || 'Unknown';
+          assigneeCounts[name] = (assigneeCounts[name] || 0) + 1;
+        });
+      }
+    });
+
+    return { statusCounts, priorityCounts, assigneeCounts };
+  }, [tasks]);
+
+  // ----------------- Hours by Personnel per Work Order -----------------
+  const hoursByPersonnelPerWorkOrder = useMemo(() => {
+    const personnelWorkOrderHours: Record<string, Record<string, number>> = {};
+
+    // Process time entries
+    timeEntries.forEach((te: any) => {
+      const pid = te.personnelId || te.userId || te.technicianId || te.personnel;
+      const workOrderId = te.workOrderId || te.workOrder;
+
+      if (!pid || !workOrderId) return;
+
+      const name = resolvePersonnelName(pid, te.personnelName);
+
+      // Calculate duration from various possible fields
+      let durationMin = 0;
+      if (te.durationMinutes) {
+        durationMin = Number(te.durationMinutes) || 0;
+      } else if (te.minutes) {
+        durationMin = Number(te.minutes) || 0;
+      } else if (te.duration) {
+        durationMin = Number(te.duration) || 0;
+      } else if (te.end && te.start) {
+        const start = new Date(te.start);
+        const end = new Date(te.end);
+        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+          durationMin = Math.max(0, (end.getTime() - start.getTime()) / 60000);
+        }
+      } else if (te.hours) {
+        durationMin = (Number(te.hours) || 0) * 60;
+      }
+
+      const hours = durationMin / 60;
+
+      if (!personnelWorkOrderHours[name]) {
+        personnelWorkOrderHours[name] = {};
+      }
+
+      personnelWorkOrderHours[name][workOrderId] =
+        (personnelWorkOrderHours[name][workOrderId] || 0) + hours;
+    });
+
+    // Process tasks for work order information
+    const workOrderInfo: Record<string, { title: string; number: string }> = {};
+    tasks.forEach((task: any) => {
+      const workOrderId = task.workOrderId || task.workOrder;
+      if (workOrderId && task.workOrderTitle && task.workOrderNumber) {
+        workOrderInfo[workOrderId] = {
+          title: task.workOrderTitle,
+          number: task.workOrderNumber,
+        };
+      }
+    });
+
+    // Also get work order info from workOrders array
+    workOrders.forEach((wo: any) => {
+      const workOrderId = wo._id || wo.id;
+      if (workOrderId) {
+        workOrderInfo[workOrderId] = {
+          title: wo.title || wo.name || 'Untitled Work Order',
+          number: wo.workOrderNumber || wo.number || 'N/A',
+        };
+      }
+    });
+
+    return { personnelWorkOrderHours, workOrderInfo };
+  }, [timeEntries, tasks, workOrders, resolvePersonnelName]);
+
   // ----------------- Tasks created vs completed (line) -----------------
   const weeks: Date[] = useMemo(() => {
     const now = new Date();
@@ -585,44 +609,6 @@ export function OverviewAnalyticsView() {
     byClient[clientName].total += 1;
     if (dueEnd && u && u.getTime() <= dueEnd.getTime()) byClient[clientName].ontime += 1;
   });
-
-  // Prepare names per week for tooltip meta
-  const createdNamesByWeek = useMemo(
-    () =>
-      weeks.map((w) => {
-        const start = new Date(w);
-        const end = new Date(w);
-        end.setDate(end.getDate() + 7);
-        return tasks
-          .filter((task: any) => {
-            const c = task.createdAt ? new Date(task.createdAt) : null;
-            return c && c >= start && c < end;
-          })
-          .map((task: any) => task.name || task.title || 'Untitled task');
-      }),
-    [weeks, tasks]
-  );
-
-  const completedNamesByWeek = useMemo(
-    () =>
-      weeks.map((w) => {
-        const start = new Date(w);
-        const end = new Date(w);
-        end.setDate(end.getDate() + 7);
-        return tasks
-          .filter((task: any) => {
-            const done =
-              !!task.completeStatus ||
-              String(task.status || '')
-                .toLowerCase()
-                .includes('done');
-            const u = task.updatedAt ? new Date(task.updatedAt) : null;
-            return done && u && u >= start && u < end;
-          })
-          .map((task: any) => task.name || task.title || 'Untitled task');
-      }),
-    [weeks, tasks]
-  );
 
   // Compute taskIds (limit to 500 to avoid overload)
   const taskIds = useMemo(() => {
@@ -931,22 +917,118 @@ export function OverviewAnalyticsView() {
         </Grid>
 
         <Grid size={{ xs: 12, md: 6, lg: 8 }}>
-          <AnalyticsWebsiteVisits
-            title={t('analytics.tasksCreatedVsCompleted')}
-            subheader={t('analytics.lastWeeks', { defaultValue: 'Last 9 weeks' })}
+          <AnalyticsTaskOverview
+            title={t('analytics.taskStatusOverview')}
+            subheader={t('analytics.taskDistributionByStatus')}
             chart={{
-              categories: categoriesLine,
+              categories: Object.keys(taskStatusOverview.statusCounts),
               series: [
-                { name: t('analytics.created', { defaultValue: 'Created' }), data: createdSeries },
                 {
-                  name: t('analytics.completed', { defaultValue: 'Completed' }),
-                  data: completedSeries,
+                  name: t('analytics.tasks', { defaultValue: 'Tasks' }),
+                  data: Object.values(taskStatusOverview.statusCounts),
                 },
               ],
+              colors: ['#4dabf5', '#51cf66', '#ffd43b', '#ff6b6b', '#9775fa'],
               options: {
-                meta: {
-                  createdTaskNames: createdNamesByWeek,
-                  completedTaskNames: completedNamesByWeek,
+                plotOptions: {
+                  bar: {
+                    horizontal: false,
+                    borderRadius: 4,
+                    columnWidth: '60%',
+                  },
+                },
+                tooltip: {
+                  y: {
+                    formatter: (val: number) =>
+                      `${val} ${t('analytics.tasks', { defaultValue: 'tasks' })}`,
+                  },
+                },
+              },
+            }}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 6, lg: 4 }}>
+          <AnalyticsTaskOverview
+            title={t('analytics.taskPriorityOverview')}
+            subheader={t('analytics.taskDistributionByPriority')}
+            chart={{
+              categories: Object.keys(taskStatusOverview.priorityCounts),
+              series: [
+                {
+                  name: t('analytics.tasks', { defaultValue: 'Tasks' }),
+                  data: Object.values(taskStatusOverview.priorityCounts),
+                },
+              ],
+              colors: ['#ff6b6b', '#ffd43b', '#51cf66', '#4dabf5'],
+              options: {
+                plotOptions: {
+                  bar: {
+                    horizontal: false,
+                    borderRadius: 4,
+                    columnWidth: '60%',
+                  },
+                },
+                tooltip: {
+                  y: {
+                    formatter: (val: number) =>
+                      `${val} ${t('analytics.tasks', { defaultValue: 'tasks' })}`,
+                  },
+                },
+              },
+            }}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 12, lg: 8 }}>
+          <AnalyticsTaskOverview
+            title={t('analytics.hoursByPersonnelPerWorkOrder')}
+            subheader={t('analytics.hoursDistributionByPersonnel')}
+            chart={{
+              categories: Object.keys(hoursByPersonnelPerWorkOrder.workOrderInfo).map((woId) => {
+                const info = hoursByPersonnelPerWorkOrder.workOrderInfo[woId];
+                return `${info.number} - ${info.title}`;
+              }),
+              series: Object.keys(hoursByPersonnelPerWorkOrder.personnelWorkOrderHours).map(
+                (personnelName) => {
+                  const personnelData =
+                    hoursByPersonnelPerWorkOrder.personnelWorkOrderHours[personnelName];
+                  return {
+                    name: personnelName,
+                    data: Object.keys(hoursByPersonnelPerWorkOrder.workOrderInfo).map(
+                      (woId) => Math.round((personnelData[woId] || 0) * 100) / 100 // Round to 2 decimals
+                    ),
+                  };
+                }
+              ),
+              colors: [
+                '#4dabf5',
+                '#51cf66',
+                '#ffd43b',
+                '#ff6b6b',
+                '#9775fa',
+                '#20c997',
+                '#fd7e14',
+                '#6f42c1',
+              ],
+              options: {
+                plotOptions: {
+                  bar: {
+                    horizontal: false,
+                    borderRadius: 4,
+                    columnWidth: '60%',
+                    stacked: true,
+                  },
+                },
+                tooltip: {
+                  y: {
+                    formatter: (val: number) =>
+                      `${val} ${t('analytics.hours', { defaultValue: 'hours' })}`,
+                  },
+                },
+                legend: {
+                  show: true,
+                  position: 'top',
                 },
               },
             }}

@@ -64,8 +64,11 @@ const createStructuredPayload = async (
   // Precise symbol detection for different types
   const symbolMatches = [];
 
-  // Task IDs: /10, /123 (numbers only)
-  const taskMatches = originalText.match(/(\/\d+)(?=\s|$)/g) || [];
+  // Tasks: /123 (IDs) or /TaskName (names)
+  const taskMatches =
+    originalText.match(
+      /(\/(?:\d+|[A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω\s]*?))(?=\s+(?:for|in|with|due|at|from|by|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|title|$)|$)/g,
+    ) || [];
   symbolMatches.push(...taskMatches);
 
   // Personnel: @John, @John Doe (names)
@@ -249,7 +252,20 @@ const initializeOpenAI = async (ctx: ChatContext): Promise<OpenAILLM> => {
       console.log(
         `[AIServiceRouter] Using user's OpenAI API key for user ${ctx.userId}`,
       );
-      return new OpenAILLM(settings.openaiApiKey);
+      console.log(`[AIServiceRouter] User settings:`, {
+        model: settings.preferredModel,
+        maxTokens: settings.maxTokens,
+        temperature: settings.temperature,
+        useLocalNLP: settings.useLocalNLP,
+        language: settings.language,
+      });
+
+      return new OpenAILLM(
+        settings.openaiApiKey,
+        settings.preferredModel,
+        settings.maxTokens,
+        settings.temperature,
+      );
     } else {
       console.log(
         `[AIServiceRouter] No user API key found, using environment variable for user ${ctx.userId}`,
@@ -356,13 +372,132 @@ const processWithLocalNLP = async (
       tenantId: ctx.tenantId,
     });
 
-    const nlpResult: LocalNLPResult = await localNLPService!.processText(
-      structuredPayload,
-      ctx.userId,
-      ctx.tenantId,
-    );
+    let nlpResult: LocalNLPResult;
 
-    console.log("[AIServiceRouter] Local NLP result:", nlpResult);
+    try {
+      nlpResult = await localNLPService!.processText(
+        structuredPayload,
+        ctx.userId,
+        ctx.tenantId,
+      );
+      console.log("[AIServiceRouter] Local NLP result:", nlpResult);
+    } catch (nlpError) {
+      console.warn(
+        "[AIServiceRouter] NLP server failed, attempting direct processing:",
+        (nlpError as Error).message,
+      );
+
+      // If NLP server fails but we have work order reference and task keywords, process directly
+      const originalText = structuredPayload.originalTxt.toLowerCase();
+      const hasTaskKeywords = [
+        "create",
+        "add",
+        "new task",
+        "task",
+        "make a task",
+        "todo",
+      ].some((keyword) => originalText.includes(keyword));
+
+      const hasWorkOrderRef =
+        structuredPayload.parsedTxt.includes("work_order=");
+      const workOrderMatch = structuredPayload.parsedTxt.match(
+        /work_order=\{([^}]+)\}/,
+      );
+      const workOrderId = workOrderMatch ? workOrderMatch[1] : null;
+
+      if (hasTaskKeywords && hasWorkOrderRef && workOrderId) {
+        console.log(
+          "[AIServiceRouter] Direct processing: Creating task with work order",
+          workOrderId,
+        );
+
+        // Extract task title from the original text more intelligently
+        let taskTitle = structuredPayload.originalTxt;
+
+        // Remove common task creation phrases
+        taskTitle = taskTitle
+          .replace(/^create\s+a?\s+new\s+task\s+in\s+#\w+\s*/i, "")
+          .replace(/^create\s+a?\s+new\s+task\s*/i, "")
+          .replace(/^add\s+a?\s+task\s+in\s+#\w+\s*/i, "")
+          .replace(/^add\s+a?\s+task\s*/i, "")
+          .replace(/^new\s+task\s+in\s+#\w+\s*/i, "")
+          .replace(/^task\s+in\s+#\w+\s*/i, "")
+          .trim();
+
+        // If we still have leftover command words, try to extract meaningful content
+        if (taskTitle.startsWith("for ") || taskTitle.startsWith("to ")) {
+          // This looks like task details rather than a title
+          // Extract a better title from context
+          if (taskTitle.includes("tomorrow")) {
+            taskTitle = "Task for tomorrow";
+          } else if (taskTitle.includes("today")) {
+            taskTitle = "Task for today";
+          } else if (taskTitle.match(/\d+\s*(am|pm)/i)) {
+            taskTitle = "Scheduled task";
+          } else {
+            taskTitle = "New Task";
+          }
+        }
+
+        if (!taskTitle || taskTitle.length < 3) {
+          taskTitle = "New Task";
+        }
+
+        // Extract time/date information from the original text
+        const originalLower = structuredPayload.originalTxt.toLowerCase();
+        let dueDate = null;
+        let description = null;
+
+        // Extract scheduling information for description
+        const timeMatch = originalLower.match(
+          /(?:for |at |by )?(\d{1,2}(?::\d{2})?\s*(?:am|pm))/i,
+        );
+        const dateMatch = originalLower.match(
+          /(?:for |on )?(tomorrow|today|(?:next|this)\s+\w+)/i,
+        );
+
+        if (timeMatch || dateMatch) {
+          const timeInfo = timeMatch ? timeMatch[1] : "";
+          const dateInfo = dateMatch ? dateMatch[1] : "";
+          description = `Scheduled ${dateInfo} ${timeInfo}`.trim();
+
+          // Set due date for tomorrow
+          if (dateInfo === "tomorrow") {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            dueDate = tomorrow.toISOString().split("T")[0]; // YYYY-MM-DD format
+          } else if (dateInfo === "today") {
+            const today = new Date();
+            dueDate = today.toISOString().split("T")[0];
+          }
+        }
+
+        // Create a mock NLP result for task creation
+        nlpResult = {
+          intent: "create_task",
+          title: taskTitle,
+          description: description,
+          priority: "medium",
+          assignees: [],
+          work_order: workOrderId,
+          project: null,
+          client: null,
+          due_date: dueDate,
+          start_date: null,
+          estimated_hours: null,
+          entities: [],
+          confidence: 0.8,
+          success: true,
+        };
+
+        console.log(
+          "[AIServiceRouter] Generated NLP result directly:",
+          nlpResult,
+        );
+      } else {
+        throw nlpError; // Re-throw if we can't handle it directly
+      }
+    }
 
     if (!nlpResult.success) {
       throw new Error(`Local NLP processing failed: ${nlpResult.intent}`);
@@ -400,7 +535,7 @@ const processWithLocalNLP = async (
               : toolResult.content || JSON.stringify(toolResult),
         });
 
-        responseMessage = `✅ Task created successfully using local NLP service!`;
+        responseMessage = `✅ Task created successfully using our AI!`;
       } else {
         responseMessage = "❌ Task creation tool not available";
       }
@@ -438,10 +573,71 @@ const processWithLocalNLP = async (
                 : toolResult.content || JSON.stringify(toolResult),
           });
 
-          responseMessage = `✅ Task updated successfully using local NLP service!`;
+          responseMessage = `✅ Task updated successfully!`;
         }
       } else {
         responseMessage = "❌ Task update tool not available";
+      }
+    } else if (nlpResult.intent === "unknown") {
+      // Check if this might be a task creation that NLP didn't detect properly
+      const originalText = structuredPayload.originalTxt.toLowerCase();
+      const hasTaskKeywords = [
+        "create",
+        "add",
+        "new task",
+        "task",
+        "make a task",
+        "todo",
+      ].some((keyword) => originalText.includes(keyword));
+
+      const hasWorkOrderRef =
+        nlpResult.work_order ||
+        structuredPayload.parsedTxt.includes("work_order=");
+      const hasTitle = nlpResult.title && nlpResult.title.trim().length > 0;
+
+      if (hasTaskKeywords && (hasWorkOrderRef || hasTitle)) {
+        console.log(
+          "[AIServiceRouter] Detected task creation pattern despite unknown intent, processing as create_task",
+        );
+
+        // Find the create_task tool
+        const createTaskTool = tools!.find(
+          (tool) => tool.name === "create_task",
+        );
+        if (createTaskTool) {
+          const taskArgs = {
+            title: nlpResult.title || "New Task",
+            description: nlpResult.description || "",
+            priority: nlpResult.priority || "medium",
+            assignees: nlpResult.assignees || [],
+            dueDate: nlpResult.due_date,
+            startDate: nlpResult.start_date,
+            estimatedHours: nlpResult.estimated_hours,
+            workOrderNumber: nlpResult.work_order,
+            projectName: nlpResult.project,
+            clientName: nlpResult.client,
+          };
+
+          // Execute the tool
+          const toolResult = await createTaskTool.handler(taskArgs, ctx);
+          toolCalls.push({
+            name: "create_task",
+            arguments: taskArgs,
+            result:
+              typeof toolResult === "string"
+                ? toolResult
+                : toolResult.content || JSON.stringify(toolResult),
+          });
+
+          responseMessage = `✅ Task created successfully!`;
+        } else {
+          responseMessage = "❌ Task creation tool not available";
+        }
+      } else {
+        // For truly unknown intents, fall back to OpenAI
+        throw new Error(
+          `Local NLP service cannot handle intent: ${nlpResult.intent}`,
+        );
       }
     } else {
       // For unknown intents, don't show the user - just throw error to fall back to OpenAI
@@ -733,14 +929,32 @@ const processWithOpenAIStream = async (
 
   try {
     // Initialize OpenAI with user's API key
+    console.log(`[AIServiceRouter] Initializing OpenAI for streaming...`);
     const userOpenAI = await initializeOpenAI(ctx);
+
+    console.log(`[AIServiceRouter] Creating stream request...`);
     const stream = await userOpenAI.chat(messages, tools!, true);
     let accumulatedContent = "";
     let toolCalls: any[] = [];
 
+    console.log(
+      `[AIServiceRouter] Stream created, starting to process chunks...`,
+    );
+
+    let chunkCount = 0;
     for await (const chunk of stream as any) {
+      chunkCount++;
+      if (chunkCount === 1) {
+        console.log(`[AIServiceRouter] Received first chunk`);
+      }
+
       const choice = chunk.choices?.[0];
-      if (!choice) continue;
+      if (!choice) {
+        console.log(
+          `[AIServiceRouter] Chunk ${chunkCount}: No choice available`,
+        );
+        continue;
+      }
 
       const delta = choice.delta;
 
@@ -748,6 +962,9 @@ const processWithOpenAIStream = async (
       if (delta.content) {
         accumulatedContent += delta.content;
         callbacks.onToken(delta.content);
+        console.log(
+          `[AIServiceRouter] Chunk ${chunkCount}: Received content token (${delta.content.length} chars)`,
+        );
       }
 
       // Handle tool calls
@@ -799,8 +1016,38 @@ const processWithOpenAIStream = async (
           toolCallResults = await executeToolCalls(toolCalls, ctx);
         }
 
+        console.log(
+          `[AIServiceRouter] Stream completed. Total chunks: ${chunkCount}, Content length: ${accumulatedContent.length}, Tool calls: ${toolCallResults.length}`,
+        );
+
+        // If no content was generated but tools were called, create a response from tool results
+        let finalMessage = accumulatedContent;
+        if (!accumulatedContent.trim() && toolCallResults.length > 0) {
+          // Generate a user-friendly response from tool results
+          const toolSummaries = toolCallResults.map((tool) => {
+            // Extract meaningful content from tool results
+            try {
+              const parsed = JSON.parse(tool.result);
+              if (parsed.content) {
+                return parsed.content;
+              }
+              return tool.result;
+            } catch {
+              return tool.result;
+            }
+          });
+
+          finalMessage = toolSummaries.join("\n\n");
+
+          // Stream the generated response token by token
+          const words = finalMessage.split(" ");
+          for (let i = 0; i < words.length; i++) {
+            callbacks.onToken(words[i] + (i < words.length - 1 ? " " : ""));
+          }
+        }
+
         const result: AIServiceResult = {
-          message: accumulatedContent,
+          message: finalMessage,
           serviceUsed: "openai",
           toolCalls: toolCallResults,
         };
@@ -810,6 +1057,12 @@ const processWithOpenAIStream = async (
       }
     }
   } catch (error) {
+    console.error(`[AIServiceRouter] OpenAI streaming error:`, error);
+    console.error(`[AIServiceRouter] Error details:`, {
+      message: (error as Error).message,
+      stack: (error as Error).stack,
+      name: (error as Error).name,
+    });
     callbacks.onError(error as Error);
   }
 };

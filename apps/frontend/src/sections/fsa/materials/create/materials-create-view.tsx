@@ -18,6 +18,7 @@ import {
   Autocomplete,
 } from '@mui/material';
 
+import { useTranslate } from 'src/locales/use-locales';
 import { MaterialService } from 'src/lib/services/material-service';
 
 import { toast } from 'src/components/snackbar';
@@ -39,6 +40,7 @@ interface FormData extends CreateMaterialData {
 // ----------------------------------------------------------------------
 
 export function MaterialsCreateView({ open, onClose }: MaterialsCreateViewProps) {
+  const { t } = useTranslate('dashboard');
   const [loading, setLoading] = useState(false);
   const [customFields, setCustomFields] = useState<Record<string, any>>({});
   const [categories, setCategories] = useState<string[]>([]);
@@ -96,11 +98,11 @@ export function MaterialsCreateView({ open, onClose }: MaterialsCreateViewProps)
       createData.customFields = customFields;
 
       await MaterialService.createMaterial(createData);
-      toast.success('Material created successfully');
+      toast.success(t('materials.materialCreated'));
       handleClose();
     } catch (error) {
       console.error('Failed to create material:', error);
-      toast.error('Failed to create material');
+      toast.error(t('materials.failedToCreate'));
     }
     setLoading(false);
   };
@@ -163,7 +165,7 @@ export function MaterialsCreateView({ open, onClose }: MaterialsCreateViewProps)
       <Stack direction="row" alignItems="center" justifyContent="space-between">
         <Stack direction="row" alignItems="center" spacing={1}>
           <Iconify icon="solar:package-bold" />
-          <Typography variant="h6">Create New Material</Typography>
+          <Typography variant="h6">{t('materials.createMaterial')}</Typography>
         </Stack>
         <IconButton onClick={handleClose}>
           <Iconify icon="mingcute:close-line" />
@@ -176,7 +178,7 @@ export function MaterialsCreateView({ open, onClose }: MaterialsCreateViewProps)
     <Box sx={{ p: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
       <Stack direction="row" spacing={1} justifyContent="flex-end">
         <Button onClick={handleClose} disabled={loading}>
-          Cancel
+          {t('materials.cancel')}
         </Button>
         <Button
           onClick={handleSubmit(onSubmit)}
@@ -184,7 +186,7 @@ export function MaterialsCreateView({ open, onClose }: MaterialsCreateViewProps)
           disabled={loading}
           startIcon={loading ? undefined : <Iconify icon="solar:check-circle-bold" />}
         >
-          {loading ? 'Creating...' : 'Create Material'}
+          {loading ? t('materials.loading') : t('materials.create')}
         </Button>
       </Stack>
     </Box>
@@ -211,7 +213,7 @@ export function MaterialsCreateView({ open, onClose }: MaterialsCreateViewProps)
             render={({ field }) => (
               <TextField
                 {...field}
-                label="Name"
+                label={t('materials.form.name')}
                 error={!!errors.name}
                 helperText={errors.name?.message}
                 fullWidth
@@ -224,7 +226,13 @@ export function MaterialsCreateView({ open, onClose }: MaterialsCreateViewProps)
             name="description"
             control={control}
             render={({ field }) => (
-              <TextField {...field} label="Description" multiline rows={3} fullWidth />
+              <TextField
+                {...field}
+                label={t('materials.form.description')}
+                multiline
+                rows={3}
+                fullWidth
+              />
             )}
           />
 
@@ -243,7 +251,7 @@ export function MaterialsCreateView({ open, onClose }: MaterialsCreateViewProps)
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Category"
+                      label={t('materials.form.category')}
                       placeholder="Select or enter category"
                       fullWidth
                     />
@@ -293,7 +301,9 @@ export function MaterialsCreateView({ open, onClose }: MaterialsCreateViewProps)
             <Controller
               name="sku"
               control={control}
-              render={({ field }) => <TextField {...field} label="SKU" fullWidth />}
+              render={({ field }) => (
+                <TextField {...field} label={t('materials.form.sku')} fullWidth />
+              )}
             />
 
             <Controller
@@ -311,7 +321,7 @@ export function MaterialsCreateView({ open, onClose }: MaterialsCreateViewProps)
               render={({ field }) => (
                 <TextField
                   {...field}
-                  label="Unit"
+                  label={t('materials.form.unit')}
                   error={!!errors.unit}
                   helperText={errors.unit?.message}
                   fullWidth
@@ -331,7 +341,7 @@ export function MaterialsCreateView({ open, onClose }: MaterialsCreateViewProps)
               render={({ field }) => (
                 <TextField
                   {...field}
-                  label="Unit Cost"
+                  label={t('materials.form.unitCost')}
                   type="number"
                   inputProps={{ step: '0.01', min: 0 }}
                   error={!!errors.unitCost}
@@ -355,7 +365,7 @@ export function MaterialsCreateView({ open, onClose }: MaterialsCreateViewProps)
               render={({ field }) => (
                 <TextField
                   {...field}
-                  label="Initial Quantity"
+                  label={t('materials.form.quantity')}
                   type="number"
                   inputProps={{ min: 0 }}
                   error={!!errors.quantity}
@@ -391,7 +401,7 @@ export function MaterialsCreateView({ open, onClose }: MaterialsCreateViewProps)
               render={({ field }) => (
                 <TextField
                   {...field}
-                  label="Storage Location"
+                  label={t('materials.form.location')}
                   fullWidth
                   placeholder="e.g., Warehouse A - Section 1"
                 />
@@ -401,7 +411,9 @@ export function MaterialsCreateView({ open, onClose }: MaterialsCreateViewProps)
             <Controller
               name="supplier"
               control={control}
-              render={({ field }) => <TextField {...field} label="Supplier" fullWidth />}
+              render={({ field }) => (
+                <TextField {...field} label={t('materials.form.supplier')} fullWidth />
+              )}
             />
           </Stack>
 

@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 
 import axiosInstance from 'src/lib/axios';
+import { useTranslate } from 'src/locales/use-locales';
 
 // ----------------------------------------------------------------------
 
@@ -42,6 +43,7 @@ export function PersonnelFilters({
   canReset,
   onResetFilters,
 }: PersonnelFiltersProps) {
+  const { t } = useTranslate('dashboard');
   const [roles, setRoles] = useState<any[]>([]);
 
   // Fetch roles for the filter dropdown
@@ -74,21 +76,21 @@ export function PersonnelFilters({
       }}
     >
       <Stack spacing={3} sx={{ p: 3 }}>
-        <Typography variant="h6">Filters</Typography>
+        <Typography variant="h6">{t('personnel.filters')}</Typography>
 
         <Stack spacing={2}>
           <TextField
             fullWidth
-            label="Search by name or employee ID"
+            label={t('personnel.filters.searchPlaceholder')}
             value={filters.name}
             onChange={(e) => onFilters('name', e.target.value)}
           />
 
           <FormControl fullWidth>
-            <InputLabel>Role</InputLabel>
+            <InputLabel>{t('personnel.filters.role')}</InputLabel>
             <Select
               value={filters.role}
-              label="Role"
+              label={t('personnel.filters.role')}
               onChange={(e) => onFilters('role', e.target.value)}
             >
               <MenuItem value="">All Roles</MenuItem>
@@ -102,15 +104,15 @@ export function PersonnelFilters({
           </FormControl>
 
           <FormControl fullWidth>
-            <InputLabel>Status</InputLabel>
+            <InputLabel>{t('personnel.filters.status')}</InputLabel>
             <Select
               value={filters.status}
-              label="Status"
+              label={t('personnel.filters.status')}
               onChange={(e) => onFilters('status', e.target.value)}
             >
-              <MenuItem value="all">All Status</MenuItem>
-              <MenuItem value="active">Active</MenuItem>
-              <MenuItem value="inactive">Inactive</MenuItem>
+              <MenuItem value="all">{t('personnel.filters.all')}</MenuItem>
+              <MenuItem value="active">{t('personnel.filters.active')}</MenuItem>
+              <MenuItem value="inactive">{t('personnel.filters.inactive')}</MenuItem>
             </Select>
           </FormControl>
         </Stack>
@@ -119,10 +121,10 @@ export function PersonnelFilters({
 
         <Stack direction="row" spacing={1}>
           <Button fullWidth variant="outlined" onClick={onResetFilters} disabled={!canReset}>
-            Reset
+            {t('personnel.reset')}
           </Button>
           <Button fullWidth variant="contained" onClick={onClose}>
-            Apply
+            {t('personnel.apply')}
           </Button>
         </Stack>
       </Stack>

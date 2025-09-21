@@ -6,7 +6,8 @@ import crypto from "crypto";
 export interface IApiKey {
   _id: string;
   tenantId: string;
-  userId: string;
+  userId?: string; // Make optional for backward compatibility
+  personnelId?: string; // New field for personnel-based API keys
   name: string;
   keyHash: string;
   keyPrefix: string;
@@ -38,7 +39,12 @@ const ApiKeySchema = new Schema<IApiKey>(
     },
     userId: {
       type: String,
-      required: [true, "User ID is required"],
+      required: false, // Made optional for backward compatibility
+      index: true,
+    },
+    personnelId: {
+      type: String,
+      required: false, // Will be required for new API keys
       index: true,
     },
     name: {
@@ -99,6 +105,7 @@ const ApiKeySchema = new Schema<IApiKey>(
 // Indexes for better performance
 ApiKeySchema.index({ tenantId: 1, isActive: 1 });
 ApiKeySchema.index({ tenantId: 1, userId: 1 });
+ApiKeySchema.index({ tenantId: 1, personnelId: 1 });
 ApiKeySchema.index({ keyPrefix: 1 });
 ApiKeySchema.index({ expiresAt: 1 });
 

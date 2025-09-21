@@ -15,6 +15,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 
+import { useTranslate } from 'src/locales/use-locales';
 import { MaterialService } from 'src/lib/services/material-service';
 
 import { useTable } from 'src/components/table';
@@ -38,6 +39,7 @@ interface MaterialsListProps {
 // ----------------------------------------------------------------------
 
 export function MaterialsList({ filters, onFilters, onImport, onCreate }: MaterialsListProps) {
+  const { t } = useTranslate('dashboard');
   const table = useTable();
   const [materials, setMaterials] = useState<IMaterial[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,15 +68,15 @@ export function MaterialsList({ filters, onFilters, onImport, onCreate }: Materi
         setMaterials(response.data);
         setTotalCount(response.pagination.total);
       } else {
-        setError('Failed to fetch materials');
+        setError(t('materials.failedToLoad'));
       }
     } catch (err) {
       console.error('Error fetching materials:', err);
-      setError('Failed to fetch materials');
+      setError(t('materials.failedToLoad'));
     } finally {
       setLoading(false);
     }
-  }, [filters, table.page, table.rowsPerPage, table.orderBy, table.order]);
+  }, [filters, table.page, table.rowsPerPage, table.orderBy, table.order, t]);
 
   useEffect(() => {
     fetchMaterials();
@@ -130,29 +132,29 @@ export function MaterialsList({ filters, onFilters, onImport, onCreate }: Materi
       setDeleteConfirmOpen(false);
     } catch (err) {
       console.error('Error deleting materials:', err);
-      setError('Failed to delete materials');
+      setError(t('materials.failedToDelete'));
     } finally {
       setDeleteLoading(false);
     }
-  }, [fetchMaterials, table]);
+  }, [fetchMaterials, table, t]);
 
   const handleExport = useCallback(() => {
     // Convert materials to CSV
     if (materials.length === 0) return;
 
     const headers = [
-      'Name',
-      'Description',
-      'Category',
-      'SKU',
+      t('materials.table.name'),
+      t('materials.form.description'),
+      t('materials.table.category'),
+      t('materials.table.sku'),
       'Barcode',
-      'Unit',
-      'Unit Cost',
-      'Quantity',
-      'Minimum Stock',
-      'Location',
-      'Supplier',
-      'Status',
+      t('materials.form.unit'),
+      t('materials.table.unitCost'),
+      t('materials.table.quantity'),
+      t('materials.form.minimumStock'),
+      t('materials.table.location'),
+      t('materials.form.supplier'),
+      t('materials.table.status'),
     ];
 
     const csvContent = [
@@ -186,7 +188,7 @@ export function MaterialsList({ filters, onFilters, onImport, onCreate }: Materi
       link.click();
       document.body.removeChild(link);
     }
-  }, [materials]);
+  }, [materials, t]);
 
   const dataFiltered = materials;
 
@@ -267,10 +269,10 @@ export function MaterialsList({ filters, onFilters, onImport, onCreate }: Materi
 
       <ConfirmationDialog
         open={deleteConfirmOpen}
-        title="Delete Materials"
-        message={`Are you sure you want to delete ${table.selected.length} material(s)? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('materials.deleteMaterial')}
+        message={t('materials.deleteConfirmMessage')}
+        confirmText={t('materials.delete')}
+        cancelText={t('materials.cancel')}
         confirmColor="error"
         onConfirm={handleConfirmBulkDelete}
         onCancel={() => setDeleteConfirmOpen(false)}

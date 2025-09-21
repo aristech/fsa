@@ -40,17 +40,12 @@ export function KanbanDetailsAttachments({ attachments, onChange }: Props) {
 
   const handleDrop = useCallback(
     (acceptedFiles: File[]) => {
-      console.log(
-        '🔧 KANBAN: Upload called with files:',
-        acceptedFiles.map((f) => f.name)
-      );
       // Validate files before uploading
       if (!validateFiles(acceptedFiles)) {
         return;
       }
 
       const upload = async () => {
-        console.log('🔧 KANBAN: Creating FormData with scope: task');
         const form = new FormData();
         form.append('scope', 'task');
         acceptedFiles.forEach((file) => form.append('files', file));

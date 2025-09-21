@@ -55,13 +55,10 @@ export function withRequestContext(
 ) {
   return async (request: NextRequest): Promise<NextResponse> => {
     try {
-      console.log('Middleware: Starting request processing');
       const { requireAuth = true, requireClient = false, allowedRoles } = options;
 
       // Connect to database
-      console.log('Middleware: Connecting to database');
       await connectDB();
-      console.log('Middleware: Database connected');
 
       // 1. Extract and verify authentication
       let user = null;

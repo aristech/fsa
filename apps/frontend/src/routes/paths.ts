@@ -119,6 +119,7 @@ export const paths = {
       root: `${ROOTS.DASHBOARD}/settings`,
       webhooks: `${ROOTS.DASHBOARD}/settings/webhooks`,
       apiKeys: `${ROOTS.DASHBOARD}/settings/api-keys`,
+      ai: `${ROOTS.DASHBOARD}/settings/ai`,
     },
   },
 };

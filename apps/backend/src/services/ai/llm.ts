@@ -10,8 +10,11 @@ export class OpenAILLM {
   private isProcessingQueue = false;
   private lastRequestTime = 0;
   private minRequestInterval = 100; // Minimum 100ms between requests
+  private defaultModel: string;
+  private maxTokens: number;
+  private temperature: number;
 
-  constructor(apiKey?: string) {
+  constructor(apiKey?: string, model?: string, maxTokens?: number, temperature?: number) {
     const key = apiKey || process.env.OPENAI_API_KEY;
     if (!key) {
       throw new Error(
@@ -19,6 +22,11 @@ export class OpenAILLM {
       );
     }
     this.client = new OpenAI({ apiKey: key });
+    this.defaultModel = model || "gpt-4o-mini";
+    this.maxTokens = maxTokens || 1024;
+    this.temperature = temperature !== undefined ? temperature : 0.7;
+
+    console.log(`[OpenAILLM] Initialized with model: ${this.defaultModel}, maxTokens: ${this.maxTokens}, temperature: ${this.temperature}`);
   }
 
   private async processQueue() {
@@ -137,15 +145,35 @@ export class OpenAILLM {
         };
       });
 
-      return this.client.chat.completions.create({
-        model: "gpt-4o-mini",
+      console.log(`[OpenAILLM] Making request with model: ${this.defaultModel}, stream: ${stream}, messages count: ${openaiMessages.length}`);
+
+      const request = {
+        model: this.defaultModel,
         messages: openaiMessages,
         tools: toolSpecs,
         tool_choice: tools && tools.length > 0 ? "auto" : undefined,
         stream,
-        temperature: 0.1, // Reduced for consistency and token efficiency
-        max_tokens: 1024, // Reduced from 2048 for efficiency
+        temperature: this.temperature,
+        max_tokens: this.maxTokens,
+      };
+
+      console.log(`[OpenAILLM] Request config:`, {
+        model: request.model,
+        temperature: request.temperature,
+        max_tokens: request.max_tokens,
+        tools_count: toolSpecs?.length || 0,
+        stream: request.stream
       });
+
+      const response = await this.client.chat.completions.create(request);
+
+      if (stream) {
+        console.log(`[OpenAILLM] Stream response created successfully`);
+      } else {
+        console.log(`[OpenAILLM] Non-stream response created successfully`);
+      }
+
+      return response;
     });
   }
 

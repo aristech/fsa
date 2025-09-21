@@ -1,3 +1,5 @@
+'use client';
+
 import useSWR from 'swr';
 import { varAlpha } from 'minimal-shared/utils';
 import { useBoolean } from 'minimal-shared/hooks';

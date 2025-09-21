@@ -48,11 +48,11 @@ export function RealtimeIndicator({
   const getStatusIcon = () => {
     switch (connectionState) {
       case 'connected':
-        return 'material-symbols:wifi';
+        return 'ic:baseline-wifi';
       case 'connecting':
-        return 'material-symbols:wifi-off';
+        return 'eva:wifi-off-fill';
       case 'disconnected':
-        return 'material-symbols:wifi-off';
+        return 'eva:wifi-off-fill';
       default:
         return 'material-symbols:help';
     }

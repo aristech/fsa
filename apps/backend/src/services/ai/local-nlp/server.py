@@ -91,16 +91,18 @@ async def process_text(request: ProcessRequest):
         if request.originalTxt and request.parsedTxt:
             # New structured payload format
             text_to_process = request.parsedTxt
+            title_text = request.originalTxt  # Use original text for title extraction
 
             # Parse entities from the parsed text
-            entities = parse_entities_from_text(request.parsedTxt)
+            parsed_entities = parse_entities_from_text(request.parsedTxt)
             print(f"[LocalNLP] Processing structured payload:")
             print(f"  Original: {request.originalTxt}")
             print(f"  Parsed: {request.parsedTxt}")
-            print(f"  Entities: {entities}")
+            print(f"  Entities: {parsed_entities}")
         elif request.text:
             # Legacy string format
             text_to_process = request.text
+            title_text = request.text
             print(f"[LocalNLP] Processing legacy text: {request.text}")
         else:
             raise HTTPException(status_code=400, detail="Either 'text' or both 'originalTxt' and 'parsedTxt' must be provided")
@@ -111,8 +113,16 @@ async def process_text(request: ProcessRequest):
         # Process the text
         result = processor.process(text_to_process)
 
+        # For structured payloads, extract title from original text
+        if request.originalTxt and request.parsedTxt:
+            # Re-extract title from original text to get meaningful title
+            original_entities = processor._extract_entities(title_text)
+            better_title = processor._extract_title(title_text, original_entities)
+            if better_title and better_title != "New Task":
+                result.title = better_title
+
         # Convert to response format
-        entities = [
+        response_entities = [
             EntityResponse(
                 type=e.type,
                 value=e.value,
@@ -132,7 +142,7 @@ async def process_text(request: ProcessRequest):
             due_date=result.due_date,
             start_date=result.start_date,
             estimated_hours=result.estimated_hours,
-            entities=entities,
+            entities=response_entities,
             confidence=result.confidence
         )
 

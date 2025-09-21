@@ -20,6 +20,7 @@ import {
   FormControlLabel,
 } from '@mui/material';
 
+import { useTranslate } from 'src/locales/use-locales';
 import { MaterialService } from 'src/lib/services/material-service';
 
 import { toast } from 'src/components/snackbar';
@@ -44,6 +45,7 @@ interface FormData extends UpdateMaterialData {
 // ----------------------------------------------------------------------
 
 export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQuickEditFormProps) {
+  const { t } = useTranslate('dashboard');
   const [loading, setLoading] = useState(false);
   const [customFields, setCustomFields] = useState<Record<string, any>>(
     material.customFields || {}
@@ -122,12 +124,12 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
       updateData.customFields = customFields;
 
       await MaterialService.updateMaterial(material._id, updateData);
-      toast.success('Material updated successfully');
+      toast.success(t('materials.materialUpdated'));
       onClose();
       // You might want to trigger a refresh of the materials list here
     } catch (error) {
       console.error('Failed to update material:', error);
-      toast.error('Failed to update material');
+      toast.error(t('materials.failedToUpdate'));
     }
     setLoading(false);
   };
@@ -159,11 +161,11 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
     setLoading(true);
     try {
       await MaterialService.toggleMaterialActive(material._id);
-      toast.success(`Material ${material.isActive ? 'deactivated' : 'activated'} successfully`);
+      toast.success(t(`materials.material${material.isActive ? 'Deactivated' : 'Activated'}`));
       onClose();
     } catch (error) {
       console.error('Failed to toggle material status:', error);
-      toast.error('Failed to update material status');
+      toast.error(t('materials.failedToUpdate'));
     }
     setLoading(false);
   };
@@ -176,12 +178,12 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
     setLoading(true);
     try {
       await MaterialService.deleteMaterial(material._id);
-      toast.success('Material deleted successfully');
+      toast.success(t('materials.materialDeleted'));
       setDeleteConfirmOpen(false);
       onClose();
     } catch (error) {
       console.error('Failed to delete material:', error);
-      toast.error('Failed to delete material');
+      toast.error(t('materials.failedToDelete'));
     } finally {
       setLoading(false);
     }
@@ -192,7 +194,7 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
       <Stack direction="row" alignItems="center" justifyContent="space-between">
         <Stack direction="row" alignItems="center" spacing={1}>
           <Iconify icon="solar:package-bold" />
-          <Typography variant="h6">Edit Material</Typography>
+          <Typography variant="h6">{t('materials.editMaterial')}</Typography>
         </Stack>
         <IconButton onClick={onClose}>
           <Iconify icon="mingcute:close-line" />
@@ -211,11 +213,11 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
           disabled={loading}
           startIcon={<Iconify icon="solar:trash-bin-trash-bold" />}
         >
-          Delete
+          {t('materials.delete')}
         </Button>
         <Stack direction="row" spacing={1}>
           <Button onClick={onClose} disabled={loading}>
-            Cancel
+            {t('materials.cancel')}
           </Button>
           <Button
             type="submit"
@@ -223,7 +225,7 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
             disabled={loading || !isDirty}
             onClick={handleSubmit(onSubmit)}
           >
-            Update
+            {t('materials.update')}
           </Button>
         </Stack>
       </Stack>
@@ -252,7 +254,7 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
               render={({ field }) => (
                 <TextField
                   {...field}
-                  label="Name"
+                  label={t('materials.form.name')}
                   error={!!errors.name}
                   helperText={errors.name?.message}
                   fullWidth
@@ -264,7 +266,13 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
               name="description"
               control={control}
               render={({ field }) => (
-                <TextField {...field} label="Description" multiline rows={2} fullWidth />
+                <TextField
+                  {...field}
+                  label={t('materials.form.description')}
+                  multiline
+                  rows={2}
+                  fullWidth
+                />
               )}
             />
 
@@ -283,7 +291,7 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
                     renderInput={(params) => (
                       <TextField
                         {...params}
-                        label="Category"
+                        label={t('materials.form.category')}
                         placeholder="Select or enter category"
                         fullWidth
                       />
@@ -331,7 +339,9 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
             <Controller
               name="sku"
               control={control}
-              render={({ field }) => <TextField {...field} label="SKU" fullWidth />}
+              render={({ field }) => (
+                <TextField {...field} label={t('materials.form.sku')} fullWidth />
+              )}
             />
             <Stack direction="row" spacing={2}>
               <Controller
@@ -341,7 +351,7 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label="Unit"
+                    label={t('materials.form.unit')}
                     error={!!errors.unit}
                     helperText={errors.unit?.message}
                     fullWidth
@@ -359,7 +369,7 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label="Unit Cost"
+                    label={t('materials.form.unitCost')}
                     type="number"
                     inputProps={{ step: '0.01', min: 0 }}
                     error={!!errors.unitCost}
@@ -382,7 +392,7 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label="Quantity"
+                    label={t('materials.form.quantity')}
                     type="number"
                     inputProps={{ min: 0 }}
                     error={!!errors.quantity}
@@ -399,7 +409,7 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label="Minimum Stock"
+                    label={t('materials.form.minimumStock')}
                     type="number"
                     inputProps={{ min: 0 }}
                     fullWidth
@@ -413,13 +423,17 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
               <Controller
                 name="location"
                 control={control}
-                render={({ field }) => <TextField {...field} label="Location" fullWidth />}
+                render={({ field }) => (
+                  <TextField {...field} label={t('materials.form.location')} fullWidth />
+                )}
               />
 
               <Controller
                 name="supplier"
                 control={control}
-                render={({ field }) => <TextField {...field} label="Supplier" fullWidth />}
+                render={({ field }) => (
+                  <TextField {...field} label={t('materials.form.supplier')} fullWidth />
+                )}
               />
             </Stack>
 
@@ -431,7 +445,7 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
                   control={
                     <Switch checked={field.value} onChange={field.onChange} color="primary" />
                   }
-                  label="Active Material"
+                  label={t('materials.form.activeMaterial')}
                   sx={{ ml: 0 }}
                 />
               )}
@@ -440,7 +454,7 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
             {/* Custom Fields Section */}
             <Paper variant="outlined" sx={{ p: 2 }}>
               <Typography variant="subtitle2" gutterBottom>
-                Custom Fields
+                {t('materials.form.customFields')}
               </Typography>
 
               {Object.keys(customFields).length > 0 && (
@@ -463,14 +477,24 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
                   name="customFieldKey"
                   control={control}
                   render={({ field }) => (
-                    <TextField {...field} label="Field Name" size="small" sx={{ flex: 1 }} />
+                    <TextField
+                      {...field}
+                      label={t('materials.form.fieldName')}
+                      size="small"
+                      sx={{ flex: 1 }}
+                    />
                   )}
                 />
                 <Controller
                   name="customFieldValue"
                   control={control}
                   render={({ field }) => (
-                    <TextField {...field} label="Field Value" size="small" sx={{ flex: 1 }} />
+                    <TextField
+                      {...field}
+                      label={t('materials.form.fieldValue')}
+                      size="small"
+                      sx={{ flex: 1 }}
+                    />
                   )}
                 />
                 <IconButton
@@ -495,7 +519,7 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
                   />
                 }
               >
-                {material.isActive ? 'Deactivate' : 'Activate'}
+                {material.isActive ? t('materials.form.deactivate') : t('materials.form.activate')}
               </Button>
             </Stack>
           </Stack>
@@ -506,10 +530,10 @@ export function MaterialsQuickEditForm({ open, onClose, material }: MaterialsQui
 
       <ConfirmationDialog
         open={deleteConfirmOpen}
-        title="Delete Material"
-        message={`Are you sure you want to delete "${material.name}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('materials.deleteMaterial')}
+        message={t('materials.deleteConfirmMessage')}
+        confirmText={t('materials.delete')}
+        cancelText={t('materials.cancel')}
         confirmColor="error"
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteConfirmOpen(false)}

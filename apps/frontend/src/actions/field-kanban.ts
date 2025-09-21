@@ -64,10 +64,7 @@ export function useGetFieldBoard() {
     };
   }, [data?.data?.board?.columns, data?.data?.board?.tasks, error, isLoading, isValidating]);
 
-  const refreshBoard = useCallback(() => {
-    console.log('Refreshing board data...');
-    return mutate();
-  }, [mutate]);
+  const refreshBoard = useCallback(() => mutate(), [mutate]);
 
   return {
     ...memoizedValue,

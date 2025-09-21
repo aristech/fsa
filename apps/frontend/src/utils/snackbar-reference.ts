@@ -49,7 +49,9 @@ toast.promise(fetch('/api/data'), {
 toast.error('Failed to save', {
   action: {
     label: 'Retry',
-    onClick: () => console.log('Retry clicked'),
+    onClick: () => {
+      // Handle retry action
+    },
   },
 });
 

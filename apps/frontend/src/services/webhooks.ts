@@ -13,7 +13,6 @@ export interface Webhook {
   status: boolean;
   topics: string[];
   deliveryUrl: string;
-  apiVersion: string;
   lastTriggeredAt?: string;
   failureCount: number;
   maxRetries: number;
@@ -28,7 +27,6 @@ export interface WebhookFormData {
   deliveryUrl: string;
   topics: string[];
   status?: boolean;
-  apiVersion?: string;
   maxRetries?: number;
   timeoutMs?: number;
   headers?: Record<string, string>;

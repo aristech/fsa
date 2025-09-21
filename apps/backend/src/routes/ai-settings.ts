@@ -1,15 +1,17 @@
-import { FastifyInstance } from "fastify";
+import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 
 import { authenticate } from "../middleware/auth";
 import { AISettingsService } from "../services/ai-settings-service";
 import type { AISettingsFormData } from "../types/ai-settings";
+import type { AuthenticatedRequest } from "../types";
 
 // ----------------------------------------------------------------------
 
 const aiSettingsSchema = z.object({
   openaiApiKey: z.string().min(1, "OpenAI API Key is required"),
   preferredModel: z.enum([
+    "gpt-5",
     "gpt-4",
     "gpt-4-turbo",
     "gpt-3.5-turbo",
@@ -25,6 +27,7 @@ const aiSettingsSchema = z.object({
 const testApiKeySchema = z.object({
   openaiApiKey: z.string().min(1, "OpenAI API Key is required"),
   preferredModel: z.enum([
+    "gpt-5",
     "gpt-4",
     "gpt-4-turbo",
     "gpt-3.5-turbo",
@@ -36,22 +39,18 @@ const testApiKeySchema = z.object({
 // ----------------------------------------------------------------------
 
 export async function aiSettingsRoutes(fastify: FastifyInstance) {
-  // Add authentication middleware to all routes
-  fastify.addHook("preHandler", authenticate);
 
   // Get AI settings
-  fastify.get("/ai/settings", async (request, reply) => {
+  fastify.get("/ai/settings", {
+    preHandler: [authenticate]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
-      if (!user) {
-        return reply
-          .code(401)
-          .send({ success: false, message: "Unauthorized" });
-      }
+      const req = request as AuthenticatedRequest;
+      const { tenant, user } = req.context!;
 
       const settings = await AISettingsService.getSettings(
         user.id,
-        user.tenantId,
+        tenant._id,
       );
 
       return reply.send({
@@ -71,21 +70,19 @@ export async function aiSettingsRoutes(fastify: FastifyInstance) {
   });
 
   // Update AI settings
-  fastify.put("/ai/settings", async (request, reply) => {
+  fastify.put("/ai/settings", {
+    preHandler: [authenticate]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
-      if (!user) {
-        return reply
-          .code(401)
-          .send({ success: false, message: "Unauthorized" });
-      }
+      const req = request as AuthenticatedRequest;
+      const { tenant, user } = req.context!;
 
       const body = request.body as any;
       const validatedData = aiSettingsSchema.parse(body);
 
       const settings = await AISettingsService.upsertSettings(
         user.id,
-        user.tenantId,
+        tenant._id,
         validatedData as AISettingsFormData,
       );
 
@@ -113,14 +110,12 @@ export async function aiSettingsRoutes(fastify: FastifyInstance) {
   });
 
   // Test OpenAI API key
-  fastify.post("/ai/settings/test", async (request, reply) => {
+  fastify.post("/ai/settings/test", {
+    preHandler: [authenticate]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
-      if (!user) {
-        return reply
-          .code(401)
-          .send({ success: false, message: "Unauthorized" });
-      }
+      const req = request as AuthenticatedRequest;
+      const { tenant, user } = req.context!;
 
       const body = request.body as any;
       const validatedData = testApiKeySchema.parse(body);
@@ -153,18 +148,16 @@ export async function aiSettingsRoutes(fastify: FastifyInstance) {
   });
 
   // Delete AI settings
-  fastify.delete("/ai/settings", async (request, reply) => {
+  fastify.delete("/ai/settings", {
+    preHandler: [authenticate]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = (request as any).user;
-      if (!user) {
-        return reply
-          .code(401)
-          .send({ success: false, message: "Unauthorized" });
-      }
+      const req = request as AuthenticatedRequest;
+      const { tenant, user } = req.context!;
 
       const deleted = await AISettingsService.deleteSettings(
         user.id,
-        user.tenantId,
+        tenant._id,
       );
 
       return reply.send({

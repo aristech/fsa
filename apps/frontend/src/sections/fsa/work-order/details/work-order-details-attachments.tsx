@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useCallback } from 'react';
 
 import axiosInstance from 'src/lib/axios';
@@ -71,29 +73,16 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange
 
   const handleDrop = useCallback(
     (acceptedFiles: File[]) => {
-      console.log(
-        '🔧 FRONTEND: handleDrop called with files:',
-        acceptedFiles.map((f) => f.name)
-      );
       // Validate files before uploading
       if (!validateFiles(acceptedFiles)) {
-        console.log('🔧 FRONTEND: File validation failed');
         return;
       }
 
       const upload = async () => {
-        console.log('🔧 FRONTEND: Starting upload with workOrderId:', workOrderId);
         const form = new FormData();
         form.append('scope', 'workOrder');
         form.append('workOrderId', workOrderId);
         acceptedFiles.forEach((file) => form.append('files', file));
-
-        // Debug FormData contents
-        console.log('🔧 FRONTEND: FormData contents:');
-        for (const [key, value] of form.entries()) {
-          console.log(`  ${key}:`, value instanceof File ? `File(${value.name})` : value);
-        }
-        console.log('🔧 FRONTEND: Making POST request to /api/v1/uploads');
 
         try {
           const res = await axiosInstance.post('/api/v1/uploads', form, {
@@ -101,7 +90,6 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange
               'Content-Type': undefined, // Let browser set multipart boundary
             },
           });
-          console.log('🔧 FRONTEND: Upload response received:', res.data);
           const uploadedFiles = res.data?.data || [];
 
           // Convert upload response to attachment format

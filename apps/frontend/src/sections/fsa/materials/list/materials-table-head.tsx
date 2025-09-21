@@ -2,6 +2,8 @@
 
 import { Checkbox, TableRow, TableCell, TableHead, TableSortLabel } from '@mui/material';
 
+import { useTranslate } from 'src/locales/use-locales';
+
 // ----------------------------------------------------------------------
 
 interface MaterialsTableHeadProps {
@@ -15,16 +17,17 @@ interface MaterialsTableHeadProps {
 
 // ----------------------------------------------------------------------
 
-const TABLE_HEAD = [
-  { id: 'name', label: 'Material', align: 'left' as const },
-  { id: 'category', label: 'Category', align: 'left' as const },
-  { id: 'sku', label: 'SKU', align: 'left' as const },
-  { id: 'quantity', label: 'Quantity', align: 'center' as const },
-  { id: 'unitCost', label: 'Unit Cost', align: 'center' as const },
-  { id: 'location', label: 'Location', align: 'left' as const },
-  { id: 'status', label: 'Status', align: 'center' as const },
-  { id: '', label: '', align: 'right' as const },
-] as const;
+const createTableHead = (t: any) =>
+  [
+    { id: 'name', label: t('materials.table.material'), align: 'left' as const },
+    { id: 'category', label: t('materials.table.category'), align: 'left' as const },
+    { id: 'sku', label: t('materials.table.sku'), align: 'left' as const },
+    { id: 'quantity', label: t('materials.table.quantity'), align: 'center' as const },
+    { id: 'unitCost', label: t('materials.table.unitCost'), align: 'center' as const },
+    { id: 'location', label: t('materials.table.location'), align: 'left' as const },
+    { id: 'status', label: t('materials.table.status'), align: 'center' as const },
+    { id: '', label: '', align: 'right' as const },
+  ] as const;
 
 export function MaterialsTableHead({
   order,
@@ -34,6 +37,9 @@ export function MaterialsTableHead({
   numSelected,
   rowCount,
 }: MaterialsTableHeadProps) {
+  const { t } = useTranslate('dashboard');
+  const TABLE_HEAD = createTableHead(t);
+
   return (
     <TableHead>
       <TableRow>

@@ -146,11 +146,9 @@ export default function FieldTasksPage() {
 
   const handleConvertToReport = useCallback((task: IKanbanTask) => {
     // This will be handled by the FieldTaskDetails component
-    console.log('Converting task to report:', task);
   }, []);
 
   const handleTaskUpdate = useCallback((updatedTask: IKanbanTask) => {
-    console.log('Task updated:', updatedTask);
     setSelectedTask(updatedTask);
     // Note: We'll refresh the data when the drawer is closed instead
   }, []);

@@ -168,8 +168,6 @@ export async function moveColumn(updateColumns: IKanbanColumn[]) {
       const { data } = currentData as BoardData;
       const { board } = data;
 
-      console.log('Column reorder - preserving tasks:', Object.keys(board.tasks || {}));
-
       // Preserve existing tasks when reordering columns
       return {
         ...currentData,

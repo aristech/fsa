@@ -27,8 +27,9 @@ import {
 
 import { PERMISSIONS } from 'src/hooks/use-permissions';
 
-import { fetcher, endpoints } from 'src/lib/axios';
+import { useTranslate } from 'src/locales/use-locales';
 import { type Role } from 'src/lib/services/role-service';
+import axiosInstance, { fetcher, endpoints } from 'src/lib/axios';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
@@ -42,6 +43,7 @@ import { RoleCreateEditForm } from './role-create-edit-form';
 // ----------------------------------------------------------------------
 
 export function RolesList() {
+  const { t } = useTranslate('dashboard');
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
@@ -59,19 +61,10 @@ export function RolesList() {
 
   const roles = data?.data || [];
 
-  // Debug roles data
-  console.log('RolesList - Roles data:', roles);
-  console.log(
-    'RolesList - Roles with isDefault:',
-    roles.map((r) => ({ name: r.name, isDefault: r.isDefault }))
-  );
-
   // Handle role creation/editing
   const handleCreateRole = useCallback(() => {
-    console.log('Create Role button clicked');
     setSelectedRole(null);
     createEditDialog.onTrue();
-    console.log('Dialog should be opening, state:', createEditDialog.value);
   }, [createEditDialog]);
 
   const handleEditRole = useCallback(
@@ -91,24 +84,18 @@ export function RolesList() {
     if (!roleToDelete) return;
 
     try {
-      const response = await fetch(`${endpoints.fsa.roles.details(roleToDelete._id)}`, {
-        method: 'DELETE',
-      });
+      await axiosInstance.delete(endpoints.fsa.roles.details(roleToDelete._id));
 
-      if (response.ok) {
-        toast.success('Role deleted successfully');
-        mutate(); // Refresh the list
-      } else {
-        throw new Error('Failed to delete role');
-      }
+      toast.success(t('personnel.roles.roleDeleted'));
+      mutate(); // Refresh the list
     } catch (error) {
       console.error('Error deleting role:', error);
-      toast.error('Failed to delete role');
+      toast.error(t('personnel.roles.failedToDelete'));
     } finally {
       setDeleteDialogOpen(false);
       setRoleToDelete(null);
     }
-  }, [roleToDelete, mutate]);
+  }, [roleToDelete, mutate, t]);
 
   const handleFormSuccess = useCallback(() => {
     createEditDialog.onFalse();
@@ -173,7 +160,7 @@ export function RolesList() {
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
-        <Typography>Loading roles...</Typography>
+        <Typography>{t('personnel.loading')}</Typography>
       </Box>
     );
   }
@@ -181,7 +168,7 @@ export function RolesList() {
   if (rolesError) {
     return (
       <Alert severity="error" sx={{ mb: 3 }}>
-        Failed to load roles. Please try again.
+        {t('personnel.roles.failedToLoad')}
       </Alert>
     );
   }
@@ -190,22 +177,22 @@ export function RolesList() {
     <>
       <Card>
         <Box sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6">Roles & Permissions</Typography>
+          <Typography variant="h6">{t('personnel.roles.title')}</Typography>
           <PermissionGuard permissions={[PERMISSIONS.ROLES_MANAGE, PERMISSIONS.ADMIN_ACCESS]}>
             <Button
               variant="contained"
               startIcon={<Iconify icon="solar:add-circle-bold" />}
               onClick={handleCreateRole}
             >
-              Create Role
+              {t('personnel.roles.createRole')}
             </Button>
           </PermissionGuard>
         </Box>
 
         {roles.length === 0 ? (
           <EmptyContent
-            title="No roles found"
-            description="Create your first role to get started"
+            title={t('personnel.roles.noRolesFound')}
+            description={t('personnel.roles.noRolesDescription')}
             sx={{ py: 10 }}
           />
         ) : (
@@ -214,11 +201,11 @@ export function RolesList() {
               <Table sx={{ minWidth: 960 }}>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Role Name</TableCell>
-                    <TableCell>Description</TableCell>
+                    <TableCell>{t('personnel.roles.table.name')}</TableCell>
+                    <TableCell>{t('personnel.roles.table.description')}</TableCell>
                     <TableCell>Default</TableCell>
-                    <TableCell>Permissions</TableCell>
-                    <TableCell align="right">Actions</TableCell>
+                    <TableCell>{t('personnel.roles.table.permissions')}</TableCell>
+                    <TableCell align="right">{t('personnel.roles.table.actions')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -263,7 +250,7 @@ export function RolesList() {
                       <TableCell align="right">
                         <PermissionGuard permissions={PERMISSIONS.ROLES_MANAGE}>
                           <Stack direction="row" spacing={1} justifyContent="flex-end">
-                            <Tooltip title="Edit Role">
+                            <Tooltip title={t('personnel.roles.editRole')}>
                               <IconButton
                                 color="primary"
                                 onClick={() => handleEditRole(role)}
@@ -272,7 +259,7 @@ export function RolesList() {
                                 <Iconify icon="solar:pen-bold" />
                               </IconButton>
                             </Tooltip>
-                            <Tooltip title="Delete Role">
+                            <Tooltip title={t('personnel.roles.deleteRole')}>
                               <IconButton
                                 color="error"
                                 onClick={() => handleDeleteRole(role)}
@@ -300,7 +287,9 @@ export function RolesList() {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>{isEdit ? 'Edit Role' : 'Create New Role'}</DialogTitle>
+        <DialogTitle>
+          {isEdit ? t('personnel.roles.editRole') : t('personnel.roles.createRole')}
+        </DialogTitle>
         <DialogContent>
           <RoleCreateEditForm
             role={selectedRole}
@@ -314,18 +303,11 @@ export function RolesList() {
       <ConfirmDialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
-        title="Delete Role"
-        content={
-          <>
-            Are you sure you want to delete the role <strong>{roleToDelete?.name}</strong>?
-            <br />
-            <br />
-            This action cannot be undone and may affect personnel assigned to this role.
-          </>
-        }
+        title={t('personnel.roles.deleteRole')}
+        content={<>{t('personnel.roles.deleteConfirmMessage')}</>}
         action={
           <Button variant="contained" color="error" onClick={handleConfirmDelete}>
-            Delete
+            {t('personnel.delete')}
           </Button>
         }
       />

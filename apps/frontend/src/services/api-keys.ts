@@ -5,11 +5,25 @@ import { endpoints } from 'src/lib/axios';
 export interface ApiKey {
   _id: string;
   name: string;
-  userId: {
+  userId?: {
     _id: string;
     firstName: string;
     lastName: string;
     email: string;
+  };
+  personnelId?: {
+    _id: string;
+    user: {
+      _id: string;
+      name: string;
+      email: string;
+    };
+    role?: {
+      _id: string;
+      name: string;
+      permissions: string[];
+    };
+    employeeId: string;
   };
   permissions: string[];
   lastUsedAt?: string;
@@ -23,10 +37,9 @@ export interface ApiKey {
 
 export interface ApiKeyFormData {
   name: string;
-  permissions: string[];
+  personnelId: string; // Required - personnel to create key for
   expiresAt?: string;
   rateLimitPerHour?: number;
-  userId?: string; // For creating keys for other users (admin only)
 }
 
 export interface ApiKeyUsageStats {

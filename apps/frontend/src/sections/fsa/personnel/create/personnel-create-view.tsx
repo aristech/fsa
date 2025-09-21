@@ -21,6 +21,7 @@ import { useTenantAPI } from 'src/hooks/use-tenant';
 
 import axiosInstance from 'src/lib/axios';
 import { CONFIG } from 'src/global-config';
+import { useTranslate } from 'src/locales/use-locales';
 
 import { toast } from 'src/components/snackbar';
 import { Form, RHFTextField } from 'src/components/hook-form';
@@ -37,36 +38,37 @@ interface PersonnelCreateViewProps {
 type RoleOption = { _id: string; name: string };
 type UserOption = { _id: string; name: string; email: string };
 
-const schema = zod.object({
-  userId: zod.string().optional(),
-  employeeId: zod.string().optional(),
-  name: zod.string().optional(),
-  email: zod.string().email('Invalid email').optional(),
-  phone: zod.string().optional(),
-  roleId: zod.string().optional(),
-  hourlyRate: zod.coerce.number().min(0, 'Hourly rate must be positive'),
-  notes: zod.string().optional(),
-  skills: zod.array(zod.string()).optional(),
-  certifications: zod.array(zod.string()).optional(),
-  sendInvitation: zod.boolean().optional(),
-  environmentAccess: zod.enum(['dashboard', 'field', 'all']).optional(),
-  availability: zod
-    .object({
-      monday: zod.object({ start: zod.string(), end: zod.string(), available: zod.boolean() }),
-      tuesday: zod.object({ start: zod.string(), end: zod.string(), available: zod.boolean() }),
-      wednesday: zod.object({ start: zod.string(), end: zod.string(), available: zod.boolean() }),
-      thursday: zod.object({ start: zod.string(), end: zod.string(), available: zod.boolean() }),
-      friday: zod.object({ start: zod.string(), end: zod.string(), available: zod.boolean() }),
-      saturday: zod.object({ start: zod.string(), end: zod.string(), available: zod.boolean() }),
-      sunday: zod.object({ start: zod.string(), end: zod.string(), available: zod.boolean() }),
-    })
-    .optional(),
-  location: zod
-    .object({
-      address: zod.string().optional(),
-    })
-    .optional(),
-});
+const createPersonnelSchema = (t: any) =>
+  zod.object({
+    userId: zod.string().optional(),
+    employeeId: zod.string().optional(),
+    name: zod.string().optional(),
+    email: zod.string().email(t('personnel.form.validation.emailInvalid')).optional(),
+    phone: zod.string().optional(),
+    roleId: zod.string().optional(),
+    hourlyRate: zod.coerce.number().min(0, t('personnel.form.validation.hourlyRatePositive')),
+    notes: zod.string().optional(),
+    skills: zod.array(zod.string()).optional(),
+    certifications: zod.array(zod.string()).optional(),
+    sendInvitation: zod.boolean().optional(),
+    environmentAccess: zod.enum(['dashboard', 'field', 'all']).optional(),
+    availability: zod
+      .object({
+        monday: zod.object({ start: zod.string(), end: zod.string(), available: zod.boolean() }),
+        tuesday: zod.object({ start: zod.string(), end: zod.string(), available: zod.boolean() }),
+        wednesday: zod.object({ start: zod.string(), end: zod.string(), available: zod.boolean() }),
+        thursday: zod.object({ start: zod.string(), end: zod.string(), available: zod.boolean() }),
+        friday: zod.object({ start: zod.string(), end: zod.string(), available: zod.boolean() }),
+        saturday: zod.object({ start: zod.string(), end: zod.string(), available: zod.boolean() }),
+        sunday: zod.object({ start: zod.string(), end: zod.string(), available: zod.boolean() }),
+      })
+      .optional(),
+    location: zod
+      .object({
+        address: zod.string().optional(),
+      })
+      .optional(),
+  });
 
 // ----------------------------------------------------------------------
 
@@ -76,6 +78,7 @@ export function PersonnelCreateView({
   onCreated,
   personnelId,
 }: PersonnelCreateViewProps) {
+  const { t } = useTranslate('dashboard');
   const { tenantId } = useTenantAPI();
   const [roles, setRoles] = useState<RoleOption[]>([]);
   const [, setUsers] = useState<UserOption[]>([]);
@@ -83,8 +86,8 @@ export function PersonnelCreateView({
   const [skillOptions, setSkillOptions] = useState<string[]>([]);
   const [certOptions, setCertOptions] = useState<string[]>([]);
 
-  const methods = useForm<zod.input<typeof schema>>({
-    resolver: zodResolver(schema),
+  const methods = useForm<zod.input<ReturnType<typeof createPersonnelSchema>>>({
+    resolver: zodResolver(createPersonnelSchema(t)),
     defaultValues: {
       userId: '',
       employeeId: '',
@@ -192,7 +195,6 @@ export function PersonnelCreateView({
 
         // Reset form with personnel data if editing
         if (p) {
-          console.log('Personnel data loaded:', p);
           const formData = {
             userId: p.user?._id || '',
             employeeId: p.employeeId || '',
@@ -217,7 +219,6 @@ export function PersonnelCreateView({
             location: { address: p.location?.address || '' },
             sendInvitation: false, // Always false for editing
           };
-          console.log('Form data to reset:', formData);
 
           // Reset after a small delay to ensure form is ready
           setTimeout(() => {
@@ -263,7 +264,7 @@ export function PersonnelCreateView({
         reset();
         onClose();
         onCreated?.();
-        toast.success(isEdit ? 'Personnel updated' : 'Personnel created');
+        toast.success(isEdit ? t('personnel.personnelUpdated') : t('personnel.personnelCreated'));
       }
     } catch (error: any) {
       const message = String(error?.message || 'Failed to save personnel');
@@ -278,7 +279,7 @@ export function PersonnelCreateView({
       } else if (lower.includes('validation')) {
         toast.error('Please check the form fields and try again.');
       } else {
-        toast.error(message);
+        toast.error(isEdit ? t('personnel.failedToUpdate') : t('personnel.failedToCreate'));
       }
     }
   });
@@ -300,23 +301,23 @@ export function PersonnelCreateView({
           sx={{ px: 2.5, py: 2 }}
         >
           <Typography variant="h6">
-            {personnelId ? 'Edit Personnel' : 'Add New Personnel'}
+            {personnelId ? t('personnel.editPersonnel') : t('personnel.createPersonnel')}
           </Typography>
           <Button color="inherit" onClick={onClose}>
-            Close
+            {t('personnel.close')}
           </Button>
         </Stack>
         <Divider />
         {loading ? (
           <Stack spacing={2} sx={{ px: 2.5, py: 2, textAlign: 'center' }}>
-            <Typography>Loading...</Typography>
+            <Typography>{t('personnel.loading')}</Typography>
           </Stack>
         ) : (
           <Stack spacing={2} sx={{ px: 2.5, py: 2 }}>
-            <RHFTextField name="name" label="Full name" />
-            <RHFTextField name="email" label="Email" type="email" />
-            <RHFTextField name="phone" label="Phone" />
-            <RHFTextField name="hourlyRate" label="Hourly rate" type="number" />
+            <RHFTextField name="name" label={t('personnel.form.name')} />
+            <RHFTextField name="email" label={t('personnel.form.email')} type="email" />
+            <RHFTextField name="phone" label={t('personnel.form.phone')} />
+            <RHFTextField name="hourlyRate" label={t('personnel.form.hourlyRate')} type="number" />
 
             <Controller
               name="roleId"
@@ -327,7 +328,9 @@ export function PersonnelCreateView({
                   options={roleOptions}
                   getOptionLabel={(o) => o.label}
                   onChange={(_, val) => field.onChange(val?.id)}
-                  renderInput={(params) => <TextField {...params} label="Role" />}
+                  renderInput={(params) => (
+                    <TextField {...params} label={t('personnel.form.role')} />
+                  )}
                 />
               )}
             />
@@ -357,7 +360,7 @@ export function PersonnelCreateView({
               )}
             />
 
-            <RHFTextField name="notes" label="Notes" multiline rows={3} />
+            <RHFTextField name="notes" label={t('personnel.form.notes')} multiline rows={3} />
 
             <Controller
               name="skills"
@@ -370,7 +373,11 @@ export function PersonnelCreateView({
                   value={field.value ?? []}
                   onChange={(_, val) => field.onChange(val)}
                   renderInput={(params) => (
-                    <TextField {...params} label="Skills" placeholder="Add skill" />
+                    <TextField
+                      {...params}
+                      label={t('personnel.form.skills')}
+                      placeholder="Add skill"
+                    />
                   )}
                 />
               )}
@@ -387,7 +394,11 @@ export function PersonnelCreateView({
                   value={field.value ?? []}
                   onChange={(_, val) => field.onChange(val)}
                   renderInput={(params) => (
-                    <TextField {...params} label="Certifications" placeholder="Add certification" />
+                    <TextField
+                      {...params}
+                      label={t('personnel.form.certifications')}
+                      placeholder="Add certification"
+                    />
                   )}
                 />
               )}
@@ -443,10 +454,10 @@ export function PersonnelCreateView({
 
             <Stack direction="row" spacing={1} justifyContent="flex-end">
               <Button color="inherit" onClick={onClose}>
-                Cancel
+                {t('personnel.cancel')}
               </Button>
               <Button type="submit" variant="contained" disabled={loading}>
-                {personnelId ? 'Save Changes' : 'Create'}
+                {personnelId ? t('personnel.save') : t('personnel.create')}
               </Button>
             </Stack>
           </Stack>

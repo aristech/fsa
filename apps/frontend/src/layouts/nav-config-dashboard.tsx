@@ -22,6 +22,7 @@ const ICONS = {
   file: icon('ic-file'),
   lock: icon('ic-lock'),
   tour: icon('ic-tour'),
+  gear: icon('ic-gear'),
   order: icon('ic-order'),
   label: icon('ic-label'),
   blank: icon('ic-blank'),
@@ -94,7 +95,6 @@ export function useNavData(): NavSectionProps['data'] {
       items: [
         { title: t('management.projectsTasks'), path: paths.dashboard.kanban, icon: ICONS.kanban },
         { title: t('management.calendar'), path: paths.dashboard.calendar, icon: ICONS.calendar },
-        { title: 'AI Assistant', path: paths.dashboard.ai, icon: ICONS.chat },
         // {
         //   title: t('management.chat'),
         //   path: paths.dashboard.chat,
@@ -191,10 +191,11 @@ export function useNavData(): NavSectionProps['data'] {
         {
           title: 'Settings',
           path: paths.dashboard.settings.root,
-          icon: ICONS.params,
+          icon: ICONS.gear,
           children: [
             { title: 'Webhooks', path: paths.dashboard.settings.webhooks },
             { title: 'API Keys', path: paths.dashboard.settings.apiKeys },
+            { title: 'AI Settings', path: paths.dashboard.settings.ai },
           ],
         },
       ],

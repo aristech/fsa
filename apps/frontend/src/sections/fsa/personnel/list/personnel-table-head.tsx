@@ -2,6 +2,8 @@
 
 import { Checkbox, TableRow, TableCell, TableHead, TableSortLabel } from '@mui/material';
 
+import { useTranslate } from 'src/locales/use-locales';
+
 // ----------------------------------------------------------------------
 
 interface PersonnelTableHeadProps {
@@ -15,16 +17,17 @@ interface PersonnelTableHeadProps {
 
 // ----------------------------------------------------------------------
 
-const TABLE_HEAD = [
-  { id: 'name', label: 'Personnel', align: 'left' as const },
-  { id: 'role', label: 'Role', align: 'left' as const },
-  { id: 'status', label: 'Status', align: 'left' as const },
-  { id: 'skills', label: 'Skills', align: 'left' as const },
-  { id: 'hourlyRate', label: 'Rate', align: 'center' as const },
-  { id: 'assignments', label: 'Assignments', align: 'center' as const },
-  { id: 'total', label: 'Total', align: 'center' as const },
-  { id: '', label: '', align: 'right' as const },
-] as const;
+const createTableHead = (t: any) =>
+  [
+    { id: 'name', label: t('personnel.table.name'), align: 'left' as const },
+    { id: 'role', label: t('personnel.table.role'), align: 'left' as const },
+    { id: 'status', label: t('personnel.table.status'), align: 'left' as const },
+    { id: 'skills', label: t('personnel.table.skills'), align: 'left' as const },
+    { id: 'hourlyRate', label: t('personnel.table.hourlyRate'), align: 'center' as const },
+    { id: 'assignments', label: t('personnel.table.totalAssignments'), align: 'center' as const },
+    { id: 'total', label: 'Total', align: 'center' as const },
+    { id: '', label: '', align: 'right' as const },
+  ] as const;
 
 export function PersonnelTableHead({
   order,
@@ -34,6 +37,9 @@ export function PersonnelTableHead({
   numSelected,
   rowCount,
 }: PersonnelTableHeadProps) {
+  const { t } = useTranslate('dashboard');
+  const TABLE_HEAD = createTableHead(t);
+
   return (
     <TableHead>
       <TableRow>

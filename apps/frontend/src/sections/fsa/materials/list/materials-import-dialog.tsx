@@ -28,6 +28,7 @@ import {
   AccordionDetails,
 } from '@mui/material';
 
+import { useTranslate } from 'src/locales/use-locales';
 import { MaterialService } from 'src/lib/services/material-service';
 
 import { toast } from 'src/components/snackbar';
@@ -43,6 +44,7 @@ interface MaterialsImportDialogProps {
 // ----------------------------------------------------------------------
 
 export function MaterialsImportDialog({ open, onClose }: MaterialsImportDialogProps) {
+  const { t } = useTranslate('dashboard');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [csvContent, setCsvContent] = useState<string>('');
@@ -123,7 +125,7 @@ export function MaterialsImportDialog({ open, onClose }: MaterialsImportDialogPr
       <DialogTitle>
         <Stack direction="row" alignItems="center" spacing={1}>
           <Iconify icon="solar:import-bold" />
-          <Typography variant="h6">Import Materials from CSV</Typography>
+          <Typography variant="h6">{t('materials.import.title')}</Typography>
         </Stack>
       </DialogTitle>
 
@@ -153,7 +155,7 @@ export function MaterialsImportDialog({ open, onClose }: MaterialsImportDialogPr
                   startIcon={<Iconify icon="solar:download-bold" />}
                   onClick={handleDownloadSample}
                 >
-                  Download Sample CSV
+                  {t('materials.import.template')}
                 </Button>
 
                 <Typography variant="body2" color="text.secondary">
@@ -291,7 +293,9 @@ export function MaterialsImportDialog({ open, onClose }: MaterialsImportDialogPr
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={handleClose}>{importResult ? 'Close' : 'Cancel'}</Button>
+        <Button onClick={handleClose}>
+          {importResult ? t('materials.close') : t('materials.cancel')}
+        </Button>
 
         {!importResult && (
           <Button
@@ -300,7 +304,7 @@ export function MaterialsImportDialog({ open, onClose }: MaterialsImportDialogPr
             disabled={!csvContent || loading}
             startIcon={loading ? undefined : <Iconify icon="solar:import-bold" />}
           >
-            {loading ? 'Importing...' : 'Import Materials'}
+            {loading ? t('materials.import.importing') : t('materials.import')}
           </Button>
         )}
       </DialogActions>

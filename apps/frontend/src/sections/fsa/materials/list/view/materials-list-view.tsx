@@ -5,6 +5,8 @@ import { useBoolean } from 'minimal-shared/hooks';
 
 import { Chip, Alert, Stack, Button, Container, Typography } from '@mui/material';
 
+import { useTranslate } from 'src/locales/use-locales';
+
 import { Iconify } from 'src/components/iconify';
 
 import { MaterialsList } from '../materials-list';
@@ -14,6 +16,7 @@ import { MaterialsCreateView } from '../../create/materials-create-view';
 // ----------------------------------------------------------------------
 
 export function MaterialsListView() {
+  const { t } = useTranslate('dashboard');
   const openCreate = useBoolean();
   const openImport = useBoolean();
 
@@ -51,9 +54,9 @@ export function MaterialsListView() {
         >
           <Stack direction="row" alignItems="center" justifyContent="space-between">
             <Stack spacing={1}>
-              <Typography variant="h4">Materials Management</Typography>
+              <Typography variant="h4">{t('materials.title')}</Typography>
               <Typography variant="body2" color="text.secondary">
-                Manage your inventory, materials, and supplies
+                {t('materials.subtitle')}
               </Typography>
             </Stack>
 
@@ -63,7 +66,7 @@ export function MaterialsListView() {
                 startIcon={<Iconify icon="mingcute:add-line" />}
                 onClick={openCreate.onTrue}
               >
-                New Material
+                {t('materials.newMaterial')}
               </Button>
             </Stack>
           </Stack>
@@ -71,24 +74,24 @@ export function MaterialsListView() {
           {canReset && (
             <Alert severity="info" sx={{ mb: 2 }}>
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                <Typography variant="subtitle2">Filters applied:</Typography>
+                <Typography variant="subtitle2">{t('materials.filtersApplied')}</Typography>
                 {filters.name && (
                   <Chip
-                    label={`Name: ${filters.name}`}
+                    label={`${t('materials.filters.name')}: ${filters.name}`}
                     size="small"
                     onDelete={() => handleFilters('name', '')}
                   />
                 )}
                 {filters.category && (
                   <Chip
-                    label={`Category: ${filters.category}`}
+                    label={`${t('materials.filters.category')}: ${filters.category}`}
                     size="small"
                     onDelete={() => handleFilters('category', '')}
                   />
                 )}
                 {filters.status && (
                   <Chip
-                    label={`Status: ${filters.status}`}
+                    label={`${t('materials.filters.status')}: ${filters.status}`}
                     size="small"
                     onDelete={() => handleFilters('status', '')}
                   />
@@ -98,7 +101,7 @@ export function MaterialsListView() {
                   onClick={handleResetFilters}
                   startIcon={<Iconify icon="solar:restart-bold" />}
                 >
-                  Clear All
+                  {t('materials.clearAll')}
                 </Button>
               </Stack>
             </Alert>

@@ -24,7 +24,6 @@ const schema = zod.object({
   topics: zod.array(zod.string()).min(1, 'Select at least one topic'),
   deliveryUrl: zod.string().url('Valid URL is required'),
   secret: zod.string().min(1, 'Secret is required'),
-  apiVersion: zod.string().min(1, 'API Version is required'),
 });
 
 export type WebhookFormData = zod.infer<typeof schema>;
@@ -47,8 +46,6 @@ const TOPICS = [
   'user.updated',
 ];
 
-const API_VERSIONS = ['2023-10-01', '2023-09-01'];
-
 export function WebhookFormDialog({ open, webhook, onClose, onSubmit }: Props) {
   const {
     control,
@@ -63,7 +60,6 @@ export function WebhookFormDialog({ open, webhook, onClose, onSubmit }: Props) {
       topics: [],
       deliveryUrl: '',
       secret: '',
-      apiVersion: API_VERSIONS[0],
     },
   });
 
@@ -75,7 +71,6 @@ export function WebhookFormDialog({ open, webhook, onClose, onSubmit }: Props) {
         topics: webhook.topics,
         deliveryUrl: webhook.deliveryUrl,
         secret: webhook.secret,
-        apiVersion: webhook.apiVersion,
       });
     } else {
       reset({
@@ -84,7 +79,6 @@ export function WebhookFormDialog({ open, webhook, onClose, onSubmit }: Props) {
         topics: [],
         deliveryUrl: '',
         secret: '',
-        apiVersion: API_VERSIONS[0],
       });
     }
   }, [webhook, reset]);
@@ -176,26 +170,6 @@ export function WebhookFormDialog({ open, webhook, onClose, onSubmit }: Props) {
                 helperText={errors.secret?.message}
                 fullWidth
                 sx={{ mt: 2 }}
-              />
-            )}
-          />
-          <Controller
-            name="apiVersion"
-            control={control}
-            render={({ field }) => (
-              <Autocomplete
-                options={API_VERSIONS}
-                value={field.value}
-                onChange={(_, v) => field.onChange(v)}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="API Version"
-                    error={!!errors.apiVersion}
-                    helperText={errors.apiVersion?.message}
-                    sx={{ mt: 2 }}
-                  />
-                )}
               />
             )}
           />

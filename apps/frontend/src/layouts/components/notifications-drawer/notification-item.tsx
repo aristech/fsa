@@ -122,7 +122,6 @@ export function NotificationItem({ notification }: NotificationItemProps) {
 
       // TODO: Add navigation to the related entity (task, work order, etc.)
       // For now, we'll just mark it as read
-      console.log('Notification clicked:', notification);
     } catch (error) {
       console.error('Error handling notification click:', error);
     }

@@ -23,13 +23,13 @@ export function emptyRows(page: number, rowsPerPage: number, arrayLength: number
  * };
  *
  * const ex1 = getNestedProperty(data, 'calories');
- * console.log('ex1', ex1); // output: 360
+ * // ex1 = 360
  *
  * const ex2 = getNestedProperty(data, 'align');
- * console.log('ex2', ex2); // output: center
+ * // ex2 = center
  *
  * const ex3 = getNestedProperty(data, 'more.protein');
- * console.log('ex3', ex3); // output: 42
+ * // ex3 = 42
  */
 function getNestedProperty<T>(obj: T, key: string): any {
   return key.split('.').reduce((acc: any, part: string) => acc && acc[part], obj);

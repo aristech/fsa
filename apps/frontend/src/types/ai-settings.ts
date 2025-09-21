@@ -1,6 +1,6 @@
 export interface AISettings {
   openaiApiKey?: string;
-  preferredModel?: 'gpt-4' | 'gpt-4-turbo' | 'gpt-3.5-turbo' | 'gpt-4o' | 'gpt-4o-mini';
+  preferredModel?: 'gpt-5' | 'gpt-4' | 'gpt-4-turbo' | 'gpt-3.5-turbo' | 'gpt-4o' | 'gpt-4o-mini';
   maxTokens?: number;
   temperature?: number;
   useLocalNLP?: boolean;

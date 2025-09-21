@@ -16,6 +16,8 @@ import {
   Typography,
 } from '@mui/material';
 
+import { useTranslate } from 'src/locales/use-locales';
+
 import { Iconify } from 'src/components/iconify';
 
 import { PersonnelQuickEditForm } from './personnel-quick-edit-form';
@@ -53,6 +55,7 @@ interface PersonnelTableRowProps {
 // ----------------------------------------------------------------------
 
 export function PersonnelTableRow({ row, selected, onSelectRow }: PersonnelTableRowProps) {
+  const { t } = useTranslate('dashboard');
   const theme = useTheme();
   const [openPopover, setOpenPopover] = useState<HTMLElement | null>(null);
 
@@ -182,7 +185,7 @@ export function PersonnelTableRow({ row, selected, onSelectRow }: PersonnelTable
         </TableCell>
 
         <TableCell align="right">
-          <Tooltip title="Edit">
+          <Tooltip title={t('personnel.table.edit')}>
             <IconButton onClick={handleOpenPopover}>
               <Iconify icon="solar:pen-bold" />
             </IconButton>

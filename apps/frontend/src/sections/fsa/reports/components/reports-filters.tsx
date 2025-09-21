@@ -19,6 +19,8 @@ import {
   Autocomplete,
 } from '@mui/material';
 
+import { useTranslate } from 'src/locales/use-locales';
+
 import { MobileDatePicker } from 'src/components/mobile';
 
 // ----------------------------------------------------------------------
@@ -43,15 +45,16 @@ const reportStatuses = ['draft', 'submitted', 'under_review', 'approved', 'rejec
 
 const priorities = ['low', 'medium', 'high', 'urgent'];
 
-const sortOptions = [
-  { value: 'createdAt', label: 'Created Date' },
-  { value: 'reportDate', label: 'Report Date' },
-  { value: 'totalCost', label: 'Total Cost' },
-  { value: 'status', label: 'Status' },
-  { value: 'type', label: 'Type' },
+const getSortOptions = (t: any) => [
+  { value: 'createdAt', label: t('reports.sortOptions.createdDate') },
+  { value: 'reportDate', label: t('reports.sortOptions.reportDate') },
+  { value: 'totalCost', label: t('reports.sortOptions.totalCost') },
+  { value: 'status', label: t('reports.sortOptions.status') },
+  { value: 'type', label: t('reports.sortOptions.type') },
 ];
 
 export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps) {
+  const { t } = useTranslate('dashboard');
   // const [searchTerm, setSearchTerm] = useState(filters.search || '');
   const [selectedTypes, setSelectedTypes] = useState<string[]>(filters.type ? [filters.type] : []);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(
@@ -208,7 +211,11 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
               value={selectedTypes}
               onChange={handleTypeChange}
               renderInput={(params) => (
-                <TextField {...params} label="Report Type" placeholder="Select types..." />
+                <TextField
+                  {...params}
+                  label={t('reports.filters.reportType')}
+                  placeholder={t('reports.filters.selectTypes')}
+                />
               )}
               renderTags={(value, getTagProps) =>
                 value.map((option, index) => (
@@ -232,7 +239,11 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
               value={selectedStatuses}
               onChange={handleStatusChange}
               renderInput={(params) => (
-                <TextField {...params} label="Status" placeholder="Select statuses..." />
+                <TextField
+                  {...params}
+                  label={t('reports.filters.status')}
+                  placeholder={t('reports.filters.selectStatuses')}
+                />
               )}
               renderTags={(value, getTagProps) =>
                 value.map((option, index) => (
@@ -256,7 +267,11 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
               value={selectedPriorities}
               onChange={handlePriorityChange}
               renderInput={(params) => (
-                <TextField {...params} label="Priority" placeholder="Select priorities..." />
+                <TextField
+                  {...params}
+                  label={t('reports.filters.priority')}
+                  placeholder={t('reports.filters.selectPriorities')}
+                />
               )}
               renderTags={(value, getTagProps) =>
                 value.map((option, index) => (
@@ -276,13 +291,13 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Stack direction="row" spacing={1}>
               <FormControl fullWidth size="small">
-                <InputLabel>Sort By</InputLabel>
+                <InputLabel>{t('reports.filters.sortBy')}</InputLabel>
                 <Select
                   value={filters.sortBy || 'createdAt'}
-                  label="Sort By"
+                  label={t('reports.filters.sortBy')}
                   onChange={handleSortChange}
                 >
-                  {sortOptions.map((option) => (
+                  {getSortOptions(t).map((option) => (
                     <MenuItem key={option.value} value={option.value}>
                       {option.label}
                     </MenuItem>
@@ -291,14 +306,14 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
               </FormControl>
 
               <FormControl size="small" sx={{ minWidth: 100 }}>
-                <InputLabel>Order</InputLabel>
+                <InputLabel>{t('reports.filters.order')}</InputLabel>
                 <Select
                   value={filters.sortOrder || 'desc'}
-                  label="Order"
+                  label={t('reports.filters.order')}
                   onChange={handleSortOrderChange}
                 >
-                  <MenuItem value="asc">Asc</MenuItem>
-                  <MenuItem value="desc">Desc</MenuItem>
+                  <MenuItem value="asc">{t('reports.sortOrder.asc')}</MenuItem>
+                  <MenuItem value="desc">{t('reports.sortOrder.desc')}</MenuItem>
                 </Select>
               </FormControl>
             </Stack>
@@ -307,7 +322,7 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
           {/* Date Range */}
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <MobileDatePicker
-              label="From Date"
+              label={t('reports.filters.fromDate')}
               value={filters.dateFrom ? dayjs(filters.dateFrom) : null}
               onChange={(date) => handleDateFromChange(date?.toDate() || null)}
             />
@@ -315,7 +330,7 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
 
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <MobileDatePicker
-              label="To Date"
+              label={t('reports.filters.toDate')}
               value={filters.dateTo ? dayjs(filters.dateTo) : null}
               onChange={(date) => handleDateToChange(date?.toDate() || null)}
             />
@@ -326,12 +341,12 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
         {activeFiltersCount > 0 && (
           <Box>
             <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              Active Filters:
+              {t('reports.filters.activeFilters')}:
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap">
               {filters.search && (
                 <Chip
-                  label={`Search: "${filters.search}"`}
+                  label={`${t('reports.filters.search')}: "${filters.search}"`}
                   onDelete={() => {
                     onFiltersChange({ search: undefined });
                   }}
@@ -340,7 +355,7 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
               )}
               {filters.type && (
                 <Chip
-                  label={`Type: ${filters.type}`}
+                  label={`${t('reports.filters.type')}: ${filters.type}`}
                   onDelete={() => {
                     setSelectedTypes([]);
                     onFiltersChange({ type: undefined });
@@ -350,7 +365,7 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
               )}
               {filters.status && (
                 <Chip
-                  label={`Status: ${filters.status.replace('_', ' ')}`}
+                  label={`${t('reports.filters.status')}: ${filters.status.replace('_', ' ')}`}
                   onDelete={() => {
                     setSelectedStatuses([]);
                     onFiltersChange({ status: undefined });
@@ -360,7 +375,7 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
               )}
               {filters.priority && (
                 <Chip
-                  label={`Priority: ${filters.priority}`}
+                  label={`${t('reports.filters.priority')}: ${filters.priority}`}
                   onDelete={() => {
                     setSelectedPriorities([]);
                     onFiltersChange({ priority: undefined });
@@ -370,14 +385,14 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
               )}
               {filters.dateFrom && (
                 <Chip
-                  label={`From: ${dayjs(filters.dateFrom).format('MMM DD, YYYY')}`}
+                  label={`${t('reports.filters.from')}: ${dayjs(filters.dateFrom).format('MMM DD, YYYY')}`}
                   onDelete={() => onFiltersChange({ dateFrom: undefined })}
                   size="small"
                 />
               )}
               {filters.dateTo && (
                 <Chip
-                  label={`To: ${dayjs(filters.dateTo).format('MMM DD, YYYY')}`}
+                  label={`${t('reports.filters.to')}: ${dayjs(filters.dateTo).format('MMM DD, YYYY')}`}
                   onDelete={() => onFiltersChange({ dateTo: undefined })}
                   size="small"
                 />

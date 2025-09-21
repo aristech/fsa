@@ -108,7 +108,7 @@ export async function authenticateApiKey(
     request.apiKey = {
       _id: apiKey._id,
       tenantId: apiKey.tenantId,
-      userId: apiKey.userId,
+      userId: apiKey.userId || apiKey.personnelId || '',
       name: apiKey.name,
       permissions: apiKey.permissions,
       rateLimitPerHour: apiKey.rateLimitPerHour,

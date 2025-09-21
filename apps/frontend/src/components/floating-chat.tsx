@@ -24,11 +24,13 @@ import {
 
 import { useChatStream, type ChatMessage } from 'src/hooks/useChatStream';
 
-import { CONFIG } from 'src/global-config';
+import axiosInstance from 'src/lib/axios';
+import { useTranslate } from 'src/locales/use-locales';
 
 import { Iconify } from 'src/components/iconify';
 
 export function FloatingChat() {
+  const { t } = useTranslate('dashboard');
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<any[]>([]);
@@ -42,8 +44,6 @@ export function FloatingChat() {
 
   // Handle real-time events from AI (e.g., task created/updated)
   const handleEvent = (event: { type: string; data: any }) => {
-    console.log('[FloatingChat] Event received:', event);
-
     if (event.type === 'task_created' || event.type === 'task_updated') {
       // Trigger kanban refresh by dispatching a custom event
       window.dispatchEvent(
@@ -65,34 +65,36 @@ export function FloatingChat() {
   const [hasToken, setHasToken] = useState<boolean>(false);
 
   // Helper function to format suggestions for display
-  const formatSuggestionDisplay = useCallback((suggestion: any, symbol: string): string => {
-    if (typeof suggestion === 'string') {
-      return suggestion; // Legacy format
-    }
+  const formatSuggestionDisplay = useCallback(
+    (suggestion: any, symbol: string): string => {
+      if (typeof suggestion === 'string') {
+        return suggestion; // Legacy format
+      }
 
-    // Format based on symbol type and database object
-    switch (symbol) {
-      case '/':
-        return `/${suggestion.title || suggestion.name || 'Untitled Task'}`;
-      case '@':
-        return `@${suggestion.employeeId || suggestion.firstName + ' ' + suggestion.lastName || 'Unknown Person'}`;
-      case '#':
-        return `#${suggestion.title || suggestion.workOrderNumber || 'Unknown Work Order'}`;
-      case '+':
-        return `+${suggestion.title || suggestion.name || 'Unknown Project'}`;
-      case '&':
-        return `&${suggestion.name || suggestion.company || 'Unknown Client'}`;
-      default:
-        return suggestion.toString();
-    }
-  }, []);
+      // Format based on symbol type and database object
+      switch (symbol) {
+        case '/':
+          return `/${suggestion.title || suggestion.name || t('chatbot.autocomplete.untitledTask')}`;
+        case '@':
+          return `@${suggestion.employeeId || suggestion.firstName + ' ' + suggestion.lastName || t('chatbot.autocomplete.unknownPerson')}`;
+        case '#':
+          return `#${suggestion.title || suggestion.workOrderNumber || t('chatbot.autocomplete.unknownWorkOrder')}`;
+        case '+':
+          return `+${suggestion.title || suggestion.name || t('chatbot.autocomplete.unknownProject')}`;
+        case '&':
+          return `&${suggestion.name || suggestion.company || t('chatbot.autocomplete.unknownClient')}`;
+        default:
+          return suggestion.toString();
+      }
+    },
+    [t]
+  );
 
   // Helper function to get the replacement text when user selects a suggestion
   const formatSuggestionReplacement = useCallback(
-    (suggestion: any, symbol: string): string => 
+    (suggestion: any, symbol: string): string =>
       // Always return the formatted display text for replacement
-       formatSuggestionDisplay(suggestion, symbol)
-    ,
+      formatSuggestionDisplay(suggestion, symbol),
     [formatSuggestionDisplay]
   );
 
@@ -127,23 +129,16 @@ export function FloatingChat() {
           sessionStorage.getItem('jwt_access_token') || localStorage.getItem('jwt_access_token');
         if (!token) return;
 
-        const response = await fetch(
-          `${CONFIG.serverUrl}/api/v1/autocomplete?symbol=${encodeURIComponent(symbol)}&query=${encodeURIComponent(query)}&limit=5&token=${encodeURIComponent(token)}`,
-          {
-            method: 'GET',
-            headers: {
-              Accept: 'application/json',
-            },
-          }
-        );
+        const response = await axiosInstance.get('/api/v1/autocomplete', {
+          params: {
+            symbol,
+            query,
+            limit: 5,
+            token,
+          },
+        });
 
-        if (!response.ok) {
-          console.warn('[FloatingChat] Autocomplete request failed:', response.status);
-          return;
-        }
-
-        const data = await response.json();
-        console.log('[FloatingChat] Autocomplete response:', data);
+        const data = response.data;
 
         if (data.success && data.suggestions) {
           setAutocompleteSuggestions(data.suggestions);
@@ -177,10 +172,8 @@ export function FloatingChat() {
 
       // Check for symbol at cursor
       const symbolInfo = detectSymbolAtCursor(newValue, newCursorPos);
-      console.log('[FloatingChat] Symbol detection:', { symbolInfo, newValue, newCursorPos });
 
       if (symbolInfo) {
-        console.log('[FloatingChat] Fetching autocomplete for:', symbolInfo);
         fetchAutocompleteSuggestions(symbolInfo.symbol, symbolInfo.query);
         setAutocompleteAnchor(e.target);
       } else {
@@ -425,10 +418,10 @@ export function FloatingChat() {
                   sx={{ color: 'text.disabled' }}
                 />
                 <Typography variant="subtitle2" color="text.secondary">
-                  Start a conversation
+                  {t('chatbot.startConversation')}
                 </Typography>
                 <Typography variant="caption" color="text.disabled">
-                  Ask about work orders, kanban, or any field service questions
+                  {t('chatbot.conversationHint')}
                 </Typography>
 
                 {/* Symbol Guide */}
@@ -445,18 +438,13 @@ export function FloatingChat() {
                     color="primary.darker"
                     sx={{ fontWeight: 600, display: 'block', mb: 1 }}
                   >
-                    💡 Use symbols for precise data references:
+                    {t('chatbot.symbolGuide.title')}
                   </Typography>
                   <Stack spacing={0.5}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Chip
-                        label="@"
-                        size="small"
-                        color="primary"
-                        sx={{ minWidth: 24, height: 20 }}
-                      />
+                      <Chip label="/" size="small" color="info" sx={{ minWidth: 24, height: 20 }} />
                       <Typography variant="caption" color="text.secondary">
-                        Personnel (e.g., @John Doe)
+                        {t('chatbot.symbolGuide.tasks')}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -467,26 +455,21 @@ export function FloatingChat() {
                         sx={{ minWidth: 24, height: 20 }}
                       />
                       <Typography variant="caption" color="text.secondary">
-                        Work Orders (e.g., #WO-001)
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Chip label="/" size="small" color="info" sx={{ minWidth: 24, height: 20 }} />
-                      <Typography variant="caption" color="text.secondary">
-                        Tasks (e.g., /Plant Watering)
+                        {t('chatbot.symbolGuide.workOrders')}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Chip
-                        label="+"
+                        label="@"
                         size="small"
-                        color="success"
+                        color="primary"
                         sx={{ minWidth: 24, height: 20 }}
                       />
                       <Typography variant="caption" color="text.secondary">
-                        Projects (e.g., +Garden Project)
+                        {t('chatbot.symbolGuide.personnel')}
                       </Typography>
                     </Box>
+
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Chip
                         label="&"
@@ -495,7 +478,7 @@ export function FloatingChat() {
                         sx={{ minWidth: 24, height: 20 }}
                       />
                       <Typography variant="caption" color="text.secondary">
-                        Clients (e.g., &Acme Corp)
+                        {t('chatbot.symbolGuide.clients')}
                       </Typography>
                     </Box>
                   </Stack>
@@ -503,9 +486,10 @@ export function FloatingChat() {
 
                 <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent="center">
                   {[
-                    'Show me my recent work orders',
-                    "What's on my kanban board?",
-                    'List high priority work orders',
+                    t('chatbot.suggestions.createTask'),
+                    t('chatbot.suggestions.recentWorkOrders'),
+                    t('chatbot.suggestions.kanbanBoard'),
+                    t('chatbot.suggestions.highPriorityWorkOrders'),
                   ].map((prompt) => (
                     <Button
                       key={prompt}
@@ -543,7 +527,7 @@ export function FloatingChat() {
                       onClick={retryLastMessage}
                       disabled={isStreaming}
                     >
-                      Retry
+                      {t('chatbot.error.retry')}
                     </Button>
                   </Stack>
                 </Paper>
@@ -603,14 +587,19 @@ export function FloatingChat() {
                   }
                 }
               }}
-              placeholder="Ask me anything... Use @ for personnel, # for work orders, / for tasks, + for projects, & for clients"
+              placeholder={t('chatbot.input.placeholder')}
               disabled={isStreaming || !hasToken}
               inputRef={actualInputRef}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
                     {isStreaming ? (
-                      <IconButton onClick={stop} color="error" size="small" title="Stop">
+                      <IconButton
+                        onClick={stop}
+                        color="error"
+                        size="small"
+                        title={t('chatbot.input.stop')}
+                      >
                         <Iconify icon="solar:stop-bold" width={20} />
                       </IconButton>
                     ) : (
@@ -619,7 +608,7 @@ export function FloatingChat() {
                         disabled={!input.trim() || !hasToken}
                         color="primary"
                         size="small"
-                        title={hasToken ? 'Send' : 'Sign in to use AI'}
+                        title={hasToken ? t('chatbot.input.send') : t('chatbot.input.signInToUse')}
                       >
                         <Iconify icon="solar:plain-2-bold" width={20} />
                       </IconButton>
@@ -682,7 +671,7 @@ export function FloatingChat() {
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
                 <CircularProgress size={12} />
                 <Typography variant="caption" color="text.secondary">
-                  AI is thinking...
+                  {t('chatbot.input.aiThinking')}
                 </Typography>
               </Stack>
             )}

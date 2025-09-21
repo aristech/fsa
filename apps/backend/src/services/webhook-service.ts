@@ -10,7 +10,6 @@ export interface WebhookPayload {
   data: any;
   timestamp: string;
   tenantId: string;
-  apiVersion: string;
 }
 
 // ----------------------------------------------------------------------
@@ -23,7 +22,7 @@ export class WebhookService {
     tenantId: string,
     topic: string,
     data: any,
-    eventId?: string
+    eventId?: string,
   ): Promise<void> {
     try {
       // Find all active webhooks that listen to this topic
@@ -34,13 +33,15 @@ export class WebhookService {
       });
 
       if (webhooks.length === 0) {
-        console.log(`No active webhooks found for topic: ${topic} in tenant: ${tenantId}`);
+        console.log(
+          `No active webhooks found for topic: ${topic} in tenant: ${tenantId}`,
+        );
         return;
       }
 
       // Process webhooks in parallel
       const promises = webhooks.map((webhook) =>
-        this.processWebhook(webhook, topic, data, eventId)
+        this.processWebhook(webhook, topic, data, eventId),
       );
 
       await Promise.allSettled(promises);
@@ -56,7 +57,7 @@ export class WebhookService {
     webhook: IWebhook,
     topic: string,
     data: any,
-    eventId?: string
+    eventId?: string,
   ): Promise<void> {
     const payload: WebhookPayload = {
       id: eventId || crypto.randomUUID(),
@@ -64,7 +65,6 @@ export class WebhookService {
       data,
       timestamp: new Date().toISOString(),
       tenantId: webhook.tenantId,
-      apiVersion: webhook.apiVersion,
     };
 
     let attempt = 1;
@@ -87,7 +87,7 @@ export class WebhookService {
       if (attempt <= maxRetries) {
         // Exponential backoff: 2^attempt seconds
         const delay = Math.pow(2, attempt - 1) * 1000;
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
 
@@ -102,7 +102,9 @@ export class WebhookService {
         await Webhook.findByIdAndUpdate(webhook._id, {
           status: false,
         });
-        console.error(`Webhook ${webhook._id} disabled due to excessive failures`);
+        console.error(
+          `Webhook ${webhook._id} disabled due to excessive failures`,
+        );
       }
     }
   }
@@ -113,7 +115,7 @@ export class WebhookService {
   private static async deliverWebhook(
     webhook: IWebhook,
     payload: WebhookPayload,
-    attempt: number
+    attempt: number,
   ): Promise<boolean> {
     const startTime = Date.now();
     let httpStatus: number | undefined;
@@ -125,18 +127,18 @@ export class WebhookService {
       // Create signature for webhook security
       const signature = this.createSignature(
         JSON.stringify(payload),
-        webhook.secretKey
+        webhook.secretKey,
       );
 
       // Prepare headers
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'User-Agent': 'FSA-Webhook/1.0',
-        'X-FSA-Signature': signature,
-        'X-FSA-Topic': payload.topic,
-        'X-FSA-Webhook-Id': webhook._id,
-        'X-FSA-Delivery-Id': crypto.randomUUID(),
-        'X-FSA-Attempt': attempt.toString(),
+        "Content-Type": "application/json",
+        "User-Agent": "FSA-Webhook/1.0",
+        "X-FSA-Signature": signature,
+        "X-FSA-Topic": payload.topic,
+        "X-FSA-Webhook-Id": webhook._id,
+        "X-FSA-Delivery-Id": crypto.randomUUID(),
+        "X-FSA-Attempt": attempt.toString(),
         ...webhook.headers,
       };
 
@@ -145,7 +147,7 @@ export class WebhookService {
       const timeoutId = setTimeout(() => controller.abort(), webhook.timeoutMs);
 
       const response = await fetch(webhook.deliveryUrl, {
-        method: 'POST',
+        method: "POST",
         headers,
         body: JSON.stringify(payload),
         signal: controller.signal,
@@ -154,7 +156,9 @@ export class WebhookService {
       clearTimeout(timeoutId);
 
       httpStatus = response.status;
-      responseBody = await response.text().catch(() => 'Failed to read response');
+      responseBody = await response
+        .text()
+        .catch(() => "Failed to read response");
 
       // Consider 2xx status codes as successful
       success = response.status >= 200 && response.status < 300;
@@ -162,11 +166,10 @@ export class WebhookService {
       if (!success) {
         errorMessage = `HTTP ${response.status}: ${response.statusText}`;
       }
-
     } catch (error: any) {
-      errorMessage = error.message || 'Unknown error occurred';
+      errorMessage = error.message || "Unknown error occurred";
 
-      if (error.name === 'AbortError') {
+      if (error.name === "AbortError") {
         errorMessage = `Request timeout after ${webhook.timeoutMs}ms`;
       }
     }
@@ -195,10 +198,7 @@ export class WebhookService {
    * Create HMAC signature for webhook security
    */
   private static createSignature(payload: string, secret: string): string {
-    return crypto
-      .createHmac('sha256', secret)
-      .update(payload)
-      .digest('hex');
+    return crypto.createHmac("sha256", secret).update(payload).digest("hex");
   }
 
   /**
@@ -207,12 +207,12 @@ export class WebhookService {
   static verifySignature(
     payload: string,
     signature: string,
-    secret: string
+    secret: string,
   ): boolean {
     const expectedSignature = this.createSignature(payload, secret);
     return crypto.timingSafeEqual(
-      Buffer.from(signature, 'hex'),
-      Buffer.from(expectedSignature, 'hex')
+      Buffer.from(signature, "hex"),
+      Buffer.from(expectedSignature, "hex"),
     );
   }
 
@@ -228,19 +228,18 @@ export class WebhookService {
   }> {
     const webhook = await Webhook.findById(webhookId);
     if (!webhook) {
-      throw new Error('Webhook not found');
+      throw new Error("Webhook not found");
     }
 
     const testPayload: WebhookPayload = {
       id: crypto.randomUUID(),
-      topic: 'test.ping',
+      topic: "test.ping",
       data: {
-        message: 'This is a test webhook delivery',
+        message: "This is a test webhook delivery",
         timestamp: new Date().toISOString(),
       },
       timestamp: new Date().toISOString(),
       tenantId: webhook.tenantId,
-      apiVersion: webhook.apiVersion,
     };
 
     const startTime = Date.now();
@@ -252,18 +251,18 @@ export class WebhookService {
     try {
       const signature = this.createSignature(
         JSON.stringify(testPayload),
-        webhook.secretKey
+        webhook.secretKey,
       );
 
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'User-Agent': 'FSA-Webhook/1.0',
-        'X-FSA-Signature': signature,
-        'X-FSA-Topic': 'test.ping',
-        'X-FSA-Webhook-Id': webhook._id,
-        'X-FSA-Delivery-Id': crypto.randomUUID(),
-        'X-FSA-Attempt': '1',
-        'X-FSA-Test': 'true',
+        "Content-Type": "application/json",
+        "User-Agent": "FSA-Webhook/1.0",
+        "X-FSA-Signature": signature,
+        "X-FSA-Topic": "test.ping",
+        "X-FSA-Webhook-Id": webhook._id,
+        "X-FSA-Delivery-Id": crypto.randomUUID(),
+        "X-FSA-Attempt": "1",
+        "X-FSA-Test": "true",
         ...webhook.headers,
       };
 
@@ -271,7 +270,7 @@ export class WebhookService {
       const timeoutId = setTimeout(() => controller.abort(), webhook.timeoutMs);
 
       const response = await fetch(webhook.deliveryUrl, {
-        method: 'POST',
+        method: "POST",
         headers,
         body: JSON.stringify(testPayload),
         signal: controller.signal,
@@ -280,17 +279,18 @@ export class WebhookService {
       clearTimeout(timeoutId);
 
       httpStatus = response.status;
-      responseBody = await response.text().catch(() => 'Failed to read response');
+      responseBody = await response
+        .text()
+        .catch(() => "Failed to read response");
       success = response.status >= 200 && response.status < 300;
 
       if (!success) {
         errorMessage = `HTTP ${response.status}: ${response.statusText}`;
       }
-
     } catch (error: any) {
-      errorMessage = error.message || 'Unknown error occurred';
+      errorMessage = error.message || "Unknown error occurred";
 
-      if (error.name === 'AbortError') {
+      if (error.name === "AbortError") {
         errorMessage = `Request timeout after ${webhook.timeoutMs}ms`;
       }
     }
@@ -301,7 +301,7 @@ export class WebhookService {
     await WebhookLog.create({
       webhookId: webhook._id,
       tenantId: webhook.tenantId,
-      topic: 'test.ping',
+      topic: "test.ping",
       payload: testPayload,
       deliveryUrl: webhook.deliveryUrl,
       httpStatus,
@@ -326,20 +326,20 @@ export class WebhookService {
 
 // Available webhook topics
 export const WEBHOOK_TOPICS = [
-  'work_order.created',
-  'work_order.updated',
-  'work_order.deleted',
-  'work_order.status_changed',
-  'task.created',
-  'task.updated',
-  'task.deleted',
-  'task.status_changed',
-  'user.created',
-  'user.updated',
-  'user.deleted',
-  'client.created',
-  'client.updated',
-  'client.deleted',
+  "work_order.created",
+  "work_order.updated",
+  "work_order.deleted",
+  "work_order.status_changed",
+  "task.created",
+  "task.updated",
+  "task.deleted",
+  "task.status_changed",
+  "user.created",
+  "user.updated",
+  "user.deleted",
+  "client.created",
+  "client.updated",
+  "client.deleted",
 ] as const;
 
-export type WebhookTopic = typeof WEBHOOK_TOPICS[number];
+export type WebhookTopic = (typeof WEBHOOK_TOPICS)[number];

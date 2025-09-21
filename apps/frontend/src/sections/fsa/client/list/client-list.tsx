@@ -29,6 +29,7 @@ import {
   DialogContentText,
 } from '@mui/material';
 
+import { useTranslate } from 'src/locales/use-locales';
 import axiosInstance, { fetcher, endpoints } from 'src/lib/axios';
 
 import { toast } from 'src/components/snackbar';
@@ -66,6 +67,7 @@ type Client = {
 // ----------------------------------------------------------------------
 
 export function ClientList() {
+  const { t } = useTranslate('dashboard');
   const popover = usePopover();
   const router = useRouter();
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -119,13 +121,13 @@ export function ClientList() {
     try {
       setIsDeleting(true);
       await axiosInstance.delete(endpoints.fsa.clients.details(selectedClient._id));
-      toast.success('Client deleted successfully');
+      toast.success(t('clients.clientDeleted'));
       mutate(); // Refresh the list
       setDeleteDialogOpen(false);
       setSelectedClient(null);
     } catch (deleteError) {
       console.error('Error deleting client:', deleteError);
-      toast.error('Failed to delete client');
+      toast.error(t('clients.failedToDelete'));
     } finally {
       setIsDeleting(false);
     }
@@ -159,13 +161,13 @@ export function ClientList() {
           <Table sx={{ minWidth: 800 }}>
             <TableHead>
               <TableRow>
-                <TableCell>Client</TableCell>
-                <TableCell>Company</TableCell>
-                <TableCell>VAT Number</TableCell>
-                <TableCell>Contact</TableCell>
-                <TableCell>Location</TableCell>
-                <TableCell>Created</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell>{t('clients.table.client')}</TableCell>
+                <TableCell>{t('clients.table.company')}</TableCell>
+                <TableCell>{t('clients.table.vatNumber')}</TableCell>
+                <TableCell>{t('clients.table.contact')}</TableCell>
+                <TableCell>{t('clients.table.location')}</TableCell>
+                <TableCell>{t('clients.table.created')}</TableCell>
+                <TableCell align="right">{t('clients.table.actions')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -255,12 +257,12 @@ export function ClientList() {
       >
         <MenuItem onClick={() => selectedClient && handleEditClient(selectedClient)}>
           <Iconify icon="solar:pen-bold" sx={{ mr: 2 }} />
-          Edit
+          {t('clients.table.edit')}
         </MenuItem>
 
         <MenuItem onClick={() => selectedClient && handleViewWorkOrders(selectedClient)}>
           <Iconify icon="solar:list-bold" sx={{ mr: 2 }} />
-          Work Orders
+          {t('clients.table.workOrders')}
         </MenuItem>
 
         <MenuItem
@@ -268,7 +270,7 @@ export function ClientList() {
           sx={{ color: 'error.main' }}
         >
           <Iconify icon="solar:trash-bin-trash-bold" sx={{ mr: 2 }} />
-          Delete
+          {t('clients.table.delete')}
         </MenuItem>
       </Popover>
 
@@ -279,16 +281,15 @@ export function ClientList() {
         aria-labelledby="delete-dialog-title"
         aria-describedby="delete-dialog-description"
       >
-        <DialogTitle id="delete-dialog-title">Delete Client</DialogTitle>
+        <DialogTitle id="delete-dialog-title">{t('clients.deleteClient')}</DialogTitle>
         <DialogContent>
           <DialogContentText id="delete-dialog-description">
-            Are you sure you want to delete &quot;{selectedClient?.name}&quot;? This action cannot
-            be undone.
+            {t('clients.deleteConfirmMessage', { name: selectedClient?.name })}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>
-            Cancel
+            {t('clients.cancel')}
           </Button>
           <Button
             onClick={confirmDelete}
@@ -297,7 +298,7 @@ export function ClientList() {
             disabled={isDeleting}
             startIcon={isDeleting ? <CircularProgress size={16} /> : null}
           >
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {isDeleting ? t('clients.deleting') : t('clients.delete')}
           </Button>
         </DialogActions>
       </Dialog>

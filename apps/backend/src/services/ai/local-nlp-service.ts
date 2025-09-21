@@ -156,6 +156,8 @@ export class LocalNLPService {
               tenant_id: tenantId,
             };
 
+      console.log("[LocalNLP] Sending payload to NLP server:", payload);
+
       const response = await fetch(`${this.nlpServerUrl}/process`, {
         method: "POST",
         headers: {
@@ -165,7 +167,15 @@ export class LocalNLPService {
       });
 
       if (!response.ok) {
-        throw new Error(`NLP server error: ${response.status}`);
+        let errorDetails = `Status: ${response.status}`;
+        try {
+          const errorText = await response.text();
+          errorDetails += `, Response: ${errorText}`;
+        } catch (e) {
+          errorDetails += `, Could not read error response`;
+        }
+        console.error(`[LocalNLP] Server error details: ${errorDetails}`);
+        throw new Error(`NLP server error: ${response.status} - ${errorDetails}`);
       }
 
       const result = await response.json();

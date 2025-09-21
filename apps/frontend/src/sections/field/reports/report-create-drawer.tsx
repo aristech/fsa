@@ -484,27 +484,18 @@ export function ReportCreateDrawer({
   useEffect(() => {
     const fetchTaskMaterials = async () => {
       if (formData.taskIds?.[0]) {
-        console.log('Materials available:', materials.length);
-
         if (materials.length === 0) {
-          console.log('Materials not yet loaded, will retry when available');
           return;
         }
         try {
           const taskId = formData.taskIds[0];
-          console.log('Fetching materials for task:', taskId);
           const response = await axiosInstance.get(endpoints.fsa.tasks.materials.list(taskId));
           const taskMaterials = response.data?.data || response.data || [];
-
-          console.log('Task materials received:', taskMaterials);
-          console.log('Available materials to match against:', materials.slice(0, 3)); // First 3 for debugging
 
           if (Array.isArray(taskMaterials) && taskMaterials.length > 0) {
             // Map task materials to the format expected by selectedMaterials
             const materialsToAdd = taskMaterials
               .map((taskMaterial: any) => {
-                console.log('Processing task material:', taskMaterial);
-
                 // Try different possible material ID fields
                 const possibleIds = [
                   taskMaterial.materialId,
@@ -514,14 +505,10 @@ export function ReportCreateDrawer({
                   taskMaterial.material?.id,
                 ].filter(Boolean);
 
-                console.log('Looking for material with IDs:', possibleIds);
-
                 // Find the material in our materials list
                 const materialInfo = materials.find((m) =>
                   possibleIds.some((id) => m.value === id)
                 );
-
-                console.log('Found material info:', materialInfo);
 
                 if (materialInfo) {
                   return {
@@ -533,19 +520,13 @@ export function ReportCreateDrawer({
               })
               .filter(Boolean);
 
-            console.log('Materials to add:', materialsToAdd);
-
             // Only set if we haven't already populated materials (avoid overriding manual selections)
             setSelectedMaterials((prev) => {
               if (prev.length === 0 && materialsToAdd.length > 0) {
-                console.log('Setting selected materials:', materialsToAdd);
                 return materialsToAdd;
               }
-              console.log('Keeping existing materials:', prev);
               return prev;
             });
-          } else {
-            console.log('No task materials found or invalid format');
           }
         } catch (error) {
           console.error('Error fetching task materials:', error);
@@ -553,11 +534,6 @@ export function ReportCreateDrawer({
           // Fallback: check if the task itself has materials embedded
           const selectedTask = allTasks.find((t) => t.value === formData.taskIds?.[0]);
           if (selectedTask?.task?.materials) {
-            console.log(
-              'Trying fallback - task has embedded materials:',
-              selectedTask.task.materials
-            );
-
             const embeddedMaterials = Array.isArray(selectedTask.task.materials)
               ? selectedTask.task.materials
               : [];
@@ -587,7 +563,6 @@ export function ReportCreateDrawer({
               .filter(Boolean);
 
             if (materialsToAdd.length > 0) {
-              console.log('Setting materials from task fallback:', materialsToAdd);
               setSelectedMaterials((prev) => (prev.length === 0 ? materialsToAdd : prev));
             }
           }
@@ -597,11 +572,6 @@ export function ReportCreateDrawer({
 
     fetchTaskMaterials();
   }, [formData.taskIds, materials, allTasks]);
-
-  // Debug selectedMaterials changes
-  useEffect(() => {
-    console.log('selectedMaterials changed:', selectedMaterials);
-  }, [selectedMaterials]);
 
   // Set report date with current time when drawer opens
   useEffect(() => {

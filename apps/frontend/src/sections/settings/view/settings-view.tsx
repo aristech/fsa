@@ -9,6 +9,8 @@ import CardHeader from '@mui/material/CardHeader';
 import Typography from '@mui/material/Typography';
 import CardContent from '@mui/material/CardContent';
 
+import { useTranslate } from 'src/locales/use-locales';
+
 import { Iconify } from 'src/components/iconify';
 
 import { AISettingsView } from 'src/sections/settings/ai-settings';
@@ -19,6 +21,8 @@ type Props = {
 };
 
 export function SettingsView({ webhooksHref, apiKeysHref }: Props) {
+  const { t } = useTranslate('dashboard');
+
   return (
     <Grid container spacing={3}>
       {/* AI Settings */}
@@ -28,10 +32,13 @@ export function SettingsView({ webhooksHref, apiKeysHref }: Props) {
 
       <Grid size={{ xs: 12, md: 6 }}>
         <Card>
-          <CardHeader title="Webhooks" subheader="Create and manage outbound webhooks" />
+          <CardHeader
+            title={t('settings.webhooks.title')}
+            subheader={t('settings.webhooks.subtitle')}
+          />
           <CardContent>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Subscribe to topics and deliver events to your HTTP endpoints.
+              {t('settings.webhooks.description')}
             </Typography>
             <Button
               component={Link}
@@ -39,7 +46,7 @@ export function SettingsView({ webhooksHref, apiKeysHref }: Props) {
               variant="contained"
               startIcon={<Iconify icon="solar:webhook-bold" />}
             >
-              Manage Webhooks
+              {t('settings.webhooks.manageWebhooks')}
             </Button>
           </CardContent>
         </Card>
@@ -47,10 +54,13 @@ export function SettingsView({ webhooksHref, apiKeysHref }: Props) {
 
       <Grid size={{ xs: 12, md: 6 }}>
         <Card>
-          <CardHeader title="API Keys" subheader="Create REST API keys" />
+          <CardHeader
+            title={t('settings.apiKeys.title')}
+            subheader={t('settings.apiKeys.subtitle')}
+          />
           <CardContent>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Generate keys for programmatic access with scoped permissions.
+              {t('settings.apiKeys.description')}
             </Typography>
             <Button
               component={Link}
@@ -58,7 +68,7 @@ export function SettingsView({ webhooksHref, apiKeysHref }: Props) {
               variant="contained"
               startIcon={<Iconify icon="solar:key-bold" />}
             >
-              Manage API Keys
+              {t('settings.apiKeys.manageApiKeys')}
             </Button>
           </CardContent>
         </Card>

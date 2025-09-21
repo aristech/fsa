@@ -11,9 +11,16 @@ const endpoints = {
 };
 
 export const aiSettingsApi = {
-  get: (): Promise<AISettingsResponse> => axiosInstance.get(endpoints.get),
-  update: (data: AISettingsFormData): Promise<AISettingsResponse> =>
-    axiosInstance.put(endpoints.update, data),
-  test: (data: { openaiApiKey: string; preferredModel: string }): Promise<AISettingsResponse> =>
-    axiosInstance.post(endpoints.test, data),
+  get: async (): Promise<AISettingsResponse> => {
+    const response = await axiosInstance.get(endpoints.get);
+    return response.data;
+  },
+  update: async (data: AISettingsFormData): Promise<AISettingsResponse> => {
+    const response = await axiosInstance.put(endpoints.update, data);
+    return response.data;
+  },
+  test: async (data: { openaiApiKey: string; preferredModel: string }): Promise<AISettingsResponse> => {
+    const response = await axiosInstance.post(endpoints.test, data);
+    return response.data;
+  },
 };

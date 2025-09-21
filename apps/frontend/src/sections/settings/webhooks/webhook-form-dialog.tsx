@@ -25,7 +25,6 @@ const schema = zod.object({
   status: zod.boolean(),
   topics: zod.array(zod.string()).min(1, 'Select at least one topic'),
   deliveryUrl: zod.string().url('Valid HTTPS URL is required'),
-  apiVersion: zod.string().min(1, 'API Version is required'),
   maxRetries: zod.number().min(0).max(10).optional(),
   timeoutMs: zod.number().min(1000).max(30000).optional(),
 });
@@ -40,8 +39,6 @@ type Props = {
   onClose: () => void;
   onSubmit: (data: WebhookFormData) => void;
 };
-
-const API_VERSIONS = ['2024-01-01', '2023-10-01', '2023-09-01'];
 
 export function WebhookFormDialog({ open, webhook, onClose, onSubmit }: Props) {
   const [topics, setTopics] = useState<string[]>([]);
@@ -59,7 +56,6 @@ export function WebhookFormDialog({ open, webhook, onClose, onSubmit }: Props) {
       status: true,
       topics: [],
       deliveryUrl: '',
-      apiVersion: API_VERSIONS[0],
       maxRetries: 3,
       timeoutMs: 10000,
     },
@@ -105,7 +101,6 @@ export function WebhookFormDialog({ open, webhook, onClose, onSubmit }: Props) {
         status: webhook.status ?? true,
         topics: webhook.topics || [],
         deliveryUrl: webhook.deliveryUrl || '',
-        apiVersion: webhook.apiVersion || API_VERSIONS[0],
         maxRetries: webhook.maxRetries ?? 3,
         timeoutMs: webhook.timeoutMs ?? 10000,
       });
@@ -115,7 +110,6 @@ export function WebhookFormDialog({ open, webhook, onClose, onSubmit }: Props) {
         status: true,
         topics: [],
         deliveryUrl: '',
-        apiVersion: API_VERSIONS[0],
         maxRetries: 3,
         timeoutMs: 10000,
       });
@@ -233,26 +227,6 @@ export function WebhookFormDialog({ open, webhook, onClose, onSubmit }: Props) {
                 }
                 fullWidth
                 sx={{ mt: 2 }}
-              />
-            )}
-          />
-          <Controller
-            name="apiVersion"
-            control={control}
-            render={({ field }) => (
-              <Autocomplete
-                options={API_VERSIONS}
-                value={field.value}
-                onChange={(_, v) => field.onChange(v)}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="API Version"
-                    error={!!errors.apiVersion}
-                    helperText={errors.apiVersion?.message}
-                    sx={{ mt: 2 }}
-                  />
-                )}
               />
             )}
           />

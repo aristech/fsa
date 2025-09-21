@@ -10,7 +10,6 @@ export interface IWebhook {
   deliveryUrl: string;
   status: boolean;
   topics: string[];
-  apiVersion: string;
   secretKey: string;
   lastTriggeredAt?: Date;
   failureCount: number;
@@ -46,16 +45,16 @@ const WebhookSchema = new Schema<IWebhook>(
       required: [true, "Delivery URL is required"],
       trim: true,
       validate: {
-        validator: function(v: string) {
+        validator: function (v: string) {
           try {
             const url = new URL(v);
-            return url.protocol === 'https:';
+            return url.protocol === "https:";
           } catch {
             return false;
           }
         },
-        message: 'Delivery URL must be a valid HTTPS URL'
-      }
+        message: "Delivery URL must be a valid HTTPS URL",
+      },
     },
     status: {
       type: Boolean,
@@ -65,16 +64,11 @@ const WebhookSchema = new Schema<IWebhook>(
       type: [String],
       required: [true, "At least one topic is required"],
       validate: {
-        validator: function(v: string[]) {
+        validator: function (v: string[]) {
           return v && v.length > 0;
         },
-        message: 'At least one topic must be specified'
-      }
-    },
-    apiVersion: {
-      type: String,
-      required: [true, "API version is required"],
-      default: "2024-01-01",
+        message: "At least one topic must be specified",
+      },
     },
     secretKey: {
       type: String,
@@ -108,7 +102,7 @@ const WebhookSchema = new Schema<IWebhook>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // ----------------------------------------------------------------------
@@ -120,4 +114,5 @@ WebhookSchema.index({ topics: 1 });
 
 // ----------------------------------------------------------------------
 
-export const Webhook = models.Webhook || model<IWebhook>("Webhook", WebhookSchema);
+export const Webhook =
+  models.Webhook || model<IWebhook>("Webhook", WebhookSchema);

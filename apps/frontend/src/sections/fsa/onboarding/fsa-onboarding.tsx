@@ -41,7 +41,7 @@ export function FsaOnboarding({ tenantName }: Props) {
         actionLabel: t('onboarding.action_add_client', 'Add client'),
       },
       {
-        icon: <Iconify icon="mingcute:briefcase-line" />,
+        icon: <Iconify icon="mingcute:briefcase-lin" />,
         title: t('onboarding.step_work_order_title', 'Create your first work order'),
         desc: t(
           'onboarding.step_work_order_desc',

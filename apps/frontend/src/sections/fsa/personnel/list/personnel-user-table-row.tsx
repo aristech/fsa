@@ -15,7 +15,7 @@ import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
-import { useTenantAPI } from 'src/hooks/use-tenant';
+import axiosInstance from 'src/lib/axios';
 
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
@@ -41,25 +41,13 @@ export function PersonnelUserTableRow({
   onEdit,
 }: Props) {
   const confirmDialog = useBoolean();
-  const { getURL } = useTenantAPI();
 
   const handleToggleActive = async (checked: boolean) => {
     try {
-      const response = await fetch(getURL(`/api/v1/personnel/${row.id}/toggle-active`), {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      await axiosInstance.put(`/api/v1/personnel/${row.id}/toggle-active`);
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log('Personnel status updated:', result);
-        // You might want to trigger a refresh of the data here
-        // or update the local state
-      } else {
-        console.error('Failed to update personnel status');
-      }
+      // You might want to trigger a refresh of the data here
+      // or update the local state
     } catch (error) {
       console.error('Error updating personnel status:', error);
     }

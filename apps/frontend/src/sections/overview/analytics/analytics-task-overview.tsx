@@ -1,13 +1,10 @@
 'use client';
 
 import type { CardProps } from '@mui/material/Card';
-import type { ChartOptions } from 'src/components/chart';
 
 import Card from '@mui/material/Card';
 import CardHeader from '@mui/material/CardHeader';
 import { useTheme, alpha as hexAlpha } from '@mui/material/styles';
-
-import { useTranslate } from 'src/locales/use-locales';
 
 import { Chart, useChart } from 'src/components/chart';
 
@@ -23,20 +20,19 @@ type Props = CardProps & {
       name: string;
       data: number[];
     }[];
-    options?: ChartOptions & { meta?: Record<string, any> };
+    options?: any;
   };
 };
 
-export function AnalyticsWebsiteVisits({ title, subheader, chart, sx, ...other }: Props) {
+export function AnalyticsTaskOverview({ title, subheader, chart, sx, ...other }: Props) {
   const theme = useTheme();
-  const { t } = useTranslate('common');
 
   const chartColors = chart.colors ?? [
-    hexAlpha(theme.palette.primary.dark, 0.8),
+    hexAlpha(theme.palette.primary.main, 0.8),
+    hexAlpha(theme.palette.success.main, 0.8),
     hexAlpha(theme.palette.warning.main, 0.8),
+    hexAlpha(theme.palette.error.main, 0.8),
   ];
-
-  const meta = (chart.options as any)?.meta || {};
 
   const chartOptions = useChart({
     colors: chartColors,
@@ -45,22 +41,9 @@ export function AnalyticsWebsiteVisits({ title, subheader, chart, sx, ...other }
     legend: { show: true },
     tooltip: {
       y: {
-        formatter: (value: number, { seriesIndex, dataPointIndex }: any) => {
-          // If meta task names provided, render list; else use unit label
-          const unit = t('analytics.visits', { defaultValue: 'visits' });
-          const names =
-            seriesIndex === 0
-              ? meta.createdTaskNames?.[dataPointIndex]
-              : meta.completedTaskNames?.[dataPointIndex];
-          if (Array.isArray(names) && names.length > 0) {
-            const list = `\n- ${names.slice(0, 5).join('\n- ')}${names.length > 5 ? '\n…' : ''}`;
-            const label =
-              seriesIndex === 0
-                ? t('analytics.created', { defaultValue: 'Created' })
-                : t('analytics.completed', { defaultValue: 'Completed' });
-            return `${value} ${label}:${list}`;
-          }
-          return `${value} ${unit}`;
+        formatter: (value: number, { seriesIndex }: any) => {
+          const seriesName = chart.series[seriesIndex]?.name || '';
+          return `${value} ${seriesName.toLowerCase()}`;
         },
       },
     },

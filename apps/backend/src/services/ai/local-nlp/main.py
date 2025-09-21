@@ -339,8 +339,9 @@ class LocalNLPProcessor:
         if q:
             return q.group(1).strip()
 
-        # 2) Look for "with title" or "title is" patterns
+        # 2) Look for "with title" or "title is" patterns (English + Greek)
         title_patterns = [
+            # English patterns
             r'with\s+title\s+(.+?)(?:\s+(?:for|in|with|due|at|from|by|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|$)|$)',
             r'title\s+is\s+(.+?)(?:\s+(?:for|in|with|due|at|from|by|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|$)|$)',
             r'title\s*:\s*(.+?)(?:\s+(?:for|in|with|due|at|from|by|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|$)|$)',
@@ -348,6 +349,13 @@ class LocalNLPProcessor:
             r'title\s+is\s+(.+?)$',    # Simple pattern for end of string
             r'\btitle\s+(.+?)$',       # Simple "title" at end of string
             r'\btitle\s+(.+?)(?:\s+(?:for|in|with|due|at|from|by|από|για|σε|με|μέχρι|στις|στο|στη|έως|ως|$)|$)',  # "title" with context
+            # Greek patterns
+            r'με\s+τίτλο\s+(.+?)(?:\s+(?:για|σε|με|μέχρι|στις|στο|στη|έως|ως|από|$)|$)',  # "με τίτλο" (with title)
+            r'τίτλος\s+(.+?)(?:\s+(?:για|σε|με|μέχρι|στις|στο|στη|έως|ως|από|$)|$)',      # "τίτλος" (title)
+            r'με\s+τίτλο\s+(.+?)$',    # "με τίτλο" at end of string
+            r'τίτλος\s*:\s*(.+?)$',    # "τίτλος:" at end of string
+            r'που\s+λέγεται\s+(.+?)(?:\s+(?:για|σε|με|μέχρι|στις|στο|στη|έως|ως|από|$)|$)', # "που λέγεται" (that is called)
+            r'με\s+όνομα\s+(.+?)(?:\s+(?:για|σε|με|μέχρι|στις|στο|στη|έως|ως|από|$)|$)',    # "με όνομα" (with name)
         ]
 
         for pattern in title_patterns:
@@ -362,7 +370,7 @@ class LocalNLPProcessor:
         # 3) Remove entities
         clean = text
         for e in sorted(entities, key=lambda x: x.start, reverse=True):
-            clean = clean[:e.start] + clean[e.end():]
+            clean = clean[:e.start] + clean[e.end:]
 
         # 4) Strip date/time in both languages
         clean = self._strip_dates_times(clean)
@@ -587,10 +595,15 @@ class LocalNLPProcessor:
         if intent != Intent.UNKNOWN:
             conf += 0.45
         conf += min(0.35, len(entities) * 0.12)
-        if re.search(r'\btask\b', text) or re.search(r'\bεργασία\b', text):
+        # Task/project keywords (EN/GR)
+        if re.search(r'\btask\b', text) or re.search(r'\b(εργασία|έργο)\b', text):
             conf += 0.12
+        # Action verbs (EN/GR)
         if re.search(r'(create|add|make|schedule|update|modify|δημιούργησε|πρόσθεσε|φτιάξε|προγραμμάτισε|ενημέρωσε)', text):
             conf += 0.08
+        # Title patterns indicate structured input (boost confidence)
+        if re.search(r'(with\s+title|title\s+is|με\s+τίτλο|τίτλος)', text, re.IGNORECASE):
+            conf += 0.15
         return min(1.0, conf)
 
 def main():

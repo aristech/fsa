@@ -58,13 +58,8 @@ export function KanbanView() {
   // Listen for kanban refresh events from AI
   useEffect(() => {
     const handleKanbanRefresh = (event: CustomEvent) => {
-      console.log('[KanbanView] Refresh event received:', event.detail);
-
       // Trigger SWR revalidation to refresh the kanban data
       mutate('/api/v1/kanban');
-
-      // Show a subtle notification
-      console.log(`[KanbanView] Refreshing kanban after ${event.detail.type}`);
     };
 
     window.addEventListener('kanban-refresh', handleKanbanRefresh as EventListener);

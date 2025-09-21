@@ -211,18 +211,6 @@ export function FsaTechnicianStatus() {
           const isOnline = isUserOnline(person.user);
           const withinWorkHours = isWithinWorkHours(person.availability);
 
-          // Debug logging for troubleshooting
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`Status Debug for ${person.user?.name || person._id}:`, {
-              lastLoginAt: person.user?.lastLoginAt,
-              isOnlineField: person.user?.isOnline,
-              lastSeenAt: person.user?.lastSeenAt,
-              isOnline,
-              withinWorkHours,
-              availability: person.availability,
-            });
-          }
-
           if (!withinWorkHours) {
             status = 'unavailable';
             statusDetails = 'Outside work hours';

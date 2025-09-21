@@ -5,6 +5,8 @@ import { useBoolean } from 'minimal-shared/hooks';
 
 import { Chip, Alert, Stack, Container, Typography } from '@mui/material';
 
+import { useTranslate } from 'src/locales/use-locales';
+
 import { PersonnelList } from '../personnel-list';
 import { PersonnelFilters } from '../personnel-filters';
 import { PersonnelFiltersButton } from '../personnel-filters-button';
@@ -13,6 +15,7 @@ import { PersonnelCreateView } from '../../create/personnel-create-view';
 // ----------------------------------------------------------------------
 
 export function PersonnelListView() {
+  const { t } = useTranslate('dashboard');
   const openFilters = useBoolean();
   const openCreate = useBoolean();
 
@@ -50,9 +53,9 @@ export function PersonnelListView() {
         >
           <Stack direction="row" alignItems="center" justifyContent="space-between">
             <Stack spacing={1}>
-              <Typography variant="h4">Personnel Management</Typography>
+              <Typography variant="h4">{t('personnel.title')}</Typography>
               <Typography variant="body2" color="text.secondary">
-                Manage your field service personnel, roles, and assignments
+                {t('personnel.subtitle')}
               </Typography>
             </Stack>
 
@@ -70,24 +73,24 @@ export function PersonnelListView() {
           {canReset && (
             <Alert severity="info" sx={{ mb: 2 }}>
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                <Typography variant="subtitle2">Filters applied:</Typography>
+                <Typography variant="subtitle2">{t('personnel.filtersApplied')}</Typography>
                 {filters.name && (
                   <Chip
-                    label={`Name: ${filters.name}`}
+                    label={`${t('personnel.filters.name')}: ${filters.name}`}
                     size="small"
                     onDelete={() => handleFilters('name', '')}
                   />
                 )}
                 {filters.role && (
                   <Chip
-                    label={`Role: ${filters.role}`}
+                    label={`${t('personnel.filters.role')}: ${filters.role}`}
                     size="small"
                     onDelete={() => handleFilters('role', '')}
                   />
                 )}
                 {filters.status !== 'all' && (
                   <Chip
-                    label={`Status: ${filters.status}`}
+                    label={`${t('personnel.filters.status')}: ${filters.status}`}
                     size="small"
                     onDelete={() => handleFilters('status', 'all')}
                   />
