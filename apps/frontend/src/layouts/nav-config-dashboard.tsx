@@ -49,6 +49,7 @@ const ICONS = {
   scheduling: icon('ic-calendar'),
   reports: icon('ic-analytics'),
   materials: icon('ic-job'),
+  docs: icon('ic-file'),
 };
 
 // ----------------------------------------------------------------------
@@ -197,6 +198,12 @@ export function useNavData(): NavSectionProps['data'] {
             { title: 'API Keys', path: paths.dashboard.settings.apiKeys },
             { title: 'AI Settings', path: paths.dashboard.settings.ai },
           ],
+        },
+        {
+          title: t('docs.title'),
+          path: '/docs',
+          icon: ICONS.docs,
+          caption: t('docs.caption'),
         },
       ],
     },

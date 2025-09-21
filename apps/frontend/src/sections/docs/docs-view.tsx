@@ -17,144 +17,455 @@ import ListItemText from '@mui/material/ListItemText';
 
 import { paths } from 'src/routes/paths';
 
+import { useTranslate } from 'src/locales';
+
 export function DocsView() {
+  const { t } = useTranslate('docs');
+
   const quickLinks = useMemo(
     () => [
-      { label: 'Setup Environments', href: '/docs#environments' },
-      { label: 'Tenant & Permissions', href: '/docs#tenants' },
-      { label: 'Webhooks', href: '/docs#webhooks' },
-      { label: 'API Keys', href: '/docs#api-keys' },
-      { label: 'SoftOne Integration', href: '/docs#softone' },
+      { label: t('quickLinks.gettingStarted'), href: '/docs#getting-started' },
+      { label: t('quickLinks.tasks'), href: '/docs#tasks' },
+      { label: t('quickLinks.workOrders'), href: '/docs#work-orders' },
+      { label: t('quickLinks.reports'), href: '/docs#reports' },
+      { label: t('quickLinks.personnel'), href: '/docs#personnel' },
+      { label: t('quickLinks.aiAssistant'), href: '/docs#ai-assistant' },
+      { label: t('quickLinks.fieldApp'), href: '/docs#field-app' },
+      { label: t('quickLinks.adminSetup'), href: '/docs#admin-setup' },
     ],
-    []
+    [t]
   );
 
   return (
     <Stack spacing={3} sx={{ p: 3 }}>
       <Box>
         <Typography variant="h3" gutterBottom>
-          Documentation
+          {t('title')}
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Find what you need to use {process.env.NEXT_PUBLIC_APP_NAME ?? 'the app'} effectively.
-          This page contains beginner-friendly guides and developer references, including connecting
-          third parties like SoftOne.
+          {t('subtitle')}
         </Typography>
       </Box>
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 4 }}>
-          <Card>
-            <CardHeader title="Quick links" />
-            <CardContent>
-              <List dense>
-                {quickLinks.map((l) => (
-                  <ListItem key={l.href} component={Link} href={l.href} sx={{ px: 0 }}>
-                    <ListItemText primary={l.label} />
-                  </ListItem>
-                ))}
-              </List>
-            </CardContent>
-          </Card>
+          <Box sx={{ position: 'sticky', top: 24 }}>
+            <Card>
+              <CardHeader title={t('quickNavigation')} />
+              <CardContent>
+                <List dense>
+                  {quickLinks.map((l) => (
+                    <ListItem key={l.href} component={Link} href={l.href} sx={{ px: 0 }}>
+                      <ListItemText primary={l.label} />
+                    </ListItem>
+                  ))}
+                </List>
+              </CardContent>
+            </Card>
+          </Box>
         </Grid>
 
         <Grid size={{ xs: 12, md: 8 }}>
-          <Card id="environments">
-            <CardHeader title="Setup Environments" subheader="Local, staging, and production" />
+          {/* Getting Started Guide */}
+          <Card id="getting-started">
+            <CardHeader
+              title={t('gettingStarted.title')}
+              subheader={t('gettingStarted.subtitle')}
+            />
             <CardContent>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                - Frontend env file: apps/frontend/env.local.example → create env.local and fill
-                server URL and public config.
-                <br />- Backend env file: apps/backend/env.example → create .env with DB, JWT, mail
-                settings.
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('gettingStarted.step1.title')}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                See: PM2-SETUP.md, FIELD_ENVIRONMENT_PLAN.md, FIELD_ENVIRONMENT_STATUS.md
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('gettingStarted.step1.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('gettingStarted.step1.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('gettingStarted.step2.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('gettingStarted.step2.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('gettingStarted.step2.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('gettingStarted.step3.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('gettingStarted.step3.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('gettingStarted.step3.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
               </Typography>
             </CardContent>
           </Card>
 
-          <Card id="tenants" sx={{ mt: 3 }}>
-            <CardHeader title="Tenants & Permissions" subheader="Multi-tenant isolation & RBAC" />
+          {/* Tasks Management */}
+          <Card id="tasks" sx={{ mt: 3 }}>
+            <CardHeader title={t('tasks.title')} subheader={t('tasks.subtitle')} />
             <CardContent>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                - Tenants isolate data; user role and permissions determine access.
-                <br />- Backend middleware: authenticate, permission guard, and tenant isolation are
-                applied to routes.
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('tasks.finding.title')}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                See: TENANT_SECURITY_AUDIT.md, CLIENTS_SECURITY_AUDIT.md
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('tasks.finding.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('tasks.finding.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('tasks.working.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('tasks.working.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('tasks.working.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('tasks.notes.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('tasks.notes.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('tasks.notes.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('tasks.creating.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('tasks.creating.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('tasks.creating.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
               </Typography>
             </CardContent>
           </Card>
 
-          <Card id="webhooks" sx={{ mt: 3 }}>
-            <CardHeader title="Webhooks" subheader="Outbound events to your systems" />
+          {/* Work Orders */}
+          <Card id="work-orders" sx={{ mt: 3 }}>
+            <CardHeader title={t('workOrders.title')} subheader={t('workOrders.subtitle')} />
             <CardContent>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                In Dashboard → Settings → Webhooks, create endpoints with:
-                <br />• Name, Status, Topics, Delivery URL, Secret, API Version
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('workOrders.what.title')}
               </Typography>
-              <Stack direction="row" spacing={1}>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('workOrders.what.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('workOrders.what.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('workOrders.creating.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('workOrders.creating.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('workOrders.creating.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('workOrders.working.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('workOrders.working.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('workOrders.working.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+            </CardContent>
+          </Card>
+
+          {/* AI Assistant */}
+          <Card id="ai-assistant" sx={{ mt: 3 }}>
+            <CardHeader title={t('aiAssistant.title')} subheader={t('aiAssistant.subtitle')} />
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('aiAssistant.what.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('aiAssistant.what.content')}
+              </Typography>
+
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('aiAssistant.howTo.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('aiAssistant.howTo.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('aiAssistant.howTo.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('aiAssistant.examples.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('aiAssistant.examples.creating')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('aiAssistant.examples.creating').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+                <br />
+                <br />
+                {t('aiAssistant.examples.getting')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('aiAssistant.examples.getting').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('aiAssistant.tips.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('aiAssistant.tips.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('aiAssistant.tips.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+            </CardContent>
+          </Card>
+
+          {/* Mobile App */}
+          <Card id="field-app" sx={{ mt: 3 }}>
+            <CardHeader title={t('fieldApp.title')} subheader={t('fieldApp.subtitle')} />
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('fieldApp.accessing.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('fieldApp.accessing.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('fieldApp.accessing.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('fieldApp.features.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('fieldApp.features.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('fieldApp.features.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('fieldApp.photos.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('fieldApp.photos.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('fieldApp.photos.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+            </CardContent>
+          </Card>
+
+          {/* Reports */}
+          <Card id="reports" sx={{ mt: 3 }}>
+            <CardHeader title={t('reports.title')} subheader={t('reports.subtitle')} />
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('reports.daily.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('reports.daily.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('reports.daily.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('reports.bestPractices.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('reports.bestPractices.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('reports.bestPractices.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+            </CardContent>
+          </Card>
+
+          {/* Personnel */}
+          <Card id="personnel" sx={{ mt: 3 }}>
+            <CardHeader title={t('personnel.title')} subheader={t('personnel.subtitle')} />
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('personnel.viewing.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('personnel.viewing.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('personnel.viewing.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('personnel.assigning.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('personnel.assigning.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('personnel.assigning.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+            </CardContent>
+          </Card>
+
+          {/* Admin Setup */}
+          <Card id="admin-setup" sx={{ mt: 3 }}>
+            <CardHeader title={t('adminSetup.title')} subheader={t('adminSetup.subtitle')} />
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('adminSetup.system.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('adminSetup.system.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('adminSetup.system.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t('adminSetup.ai.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {t('adminSetup.ai.content')
+                  .split('\n')
+                  .map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < t('adminSetup.ai.content').split('\n').length - 1 && <br />}
+                    </span>
+                  ))}
+              </Typography>
+
+              <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
                 <Button
                   component={Link}
-                  href={paths.dashboard.settings.webhooks}
+                  href={paths.dashboard.settings.ai}
                   variant="contained"
+                  size="small"
                 >
-                  Manage webhooks
+                  {t('adminSetup.buttons.aiSettings')}
                 </Button>
-              </Stack>
-            </CardContent>
-          </Card>
-
-          <Card id="api-keys" sx={{ mt: 3 }}>
-            <CardHeader title="API Keys" subheader="Programmatic access to REST APIs" />
-            <CardContent>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                In Dashboard → Settings → API Keys, generate keys with scoped permissions and
-                optional expiration.
-              </Typography>
-              <Stack direction="row" spacing={1}>
                 <Button
                   component={Link}
                   href={paths.dashboard.settings.apiKeys}
-                  variant="contained"
+                  variant="outlined"
+                  size="small"
                 >
-                  Manage API keys
+                  {t('adminSetup.buttons.apiKeys')}
+                </Button>
+                <Button
+                  component={Link}
+                  href={paths.dashboard.settings.webhooks}
+                  variant="outlined"
+                  size="small"
+                >
+                  {t('adminSetup.buttons.webhooks')}
                 </Button>
               </Stack>
-            </CardContent>
-          </Card>
-
-          <Card id="softone" sx={{ mt: 3 }}>
-            <CardHeader title="SoftOne Integration" subheader="Connect FSA with SoftOne ERP" />
-            <CardContent>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                For non-technical users
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                1) Ask your administrator for an API Key with the right permissions.
-                <br />
-                2) Provide your IT team a Webhook Delivery URL where you want to receive updates.
-                <br />
-                3) Share the Secret with your IT team to verify request signatures.
-              </Typography>
-
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                For developers
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                - Use API keys in Authorization: Bearer headers to access REST endpoints exposed by
-                the backend. Make sure tenant and role permissions are satisfied.
-                <br />- Subscribe to relevant webhook topics (e.g., work_order.created) and verify
-                HMAC signatures with the provided secret.
-                <br />- Map FSA entities to SoftOne: Clients ↔ Customers, Work Orders ↔ Jobs,
-                Materials ↔ Items.
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Internal references: INTERNATIONALIZATION_GUIDE.md, FRONTEND_I18N_IMPLEMENTATION.md,
-                SNACKBAR_INTEGRATION_SUMMARY.md
-              </Typography>
             </CardContent>
           </Card>
         </Grid>

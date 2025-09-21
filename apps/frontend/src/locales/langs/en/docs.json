@@ -1,0 +1,145 @@
+{
+  "title": "Field Service Application - Complete User Guide",
+  "subtitle": "Comprehensive step-by-step guides for using the Field Service Application. Written specifically for technicians and field workers with detailed explanations and simple instructions. No technical background required!",
+  "quickNavigation": "Quick Navigation",
+  "quickLinks": {
+    "gettingStarted": "🚀 Getting Started Guide",
+    "tasks": "📋 Managing Tasks",
+    "workOrders": "🔧 Work Orders",
+    "reports": "📊 Creating Reports",
+    "personnel": "👥 Personnel Management",
+    "aiAssistant": "🤖 AI Assistant",
+    "fieldApp": "📱 Mobile Field App",
+    "adminSetup": "⚙️ Admin Setup"
+  },
+  "gettingStarted": {
+    "title": "🚀 Getting Started Guide",
+    "subtitle": "First time using the app? Start here!",
+    "step1": {
+      "title": "Step 1: Logging In",
+      "content": "1. Open your web browser (Chrome, Firefox, Safari, or Edge)\n2. Go to the app website (ask your supervisor for the web address)\n3. Enter your username and password (provided by your manager)\n4. Click the \"Sign In\" button\n5. If successful, you'll see the main dashboard"
+    },
+    "step2": {
+      "title": "Step 2: Understanding the Dashboard",
+      "content": "After logging in, you'll see several sections:\n• **Dashboard** - Your daily overview and recent activity\n• **Work Orders** - Jobs assigned to you or your team\n• **Tasks** - Individual work items within jobs\n• **Calendar** - Schedule and appointments\n• **Chat** - AI assistant for help and quick tasks\n• **Reports** - Time tracking and completed work summaries"
+    },
+    "step3": {
+      "title": "Step 3: Navigation Tips",
+      "content": "• Use the left sidebar menu to switch between different sections\n• Click on your name (top right) to access your profile and settings\n• Look for the 🔔 notification bell for important updates\n• The \"Field\" section is optimized for mobile devices when working on-site"
+    }
+  },
+  "tasks": {
+    "title": "📋 Managing Tasks",
+    "subtitle": "How to work with daily tasks",
+    "finding": {
+      "title": "Finding Your Tasks",
+      "content": "1. Click \"Tasks\" in the left menu or go to Dashboard → Tasks\n2. You'll see a list of tasks assigned to you\n3. Tasks are color-coded by priority:\n   • 🔴 Red = Urgent\n   • 🟠 Orange = High\n   • 🔵 Blue = Medium\n   • 🟢 Green = Low"
+    },
+    "working": {
+      "title": "Working on a Task",
+      "content": "1. Click on any task to open its details\n2. Read the description carefully to understand what needs to be done\n3. Check the deadline and estimated time required\n4. Update the status as you work:\n   • \"Not Started\" → when you receive the task\n   • \"In Progress\" → when you start working on it\n   • \"Completed\" → when the work is finished\n   • \"On Hold\" → if you're waiting for something"
+    },
+    "notes": {
+      "title": "Adding Notes and Updates",
+      "content": "1. Scroll down to the \"Notes\" or \"Comments\" section\n2. Click \"Add Note\" or the text box\n3. Type what you did, any problems encountered, or questions\n4. Be specific: \"Replaced water pump, tested system, all working\"\n5. Click \"Save\" or \"Add Note\"\n6. Your manager and team can see these updates"
+    },
+    "creating": {
+      "title": "Creating New Tasks",
+      "content": "1. Go to Tasks section and click \"New Task\" or \"+ Add Task\"\n2. Fill in the required information:\n   • **Title**: Short description (e.g., \"Repair AC unit\")\n   • **Description**: Detailed explanation of the work needed\n   • **Priority**: How urgent is this task?\n   • **Assigned To**: Who should do this work?\n   • **Due Date**: When should it be completed?\n3. Click \"Create Task\""
+    }
+  },
+  "workOrders": {
+    "title": "🔧 Work Orders",
+    "subtitle": "Managing customer jobs and service requests",
+    "what": {
+      "title": "What is a Work Order?",
+      "content": "A work order is a complete job for a customer. It contains:\n• Customer information and location\n• Description of the problem or service needed\n• List of tasks to complete the job\n• Materials and tools required\n• Time tracking and cost information"
+    },
+    "creating": {
+      "title": "Creating a Work Order",
+      "content": "1. Click \"Work Orders\" in the left menu\n2. Click \"New Work Order\" or \"+ Create\" button\n3. Select customer from dropdown or create new customer\n4. Enter service address (if different from customer address)\n5. Write clear description of work needed\n6. Set priority level and assign technician\n7. Add estimated completion date\n8. Click \"Create Work Order\""
+    },
+    "working": {
+      "title": "Working on a Work Order",
+      "content": "1. Click on work order to view details\n2. Review customer info and job requirements\n3. Update status to \"In Progress\" when starting\n4. Complete individual tasks within the work order\n5. Add notes and photos as work progresses\n6. Update status to \"Completed\" when finished"
+    }
+  },
+  "aiAssistant": {
+    "title": "🤖 AI Assistant",
+    "subtitle": "Get help and create tasks using natural language",
+    "what": {
+      "title": "What is the AI Assistant?",
+      "content": "The AI Assistant is like having a smart helper that understands everyday language. You can ask questions, create tasks, and get information without clicking through menus. Think of it as texting with a very knowledgeable coworker!"
+    },
+    "howTo": {
+      "title": "How to Use the AI Assistant",
+      "content": "1. Click \"Chat\" in the left menu\n2. Type your question or request in plain English\n3. Press Enter to send your message\n4. The AI will respond with helpful information or actions"
+    },
+    "examples": {
+      "title": "Example Requests",
+      "creating": "**Creating Tasks:**\n• \"Create a task to check HVAC filters tomorrow\"\n• \"Add urgent task for John to repair broken pump\"\n• \"Schedule maintenance for air conditioning next Friday\"",
+      "getting": "**Getting Information:**\n• \"Show me my tasks for today\"\n• \"What work orders are assigned to Sarah?\"\n• \"List all high priority jobs this week\""
+    },
+    "tips": {
+      "title": "Tips for Better Results",
+      "content": "• Be specific in your requests\n• Include timeframes when relevant\n• Mention specific people or locations\n• Ask follow-up questions if needed"
+    }
+  },
+  "fieldApp": {
+    "title": "📱 Mobile Field App",
+    "subtitle": "Using the app on your phone or tablet",
+    "accessing": {
+      "title": "Accessing on Mobile",
+      "content": "1. Open web browser on your mobile device\n2. Go to the same website as desktop version\n3. Login with your username and password\n4. Interface automatically adjusts for mobile\n5. Tap \"Field\" for mobile-optimized view"
+    },
+    "features": {
+      "title": "Key Mobile Features",
+      "content": "• **Tasks** - View and update your daily assignments\n• **Reports** - Create time reports with photos\n• **Calendar** - Check your schedule\n• **Offline Mode** - Works without internet connection\n• **GPS Integration** - Automatic location tracking\n• **Camera Support** - Take photos for documentation"
+    },
+    "photos": {
+      "title": "Taking Photos",
+      "content": "1. Open task or work order on mobile\n2. Look for camera icon 📷 or \"Add Photo\"\n3. Tap to open device camera\n4. Take clear photos of work progress\n5. Add description of what photo shows\n6. Photos automatically attach to work order"
+    }
+  },
+  "reports": {
+    "title": "📊 Creating Reports",
+    "subtitle": "Document your work and track time",
+    "daily": {
+      "title": "Daily Time Reports",
+      "content": "1. Go to Reports section\n2. Click \"New Report\" or \"+ Create\"\n3. Select date and work order/task\n4. Enter start and end times\n5. Write description of work completed\n6. Add materials used if applicable\n7. Attach photos if available\n8. Save report"
+    },
+    "bestPractices": {
+      "title": "Report Best Practices",
+      "content": "• Be specific about work performed\n• Include any problems encountered\n• Note materials and quantities used\n• Take before and after photos\n• Submit reports daily for accuracy"
+    }
+  },
+  "personnel": {
+    "title": "👥 Personnel Management",
+    "subtitle": "Managing team members and assignments",
+    "viewing": {
+      "title": "Viewing Team Members",
+      "content": "1. Click \"Personnel\" in left menu\n2. See list of all team members\n3. View contact information and skills\n4. Check current assignments and availability\n5. Click name for detailed profile"
+    },
+    "assigning": {
+      "title": "Assigning Work",
+      "content": "1. When creating tasks or work orders\n2. Select appropriate team member from dropdown\n3. Consider workload, skills, and location\n4. Assigned person receives notification\n5. Track progress through dashboard"
+    }
+  },
+  "adminSetup": {
+    "title": "⚙️ Admin Setup",
+    "subtitle": "Configuration for administrators",
+    "system": {
+      "title": "System Configuration",
+      "content": "1. Go to Settings → General\n2. Configure company information\n3. Set time zones and business hours\n4. Configure user roles and permissions\n5. Test notification settings"
+    },
+    "ai": {
+      "title": "AI Assistant Setup",
+      "content": "1. Go to Settings → AI Settings\n2. Configure API keys if needed\n3. Enable local processing for basic features\n4. Test functionality before team rollout"
+    },
+    "buttons": {
+      "aiSettings": "AI Settings",
+      "apiKeys": "API Keys",
+      "webhooks": "Webhooks"
+    }
+  }
+}

@@ -21,7 +21,15 @@ export const fallbackLng: LangCode = 'en';
 export const defaultNS = 'common';
 
 // Available namespaces
-export const namespaces = ['common', 'messages', 'api', 'dashboard', 'field', 'navbar'] as const;
+export const namespaces = [
+  'common',
+  'messages',
+  'api',
+  'dashboard',
+  'field',
+  'navbar',
+  'docs',
+] as const;
 
 // Storage config
 export const storageConfig = {
