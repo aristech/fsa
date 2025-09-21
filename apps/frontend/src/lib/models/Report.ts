@@ -80,6 +80,9 @@ export interface IReportAttachment {
   };
   // Embedded user data for historical purposes
   uploadedByData?: IEmbeddedUser;
+  // Signature-specific fields (optional for regular attachments)
+  signatureType?: string;
+  signerName?: string;
 }
 
 export interface IReportTimeEntry {

@@ -18,7 +18,10 @@ import {
   Autocomplete,
 } from '@mui/material';
 
+import { networkManager } from 'src/lib/network-utils';
 import axiosInstance, { endpoints } from 'src/lib/axios';
+import { offlineStorage } from 'src/lib/offline-storage';
+import { offlineSyncService } from 'src/lib/offline-sync';
 import { ReportService } from 'src/lib/services/report-service';
 
 import { toast } from 'src/components/snackbar';
@@ -176,6 +179,22 @@ export function ReportCreateDrawer({
   const [signatures, setSignatures] = useState<SignatureData[]>([]);
   const [reportStatus, setReportStatus] = useState<'draft' | 'submitted'>('draft');
   const [previewUrls, setPreviewUrls] = useState<Map<number, string>>(new Map());
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  // Monitor network status
+  useEffect(() => {
+    const unsubscribe = networkManager.addListener((status) => {
+      setIsOffline(!status.isOnline);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Trigger sync when component mounts (if online)
+  useEffect(() => {
+    if (networkManager.getStatus().isOnline) {
+      offlineSyncService.syncPendingDrafts();
+    }
+  }, []);
 
   // Data fetching
   const { data: clientsData, error: clientsError } = useSWR(
@@ -989,6 +1008,201 @@ export function ReportCreateDrawer({
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   }, []);
 
+  // Helper function to save draft offline
+  const saveOfflineDraft = useCallback(
+    async (reportData: any) => {
+      try {
+        // Convert files to base64 for offline storage
+        const reportDataWithFiles = { ...reportData };
+
+        if (attachments.length > 0) {
+          const filePromises = attachments.map(
+            async (file) =>
+              new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                  resolve({
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    lastModified: file.lastModified,
+                    data: reader.result as string,
+                  });
+                };
+                reader.onerror = () => resolve(null);
+                reader.readAsDataURL(file);
+              })
+          );
+
+          const fileData = await Promise.all(filePromises);
+          reportDataWithFiles.attachments = fileData.filter(Boolean);
+        }
+
+        // Save to offline storage
+        const draftId = offlineStorage.saveDraft(
+          reportDataWithFiles,
+          user?._id || 'unknown',
+          user?.email || 'unknown@example.com'
+        );
+
+        const statusMessage = isOffline
+          ? 'Report saved offline as draft. It will sync when connection is restored.'
+          : 'Report saved as draft locally.';
+
+        toast.success(statusMessage, {
+          duration: 5000,
+          action: {
+            label: 'View Drafts',
+            onClick: () => {
+              // TODO: Navigate to drafts view
+              console.log('Navigate to drafts view');
+            },
+          },
+        });
+
+        onSuccess({ _id: draftId, ...reportDataWithFiles, isOfflineDraft: true });
+        onClose();
+      } catch (error) {
+        console.error('Failed to save offline draft:', error);
+        toast.error('Failed to save draft locally. Please try again.');
+        throw error;
+      }
+    },
+    [attachments, user, isOffline, onSuccess, onClose]
+  );
+
+  // Helper function to handle file uploads
+  const handleFileUploads = useCallback(
+    async (reportId: string) => {
+      let allAttachments: any[] = [];
+
+      // Upload regular attachments first
+      if (attachments.length > 0 && reportId) {
+        try {
+          const form = new FormData();
+          form.append('scope', 'report');
+          form.append('reportId', reportId);
+          attachments.forEach((file: File) => {
+            form.append('files', file);
+          });
+
+          const uploadResponse = await axiosInstance.post('/api/v1/uploads', form, {
+            headers: {
+              'Content-Type': undefined, // Let browser set multipart boundary
+            },
+          });
+
+          const uploadedFiles = uploadResponse.data?.data || [];
+          const userId = user?._id;
+
+          const attachmentData = uploadedFiles.map((f: any) => ({
+            filename: f.name || 'Unknown',
+            originalName: f.name || 'Unknown',
+            mimetype: f.mime || 'application/octet-stream',
+            size: f.size || 0,
+            url: f.url,
+            uploadedAt: new Date(),
+            uploadedBy: userId,
+            // Add embedded user data for historical purposes
+            uploadedByData: userId
+              ? {
+                  _id: userId,
+                  name:
+                    `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+                    user.email ||
+                    'Unknown User',
+                  email: user.email || '',
+                }
+              : null,
+          }));
+
+          allAttachments = [...allAttachments, ...attachmentData];
+        } catch (uploadError) {
+          console.error('Attachment upload failed:', uploadError);
+          toast.warning('Report saved, but attachment upload failed.');
+        }
+      }
+
+      // Upload signatures as files
+      if (signatures.length > 0 && reportId) {
+        try {
+          const form = new FormData();
+          form.append('scope', 'report');
+          form.append('reportId', reportId);
+
+          // Convert base64 signatures to files
+          signatures.forEach((signature, index) => {
+            if (signature.signatureData) {
+              // Remove data:image/png;base64, prefix if present
+              const base64Data = signature.signatureData.replace(/^data:image\/[a-z]+;base64,/, '');
+              const byteCharacters = atob(base64Data);
+              const byteNumbers = new Array(byteCharacters.length);
+              for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+              }
+              const byteArray = new Uint8Array(byteNumbers);
+              const blob = new Blob([byteArray], { type: 'image/png' });
+              const fileName = `signature-${signature.type}-${signature.signerName.replace(/\s+/g, '-')}-${index}.png`;
+              const file = new File([blob], fileName, { type: 'image/png' });
+              form.append('files', file);
+            }
+          });
+
+          const uploadResponse = await axiosInstance.post('/api/v1/uploads', form, {
+            headers: {
+              'Content-Type': undefined, // Let browser set multipart boundary
+            },
+          });
+
+          const uploadedFiles = uploadResponse.data?.data || [];
+          const userId = user?._id;
+
+          // Map uploaded signature files back to signature data
+          const signatureAttachments = uploadedFiles.map((f: any, index: number) => ({
+            filename: f.name || 'Unknown',
+            originalName: f.name || 'Unknown',
+            mimetype: f.mime || 'image/png',
+            size: f.size || 0,
+            url: f.url,
+            uploadedAt: new Date(),
+            uploadedBy: userId,
+            signatureType: signatures[index]?.type,
+            signerName: signatures[index]?.signerName,
+            // Add embedded user data for historical purposes
+            uploadedByData: userId
+              ? {
+                  _id: userId,
+                  name:
+                    `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+                    user.email ||
+                    'Unknown User',
+                  email: user.email || '',
+                }
+              : null,
+          }));
+
+          allAttachments = [...allAttachments, ...signatureAttachments];
+        } catch (uploadError) {
+          console.error('Signature upload failed:', uploadError);
+          toast.warning('Report saved, but signature upload failed.');
+        }
+      }
+
+      // Update report with all attachments at once
+      if (allAttachments.length > 0) {
+        try {
+          await ReportService.updateReport(reportId, {
+            attachments: allAttachments,
+          });
+        } catch (updateError) {
+          console.error('Failed to update report with attachments:', updateError);
+          toast.warning('Files uploaded but failed to update report.');
+        }
+      }
+    },
+    [attachments, signatures, user]
+  );
+
   const handleSubmit = useCallback(async () => {
     if (!validateStep(1)) {
       toast.error('Please fill in all required fields');
@@ -996,188 +1210,62 @@ export function ReportCreateDrawer({
     }
 
     setLoading(true);
+
+    // Prepare the complete report data
+    const reportData = {
+      ...formData,
+      status: reportStatus,
+      notes: reportNotes,
+      materialsUsed: selectedMaterials.map((m) => ({
+        materialId: m.value,
+        material: {
+          name: m.material?.name || m.label || 'Unknown Material',
+          sku: m.material?.sku || '',
+          unit: m.material?.unit || 'each',
+          unitCostAtTime: m.material?.unitPrice || m.material?.unitCost || 0,
+        },
+        quantityUsed: m.quantity,
+        unitCost: m.material?.unitPrice || m.material?.unitCost || 0,
+        totalCost: (m.material?.unitPrice || m.material?.unitCost || 0) * m.quantity,
+      })),
+      signatures: signatures.map((s) => ({
+        type: s.type,
+        signerName: s.signerName,
+        signerTitle: s.signerTitle,
+        signerEmail: s.signerEmail,
+        signedAt: s.signedAt,
+        signatureData: s.signatureData,
+      })),
+      // Don't include attachments in the initial report creation
+      // They will be uploaded separately after the report is created
+      attachments: [],
+    };
+
     try {
-      // Prepare the complete report data
-      const reportData = {
-        ...formData,
-        status: reportStatus,
-        notes: reportNotes,
-        materialsUsed: selectedMaterials.map((m) => ({
-          materialId: m.value,
-          material: {
-            name: m.material?.name || m.label || 'Unknown Material',
-            sku: m.material?.sku || '',
-            unit: m.material?.unit || 'each',
-            unitCostAtTime: m.material?.unitPrice || m.material?.unitCost || 0,
-          },
-          quantityUsed: m.quantity,
-          unitCost: m.material?.unitPrice || m.material?.unitCost || 0,
-          totalCost: (m.material?.unitPrice || m.material?.unitCost || 0) * m.quantity,
-        })),
-        signatures: signatures.map((s) => ({
-          type: s.type,
-          signerName: s.signerName,
-          signerTitle: s.signerTitle,
-          signerEmail: s.signerEmail,
-          signedAt: s.signedAt,
-          signatureData: s.signatureData,
-        })),
-        // Files would be uploaded separately in a real implementation
-        attachmentCount: attachments.length,
-      };
+      // Always try to upload to server first (regardless of network status)
+      try {
+        const response = await ReportService.createReport(reportData);
+        if (response.success) {
+          const reportId = response.data._id;
 
-      const response = await ReportService.createReport(reportData);
-      if (response.success) {
-        const reportId = response.data._id;
+          // Upload files and signatures after report creation
+          await handleFileUploads(reportId);
 
-        // Upload files and signatures after report creation
-        const allUploadPromises = [];
-
-        // Upload regular attachments
-        if (attachments.length > 0 && reportId) {
-          const attachmentUpload = (async () => {
-            try {
-              const form = new FormData();
-              form.append('scope', 'report');
-              form.append('reportId', reportId);
-              attachments.forEach((file: File) => {
-                form.append('files', file);
-              });
-
-              const uploadResponse = await axiosInstance.post('/api/v1/uploads', form, {
-                headers: {
-                  'Content-Type': undefined, // Let browser set multipart boundary
-                },
-              });
-
-              const uploadedFiles = uploadResponse.data?.data || [];
-              const userId = user?._id;
-
-              const attachmentData = uploadedFiles.map((f: any) => ({
-                filename: f.name || 'Unknown',
-                originalName: f.name || 'Unknown',
-                mimetype: f.mime || 'application/octet-stream',
-                size: f.size || 0,
-                url: f.url,
-                uploadedAt: new Date(),
-                uploadedBy: userId,
-                // Add embedded user data for historical purposes
-                uploadedByData: userId
-                  ? {
-                      _id: userId,
-                      name:
-                        `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
-                        user.email ||
-                        'Unknown User',
-                      email: user.email || '',
-                    }
-                  : null,
-              }));
-
-              // Update report with attachment data
-              if (attachmentData.length > 0) {
-                await ReportService.updateReport(reportId, {
-                  attachments: attachmentData,
-                });
-              }
-            } catch (uploadError) {
-              console.error('Attachment upload failed:', uploadError);
-              toast.warning('Report saved, but attachment upload failed.');
-            }
-          })();
-          allUploadPromises.push(attachmentUpload);
+          toast.success(
+            reportStatus === 'draft' ? 'Report saved as draft' : 'Report submitted for review'
+          );
+          onSuccess(response.data);
+          onClose();
+          return;
+        } else {
+          throw new Error(response.message || 'Failed to create report');
         }
+      } catch (serverError: any) {
+        console.warn('Server save failed, saving locally:', serverError);
 
-        // Upload signatures as files
-        if (signatures.length > 0 && reportId) {
-          const signatureUpload = (async () => {
-            try {
-              const form = new FormData();
-              form.append('scope', 'report');
-              form.append('reportId', reportId);
-
-              // Convert base64 signatures to files
-              signatures.forEach((signature, index) => {
-                if (signature.signatureData) {
-                  // Remove data:image/png;base64, prefix if present
-                  const base64Data = signature.signatureData.replace(
-                    /^data:image\/[a-z]+;base64,/,
-                    ''
-                  );
-                  const byteCharacters = atob(base64Data);
-                  const byteNumbers = new Array(byteCharacters.length);
-                  for (let i = 0; i < byteCharacters.length; i++) {
-                    byteNumbers[i] = byteCharacters.charCodeAt(i);
-                  }
-                  const byteArray = new Uint8Array(byteNumbers);
-                  const blob = new Blob([byteArray], { type: 'image/png' });
-                  const fileName = `signature-${signature.type}-${signature.signerName.replace(/\s+/g, '-')}-${index}.png`;
-                  const file = new File([blob], fileName, { type: 'image/png' });
-                  form.append('files', file);
-                }
-              });
-
-              const uploadResponse = await axiosInstance.post('/api/v1/uploads', form, {
-                headers: {
-                  'Content-Type': undefined, // Let browser set multipart boundary
-                },
-              });
-
-              const uploadedFiles = uploadResponse.data?.data || [];
-              const userId = user?._id;
-
-              // Map uploaded signature files back to signature data
-              const signatureAttachments = uploadedFiles.map((f: any, index: number) => ({
-                filename: f.name || 'Unknown',
-                originalName: f.name || 'Unknown',
-                mimetype: f.mime || 'image/png',
-                size: f.size || 0,
-                url: f.url,
-                uploadedAt: new Date(),
-                uploadedBy: userId,
-                signatureType: signatures[index]?.type,
-                signerName: signatures[index]?.signerName,
-                // Add embedded user data for historical purposes
-                uploadedByData: userId
-                  ? {
-                      _id: userId,
-                      name:
-                        `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
-                        user.email ||
-                        'Unknown User',
-                      email: user.email || '',
-                    }
-                  : null,
-              }));
-
-              // Update report with signature attachments
-              if (signatureAttachments.length > 0) {
-                const currentReport = await ReportService.getReport(reportId);
-                const existingAttachments = currentReport.data?.attachments || [];
-                await ReportService.updateReport(reportId, {
-                  attachments: [...existingAttachments, ...signatureAttachments],
-                });
-              }
-            } catch (uploadError) {
-              console.error('Signature upload failed:', uploadError);
-              toast.warning('Report saved, but signature upload failed.');
-            }
-          })();
-          allUploadPromises.push(signatureUpload);
-        }
-
-        // Wait for all uploads to complete
-        if (allUploadPromises.length > 0) {
-          await Promise.all(allUploadPromises);
-        }
-
-        toast.success(
-          reportStatus === 'draft' ? 'Report saved as draft' : 'Report submitted for review'
-        );
-        onSuccess(response.data);
-        onClose();
-      } else {
-        toast.error(response.message || 'Failed to create report');
+        // If server save fails, save locally as fallback
+        await saveOfflineDraft(reportData);
+        return;
       }
     } catch (error: any) {
       console.error('Error creating report:', error);
@@ -1192,7 +1280,7 @@ export function ReportCreateDrawer({
       } else if (error?.response?.data?.message) {
         toast.error(error.response.data.message);
       } else {
-        toast.error('Failed to create report');
+        toast.error(error.message || 'Failed to create report');
       }
     } finally {
       setLoading(false);
@@ -1203,14 +1291,11 @@ export function ReportCreateDrawer({
     reportNotes,
     selectedMaterials,
     signatures,
-    attachments,
     validateStep,
     onSuccess,
     onClose,
-    user?._id,
-    user?.email,
-    user?.firstName,
-    user?.lastName,
+    saveOfflineDraft,
+    handleFileUploads,
   ]);
 
   const renderHeader = () => (
@@ -1225,9 +1310,30 @@ export function ReportCreateDrawer({
       }}
     >
       <Box>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Create New Report
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 0.5 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Create New Report
+          </Typography>
+          {isOffline && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                px: 1.5,
+                py: 0.5,
+                borderRadius: 1,
+                backgroundColor: theme.palette.warning.lighter,
+                color: theme.palette.warning.darker,
+              }}
+            >
+              <Iconify icon="eva:wifi-off-fill" width={14} />
+              <Typography variant="caption" sx={{ fontWeight: 500 }}>
+                Offline (will save locally if upload fails)
+              </Typography>
+            </Box>
+          )}
+        </Box>
         <Typography variant="body2" color="text.secondary">
           Step {currentStep} of 3
         </Typography>
@@ -1995,7 +2101,7 @@ export function ReportCreateDrawer({
           startIcon={<Iconify icon="eva:save-fill" width={16} />}
           sx={{ flex: 1, height: 80 }}
         >
-          Create Report
+          {reportStatus === 'draft' ? 'Save Draft' : 'Submit Report'}
         </MobileButton>
       )}
     </Box>

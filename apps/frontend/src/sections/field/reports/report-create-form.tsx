@@ -3,10 +3,13 @@
 import type { IReport, CreateReportData } from 'src/lib/models/Report';
 
 import dayjs from 'dayjs';
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import { Box, Chip, Divider, Typography } from '@mui/material';
 
+import { networkManager } from 'src/lib/network-utils';
+import { offlineStorage } from 'src/lib/offline-storage';
+import { offlineSyncService } from 'src/lib/offline-sync';
 import { ReportService } from 'src/lib/services/report-service';
 
 import { toast } from 'src/components/snackbar';
@@ -18,6 +21,8 @@ import {
   MobileSelect,
   MobileDatePicker,
 } from 'src/components/mobile';
+
+import { useAuthContext } from 'src/auth/hooks';
 
 // ----------------------------------------------------------------------
 
@@ -65,6 +70,8 @@ interface ReportCreateFormProps {
 }
 
 export function ReportCreateForm({ onSuccess, onCancel, initialData }: ReportCreateFormProps) {
+  const { user } = useAuthContext();
+
   const [formData, setFormData] = useState<CreateReportData>({
     type: 'daily',
     location: '',
@@ -84,6 +91,22 @@ export function ReportCreateForm({ onSuccess, onCancel, initialData }: ReportCre
   const [currentStep, setCurrentStep] = useState(1);
   const [equipmentInput, setEquipmentInput] = useState('');
   const [tagInput, setTagInput] = useState('');
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  // Monitor network status
+  useEffect(() => {
+    const unsubscribe = networkManager.addListener((status) => {
+      setIsOffline(!status.isOnline);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Trigger sync when component mounts (if online)
+  useEffect(() => {
+    if (networkManager.getStatus().isOnline) {
+      offlineSyncService.syncPendingDrafts();
+    }
+  }, []);
 
   const handleFieldChange = useCallback((field: keyof CreateReportData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -151,6 +174,42 @@ export function ReportCreateForm({ onSuccess, onCancel, initialData }: ReportCre
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   }, []);
 
+  // Helper function to save draft offline
+  const saveOfflineDraft = useCallback(
+    async (reportData: any) => {
+      try {
+        // Save to offline storage
+        const draftId = offlineStorage.saveDraft(
+          reportData,
+          user?._id || 'unknown',
+          user?.email || 'unknown@example.com'
+        );
+
+        const statusMessage = isOffline
+          ? 'Report saved offline as draft. It will sync when connection is restored.'
+          : 'Report saved as draft locally.';
+
+        toast.success(statusMessage, {
+          duration: 5000,
+          action: {
+            label: 'View Drafts',
+            onClick: () => {
+              // TODO: Navigate to drafts view
+              console.log('Navigate to drafts view');
+            },
+          },
+        });
+
+        onSuccess({ _id: draftId, ...reportData, isOfflineDraft: true });
+      } catch (error) {
+        console.error('Failed to save offline draft:', error);
+        toast.error('Failed to save draft locally. Please try again.');
+        throw error;
+      }
+    },
+    [user, isOffline, onSuccess]
+  );
+
   const handleSubmit = useCallback(async () => {
     if (!validateStep(currentStep)) {
       toast.error('Please fill in all required fields');
@@ -158,21 +217,44 @@ export function ReportCreateForm({ onSuccess, onCancel, initialData }: ReportCre
     }
 
     setLoading(true);
+
     try {
-      const response = await ReportService.createReport(formData);
-      if (response.success) {
-        toast.success('Report created successfully');
-        onSuccess(response.data);
-      } else {
-        toast.error(response.message || 'Failed to create report');
+      // Always try to upload to server first (regardless of network status)
+      try {
+        const response = await ReportService.createReport(formData);
+        if (response.success) {
+          toast.success('Report created successfully');
+          onSuccess(response.data);
+          return;
+        } else {
+          throw new Error(response.message || 'Failed to create report');
+        }
+      } catch (serverError: any) {
+        console.warn('Server save failed, saving locally:', serverError);
+
+        // If server save fails, save locally as fallback
+        await saveOfflineDraft(formData);
+        return;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating report:', error);
-      toast.error('Failed to create report');
+
+      // Handle validation errors specifically
+      if (error?.response?.data?.errors) {
+        const validationErrors = error.response.data.errors;
+        const errorMessages = validationErrors
+          .map((err: any) => `${err.path?.join('.')} ${err.message || err.code}`)
+          .join(', ');
+        toast.error(`Validation error: ${errorMessages}`);
+      } else if (error?.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error(error.message || 'Failed to create report');
+      }
     } finally {
       setLoading(false);
     }
-  }, [formData, currentStep, validateStep, onSuccess]);
+  }, [formData, currentStep, validateStep, onSuccess, saveOfflineDraft]);
 
   const renderBasicInfo = () => (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -371,6 +453,25 @@ export function ReportCreateForm({ onSuccess, onCancel, initialData }: ReportCre
 
   return (
     <MobileCard sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {isOffline && (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            p: 2,
+            mb: 2,
+            backgroundColor: 'warning.lighter',
+            color: 'warning.darker',
+            borderRadius: 1,
+          }}
+        >
+          <Iconify icon="eva:wifi-off-fill" width={16} />
+          <Typography variant="caption" sx={{ fontWeight: 500 }}>
+            Offline (will save locally if upload fails)
+          </Typography>
+        </Box>
+      )}
       {renderStepIndicator()}
 
       <Box sx={{ flex: 1, mb: 3 }}>{renderStepContent()}</Box>
@@ -410,7 +511,7 @@ export function ReportCreateForm({ onSuccess, onCancel, initialData }: ReportCre
             disabled={!validateStep(currentStep)}
             icon={<Iconify icon="eva:save-fill" width={16} />}
           >
-            Create Report
+            {isOffline ? 'Save Draft (Offline)' : 'Create Report'}
           </MobileButton>
         )}
       </Box>

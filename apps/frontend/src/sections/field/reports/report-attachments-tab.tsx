@@ -61,7 +61,20 @@ export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttach
     return 'eva:attach-fill';
   };
 
+  // Get all attachments including signature files
   const allAttachments = [...(report.attachments || []), ...(report.photos || [])];
+
+  // Separate signature files from regular attachments
+  const signatureFiles = allAttachments.filter(
+    (attachment) =>
+      attachment.signatureType || (attachment.filename && attachment.filename.includes('signature'))
+  );
+
+  const regularFiles = allAttachments.filter(
+    (attachment) =>
+      !attachment.signatureType &&
+      !(attachment.filename && attachment.filename.includes('signature'))
+  );
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -97,7 +110,8 @@ export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttach
 
       {allAttachments.length > 0 ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {allAttachments.map((attachment) => (
+          {/* Regular Files */}
+          {regularFiles.map((attachment) => (
             <Box
               key={attachment._id}
               sx={{
@@ -174,6 +188,86 @@ export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttach
               </Box>
             </Box>
           ))}
+
+          {/* Signature Files */}
+          {signatureFiles.length > 0 && (
+            <>
+              <Typography variant="h6" sx={{ fontWeight: 600, mt: 3, mb: 2 }}>
+                Signature Files ({signatureFiles.length})
+              </Typography>
+              {signatureFiles.map((attachment) => (
+                <Box
+                  key={attachment._id}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    p: 2,
+                    border: '1px solid',
+                    borderColor: 'success.light',
+                    borderRadius: 1,
+                    backgroundColor: 'success.lighter',
+                  }}
+                >
+                  <Avatar sx={{ bgcolor: 'success.main', color: 'white' }}>
+                    <Iconify icon="eva:edit-fill" width={20} />
+                  </Avatar>
+
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
+                        fontWeight: 600,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {attachment.originalName}
+                    </Typography>
+
+                    <Typography variant="body2" color="text.secondary">
+                      {attachment.signatureType
+                        ? `${attachment.signatureType.charAt(0).toUpperCase() + attachment.signatureType.slice(1)} Signature`
+                        : 'Digital Signature'}{' '}
+                      • {formatFileSize(attachment.size)}
+                    </Typography>
+
+                    <Typography variant="caption" color="text.secondary">
+                      {attachment.signerName && `Signed by: ${attachment.signerName}`}
+                      {attachment.uploadedAt &&
+                        ` • ${dayjs(attachment.uploadedAt).format('MMM DD, YYYY')}`}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <MobileButton
+                      variant="outline"
+                      size="small"
+                      onClick={() => window.open(attachment.url, '_blank')}
+                      startIcon={<Iconify icon="eva:external-link-fill" width={14} />}
+                    >
+                      View
+                    </MobileButton>
+
+                    <MobileButton
+                      variant="outline"
+                      size="small"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = attachment.url;
+                        link.download = attachment.originalName;
+                        link.click();
+                      }}
+                      startIcon={<Iconify icon="eva:download-fill" width={14} />}
+                    >
+                      Download
+                    </MobileButton>
+                  </Box>
+                </Box>
+              ))}
+            </>
+          )}
         </Box>
       ) : (
         <Box

@@ -35,6 +35,18 @@ export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttach
   const photos = report.photos || [];
   const allFiles = [...attachments, ...photos];
 
+  // Separate signature files from regular attachments
+  const signatureFiles = allFiles.filter(
+    (attachment) =>
+      attachment.signatureType || (attachment.filename && attachment.filename.includes('signature'))
+  );
+
+  const regularFiles = allFiles.filter(
+    (attachment) =>
+      !attachment.signatureType &&
+      !(attachment.filename && attachment.filename.includes('signature'))
+  );
+
   if (allFiles.length === 0) {
     return (
       <EmptyContent
@@ -127,17 +139,17 @@ export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttach
         </Box>
       )}
 
-      {/* Attachments Section */}
-      {attachments.length > 0 && (
+      {/* Regular Attachments Section */}
+      {regularFiles.length > 0 && (
         <Box>
           <Typography variant="h6" sx={{ mb: 2 }}>
-            Attachments ({attachments.length})
+            Attachments ({regularFiles.length})
           </Typography>
           <Card>
             <CardContent>
               <List>
-                {attachments.map((attachment, index) => (
-                  <ListItem key={index} divider={index < attachments.length - 1}>
+                {regularFiles.map((attachment, index) => (
+                  <ListItem key={index} divider={index < regularFiles.length - 1}>
                     <ListItemAvatar>
                       <Avatar sx={{ bgcolor: 'secondary.light' }}>
                         <Iconify icon={getFileIcon(attachment.mimetype)} />
@@ -154,6 +166,58 @@ export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttach
                           <br />
                           <Typography variant="caption" color="text.secondary">
                             by {attachment.uploadedByData?.name || 'Unknown User'}
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                    <ListItemSecondaryAction>
+                      <Button
+                        size="small"
+                        startIcon={<Iconify icon="eva:download-fill" />}
+                        onClick={() => handleDownload(attachment)}
+                      >
+                        Download
+                      </Button>
+                    </ListItemSecondaryAction>
+                  </ListItem>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Box>
+      )}
+
+      {/* Signature Files Section */}
+      {signatureFiles.length > 0 && (
+        <Box>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Signature Files ({signatureFiles.length})
+          </Typography>
+          <Card>
+            <CardContent>
+              <List>
+                {signatureFiles.map((attachment, index) => (
+                  <ListItem key={index} divider={index < signatureFiles.length - 1}>
+                    <ListItemAvatar>
+                      <Avatar sx={{ bgcolor: 'success.light' }}>
+                        <Iconify icon="eva:edit-fill" />
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={attachment.originalName}
+                      secondary={
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            {attachment.signatureType
+                              ? `${attachment.signatureType.charAt(0).toUpperCase() + attachment.signatureType.slice(1)} Signature`
+                              : 'Digital Signature'}{' '}
+                            • {formatFileSize(attachment.size)}
+                          </Typography>
+                          <br />
+                          <Typography variant="caption" color="text.secondary">
+                            {attachment.signerName && `Signed by: ${attachment.signerName}`}
+                            {attachment.uploadedAt &&
+                              ` • ${dayjs(attachment.uploadedAt).format('MMM DD, YYYY')}`}
                           </Typography>
                         </Box>
                       }

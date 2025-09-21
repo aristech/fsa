@@ -33,7 +33,12 @@ axiosInstance.interceptors.response.use(
 
     // Don't log 401 errors as they're expected for authentication checks
     if (error?.response?.status !== 401) {
-      console.error('Axios error:', message);
+      // Don't log Socket.IO transport negotiation errors as they're normal
+      if (message === 'Transport unknown' || message?.includes('Transport unknown')) {
+        console.debug('🔌 Socket.IO transport negotiation in progress...');
+      } else {
+        console.error('Axios error:', message);
+      }
     }
 
     return Promise.reject(new Error(message));

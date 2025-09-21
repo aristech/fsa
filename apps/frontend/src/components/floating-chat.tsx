@@ -28,6 +28,7 @@ import axiosInstance from 'src/lib/axios';
 import { useTranslate } from 'src/locales/use-locales';
 
 import { Iconify } from 'src/components/iconify';
+import { EnhancedMessageRenderer } from 'src/components/chat/enhanced-message-renderer';
 
 export function FloatingChat() {
   const { t } = useTranslate('dashboard');
@@ -255,6 +256,14 @@ export function FloatingChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const handleMessageSuggestionClick = useCallback((suggestion: string) => {
+    setInput(suggestion);
+    // Auto-focus the input field
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+
   const renderMessage = (message: ChatMessage, index: number) => {
     const isUser = message.role === 'user';
     const isSystem = message.role === 'system';
@@ -265,25 +274,53 @@ export function FloatingChat() {
         key={index}
         sx={{
           display: 'flex',
-          justifyContent: isUser ? 'flex-end' : 'flex-start',
+          justifyContent: isUser ? 'flex-start' : 'flex-start',
+          alignItems: 'flex-start',
+          gap: 1,
         }}
       >
+        {!isUser && (
+          <Box
+            sx={{
+              width: 32,
+              height: 32,
+              borderRadius: 1,
+              bgcolor: 'primary.main',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              mt: 0.5,
+            }}
+          >
+            <Iconify
+              icon="solar:chat-round-bold"
+              width={16}
+              sx={{ color: 'primary.contrastText' }}
+            />
+          </Box>
+        )}
+
         <Paper
           sx={{
-            p: 1.25,
-            maxWidth: '80%',
-            bgcolor: isUser ? 'primary.main' : 'grey.100',
+            p: 1.5,
+            maxWidth: isUser ? '70%' : '85%',
+            bgcolor: isUser ? 'primary.main' : 'grey.50',
             color: isUser ? 'primary.contrastText' : 'text.primary',
             borderRadius: 2,
+            ml: isUser ? 'auto' : 0,
+            mr: isUser ? 0 : 'auto',
           }}
         >
-          <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-            {message.content || (isStreaming && index === messages.length - 1 ? '...' : '')}
-          </Typography>
+          <EnhancedMessageRenderer
+            content={message.content || (isStreaming && index === messages.length - 1 ? '...' : '')}
+            isUser={isUser}
+            onSuggestionClick={handleMessageSuggestionClick}
+          />
 
           {!isUser && (
-            <Typography variant="caption" sx={{ display: 'block', mt: 0.5, opacity: 0.7 }}>
-              AI Assistant
+            <Typography variant="caption" sx={{ display: 'block', mt: 1, opacity: 0.7 }}>
+              AI Assistant • {new Date().toLocaleTimeString()}
             </Typography>
           )}
         </Paper>

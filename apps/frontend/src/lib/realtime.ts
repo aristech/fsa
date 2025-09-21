@@ -56,9 +56,18 @@ class RealtimeClient {
       await axiosInstance.get('/socket.io/', {
         timeout: 3000, // 3 second timeout
       });
-    } catch {
-      console.warn('🔌 WebSocket server not available - skipping connection');
-      return Promise.resolve();
+    } catch (error: any) {
+      // Suppress "Transport unknown" errors from the initial check
+      if (
+        error?.response?.data?.message === 'Transport unknown' ||
+        (error?.response?.status === 400 && error?.message === 'Transport unknown')
+      ) {
+        console.debug('🔌 Socket.IO server responding (transport negotiation)');
+        // Continue with connection attempt
+      } else {
+        console.warn('🔌 WebSocket server not available - skipping connection');
+        return Promise.resolve();
+      }
     }
 
     return new Promise((resolve, reject) => {
@@ -99,6 +108,12 @@ class RealtimeClient {
       });
 
       this.socket.on('connect_error', (err) => {
+        // Suppress "Transport unknown" errors as they're not critical
+        if (err.message === 'Transport unknown' || err.message?.includes('Transport unknown')) {
+          console.debug('🔌 Socket.IO transport negotiation in progress...');
+          return;
+        }
+
         console.warn('🔌 WebSocket connection failed:', err.message);
         console.warn('🔌 This is normal if the WebSocket server is not running');
         this.isConnecting = false;
