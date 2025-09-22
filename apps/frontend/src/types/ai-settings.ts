@@ -8,8 +8,8 @@ export interface AISettings {
 }
 
 export interface AISettingsFormData {
-  openaiApiKey: string;
-  preferredModel: string;
+  openaiApiKey?: string;
+  preferredModel?: string;
   maxTokens: number;
   temperature: number;
   useLocalNLP: boolean;

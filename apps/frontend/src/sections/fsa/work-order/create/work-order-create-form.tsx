@@ -16,6 +16,7 @@ import {
   Stack,
   Button,
   MenuItem,
+  Container,
   Typography,
   CardContent,
 } from '@mui/material';
@@ -272,6 +273,7 @@ export function WorkOrderCreateForm({ id }: Props) {
   };
 
   return (
+    <Container maxWidth="xl">
     <Form methods={methods} onSubmit={handleSubmit(onSubmit)}>
       <Card>
         <CardContent>
@@ -364,14 +366,10 @@ export function WorkOrderCreateForm({ id }: Props) {
                   )}
                 </Grid>
 
-                <Grid size={{ xs: 12 }}>
+                <Grid size={{ xs: 12, md: 4}}>
                   {personnel.length === 0 ? (
                     <Stack spacing={1}>
-                      <Typography variant="subtitle2">
-                        {t('assignedPersonnelOptional', {
-                          defaultValue: 'Assigned Personnel (Optional)',
-                        })}
-                      </Typography>
+                      
                       <Box
                         sx={{
                           p: 2.5,
@@ -621,5 +619,6 @@ export function WorkOrderCreateForm({ id }: Props) {
         </CardContent>
       </Card>
     </Form>
+    </Container>
   );
 }

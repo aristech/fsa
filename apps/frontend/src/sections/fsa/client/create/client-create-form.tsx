@@ -22,7 +22,7 @@ import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 const createClientSchema = (t: any) =>
   zod.object({
     name: zod.string().min(1, t('clients.form.validation.clientNameRequired')),
-    email: zod.string().email(t('clients.form.validation.emailRequired')),
+    email: zod.string().email({ message: t('clients.form.validation.emailRequired') }),
     phone: zod.string().optional(),
     company: zod.string().optional(),
     vatNumber: zod.string().optional(),
@@ -47,7 +47,7 @@ const createClientSchema = (t: any) =>
         name: zod.string().optional(),
         email: zod
           .string()
-          .email(t('clients.form.validation.contactEmailInvalid'))
+          .email({ message: t('clients.form.validation.contactEmailInvalid') })
           .optional()
           .or(zod.literal('')),
         phone: zod.string().optional(),

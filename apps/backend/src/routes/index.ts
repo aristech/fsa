@@ -26,6 +26,7 @@ import { webhookTestRoutes } from "./webhook-test";
 import { aiRoutes } from "./ai";
 import { autocompleteRoutes } from "./autocomplete";
 import { aiSettingsRoutes } from "./ai-settings";
+import { reminderRoutes } from "./reminders";
 
 export async function registerRoutes(fastify: FastifyInstance) {
   // Health check
@@ -62,4 +63,5 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(aiRoutes, { prefix: "/api/v1/ai" });
   await fastify.register(autocompleteRoutes, { prefix: "/api/v1" });
   await fastify.register(aiSettingsRoutes, { prefix: "/api/v1" });
+  await fastify.register(reminderRoutes, { prefix: "/api/v1/reminders" });
 }

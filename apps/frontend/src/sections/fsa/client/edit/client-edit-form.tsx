@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 import Grid from '@mui/material/Grid';
 import { LoadingButton } from '@mui/lab';
-import { Card, Stack, Button, Typography, CardContent } from '@mui/material';
+import { Card, Stack, Button, Container, Typography, CardContent } from '@mui/material';
 
 import { useTranslate } from 'src/locales/use-locales';
 import axiosInstance, { endpoints } from 'src/lib/axios';
@@ -22,7 +22,7 @@ import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 const createClientSchema = (t: any) =>
   zod.object({
     name: zod.string().min(1, t('clients.form.validation.clientNameRequired')),
-    email: zod.string().email(t('clients.form.validation.emailRequired')),
+    email: zod.string().email({ message: t('clients.form.validation.emailRequired') }),
     phone: zod.string().optional(),
     company: zod.string().optional(),
     vatNumber: zod.string().optional(),
@@ -47,7 +47,7 @@ const createClientSchema = (t: any) =>
         name: zod.string().optional(),
         email: zod
           .string()
-          .email(t('clients.form.validation.contactEmailInvalid'))
+          .email({ message: t('clients.form.validation.contactEmailInvalid') })
           .optional()
           .or(zod.literal('')),
         phone: zod.string().optional(),
@@ -71,6 +71,13 @@ type Client = {
     state: string;
     zipCode: string;
     country: string;
+  };
+  billingAddress?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
   };
   contactPerson?: {
     name?: string;
@@ -143,11 +150,11 @@ export function ClientEditForm({ client }: Props) {
           country: client.address?.country || 'US',
         },
         billingAddress: {
-          street: '',
-          city: '',
-          state: '',
-          zipCode: '',
-          country: '',
+          street: client.billingAddress?.street || '',
+          city: client.billingAddress?.city || '',
+          state: client.billingAddress?.state || '',
+          zipCode: client.billingAddress?.zipCode || '',
+          country: client.billingAddress?.country || '',
         },
         contactPerson: {
           name: client.contactPerson?.name || '',
@@ -182,6 +189,7 @@ export function ClientEditForm({ client }: Props) {
   };
 
   return (
+    <Container maxWidth="xl">
     <Form methods={methods} onSubmit={handleSubmit(onSubmit)}>
       <CustomBreadcrumbs
         heading={t('clients.editClient')}
@@ -344,12 +352,14 @@ export function ClientEditForm({ client }: Props) {
                 {t('clients.cancel')}
               </Button>
               <LoadingButton type="submit" variant="contained" loading={isSubmitting}>
-                {t('clients.editClient')}
+                {t('clients.save')}
               </LoadingButton>
             </Stack>
-          </Stack>
-        </CardContent>
-      </Card>
-    </Form>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Form>
+    </Container>
+
   );
 }

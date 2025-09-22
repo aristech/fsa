@@ -10,6 +10,7 @@ import {
   Button,
   Slider,
   Divider,
+  Container,
   Typography,
   CardContent,
   LinearProgress,
@@ -159,7 +160,7 @@ export function WorkOrderDetails({ id }: Props) {
   const workOrder = detailsRes?.data;
 
   return (
-    <>
+    <Container maxWidth="xl">
       <CustomBreadcrumbs
         heading={
           workOrder?.title ||
@@ -445,9 +446,7 @@ export function WorkOrderDetails({ id }: Props) {
             <Card>
               <CardContent>
                 <Stack spacing={2}>
-                  <Typography variant="h6">
-                    {t('assignedPersonnel', { defaultValue: 'Assigned Personnel' })}
-                  </Typography>
+                 
                   <WorkOrderPersonnelSelection
                     value={
                       Array.isArray(workOrder?.personnelIds)
@@ -508,6 +507,6 @@ export function WorkOrderDetails({ id }: Props) {
           </Stack>
         </Grid>
       </Grid>
-    </>
+    </Container>
   );
 }

@@ -32,6 +32,20 @@ export interface ITask extends Document {
   clientId?: string; // Reference to Client
   clientName?: string; // Cached client name for display
   clientCompany?: string; // Cached client company for display
+  // Repeat settings
+  repeat?: {
+    enabled: boolean;
+    type: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
+    customType?: 'weeks' | 'months';
+    frequency?: number;
+  };
+  // Reminder settings
+  reminder?: {
+    enabled: boolean;
+    type: '1hour' | '1day' | '1week' | '1month';
+    lastSent?: Date;
+    nextReminder?: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -148,6 +162,44 @@ const TaskSchema = new Schema<ITask>(
     clientCompany: {
       type: String,
       trim: true,
+    },
+    // Repeat settings
+    repeat: {
+      enabled: {
+        type: Boolean,
+        default: false,
+      },
+      type: {
+        type: String,
+        enum: ['daily', 'weekly', 'monthly', 'yearly', 'custom'],
+      },
+      customType: {
+        type: String,
+        enum: ['weeks', 'months'],
+      },
+      frequency: {
+        type: Number,
+        min: 1,
+        max: 26,
+      },
+    },
+    // Reminder settings
+    reminder: {
+      enabled: {
+        type: Boolean,
+        default: false,
+      },
+      type: {
+        type: String,
+        enum: ['1hour', '1day', '1week', '1month'],
+      },
+      lastSent: {
+        type: Date,
+      },
+      nextReminder: {
+        type: Date,
+        index: true, // Index for efficient querying of pending reminders
+      },
     },
   },
   {

@@ -62,6 +62,8 @@ export function KanbanTaskCreateDialog({
 }: Props) {
   const { selectedClient } = useClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [repeatData, setRepeatData] = useState<any>(null);
+  const [reminderData, setReminderData] = useState<any>(null);
 
   // Fetch work orders for selection
   const { data: workOrdersData } = useSWR(
@@ -215,6 +217,14 @@ export function KanbanTaskCreateDialog({
               clientName: (selectedWorkOrder.clientId as any)?.name,
               clientCompany: (selectedWorkOrder.clientId as any)?.company,
             }),
+          // Add repeat information if enabled
+          ...(repeatData?.enabled && {
+            repeat: repeatData,
+          }),
+          // Add reminder information if enabled
+          ...(reminderData?.enabled && {
+            reminder: reminderData,
+          }),
         };
 
         // Use the optimistic createTask function
@@ -438,12 +448,19 @@ export function KanbanTaskCreateDialog({
                 variant="calendar"
                 title="Choose task dates & times"
                 enableTime
+                enableRepeat
+                enableReminder
                 startDate={rangePicker.startDate}
                 endDate={rangePicker.endDate}
                 onChangeStartDate={rangePicker.onChangeStartDate}
                 onChangeEndDate={rangePicker.onChangeEndDate}
                 open={rangePicker.open}
                 onClose={rangePicker.onClose}
+                onSubmit={(data?: any) => {
+                  if (data?.repeat) setRepeatData(data.repeat);
+                  if (data?.reminder) setReminderData(data.reminder);
+                  rangePicker.onClose();
+                }}
               />
             </Box>
 

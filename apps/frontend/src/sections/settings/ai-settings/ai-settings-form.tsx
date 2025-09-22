@@ -34,8 +34,8 @@ import { Form, RHFSelect, RHFTextField } from 'src/components/hook-form';
 
 const createSchema = (t: any) =>
   zod.object({
-    openaiApiKey: zod.string().min(1, t('settings.ai.form.validation.apiKeyRequired')),
-    preferredModel: zod.string().min(1, t('settings.ai.form.validation.modelRequired')),
+    openaiApiKey: zod.string().optional(),
+    preferredModel: zod.string().optional(),
     maxTokens: zod
       .number()
       .min(1, t('settings.ai.form.validation.maxTokensMin'))
@@ -189,9 +189,9 @@ export function AISettingsForm({ onClose, onSuccess }: Props) {
             <Grid size={{ xs: 12 }}>
               <RHFTextField
                 name="openaiApiKey"
-                label={t('settings.ai.form.openaiApiKey')}
+                label={`${t('settings.ai.form.openaiApiKey')} (${t('clients.optional')})`}
                 type={showApiKey ? 'text' : 'password'}
-                placeholder="sk-..."
+                placeholder="sk-... (Optional - leave empty to use LocalNLP only)"
                 slotProps={{
                   input: {
                     endAdornment: (
@@ -222,7 +222,7 @@ export function AISettingsForm({ onClose, onSuccess }: Props) {
                 }}
               />
               <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                Get your API key from{' '}
+                Optional: Get your API key from{' '}
                 <Button
                   component="a"
                   href="https://platform.openai.com/api-keys"
@@ -233,12 +233,13 @@ export function AISettingsForm({ onClose, onSuccess }: Props) {
                 >
                   OpenAI Platform
                 </Button>
+                {' '}to enable advanced AI features. LocalNLP works without an API key.
               </Typography>
             </Grid>
 
             {/* Preferred Model */}
             <Grid size={{ xs: 12, md: 6 }}>
-              <RHFSelect name="preferredModel" label={t('settings.ai.form.preferredModel')}>
+              <RHFSelect name="preferredModel" label={`${t('settings.ai.form.preferredModel')} (${t('clients.optional')})`}>
                 {createModels(t).map((model) => (
                   <MenuItem key={model.value} value={model.value}>
                     {model.label}

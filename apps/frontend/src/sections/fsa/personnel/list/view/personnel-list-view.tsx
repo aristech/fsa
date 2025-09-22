@@ -43,8 +43,8 @@ export function PersonnelListView() {
   const canReset = !!filters.name || !!filters.role || filters.status !== 'all';
 
   return (
-    <>
-      <Container maxWidth={false}>
+
+      <Container maxWidth="xl">
         <Stack
           spacing={4}
           sx={{
@@ -110,9 +110,10 @@ export function PersonnelListView() {
 
           <PersonnelList filters={filters} />
         </Stack>
+        <PersonnelCreateView open={openCreate.value} onClose={openCreate.onFalse} />
       </Container>
 
-      <PersonnelCreateView open={openCreate.value} onClose={openCreate.onFalse} />
-    </>
+  
+   
   );
 }

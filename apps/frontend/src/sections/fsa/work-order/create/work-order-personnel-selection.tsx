@@ -96,9 +96,7 @@ export function WorkOrderPersonnelSelection({ value = [], onChange, disabled = f
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <BlockLabel sx={{ height: 40, lineHeight: '40px' }}>
-        {t('assignedPersonnel', { defaultValue: 'Assigned Personnel' })}
-      </BlockLabel>
+      
 
       <Box sx={{ gap: 1, display: 'flex', flexWrap: 'wrap' }}>
         {error ? (

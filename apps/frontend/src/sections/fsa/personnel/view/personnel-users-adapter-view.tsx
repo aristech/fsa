@@ -11,6 +11,7 @@ import Card from '@mui/material/Card';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
+import Container from '@mui/material/Container';
 import TableBody from '@mui/material/TableBody';
 import IconButton from '@mui/material/IconButton';
 
@@ -247,7 +248,7 @@ export function PersonnelUsersAdapterView() {
   );
 
   return (
-    <>
+    <Container maxWidth="xl">
       <DashboardContent>
         <CustomBreadcrumbs
           heading="Personnel"
@@ -369,7 +370,7 @@ export function PersonnelUsersAdapterView() {
       />
 
       {renderConfirmDialog()}
-    </>
+    </Container>
   );
 }
 
