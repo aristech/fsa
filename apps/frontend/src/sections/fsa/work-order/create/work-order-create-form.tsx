@@ -55,7 +55,7 @@ const workOrderSchema = zod.object({
   estimatedDurationUnit: zod.enum(['hours', 'days', 'weeks', 'months']).optional(),
   personnelIds: zod.array(zod.string()).optional(),
   attachments: zod.array(zod.any()).optional(),
-  progressMode: zod.enum(['computed', 'manual', 'weighted']).optional(),
+  progressMode: zod.enum(['computed', 'manual']).optional(),
   progressManual: zod.number().min(0).max(100).optional(),
 });
 
@@ -257,7 +257,7 @@ export function WorkOrderCreateForm({ id }: Props) {
       } else {
         throw new Error(
           response.data.message ||
-            t('failedToCreateWorkOrder', { defaultValue: 'Failed to create work order' })
+          t('failedToCreateWorkOrder', { defaultValue: 'Failed to create work order' })
         );
       }
     } catch (error) {
@@ -274,351 +274,349 @@ export function WorkOrderCreateForm({ id }: Props) {
 
   return (
     <Container maxWidth="xl">
-    <Form methods={methods} onSubmit={handleSubmit(onSubmit)}>
-      <Card>
-        <CardContent>
-          <Stack spacing={3}>
-            {/* Basic Information */}
+      <Form methods={methods} onSubmit={handleSubmit(onSubmit)}>
+        <Card>
+          <CardContent>
             <Stack spacing={3}>
-              <CustomBreadcrumbs
-                heading={
-                  id
-                    ? t('workOrderEdit', { defaultValue: 'Work Order Edit' })
-                    : t('workOrderCreate', { defaultValue: 'Work Order Create' })
-                }
-                links={[
-                  { name: t('dashboard.title', { tenant: '' }), href: '/dashboard' },
-                  {
-                    name: t('pages.workOrders', { defaultValue: 'Work Orders' }),
-                    href: '/dashboard/work-orders',
-                  },
-                  ...(id
-                    ? [{ name: t('workOrderEdit', { defaultValue: 'Work Order Edit' }) }]
-                    : []),
-                ]}
-                sx={{ mb: 5 }}
-                action={
-                  id && (
-                    <Button
-                      variant="contained"
-                      startIcon={<Iconify icon="eva:eye-fill" />}
-                      href={`${paths.dashboard.fsa.workOrders.details(id)}`}
-                    >
-                      {t('view', { defaultValue: 'View' })}
-                    </Button>
-                  )
-                }
-              />
-
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  {clients.length === 0 ? (
-                    <Stack spacing={1}>
-                      <Typography variant="subtitle2">
-                        {t('client', { defaultValue: 'Client' })} *
-                      </Typography>
-                      <Box
-                        sx={{
-                          p: 3,
-                          border: 1,
-                          borderColor: 'divider',
-                          borderRadius: 1,
-                          bgcolor: 'background.neutral',
-                          textAlign: 'center',
-                        }}
+              {/* Basic Information */}
+              <Stack spacing={3}>
+                <CustomBreadcrumbs
+                  heading={
+                    id
+                      ? t('workOrderEdit', { defaultValue: 'Work Order Edit' })
+                      : t('workOrderCreate', { defaultValue: 'Work Order Create' })
+                  }
+                  links={[
+                    { name: t('dashboard.title', { tenant: '' }), href: '/dashboard' },
+                    {
+                      name: t('pages.workOrders', { defaultValue: 'Work Orders' }),
+                      href: '/dashboard/work-orders',
+                    },
+                    ...(id
+                      ? [{ name: t('workOrderEdit', { defaultValue: 'Work Order Edit' }) }]
+                      : []),
+                  ]}
+                  sx={{ mb: 5 }}
+                  action={
+                    id && (
+                      <Button
+                        variant="contained"
+                        startIcon={<Iconify icon="eva:eye-fill" />}
+                        href={`${paths.dashboard.fsa.workOrders.details(id)}`}
                       >
-                        <Iconify
-                          icon="solar:users-group-two-rounded-bold"
-                          sx={{ width: 48, height: 48, color: 'text.disabled', mb: 2 }}
-                        />
-                        <Typography variant="h6" color="text.secondary" gutterBottom>
-                          {t('noClientsFound', { defaultValue: 'No Clients Found' })}
-                        </Typography>
-                        <Typography variant="body2" color="text.disabled" paragraph>
-                          {t('addClientBeforeWorkOrder', {
-                            defaultValue:
-                              'You need to add at least one client before creating a work order.',
-                          })}
-                        </Typography>
-                        <Link
-                          component={RouterLink}
-                          href={paths.dashboard.fsa.clients.new}
-                          variant="subtitle2"
-                          sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}
-                        >
-                          <Iconify icon="solar:add-circle-bold" width={16} />
-                          {t('addYourFirstClient', { defaultValue: 'Add Your First Client' })}
-                        </Link>
-                      </Box>
-                    </Stack>
-                  ) : (
-                    <RHFSelect
-                      name="clientId"
-                      label={`${t('client', { defaultValue: 'Client' })} *`}
-                      placeholder={t('selectClient', { defaultValue: 'Select client' })}
-                    >
-                      {clients.map((client: Client) => (
-                        <MenuItem key={client._id} value={client._id}>
-                          {client.name}
-                        </MenuItem>
-                      ))}
-                    </RHFSelect>
-                  )}
-                </Grid>
+                        {t('view', { defaultValue: 'View' })}
+                      </Button>
+                    )
+                  }
+                />
 
-                <Grid size={{ xs: 12, md: 4}}>
-                  {personnel.length === 0 ? (
-                    <Stack spacing={1}>
-                      
-                      <Box
-                        sx={{
-                          p: 2.5,
-                          border: 1,
-                          borderColor: 'divider',
-                          borderRadius: 1,
-                          bgcolor: 'background.neutral',
-                          textAlign: 'center',
-                        }}
-                      >
-                        <Iconify
-                          icon="solar:user-plus-bold"
-                          sx={{ width: 40, height: 40, color: 'text.disabled', mb: 1.5 }}
-                        />
-                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                          {t('noPersonnelAvailable', { defaultValue: 'No Personnel Available' })}
+                <Grid container spacing={3}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    {clients.length === 0 ? (
+                      <Stack spacing={1}>
+                        <Typography variant="subtitle2">
+                          {t('client', { defaultValue: 'Client' })} *
                         </Typography>
-                        <Typography variant="body2" color="text.disabled" sx={{ mb: 1.5 }}>
-                          {t('addPersonnelHint', {
-                            defaultValue: 'Add personnel to assign them to work orders.',
-                          })}
-                        </Typography>
-                        <Link
-                          component={RouterLink}
-                          href={paths.dashboard.fsa.personnel.new}
-                          variant="caption"
+                        <Box
                           sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                            textDecoration: 'underline',
+                            p: 3,
+                            border: 1,
+                            borderColor: 'divider',
+                            borderRadius: 1,
+                            bgcolor: 'background.neutral',
+                            textAlign: 'center',
                           }}
                         >
-                          <Iconify icon="solar:add-circle-bold" width={14} />
-                          {t('addYourFirstPersonnel', { defaultValue: 'Add Your First Personnel' })}
-                        </Link>
+                          <Iconify
+                            icon="solar:users-group-two-rounded-bold"
+                            sx={{ width: 48, height: 48, color: 'text.disabled', mb: 2 }}
+                          />
+                          <Typography variant="h6" color="text.secondary" gutterBottom>
+                            {t('noClientsFound', { defaultValue: 'No Clients Found' })}
+                          </Typography>
+                          <Typography variant="body2" color="text.disabled" paragraph>
+                            {t('addClientBeforeWorkOrder', {
+                              defaultValue:
+                                'You need to add at least one client before creating a work order.',
+                            })}
+                          </Typography>
+                          <Link
+                            component={RouterLink}
+                            href={paths.dashboard.fsa.clients.new}
+                            variant="subtitle2"
+                            sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}
+                          >
+                            <Iconify icon="solar:add-circle-bold" width={16} />
+                            {t('addYourFirstClient', { defaultValue: 'Add Your First Client' })}
+                          </Link>
+                        </Box>
+                      </Stack>
+                    ) : (
+                      <RHFSelect
+                        name="clientId"
+                        label={`${t('client', { defaultValue: 'Client' })} *`}
+                        placeholder={t('selectClient', { defaultValue: 'Select client' })}
+                      >
+                        {clients.map((client: Client) => (
+                          <MenuItem key={client._id} value={client._id}>
+                            {client.name}
+                          </MenuItem>
+                        ))}
+                      </RHFSelect>
+                    )}
+                  </Grid>
+
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    {personnel.length === 0 ? (
+                      <Stack spacing={1}>
+
+                        <Box
+                          sx={{
+                            p: 2.5,
+                            border: 1,
+                            borderColor: 'divider',
+                            borderRadius: 1,
+                            bgcolor: 'background.neutral',
+                            textAlign: 'center',
+                          }}
+                        >
+                          <Iconify
+                            icon="solar:user-plus-bold"
+                            sx={{ width: 40, height: 40, color: 'text.disabled', mb: 1.5 }}
+                          />
+                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                            {t('noPersonnelAvailable', { defaultValue: 'No Personnel Available' })}
+                          </Typography>
+                          <Typography variant="body2" color="text.disabled" sx={{ mb: 1.5 }}>
+                            {t('addPersonnelHint', {
+                              defaultValue: 'Add personnel to assign them to work orders.',
+                            })}
+                          </Typography>
+                          <Link
+                            component={RouterLink}
+                            href={paths.dashboard.fsa.personnel.new}
+                            variant="caption"
+                            sx={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 0.5,
+                              textDecoration: 'underline',
+                            }}
+                          >
+                            <Iconify icon="solar:add-circle-bold" width={14} />
+                            {t('addYourFirstPersonnel', { defaultValue: 'Add Your First Personnel' })}
+                          </Link>
+                        </Box>
+                      </Stack>
+                    ) : (
+                      <RHFWorkOrderPersonnel name="personnelIds" />
+                    )}
+                  </Grid>
+
+                  <Grid size={{ xs: 12 }}>
+                    <RHFTextField
+                      name="title"
+                      label={`${t('workOrderTitle', { defaultValue: 'Work Order Title' })} *`}
+                      placeholder={t('workOrderTitlePlaceholder', {
+                        defaultValue: 'Brief description of the work to be performed',
+                      })}
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Stack spacing={1}>
+                      <Typography variant="subtitle2">
+                        {t('priorityOptional', { defaultValue: 'Priority (Optional)' })}
+                      </Typography>
+
+                      <RHFSelect name="priority" label={t('priority', { defaultValue: 'Priority' })}>
+                        {getPriorityOptionsWithMetadata().map((priority) => (
+                          <MenuItem key={priority.value} value={priority.value}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Box
+                                sx={{
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: '50%',
+                                  bgcolor: priority.color,
+                                }}
+                              />
+                              {priority.label}
+                            </Box>
+                          </MenuItem>
+                        ))}
+                      </RHFSelect>
+                    </Stack>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Stack spacing={1}>
+                      <Typography variant="subtitle2">
+                        {t('estimatedDurationOptional', {
+                          defaultValue: 'Estimated Duration (Optional)',
+                        })}
+                      </Typography>
+                      <Grid container spacing={1}>
+                        <Grid size={{ xs: 2 }}>
+                          <RHFTextField
+                            name="estimatedDurationValue"
+                            type="number"
+                            placeholder="1"
+                            inputProps={{ min: 1 }}
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 6 }}>
+                          <RHFSelect name="estimatedDurationUnit">
+                            <MenuItem value="hours">{t('hours', { defaultValue: 'Hours' })}</MenuItem>
+                            <MenuItem value="days">{t('days', { defaultValue: 'Days' })}</MenuItem>
+                            <MenuItem value="weeks">{t('weeks', { defaultValue: 'Weeks' })}</MenuItem>
+                            <MenuItem value="months">
+                              {t('months', { defaultValue: 'Months' })}
+                            </MenuItem>
+                          </RHFSelect>
+                        </Grid>
+                      </Grid>
+                    </Stack>
+                  </Grid>
+                </Grid>
+              </Stack>
+
+              {/* Location Information */}
+              <Stack spacing={3}>
+                <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 600 }}>
+                  {t('locationOptional', { defaultValue: 'Location (Optional)' })}
+                </Typography>
+                <Grid container spacing={3}>
+                  <Grid size={{ xs: 12 }}>
+                    <RHFTextField
+                      name="locationAddress"
+                      label={t('serviceAddress', { defaultValue: 'Service Address' })}
+                      placeholder={t('serviceAddressPlaceholder', {
+                        defaultValue: 'Enter the complete service address',
+                      })}
+                      multiline
+                      rows={2}
+                    />
+                  </Grid>
+                </Grid>
+              </Stack>
+
+              {/* Scheduling & Additional Information */}
+              <Stack spacing={3}>
+                <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 600 }}>
+                  {t('schedulingAndAdditionalOptional', {
+                    defaultValue: 'Scheduling & Additional Information (Optional)',
+                  })}
+                </Typography>
+                <Grid container spacing={3}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <RHFDateTimePicker
+                      name="scheduledDate"
+                      label={t('preferredScheduledDateTime', {
+                        defaultValue: 'Preferred Scheduled Date & Time',
+                      })}
+                      minutesStep={60}
+                      slotProps={{
+                        textField: {
+                          helperText: t('leaveEmptyForASAP', {
+                            defaultValue: 'Leave empty for ASAP scheduling',
+                          }),
+                        },
+                      }}
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <RHFSelect
+                      name="progressMode"
+                      label={t('progressMode', { defaultValue: 'Progress Mode' })}
+                      placeholder={t('selectMode', { defaultValue: 'Select mode' })}
+                    >
+                      <MenuItem value="computed">
+                        {t('computed', { defaultValue: 'Computed' })}
+                      </MenuItem>
+                      <MenuItem value="manual">{t('manual', { defaultValue: 'Manual' })}</MenuItem>
+
+                    </RHFSelect>
+                    <Stack spacing={1}>
+                      <Typography variant="subtitle2">
+                        {t('manualProgress', { defaultValue: 'Manual Progress' })}
+                      </Typography>
+                      <Box px={1}>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          value={methods.watch('progressManual') ?? 0}
+                          onChange={(e) => methods.setValue('progressManual', Number(e.target.value))}
+                          disabled={methods.watch('progressMode') !== 'manual'}
+                        />
+                        <Typography variant="caption" color="text.secondary">
+                          {methods.watch('progressManual') ?? 0}%
+                        </Typography>
                       </Box>
                     </Stack>
-                  ) : (
-                    <RHFWorkOrderPersonnel name="personnelIds" />
-                  )}
-                </Grid>
-
-                <Grid size={{ xs: 12 }}>
-                  <RHFTextField
-                    name="title"
-                    label={`${t('workOrderTitle', { defaultValue: 'Work Order Title' })} *`}
-                    placeholder={t('workOrderTitlePlaceholder', {
-                      defaultValue: 'Brief description of the work to be performed',
-                    })}
-                  />
-                </Grid>
-
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Stack spacing={1}>
-                    <Typography variant="subtitle2">
-                      {t('priorityOptional', { defaultValue: 'Priority (Optional)' })}
-                    </Typography>
-
-                    <RHFSelect name="priority" label={t('priority', { defaultValue: 'Priority' })}>
-                      {getPriorityOptionsWithMetadata().map((priority) => (
-                        <MenuItem key={priority.value} value={priority.value}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Box
-                              sx={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: '50%',
-                                bgcolor: priority.color,
-                              }}
-                            />
-                            {priority.label}
-                          </Box>
-                        </MenuItem>
-                      ))}
-                    </RHFSelect>
-                  </Stack>
-                </Grid>
-
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Stack spacing={1}>
-                    <Typography variant="subtitle2">
-                      {t('estimatedDurationOptional', {
-                        defaultValue: 'Estimated Duration (Optional)',
-                      })}
-                    </Typography>
-                    <Grid container spacing={1}>
-                      <Grid size={{ xs: 2 }}>
-                        <RHFTextField
-                          name="estimatedDurationValue"
-                          type="number"
-                          placeholder="1"
-                          inputProps={{ min: 1 }}
-                        />
-                      </Grid>
-                      <Grid size={{ xs: 6 }}>
-                        <RHFSelect name="estimatedDurationUnit">
-                          <MenuItem value="hours">{t('hours', { defaultValue: 'Hours' })}</MenuItem>
-                          <MenuItem value="days">{t('days', { defaultValue: 'Days' })}</MenuItem>
-                          <MenuItem value="weeks">{t('weeks', { defaultValue: 'Weeks' })}</MenuItem>
-                          <MenuItem value="months">
-                            {t('months', { defaultValue: 'Months' })}
-                          </MenuItem>
-                        </RHFSelect>
-                      </Grid>
-                    </Grid>
-                  </Stack>
-                </Grid>
-              </Grid>
-            </Stack>
-
-            {/* Location Information */}
-            <Stack spacing={3}>
-              <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 600 }}>
-                {t('locationOptional', { defaultValue: 'Location (Optional)' })}
-              </Typography>
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12 }}>
-                  <RHFTextField
-                    name="locationAddress"
-                    label={t('serviceAddress', { defaultValue: 'Service Address' })}
-                    placeholder={t('serviceAddressPlaceholder', {
-                      defaultValue: 'Enter the complete service address',
-                    })}
-                    multiline
-                    rows={2}
-                  />
-                </Grid>
-              </Grid>
-            </Stack>
-
-            {/* Scheduling & Additional Information */}
-            <Stack spacing={3}>
-              <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 600 }}>
-                {t('schedulingAndAdditionalOptional', {
-                  defaultValue: 'Scheduling & Additional Information (Optional)',
-                })}
-              </Typography>
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <RHFDateTimePicker
-                    name="scheduledDate"
-                    label={t('preferredScheduledDateTime', {
-                      defaultValue: 'Preferred Scheduled Date & Time',
-                    })}
-                    minutesStep={60}
-                    slotProps={{
-                      textField: {
-                        helperText: t('leaveEmptyForASAP', {
-                          defaultValue: 'Leave empty for ASAP scheduling',
-                        }),
-                      },
-                    }}
-                  />
-                </Grid>
-
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <RHFSelect
-                    name="progressMode"
-                    label={t('progressMode', { defaultValue: 'Progress Mode' })}
-                    placeholder={t('selectMode', { defaultValue: 'Select mode' })}
-                  >
-                    <MenuItem value="computed">
-                      {t('computed', { defaultValue: 'Computed' })}
-                    </MenuItem>
-                    <MenuItem value="manual">{t('manual', { defaultValue: 'Manual' })}</MenuItem>
-                    <MenuItem value="weighted">
-                      {t('weighted', { defaultValue: 'Weighted' })}
-                    </MenuItem>
-                  </RHFSelect>
-                  <Stack spacing={1}>
-                    <Typography variant="subtitle2">
-                      {t('manualProgress', { defaultValue: 'Manual Progress' })}
-                    </Typography>
-                    <Box px={1}>
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        value={methods.watch('progressManual') ?? 0}
-                        onChange={(e) => methods.setValue('progressManual', Number(e.target.value))}
-                        disabled={methods.watch('progressMode') !== 'manual'}
-                      />
-                      <Typography variant="caption" color="text.secondary">
-                        {methods.watch('progressManual') ?? 0}%
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Stack spacing={1}>
+                      <Typography variant="subtitle2">
+                        {t('attachmentsOptional', { defaultValue: 'Attachments (Optional)' })}
                       </Typography>
-                    </Box>
-                  </Stack>
+                      <RHFUpload
+                        name="attachments"
+                        multiple
+                        accept={{ 'image/*': [], 'application/pdf': [], 'text/*': [] }}
+                        helperText={t('uploadHelper', {
+                          defaultValue: 'Upload photos, documents, or other relevant files',
+                        })}
+                      />
+                    </Stack>
+                  </Grid>
                 </Grid>
+
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <Stack spacing={1}>
+                  <Stack spacing={1.5}>
                     <Typography variant="subtitle2">
-                      {t('attachmentsOptional', { defaultValue: 'Attachments (Optional)' })}
+                      {t('detailsOptional', { defaultValue: 'Details (Optional)' })}
                     </Typography>
-                    <RHFUpload
-                      name="attachments"
-                      multiple
-                      accept={{ 'image/*': [], 'application/pdf': [], 'text/*': [] }}
-                      helperText={t('uploadHelper', {
-                        defaultValue: 'Upload photos, documents, or other relevant files',
+                    <RHFEditor
+                      name="details"
+                      placeholder={t('detailsPlaceholder', {
+                        defaultValue:
+                          'Describe the work to be performed, requirements, and any special instructions...',
                       })}
                     />
                   </Stack>
                 </Grid>
-              </Grid>
+              </Stack>
 
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Stack spacing={1.5}>
-                  <Typography variant="subtitle2">
-                    {t('detailsOptional', { defaultValue: 'Details (Optional)' })}
-                  </Typography>
-                  <RHFEditor
-                    name="details"
-                    placeholder={t('detailsPlaceholder', {
-                      defaultValue:
-                        'Describe the work to be performed, requirements, and any special instructions...',
-                    })}
-                  />
-                </Stack>
-              </Grid>
-            </Stack>
-
-            {/* Actions */}
-            <Stack
-              direction="row"
-              spacing={2}
-              justifyContent="flex-end"
-              sx={{ pt: 2, borderTop: 1, borderColor: 'divider' }}
-            >
-              <Button variant="outlined" href="/dashboard/work-orders" size="large">
-                {t('cancel', { defaultValue: 'Cancel' })}
-              </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                loading={isSubmitting}
-                disabled={clients.length === 0}
-                size="large"
-                startIcon={<Iconify icon="solar:add-circle-bold" />}
+              {/* Actions */}
+              <Stack
+                direction="row"
+                spacing={2}
+                justifyContent="flex-end"
+                sx={{ pt: 2, borderTop: 1, borderColor: 'divider' }}
               >
-                {id
-                  ? t('updateWorkOrder', { defaultValue: 'Update Work Order' })
-                  : t('createWorkOrder', { defaultValue: 'Create Work Order' })}
-              </Button>
+                <Button variant="outlined" href="/dashboard/work-orders" size="large">
+                  {t('cancel', { defaultValue: 'Cancel' })}
+                </Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  loading={isSubmitting}
+                  disabled={clients.length === 0}
+                  size="large"
+                  startIcon={<Iconify icon="solar:add-circle-bold" />}
+                >
+                  {id
+                    ? t('updateWorkOrder', { defaultValue: 'Update Work Order' })
+                    : t('createWorkOrder', { defaultValue: 'Create Work Order' })}
+                </Button>
+              </Stack>
             </Stack>
-          </Stack>
-        </CardContent>
-      </Card>
-    </Form>
+          </CardContent>
+        </Card>
+      </Form>
     </Container>
   );
 }

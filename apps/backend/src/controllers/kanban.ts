@@ -798,6 +798,8 @@ async function handleUpdateTask(
     clientCompany,
     completeStatus,
     workOrderTitle,
+    repeat,
+    reminder,
   } = taskData;
 
   // Track what fields are being changed for notifications
@@ -893,6 +895,18 @@ async function handleUpdateTask(
     } catch {
       updateData.attachments = [];
     }
+  }
+
+  // Handle repeat settings
+  if (repeat !== undefined) {
+    updateData.repeat = repeat;
+    changes.push('repeat');
+  }
+
+  // Handle reminder settings
+  if (reminder !== undefined) {
+    updateData.reminder = reminder;
+    changes.push('reminder');
   }
 
   const updatedTask = await Task.findOneAndUpdate(

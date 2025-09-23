@@ -1,5 +1,8 @@
-import useSWR from 'swr';
+import type { Dayjs } from 'dayjs';
+
 import { z as zod } from 'zod';
+import useSWR, { mutate } from 'swr';
+import { useBoolean } from 'minimal-shared/hooks';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMemo, useState, useEffect, useCallback } from 'react';
@@ -20,14 +23,16 @@ import LoadingButton from '@mui/lab/LoadingButton';
 import FormControl from '@mui/material/FormControl';
 import Autocomplete from '@mui/material/Autocomplete';
 
-import axiosInstance from 'src/lib/axios';
-import { createTask } from 'src/actions/kanban';
+// import { createTask } from 'src/actions/kanban';
 import { useClient } from 'src/contexts/client-context';
+import axiosInstance, { endpoints } from 'src/lib/axios';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 import { useDateRangePicker, CustomDateRangePicker } from 'src/components/custom-date-range-picker';
+
+import { KanbanContactsDialog } from '../components/kanban-contacts-dialog';
 
 // ----------------------------------------------------------------------
 
@@ -62,8 +67,7 @@ export function KanbanTaskCreateDialog({
 }: Props) {
   const { selectedClient } = useClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [repeatData, setRepeatData] = useState<any>(null);
-  const [reminderData, setReminderData] = useState<any>(null);
+  const contactsDialog = useBoolean();
 
   // Fetch work orders for selection
   const { data: workOrdersData } = useSWR(
@@ -110,6 +114,32 @@ export function KanbanTaskCreateDialog({
 
   // Date range picker for start and due dates
   const rangePicker = useDateRangePicker(null, null);
+
+  const preserveTimeIfMidnight = useCallback((newDate: Dayjs | null, prevDate: Dayjs | null) => {
+    if (!newDate) return null;
+    if (!prevDate) return newDate;
+    const isMidnight = newDate.hour() === 0 && newDate.minute() === 0 && (newDate.second?.() ?? 0) === 0;
+    if (isMidnight) {
+      return newDate.hour(prevDate.hour()).minute(prevDate.minute());
+    }
+    return newDate;
+  }, []);
+
+  const handleChangeStartDate = useCallback(
+    (next: Dayjs | null) => {
+      const adjusted = preserveTimeIfMidnight(next, rangePicker.startDate);
+      rangePicker.onChangeStartDate(adjusted);
+    },
+    [preserveTimeIfMidnight, rangePicker]
+  );
+
+  const handleChangeEndDate = useCallback(
+    (next: Dayjs | null) => {
+      const adjusted = preserveTimeIfMidnight(next, rangePicker.endDate);
+      rangePicker.onChangeEndDate(adjusted);
+    },
+    [preserveTimeIfMidnight, rangePicker]
+  );
 
   const {
     control,
@@ -166,33 +196,21 @@ export function KanbanTaskCreateDialog({
         const selectedWorkOrder = workOrders.find((wo: any) => wo._id === data.workOrderId);
         const selectedClientFromForm = clients.find((client: any) => client._id === data.clientId);
 
+        const assigneeIds: string[] = Array.from(new Set(data.assignees || []));
         const taskData = {
           name: data.name,
           description: data.description,
           priority: data.priority,
           labels: data.labels,
-          assignee:
-            data.assignees?.map((id: string) => {
-              const person = personnel.find((p: any) => p._id === id);
-              return {
-                id,
-                name: person?.name || 'Unknown',
-                email: person?.email,
-                avatarUrl: person?.avatarUrl,
-              };
-            }) || [],
-          reporter: {
-            id: 'current-user', // You might want to get this from auth context
-            name: 'Current User',
-            email: 'user@example.com',
-          },
+          // Backend expects `assignees` as array of personnel IDs; also send single `assignee` for compatibility
+          assignees: assigneeIds,
+          ...(assigneeIds.length > 0 ? { assignee: assigneeIds[0] } : {}),
           workOrderId: data.workOrderId || undefined,
           workOrderNumber: selectedWorkOrder?.workOrderNumber || undefined,
           workOrderTitle: selectedWorkOrder?.title || undefined,
-          due:
-            rangePicker.startDate && rangePicker.endDate
-              ? [rangePicker.startDate.toISOString(), rangePicker.endDate.toISOString()]
-              : undefined,
+          // Persist explicit start/due dates so time is saved
+          ...(rangePicker.startDate && { startDate: rangePicker.startDate.toISOString() }),
+          ...(rangePicker.endDate && { dueDate: rangePicker.endDate.toISOString() }),
           createdAt: new Date().toISOString(),
           status: 'Todo', // Default status
           columnId: status,
@@ -205,33 +223,52 @@ export function KanbanTaskCreateDialog({
           // Fallback to context client if no form selection
           ...(!selectedClientFromForm &&
             selectedClient && {
-              clientId: selectedClient._id,
-              clientName: selectedClient.name,
-              clientCompany: selectedClient.company,
-            }),
+            clientId: selectedClient._id,
+            clientName: selectedClient.name,
+            clientCompany: selectedClient.company,
+          }),
           // Final fallback: derive client from selected work order if available
           ...(!selectedClientFromForm &&
             !selectedClient &&
             selectedWorkOrder?.clientId && {
-              clientId: (selectedWorkOrder.clientId as any)?._id || selectedWorkOrder.clientId,
-              clientName: (selectedWorkOrder.clientId as any)?.name,
-              clientCompany: (selectedWorkOrder.clientId as any)?.company,
-            }),
-          // Add repeat information if enabled
-          ...(repeatData?.enabled && {
-            repeat: repeatData,
-          }),
-          // Add reminder information if enabled
-          ...(reminderData?.enabled && {
-            reminder: reminderData,
+            clientId: (selectedWorkOrder.clientId as any)?._id || selectedWorkOrder.clientId,
+            clientName: (selectedWorkOrder.clientId as any)?.name,
+            clientCompany: (selectedWorkOrder.clientId as any)?.company,
           }),
         };
 
-        // Use the optimistic createTask function
-        await createTask(status, taskData as any);
+        // Create task on server directly to obtain created ID
+        const resp = await axiosInstance.post(
+          endpoints.kanban,
+          { columnId: status, taskData },
+          { params: { endpoint: 'create-task' } }
+        );
+        const created = resp?.data?.data;
+        const createdTaskId = created?._id || created?.id;
+
+        // Ensure assignees persist even if WO inheritance runs after creation
+        if (createdTaskId && assigneeIds.length > 0) {
+          try {
+            await axiosInstance.post(
+              endpoints.kanban,
+              { taskData: { id: createdTaskId, assignees: assigneeIds } },
+              { params: { endpoint: 'update-task' } }
+            );
+          } catch (e) {
+            console.warn('Failed to enforce assignees post-create', e);
+          }
+        }
+
+        // Revalidate kanban and calendar caches
+        await Promise.all([
+          mutate(endpoints.kanban),
+          mutate((key: any) => typeof key === 'string' && key.startsWith(endpoints.kanban)),
+          mutate(endpoints.calendar),
+          taskData.clientId ? mutate(`${endpoints.calendar}?clientId=${taskData.clientId}`) : Promise.resolve(),
+        ]);
 
         toast.success('Task created successfully!');
-        onSuccess(taskData);
+        onSuccess({ ...taskData, id: createdTaskId });
         handleClose();
       } catch (error) {
         console.error('Failed to create task:', error);
@@ -252,9 +289,6 @@ export function KanbanTaskCreateDialog({
     onClose();
   }, [reset, rangePicker, onClose]);
 
-  const handleSubmitClick = () => {
-    // Debug helper - can be removed in production
-  };
 
   return (
     <Drawer
@@ -382,44 +416,56 @@ export function KanbanTaskCreateDialog({
               )}
             />
 
-            {/* Assignees */}
+            {/* Assignees (consistent with KanbanDetails) */}
             <Controller
               name="assignees"
               control={control}
-              render={({ field }) => (
-                <Autocomplete
-                  {...field}
-                  multiple
-                  options={personnel}
-                  getOptionLabel={(option: any) => option.name || 'Unknown'}
-                  value={personnel.filter((p: any) => field.value?.includes(p._id)) || []}
-                  onChange={(_, newValue) => {
-                    field.onChange(newValue.map((person: any) => person._id));
-                  }}
-                  renderTags={(tagValue, getTagProps) =>
-                    tagValue.map((option: any, index) => (
-                      <Chip
-                        {...getTagProps({ index })}
-                        key={option._id}
-                        label={option.name || 'Unknown'}
-                        avatar={
-                          <Avatar>
-                            {option.name
+              render={({ field }) => {
+                const selectedIds: string[] = field.value || [];
+                const selectedPeople = personnel.filter((p: any) => selectedIds.includes(p._id));
+                return (
+                  <Box>
+                    <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary' }}>
+                      Assignees
+                    </Typography>
+                    <Box sx={{ gap: 1, display: 'flex', flexWrap: 'wrap' }}>
+                      {selectedPeople.length > 0 ? (
+                        selectedPeople.map((user: any) => (
+                          <Avatar key={user._id}>
+                            {(user.name
                               ?.split(' ')
                               .map((n: string) => n.charAt(0))
                               .join('')
-                              .toUpperCase() || 'P'}
+                              .toUpperCase()) || 'A'}
                           </Avatar>
-                        }
+                        ))
+                      ) : (
+                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                          No assignees
+                        </Typography>
+                      )}
+                      <Button
+                        onClick={contactsDialog.onTrue}
+                        startIcon={<Iconify icon="mingcute:add-line" />}
+                        variant="outlined"
                         size="small"
-                      />
-                    ))
-                  }
-                  renderInput={(params) => (
-                    <TextField {...params} label="Assignees" placeholder="Select assignees" />
-                  )}
-                />
-              )}
+                        sx={{ ml: 0.5 }}
+                      >
+                        Add
+                      </Button>
+                    </Box>
+                    <KanbanContactsDialog
+                      assignee={selectedPeople.map((p: any) => ({ id: p._id, name: p.name }))}
+                      open={contactsDialog.value}
+                      onClose={contactsDialog.onFalse}
+                      onAssign={(list) => {
+                        const ids = list.map((p) => p.id);
+                        field.onChange(ids);
+                      }}
+                    />
+                  </Box>
+                );
+              }}
             />
 
             {/* Date Range */}
@@ -448,19 +494,12 @@ export function KanbanTaskCreateDialog({
                 variant="calendar"
                 title="Choose task dates & times"
                 enableTime
-                enableRepeat
-                enableReminder
                 startDate={rangePicker.startDate}
                 endDate={rangePicker.endDate}
-                onChangeStartDate={rangePicker.onChangeStartDate}
-                onChangeEndDate={rangePicker.onChangeEndDate}
+                onChangeStartDate={handleChangeStartDate}
+                onChangeEndDate={handleChangeEndDate}
                 open={rangePicker.open}
                 onClose={rangePicker.onClose}
-                onSubmit={(data?: any) => {
-                  if (data?.repeat) setRepeatData(data.repeat);
-                  if (data?.reminder) setReminderData(data.reminder);
-                  rangePicker.onClose();
-                }}
               />
             </Box>
 
@@ -526,7 +565,6 @@ export function KanbanTaskCreateDialog({
             variant="contained"
             loading={isSubmitting}
             loadingIndicator="Creating..."
-            onClick={handleSubmitClick}
           >
             Create Task
           </LoadingButton>

@@ -6,7 +6,7 @@ import type { DialogProps } from '@mui/material/Dialog';
 import type { UseDateRangePickerReturn } from './use-date-range-picker';
 
 import dayjs from 'dayjs';
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import Stack from '@mui/material/Stack';
 import Dialog from '@mui/material/Dialog';
@@ -52,6 +52,8 @@ export type CustomDateRangePickerProps = DialogProps &
     enableTime?: boolean;
     enableRepeat?: boolean;
     enableReminder?: boolean;
+    existingRepeat?: RepeatSettings;
+    existingReminder?: ReminderSettings;
   };
 
 export function CustomDateRangePicker({
@@ -71,6 +73,8 @@ export function CustomDateRangePicker({
   enableTime = false,
   enableRepeat = false,
   enableReminder = false,
+  existingRepeat,
+  existingReminder,
   ...other
 }: CustomDateRangePickerProps) {
   const { t } = useTranslate();
@@ -79,17 +83,21 @@ export function CustomDateRangePicker({
   const isCalendarView = mdUp && variant === 'calendar';
 
   // State for repeat and reminder settings
-  const [repeatSettings, setRepeatSettings] = useState<RepeatSettings>({
-    enabled: false,
-    type: 'daily',
-    customType: 'weeks',
-    frequency: 1,
-  });
+  const [repeatSettings, setRepeatSettings] = useState<RepeatSettings>(
+    existingRepeat || {
+      enabled: false,
+      type: 'daily',
+      customType: 'weeks',
+      frequency: 1,
+    }
+  );
 
-  const [reminderSettings, setReminderSettings] = useState<ReminderSettings>({
-    enabled: false,
-    type: '1hour',
-  });
+  const [reminderSettings, setReminderSettings] = useState<ReminderSettings>(
+    existingReminder || {
+      enabled: false,
+      type: '1hour',
+    }
+  );
 
   const handleSubmit = useCallback(() => {
     const data = {
@@ -99,6 +107,34 @@ export function CustomDateRangePicker({
     onClose();
     onSubmit?.(Object.keys(data).length > 0 ? data : undefined);
   }, [onClose, onSubmit, enableRepeat, enableReminder, repeatSettings, reminderSettings]);
+
+  // Update state when existing data changes
+  useEffect(() => {
+    if (existingRepeat) {
+      setRepeatSettings(existingRepeat);
+    } else {
+      // Reset to default when no existing data
+      setRepeatSettings({
+        enabled: false,
+        type: 'daily',
+        customType: 'weeks',
+        frequency: 1,
+      });
+    }
+  }, [existingRepeat]);
+
+  useEffect(() => {
+    if (existingReminder) {
+      setReminderSettings(existingReminder);
+    } else {
+      // Reset to default when no existing data
+      setReminderSettings({
+        enabled: false,
+        type: '1hour',
+      });
+    }
+  }, [existingReminder]);
+
 
   // Helper functions for time handling
   const handleStartTimeChange = useCallback(
@@ -126,10 +162,20 @@ export function CustomDateRangePicker({
   // Preserve time when date changes
   const handleStartDateChange = useCallback(
     (newDate: Dayjs | null) => {
-      if (newDate && startDate) {
-        // Preserve the existing time
-        const preservedStartDate = newDate.hour(startDate.hour()).minute(startDate.minute());
-        onChangeStartDate(preservedStartDate);
+      if (newDate) {
+        if (startDate) {
+          // Preserve the existing time
+          const preservedStartDate = newDate.hour(startDate.hour()).minute(startDate.minute());
+          onChangeStartDate(preservedStartDate);
+        } else {
+          // No previous date - set a sensible default time
+          // Use current time if today, or 9:00 AM if future date
+          const isToday = newDate.isSame(dayjs(), 'day');
+          const defaultTime = isToday
+            ? dayjs() // Use current time for today
+            : newDate.hour(9).minute(0); // Use 9:00 AM for future dates
+          onChangeStartDate(defaultTime);
+        }
       } else {
         onChangeStartDate(newDate);
       }
@@ -139,15 +185,35 @@ export function CustomDateRangePicker({
 
   const handleEndDateChange = useCallback(
     (newDate: Dayjs | null) => {
-      if (newDate && endDate) {
-        // Preserve the existing time
-        const preservedEndDate = newDate.hour(endDate.hour()).minute(endDate.minute());
-        onChangeEndDate(preservedEndDate);
+      if (newDate) {
+        if (endDate) {
+          // Preserve the existing time
+          const preservedEndDate = newDate.hour(endDate.hour()).minute(endDate.minute());
+          onChangeEndDate(preservedEndDate);
+        } else {
+          // No previous date - set a sensible default time
+          // Use current time + 1 hour if today, or start time + 1 hour if we have start date, or 10:00 AM
+          const isToday = newDate.isSame(dayjs(), 'day');
+          let defaultTime;
+
+          if (startDate) {
+            // If we have a start date, make end date 1 hour later
+            defaultTime = newDate.hour(startDate.hour()).minute(startDate.minute()).add(1, 'hour');
+          } else if (isToday) {
+            // Use current time + 1 hour for today
+            defaultTime = dayjs().add(1, 'hour');
+          } else {
+            // Use 10:00 AM for future dates
+            defaultTime = newDate.hour(10).minute(0);
+          }
+
+          onChangeEndDate(defaultTime);
+        }
       } else {
         onChangeEndDate(newDate);
       }
     },
-    [endDate, onChangeEndDate]
+    [endDate, startDate, onChangeEndDate]
   );
 
   const getTimeString = useCallback((date: Dayjs | null) => {
