@@ -192,18 +192,34 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
         return reply.code(403).send({ success: false, error: "Forbidden" });
       }
 
+      // Decode URL-encoded filename to handle special characters (Greek, etc.)
+      const decodedFilename = decodeURIComponent(params.filename);
+
       const filePath = path.join(
         process.cwd(),
         "uploads",
         params.tenantId,
         params.scope,
         params.ownerId,
-        params.filename,
+        decodedFilename,
       );
+
+      fastify.log.info({
+        originalFilename: params.filename,
+        decodedFilename,
+        filePath,
+        tenantId: params.tenantId,
+        scope: params.scope,
+        ownerId: params.ownerId,
+      }, "uploads: attempting to serve file");
 
       try {
         await fs.access(filePath);
-      } catch {
+      } catch (error) {
+        fastify.log.error({
+          filePath,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }, "uploads: file not found");
         return reply
           .code(404)
           .send({ success: false, error: "File not found" });
@@ -227,12 +243,30 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
       reply.header("Content-Type", contentType);
       // Allow images/files to be embedded across origins (frontend on a different port)
       reply.header("Cross-Origin-Resource-Policy", "cross-origin");
-      // Add explicit CORS headers for file serving
+
+      // Add explicit CORS headers for file serving - match main server logic
       const origin = request.headers.origin;
-      if (origin && (origin.endsWith('.progressnet.io') || origin === 'https://progressnet.io' || origin === 'https://www.progressnet.io' || origin.includes('localhost'))) {
-        reply.header("Access-Control-Allow-Origin", origin);
-        reply.header("Access-Control-Allow-Credentials", "true");
+      if (origin) {
+        // Allow localhost on any port for development
+        if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+          reply.header("Access-Control-Allow-Origin", origin);
+          reply.header("Access-Control-Allow-Credentials", "true");
+        }
+        // Allow progressnet.io domains
+        else if (origin.endsWith('.progressnet.io') || origin === 'https://progressnet.io' || origin === 'https://www.progressnet.io') {
+          reply.header("Access-Control-Allow-Origin", origin);
+          reply.header("Access-Control-Allow-Credentials", "true");
+        }
+        // For other HTTPS origins, allow them (they are authenticated via JWT)
+        else if (origin.startsWith('https://')) {
+          reply.header("Access-Control-Allow-Origin", origin);
+          reply.header("Access-Control-Allow-Credentials", "true");
+        }
+        else {
+          reply.header("Access-Control-Allow-Origin", "*");
+        }
       } else {
+        // No origin header (mobile apps, etc.)
         reply.header("Access-Control-Allow-Origin", "*");
       }
       reply.header("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -246,10 +280,27 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
     "/:tenantId/:scope/:ownerId/:filename",
     async (request, reply) => {
       const origin = request.headers.origin;
-      if (origin && (origin.endsWith('.progressnet.io') || origin === 'https://progressnet.io' || origin === 'https://www.progressnet.io' || origin.includes('localhost'))) {
-        reply.header("Access-Control-Allow-Origin", origin);
-        reply.header("Access-Control-Allow-Credentials", "true");
+      if (origin) {
+        // Allow localhost on any port for development
+        if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+          reply.header("Access-Control-Allow-Origin", origin);
+          reply.header("Access-Control-Allow-Credentials", "true");
+        }
+        // Allow progressnet.io domains
+        else if (origin.endsWith('.progressnet.io') || origin === 'https://progressnet.io' || origin === 'https://www.progressnet.io') {
+          reply.header("Access-Control-Allow-Origin", origin);
+          reply.header("Access-Control-Allow-Credentials", "true");
+        }
+        // For other HTTPS origins, allow them (they are authenticated via JWT)
+        else if (origin.startsWith('https://')) {
+          reply.header("Access-Control-Allow-Origin", origin);
+          reply.header("Access-Control-Allow-Credentials", "true");
+        }
+        else {
+          reply.header("Access-Control-Allow-Origin", "*");
+        }
       } else {
+        // No origin header (mobile apps, etc.)
         reply.header("Access-Control-Allow-Origin", "*");
       }
       reply.header("Access-Control-Allow-Methods", "GET, OPTIONS");
