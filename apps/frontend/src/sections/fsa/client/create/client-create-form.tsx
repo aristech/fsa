@@ -14,7 +14,8 @@ import { useTranslate } from 'src/locales/use-locales';
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
 import { toast } from 'src/components/snackbar';
-import { Form, RHFTextField } from 'src/components/hook-form';
+import { PhoneInput } from 'src/components/phone-input';
+import { Form, Field, RHFTextField } from 'src/components/hook-form';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 // ----------------------------------------------------------------------
@@ -31,7 +32,7 @@ const createClientSchema = (t: any) =>
       city: zod.string().min(1, t('clients.form.validation.cityRequired')),
       state: zod.string().min(1, t('clients.form.validation.stateRequired')),
       zipCode: zod.string().min(1, t('clients.form.validation.zipCodeRequired')),
-      country: zod.string().min(1, t('clients.form.validation.countryRequired')).default('US'),
+      country: zod.string().min(1, t('clients.form.validation.countryRequired')).default('GR'),
     }),
     billingAddress: zod
       .object({
@@ -78,14 +79,14 @@ export function ClientCreateForm() {
         city: '',
         state: '',
         zipCode: '',
-        country: 'US',
+        country: 'GR',
       },
       billingAddress: {
         street: '',
         city: '',
         state: '',
         zipCode: '',
-        country: 'US',
+        country: 'GR',
       },
       contactPerson: {
         name: '',
@@ -139,32 +140,37 @@ export function ClientCreateForm() {
             <Stack spacing={2}>
               <Typography variant="h6">{t('clients.form.clientName')}</Typography>
               <Grid container spacing={2}>
-                <Grid size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12, md: 6, lg: 4 }}>
                   <RHFTextField name="name" label={`${t('clients.form.clientName')} *`} />
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12, md: 6, lg: 4 }}>
                   <RHFTextField
                     name="company"
                     label={`${t('clients.form.company')} (${t('clients.optional')})`}
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <RHFTextField
-                    name="vatNumber"
-                    label={`${t('clients.form.vatNumber')} (${t('clients.optional')})`}
-                  />
-                </Grid>
 
-                <Grid size={{ xs: 12, md: 6 }}>
+
+                <Grid size={{ xs: 12, md: 6, lg: 4 }}>
                   <RHFTextField name="email" label={`${t('clients.form.email')} *`} type="email" />
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <RHFTextField
-                    name="phone"
+                <Grid size={{ xs: 12, md: 6, lg: 4 }}>
+                  <PhoneInput
+                    value={methods.getValues('phone')}
+                    onChange={(value) => {
+                      methods.setValue('phone', value);
+                    }}
                     label={`${t('clients.form.phone')} (${t('clients.optional')})`}
+                  />
+
+                </Grid>
+                <Grid size={{ xs: 12, md: 6, lg: 4 }}>
+                  <RHFTextField
+                    name="vatNumber"
+                    label={`${t('clients.form.vatNumber')} (${t('clients.optional')})`}
                   />
                 </Grid>
               </Grid>
@@ -178,16 +184,24 @@ export function ClientCreateForm() {
                   <RHFTextField name="address.street" label={`${t('clients.form.street')} *`} />
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 4 }}>
+                <Grid size={{ xs: 12, md: 4, lg: 3 }}>
                   <RHFTextField name="address.city" label={`${t('clients.form.city')} *`} />
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 4 }}>
+                <Grid size={{ xs: 12, md: 4, lg: 3 }}>
                   <RHFTextField name="address.state" label={`${t('clients.form.state')} *`} />
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 4 }}>
+                <Grid size={{ xs: 12, md: 4, lg: 3 }}>
                   <RHFTextField name="address.zipCode" label={`${t('clients.form.zipCode')} *`} />
+                </Grid>
+
+                <Grid size={{ xs: 12, md: 4, lg: 3 }}>
+                  <Field.CountrySelect
+                    name="address.country"
+                    label={`${t('clients.form.country')} *`}
+                    displayValue="code"
+                  />
                 </Grid>
               </Grid>
             </Stack>
@@ -205,24 +219,32 @@ export function ClientCreateForm() {
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 4 }}>
+                <Grid size={{ xs: 12, md: 4, lg: 3 }}>
                   <RHFTextField
                     name="billingAddress.city"
                     label={`${t('clients.form.city')} (${t('clients.optional')})`}
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 4 }}>
+                <Grid size={{ xs: 12, md: 4, lg: 3 }}>
                   <RHFTextField
                     name="billingAddress.state"
                     label={`${t('clients.form.state')} (${t('clients.optional')})`}
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 4 }}>
+                <Grid size={{ xs: 12, md: 4, lg: 3 }}>
                   <RHFTextField
                     name="billingAddress.zipCode"
                     label={`${t('clients.form.zipCode')} (${t('clients.optional')})`}
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12, md: 4, lg: 3 }}>
+                  <Field.CountrySelect
+                    name="billingAddress.country"
+                    label={`${t('clients.form.country')} (${t('clients.optional')})`}
+                    displayValue="code"
                   />
                 </Grid>
               </Grid>

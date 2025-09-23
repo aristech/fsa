@@ -65,6 +65,7 @@ export default function FieldProfilePage() {
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [settingUp, setSettingUp] = useState(false);
   const [editData, setEditData] = useState({
+    name: '',
     phone: '',
     notes: '',
   });
@@ -85,6 +86,7 @@ export default function FieldProfilePage() {
           const personnelData = response.data.data;
           setPersonnel(personnelData);
           setEditData({
+            name: personnelData.user.name || '',
             phone: personnelData.user.phone || '',
             notes: personnelData.notes || '',
           });
@@ -115,6 +117,7 @@ export default function FieldProfilePage() {
 
     try {
       await axiosInstance.put('/api/v1/personnel/me', {
+        name: editData.name,
         phone: editData.phone,
         notes: editData.notes,
       });
@@ -124,7 +127,7 @@ export default function FieldProfilePage() {
         prev
           ? {
               ...prev,
-              user: { ...prev.user, phone: editData.phone },
+              user: { ...prev.user, name: editData.name, phone: editData.phone },
               notes: editData.notes,
             }
           : null
@@ -158,6 +161,7 @@ export default function FieldProfilePage() {
       if (response.data.success) {
         setPersonnel(response.data.data);
         setEditData({
+          name: response.data.data.user.name || '',
           phone: response.data.data.user.phone || '',
           notes: response.data.data.notes || '',
         });
@@ -323,6 +327,25 @@ export default function FieldProfilePage() {
             </Box>
 
             <Stack spacing={2}>
+              {editMode ? (
+                <TextField
+                  label={t('name', { defaultValue: 'Name' })}
+                  value={editData.name}
+                  onChange={(e) => setEditData((prev) => ({ ...prev, name: e.target.value }))}
+                  fullWidth
+                  size="small"
+                />
+              ) : (
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    {t('name', { defaultValue: 'Name' })}
+                  </Typography>
+                  <Typography>
+                    {personnel.user.name || t('notProvided', { defaultValue: 'Not provided' })}
+                  </Typography>
+                </Box>
+              )}
+
               <Box>
                 <Typography variant="subtitle2" color="text.secondary">
                   {t('email', { defaultValue: 'Email' })}

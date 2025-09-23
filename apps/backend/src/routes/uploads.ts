@@ -227,7 +227,35 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
       reply.header("Content-Type", contentType);
       // Allow images/files to be embedded across origins (frontend on a different port)
       reply.header("Cross-Origin-Resource-Policy", "cross-origin");
+      // Add explicit CORS headers for file serving
+      const origin = request.headers.origin;
+      if (origin && (origin.endsWith('.progressnet.io') || origin === 'https://progressnet.io' || origin === 'https://www.progressnet.io' || origin.includes('localhost'))) {
+        reply.header("Access-Control-Allow-Origin", origin);
+        reply.header("Access-Control-Allow-Credentials", "true");
+      } else {
+        reply.header("Access-Control-Allow-Origin", "*");
+      }
+      reply.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+      reply.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
       return reply.send(createReadStream(filePath));
     },
+  );
+
+  // Handle OPTIONS preflight requests for file serving
+  fastify.options(
+    "/:tenantId/:scope/:ownerId/:filename",
+    async (request, reply) => {
+      const origin = request.headers.origin;
+      if (origin && (origin.endsWith('.progressnet.io') || origin === 'https://progressnet.io' || origin === 'https://www.progressnet.io' || origin.includes('localhost'))) {
+        reply.header("Access-Control-Allow-Origin", origin);
+        reply.header("Access-Control-Allow-Credentials", "true");
+      } else {
+        reply.header("Access-Control-Allow-Origin", "*");
+      }
+      reply.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+      reply.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+      reply.header("Access-Control-Max-Age", "86400"); // 24 hours
+      reply.code(200).send();
+    }
   );
 }

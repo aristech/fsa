@@ -25,9 +25,12 @@ import DialogContent from '@mui/material/DialogContent';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import FormHelperText from '@mui/material/FormHelperText';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { DateCalendar, dateCalendarClasses } from '@mui/x-date-pickers/DateCalendar';
+
+import { useTranslate } from 'src/locales/use-locales';
+
+import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
 
@@ -70,6 +73,7 @@ export function CustomDateRangePicker({
   enableReminder = false,
   ...other
 }: CustomDateRangePickerProps) {
+  const { t } = useTranslate();
   const mdUp = useMediaQuery((theme) => theme.breakpoints.up('md'));
 
   const isCalendarView = mdUp && variant === 'calendar';
@@ -240,13 +244,13 @@ export function CustomDateRangePicker({
           <>
             <div>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                Start day
+                {t('startDay', { defaultValue: 'Start day' })}
               </Typography>
               <DateCalendar value={startDate} onChange={handleStartDateChange} />
               {enableTime && (
                 <Stack direction="row" spacing={1} sx={{ mt: 2, px: 1 }}>
                   <TimeSelector
-                    label="Start time"
+                    label={t('startTime', { defaultValue: 'Start time' })}
                     value={getTimeString(startDate)}
                     onChange={handleStartTimeChange}
                   />
@@ -256,13 +260,13 @@ export function CustomDateRangePicker({
 
             <div>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                End day
+                {t('endDay', { defaultValue: 'End day' })}
               </Typography>
               <DateCalendar value={endDate} onChange={handleEndDateChange} />
               {enableTime && (
                 <Stack direction="row" spacing={1} sx={{ mt: 2, px: 1 }}>
                   <TimeSelector
-                    label="End time"
+                    label={t('endTime', { defaultValue: 'End time' })}
                     value={getTimeString(endDate)}
                     onChange={handleEndTimeChange}
                   />
@@ -275,14 +279,14 @@ export function CustomDateRangePicker({
             {enableTime ? (
               <>
                 <DateTimePicker
-                  label="Start date & time"
+                  label={t('startDateTime', { defaultValue: 'Start date & time' })}
                   value={startDate}
                   onChange={onChangeStartDate}
                   minutesStep={30}
                   ampm={false}
                 />
                 <DateTimePicker
-                  label="End date & time"
+                  label={t('endDateTime', { defaultValue: 'End date & time' })}
                   value={endDate}
                   onChange={onChangeEndDate}
                   minutesStep={30}
@@ -293,54 +297,47 @@ export function CustomDateRangePicker({
               <Stack direction="column" spacing={1}>
 
                 <Stack direction="row" spacing={1}>
-                  <DatePicker label="Start date" value={startDate} onChange={onChangeStartDate} />
-                  <DatePicker label="End date" value={endDate} onChange={onChangeEndDate} />
+                  <DatePicker label={t('startDate', { defaultValue: 'Start date' })} value={startDate} onChange={onChangeStartDate} />
+                  <DatePicker label={t('endDate', { defaultValue: 'End date' })} value={endDate} onChange={onChangeEndDate} />
                 </Stack>
               </Stack>
             )}
           </>
         )}
       </DialogContent>
-      <Stack direction="row" spacing={1}>
+      <Stack direction="row" spacing={2} sx={{ mt: 2 }} alignItems="flex-start" justifyContent="center">
         {/* Repeat Options */}
         {enableRepeat && (
           <>
             <Divider sx={{ my: 3 }} />
             <Stack spacing={2}>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  🔄 Repeat Settings
-                </Typography>
-              </Stack>
+              <Stack direction="row" alignItems="center" justifyContent="center" >
 
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={repeatSettings.enabled}
-                    onChange={(e) =>
-                      setRepeatSettings((prev) => ({
-                        ...prev,
-                        enabled: e.target.checked,
-                      }))
-                    }
-                  />
-                }
-                label="Repeat Task"
-              />
+                <Switch
+                  checked={repeatSettings.enabled}
+                  onChange={(e) =>
+                    setRepeatSettings((prev) => ({
+                      ...prev,
+                      enabled: e.target.checked,
+                    }))
+                  }
+                />
+                <Iconify icon="solar:refresh-square-bold" width={18} />
+              </Stack>
 
               {repeatSettings.enabled && (
                 <Typography variant="caption" color="text.secondary" sx={{ mt: -1 }}>
-                  Create recurring tasks automatically based on the schedule below
+                  {t('repeat.helpText', { defaultValue: 'Create recurring tasks automatically based on the schedule below' })}
                 </Typography>
               )}
 
               {repeatSettings.enabled && (
-                <Stack spacing={2}>
+                <Stack spacing={2} sx={{ width: '100%' }}>
                   <FormControl fullWidth size="small">
-                    <InputLabel>Repeat Type</InputLabel>
+                    <InputLabel>{t('repeat.type', { defaultValue: 'Repeat Type' })}</InputLabel>
                     <Select
                       value={repeatSettings.type}
-                      label="Repeat Type"
+                      label={t('repeat.type', { defaultValue: 'Repeat Type' })}
                       onChange={(e) =>
                         setRepeatSettings((prev) => ({
                           ...prev,
@@ -348,22 +345,47 @@ export function CustomDateRangePicker({
                         }))
                       }
                     >
-                      <MenuItem value="daily">📆 Daily</MenuItem>
-                      <MenuItem value="weekly">📅 Weekly</MenuItem>
-                      <MenuItem value="monthly">🗓️ Monthly</MenuItem>
-                      <MenuItem value="yearly">📆 Yearly</MenuItem>
-                      <MenuItem value="custom">⚙️ Custom</MenuItem>
+                      <MenuItem value="daily">
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <Iconify icon="solar:calendar-date-bold" width={16} />
+                          <span>Daily</span>
+                        </Stack>
+                      </MenuItem>
+                      <MenuItem value="weekly">
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <Iconify icon="solar:calendar-bold" width={16} />
+                          <span>Weekly</span>
+                        </Stack>
+                      </MenuItem>
+                      <MenuItem value="monthly">
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <Iconify icon="solar:calendar-minimalistic-bold" width={16} />
+                          <span>Monthly</span>
+                        </Stack>
+                      </MenuItem>
+                      <MenuItem value="yearly">
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <Iconify icon="solar:calendar-mark-bold" width={16} />
+                          <span>Yearly</span>
+                        </Stack>
+                      </MenuItem>
+                      <MenuItem value="custom">
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <Iconify icon="solar:settings-bold" width={16} />
+                          <span>Custom</span>
+                        </Stack>
+                      </MenuItem>
                     </Select>
                   </FormControl>
 
                   {repeatSettings.type === 'custom' && (
-                    <Stack spacing={2}>
-                      <Stack direction="row" spacing={2} alignItems="center">
-                        <Typography variant="body2">Every</Typography>
+                    <Stack spacing={2} sx={{ width: '100%' }}>
+                      <Stack direction={mdUp ? 'row' : 'column'} spacing={2} alignItems={mdUp ? 'center' : 'stretch'} sx={{ width: '100%' }}>
+                        <Typography variant="body2">{t('repeat.every', { defaultValue: 'Every' })}</Typography>
                         <TextField
                           type="number"
                           size="small"
-                          sx={{ width: 80 }}
+                          sx={{ width: 96 }}
                           value={repeatSettings.frequency || 1}
                           slotProps={{
                             htmlInput: { min: 1, max: 26 },
@@ -375,7 +397,7 @@ export function CustomDateRangePicker({
                             }))
                           }
                         />
-                        <FormControl size="small" sx={{ minWidth: 120 }}>
+                        <FormControl size="small" sx={{ minWidth: mdUp ? 120 : '100%' }} fullWidth={!mdUp}>
                           <Select
                             value={repeatSettings.customType || 'weeks'}
                             onChange={(e) =>
@@ -386,17 +408,49 @@ export function CustomDateRangePicker({
                               }))
                             }
                           >
-                            <MenuItem value="weeks">Week(s)</MenuItem>
-                            <MenuItem value="months">Month(s)</MenuItem>
+                            <MenuItem value="weeks">{t('repeat.weeks', { defaultValue: 'Week(s)' })}</MenuItem>
+                            <MenuItem value="months">{t('repeat.months', { defaultValue: 'Month(s)' })}</MenuItem>
                           </Select>
                         </FormControl>
                       </Stack>
                       <Typography variant="caption" color="text.secondary">
-                        Frequency can be set from 1 to 26{' '}
-                        {repeatSettings.customType || 'weeks'}
+                        {t('repeat.frequencyHint', { defaultValue: 'Frequency can be set from 1 to 26' })}{' '}
+                        {repeatSettings.customType || t('repeat.weeks', { defaultValue: 'weeks' })}
                       </Typography>
                     </Stack>
                   )}
+                </Stack>
+              )}
+              {/* Summary of repeat settings */}
+              {enableRepeat && repeatSettings.enabled && (
+
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{
+                    p: 2,
+                    bgcolor: 'action.hover',
+                    borderRadius: 1,
+                    alignItems: 'center',
+                    mt: 2,
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    <span style={{ display: 'inline-flex', verticalAlign: 'middle', marginRight: 6 }}>
+                      <Iconify icon="solar:refresh-square-bold" width={16} />
+                    </span>
+                    {t('repeat.summaryPrefix', { defaultValue: 'Task will repeat' })}{' '}
+                    {repeatSettings.type === 'daily' && t('repeat.everyDay', { defaultValue: 'every day' })}
+                    {repeatSettings.type === 'weekly' && t('repeat.everyWeek', { defaultValue: 'every week' })}
+                    {repeatSettings.type === 'monthly' && t('repeat.everyMonth', { defaultValue: 'every month' })}
+                    {repeatSettings.type === 'yearly' && t('repeat.everyYear', { defaultValue: 'every year' })}
+                    {repeatSettings.type === 'custom' &&
+                      t('repeat.everyCustom', {
+                        defaultValue: 'every {{count}} {{unit}}',
+                        count: repeatSettings.frequency,
+                        unit: repeatSettings.customType,
+                      })}
+                  </Typography>
                 </Stack>
               )}
             </Stack>
@@ -408,39 +462,28 @@ export function CustomDateRangePicker({
           <>
             <Divider sx={{ my: 3 }} />
             <Stack spacing={2}>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  🔔 Reminder Settings
-                </Typography>
+              <Stack direction="row" alignItems="center" justifyContent="center" >
+
+
+                <Switch
+                  checked={reminderSettings.enabled}
+                  onChange={(e) =>
+                    setReminderSettings((prev) => ({
+                      ...prev,
+                      enabled: e.target.checked,
+                    }))
+                  }
+                />
+                <Iconify icon="solar:bell-bold" width={18} />
               </Stack>
 
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={reminderSettings.enabled}
-                    onChange={(e) =>
-                      setReminderSettings((prev) => ({
-                        ...prev,
-                        enabled: e.target.checked,
-                      }))
-                    }
-                  />
-                }
-                label="Set Reminder"
-              />
-
-              {reminderSettings.enabled && (
-                <Typography variant="caption" color="text.secondary" sx={{ mt: -1 }}>
-                  Send email reminders to assignees and reporter before task is due
-                </Typography>
-              )}
 
               {reminderSettings.enabled && (
                 <FormControl fullWidth size="small">
-                  <InputLabel>Reminder Time</InputLabel>
+                  <InputLabel>{t('reminder.time', { defaultValue: 'Reminder Time' })}</InputLabel>
                   <Select
                     value={reminderSettings.type}
-                    label="Reminder Time"
+                    label={t('reminder.time', { defaultValue: 'Reminder Time' })}
                     onChange={(e) =>
                       setReminderSettings((prev) => ({
                         ...prev,
@@ -448,10 +491,30 @@ export function CustomDateRangePicker({
                       }))
                     }
                   >
-                    <MenuItem value="1hour">🕐 1 Hour Before</MenuItem>
-                    <MenuItem value="1day">📅 1 Day Before</MenuItem>
-                    <MenuItem value="1week">📆 1 Week Before</MenuItem>
-                    <MenuItem value="1month">🗓️ 1 Month Before</MenuItem>
+                    <MenuItem value="1hour">
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Iconify icon="solar:clock-circle-bold" width={16} />
+                        <span>{t('reminder.1hour', { defaultValue: '1 Hour Before' })}</span>
+                      </Stack>
+                    </MenuItem>
+                    <MenuItem value="1day">
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Iconify icon="solar:calendar-date-bold" width={16} />
+                        <span>{t('reminder.1day', { defaultValue: '1 Day Before' })}</span>
+                      </Stack>
+                    </MenuItem>
+                    <MenuItem value="1week">
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Iconify icon="solar:calendar-bold" width={16} />
+                        <span>{t('reminder.1week', { defaultValue: '1 Week Before' })}</span>
+                      </Stack>
+                    </MenuItem>
+                    <MenuItem value="1month">
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Iconify icon="solar:calendar-minimalistic-bold" width={16} />
+                        <span>{t('reminder.1month', { defaultValue: '1 Month Before' })}</span>
+                      </Stack>
+                    </MenuItem>
                   </Select>
                 </FormControl>
               )}
@@ -469,12 +532,15 @@ export function CustomDateRangePicker({
                   }}
                 >
                   <Typography variant="body2" color="text.secondary">
-                    📧 Email reminder will be sent{' '}
-                    {reminderSettings.type === '1hour' && '1 hour'}
-                    {reminderSettings.type === '1day' && '1 day'}
-                    {reminderSettings.type === '1week' && '1 week'}
-                    {reminderSettings.type === '1month' && '1 month'} before the task is
-                    due
+                    <span style={{ display: 'inline-flex', verticalAlign: 'middle', marginRight: 6 }}>
+                      <Iconify icon="solar:mailbox-bold" width={16} />
+                    </span>
+                    {t('reminder.summaryPrefix', { defaultValue: 'Email reminder will be sent' })}{' '}
+                    {reminderSettings.type === '1hour' && t('reminder.in1hour', { defaultValue: '1 hour' })}
+                    {reminderSettings.type === '1day' && t('reminder.in1day', { defaultValue: '1 day' })}
+                    {reminderSettings.type === '1week' && t('reminder.in1week', { defaultValue: '1 week' })}
+                    {reminderSettings.type === '1month' && t('reminder.in1month', { defaultValue: '1 month' })}{' '}
+                    {t('reminder.beforeTaskDue', { defaultValue: 'before the task is due' })}
                   </Typography>
                 </Stack>
               )}
@@ -482,29 +548,7 @@ export function CustomDateRangePicker({
           </>
         )}
 
-        {/* Summary of repeat settings */}
-        {enableRepeat && repeatSettings.enabled && (
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{
-              p: 2,
-              bgcolor: 'action.hover',
-              borderRadius: 1,
-              alignItems: 'center',
-              mt: 2,
-            }}
-          >
-            <Typography variant="body2" color="text.secondary">
-              🔄 Task will repeat {repeatSettings.type === 'daily' && 'every day'}
-              {repeatSettings.type === 'weekly' && 'every week'}
-              {repeatSettings.type === 'monthly' && 'every month'}
-              {repeatSettings.type === 'yearly' && 'every year'}
-              {repeatSettings.type === 'custom' &&
-                `every ${repeatSettings.frequency} ${repeatSettings.customType}`}
-            </Typography>
-          </Stack>
-        )}
+
       </Stack>
       <DialogActions>
         {error && (

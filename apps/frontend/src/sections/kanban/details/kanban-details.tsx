@@ -12,12 +12,14 @@ import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
 import Chip from '@mui/material/Chip';
 import Tabs from '@mui/material/Tabs';
+import Stack from '@mui/material/Stack';
 import Badge from '@mui/material/Badge';
 import Drawer from '@mui/material/Drawer';
 import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
 import Select from '@mui/material/Select';
 import Tooltip from '@mui/material/Tooltip';
+import Divider from '@mui/material/Divider';
 import { styled } from '@mui/material/styles';
 import Checkbox from '@mui/material/Checkbox';
 import MenuItem from '@mui/material/MenuItem';
@@ -326,11 +328,14 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
   const handleChangeStatus = useCallback(
     (newValue: string) => {
       setStatus(newValue);
-      // Move task to new column/status
+      // Move task to new column/status using the correct updateTasks format
+      const updateTasks = {
+        [newValue]: [{ id: task.id }]
+      };
+
       axiosInstance
         .post(`${endpoints.kanban}?endpoint=move-task`, {
-          taskId: task.id,
-          columnId: newValue,
+          updateTasks,
         })
         .then(() => {
           // Update the task in the parent component
@@ -693,9 +698,18 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         <BlockLabel>{t('startDue', { defaultValue: 'Start / Due' })}</BlockLabel>
 
         {rangePicker.selected ? (
-          <Button size="small" onClick={rangePicker.onOpen}>
-            {rangePicker.shortLabel}
-          </Button>
+          <Stack direction="column" spacing={0.5} alignItems="flex-start">
+            <Button size="small" onClick={rangePicker.onOpen}>
+              {rangePicker.shortLabel}
+            </Button>
+            {rangePicker.startDate && rangePicker.endDate && (
+              <Chip
+                size="small"
+                label={`${rangePicker.startDate.format('HH:mm')} - ${rangePicker.endDate.format('HH:mm')}`}
+                sx={{ ml: 0.5 }}
+              />
+            )}
+          </Stack>
         ) : (
           <Tooltip title={t('addDueDate', { defaultValue: 'Add due date' })}>
             <IconButton
@@ -716,6 +730,8 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           variant="calendar"
           title={t('chooseTaskDatesTimes', { defaultValue: 'Choose task dates & times' })}
           enableTime
+          enableRepeat
+          enableReminder
           startDate={rangePicker.startDate}
           endDate={rangePicker.endDate}
           onChangeStartDate={rangePicker.onChangeStartDate}
@@ -815,27 +831,30 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
 
         <FormGroup>
           {subtasks.map((subtask) => (
-            <Box key={subtask._id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    disableRipple
-                    checked={subtask.completed}
-                    onChange={(e) => handleToggleSubtask(subtask._id, e.target.checked)}
-                  />
-                }
-                label={subtask.title}
-                sx={{ flexGrow: 1 }}
-              />
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => handleDeleteSubtask(subtask._id)}
-                sx={{ ml: 1 }}
-              >
-                <Iconify icon="mingcute:delete-2-line" width={18} />
-              </IconButton>
-            </Box>
+            <>
+              <Box key={subtask._id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      disableRipple
+                      checked={subtask.completed}
+                      onChange={(e) => handleToggleSubtask(subtask._id, e.target.checked)}
+                    />
+                  }
+                  label={subtask.title}
+                  sx={{ flexGrow: 1, alignItems: 'flex-start' }}
+                />
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => handleDeleteSubtask(subtask._id)}
+                  sx={{ ml: 1 }}
+                >
+                  <Iconify icon="mingcute:delete-2-line" width={18} />
+                </IconButton>
+              </Box>
+              <Divider sx={{ my: 1 }} />
+            </>
           ))}
         </FormGroup>
 

@@ -9,6 +9,7 @@ import { CheckInSession } from "../models/CheckInSession";
 import { authenticate } from "../middleware/auth";
 import { MagicLinkService } from "../services/magic-link-service";
 import { TenantSetupService } from "../services/tenant-setup";
+import { sendPersonnelMagicLink, sendPasswordResetEmail } from "./email";
 
 const signInSchema = z.object({
   email: z.string().email(),
@@ -26,6 +27,19 @@ const signUpSchema = z.object({
 });
 
 const magicLinkValidationSchema = z.object({
+  token: z.string().min(1),
+});
+
+const requestPasswordResetSchema = z.object({
+  email: z.string().email(),
+});
+
+const createPasswordSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(6),
+});
+
+const verifyMagicLinkSchema = z.object({
   token: z.string().min(1),
 });
 
@@ -606,6 +620,182 @@ export async function authRoutes(fastify: FastifyInstance) {
       }
 
       fastify.log.error(error as Error, "Error setting up account");
+      return reply.status(500).send({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  });
+
+  // Request password reset endpoint
+  fastify.post("/request-password-reset", async (request, reply) => {
+    try {
+      const { email } = requestPasswordResetSchema.parse(request.body);
+
+      // Find user by email
+      const user = await User.findOne({ email: email.toLowerCase() });
+      if (!user) {
+        // Return success even if user not found for security reasons
+        return reply.send({
+          success: true,
+          message: "If the email exists, a password reset link has been sent",
+        });
+      }
+
+      // Create magic link for password reset
+      const result = await MagicLinkService.createMagicLink({
+        email: user.email,
+        tenantId: user.tenantId?.toString() || '',
+        userId: user._id.toString(),
+        type: 'password_reset',
+        metadata: {
+          firstName: user.name?.split(' ')[0] || user.name,
+        },
+        expirationHours: 1, // Password reset links expire in 1 hour
+      });
+
+      if (!result.success || !result.magicLink) {
+        return reply.status(500).send({
+          success: false,
+          message: "Failed to create password reset link",
+        });
+      }
+
+      // Send password reset email
+      try {
+        await sendPasswordResetEmail({
+          to: user.email,
+          name: user.name || 'User',
+          companyName: 'Field Service Automation',
+          magicLink: result.magicLink.replace('/verify-account', '/verify-account'),
+          expirationHours: 1,
+        });
+      } catch (emailError) {
+        console.error('Error sending password reset email:', emailError);
+        return reply.status(500).send({
+          success: false,
+          message: "Failed to send password reset email",
+        });
+      }
+
+      return reply.send({
+        success: true,
+        message: "Password reset link sent successfully",
+      });
+
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({
+          success: false,
+          message: "Validation error",
+          errors: error.issues,
+        });
+      }
+
+      fastify.log.error(error as Error, "Error requesting password reset");
+      return reply.status(500).send({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  });
+
+  // Verify magic link endpoint (without consuming)
+  fastify.post("/verify-magic-link", async (request, reply) => {
+    try {
+      const { token } = verifyMagicLinkSchema.parse(request.body);
+
+      const result = await MagicLinkService.getMagicLinkInfo(token);
+
+      if (!result.success) {
+        return reply.status(400).send({
+          success: false,
+          message: result.error || "Invalid or expired token",
+        });
+      }
+
+      return reply.send({
+        success: true,
+        message: "Token is valid",
+        data: result.data,
+      });
+
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({
+          success: false,
+          message: "Validation error",
+          errors: error.issues,
+        });
+      }
+
+      fastify.log.error(error as Error, "Error verifying magic link");
+      return reply.status(500).send({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  });
+
+  // Create password endpoint (using magic link)
+  fastify.post("/create-password", async (request, reply) => {
+    try {
+      const { token, password } = createPasswordSchema.parse(request.body);
+
+      // Validate and consume magic link
+      const result = await MagicLinkService.validateAndConsumeMagicLink(token);
+
+      if (!result.success || !result.data) {
+        return reply.status(400).send({
+          success: false,
+          message: result.error || "Invalid or expired token",
+        });
+      }
+
+      // Find user
+      const user = await User.findById(result.data.userId);
+      if (!user) {
+        return reply.status(404).send({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(password, 12);
+
+      // Update user password
+      await User.findByIdAndUpdate(user._id, {
+        password: hashedPassword,
+        isActive: true, // Activate account if it wasn't already
+      });
+
+      // If this is personnel, activate their account too
+      await Personnel.findOneAndUpdate(
+        { userId: user._id },
+        {
+          $set: {
+            status: "active",
+            isActive: true
+          }
+        }
+      );
+
+      return reply.send({
+        success: true,
+        message: "Password created successfully",
+      });
+
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({
+          success: false,
+          message: "Validation error",
+          errors: error.issues,
+        });
+      }
+
+      fastify.log.error(error as Error, "Error creating password");
       return reply.status(500).send({
         success: false,
         message: "Internal server error",

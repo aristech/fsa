@@ -19,7 +19,8 @@ export function RHFPhoneInput({ name, helperText, ...other }: RHFPhoneInputProps
       control={control}
       render={({ field, fieldState: { error } }) => (
         <PhoneInput
-          {...field}
+          value={field.value}
+          onChange={(val) => field.onChange(val)}
           fullWidth
           error={!!error}
           helperText={error?.message ?? helperText}
