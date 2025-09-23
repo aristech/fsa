@@ -1058,9 +1058,8 @@ export async function personnelRoutes(fastify: FastifyInstance) {
         return reply.send({
           success: true,
           data: { isActive: personnel.isActive },
-          message: `Personnel ${
-            personnel.isActive ? "activated" : "deactivated"
-          } successfully`,
+          message: `Personnel ${personnel.isActive ? "activated" : "deactivated"
+            } successfully`,
         });
       } catch (error) {
         fastify.log.error(error as Error, "Error toggling personnel status");
@@ -1125,7 +1124,7 @@ export async function personnelRoutes(fastify: FastifyInstance) {
           to: email,
           name,
           companyName: tenant.name || 'Field Service Automation',
-          magicLink: result.magicLink.replace('/verify-account', '/create-password'),
+          magicLink: result.magicLink.replace('/verify-account', '/verify-account'),
           expirationHours: 48,
         });
       } catch (emailError) {
