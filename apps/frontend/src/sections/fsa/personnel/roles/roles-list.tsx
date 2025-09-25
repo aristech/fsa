@@ -27,6 +27,8 @@ import {
 
 import { PERMISSIONS } from 'src/hooks/use-permissions';
 
+import { truncateText } from 'src/utils/text-truncate';
+
 import { useTranslate } from 'src/locales/use-locales';
 import { type Role } from 'src/lib/services/role-service';
 import axiosInstance, { fetcher, endpoints } from 'src/lib/axios';
@@ -201,11 +203,13 @@ export function RolesList() {
               <Table sx={{ minWidth: 960 }}>
                 <TableHead>
                   <TableRow>
-                    <TableCell>{t('personnel.roles.table.name')}</TableCell>
-                    <TableCell>{t('personnel.roles.table.description')}</TableCell>
-                    <TableCell>Default</TableCell>
-                    <TableCell>{t('personnel.roles.table.permissions')}</TableCell>
-                    <TableCell align="right">{t('personnel.roles.table.actions')}</TableCell>
+                    <TableCell>{truncateText(t('personnel.roles.table.name'))}</TableCell>
+                    <TableCell>{truncateText(t('personnel.roles.table.description'))}</TableCell>
+                    <TableCell>{truncateText('Default')}</TableCell>
+                    <TableCell>{truncateText(t('personnel.roles.table.permissions'))}</TableCell>
+                    <TableCell align="right">
+                      {truncateText(t('personnel.roles.table.actions'))}
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -227,19 +231,19 @@ export function RolesList() {
                           }}
                           onClick={() => !role.isDefault && handleEditRole(role)}
                         >
-                          {role.name}
+                          {truncateText(role.name)}
                         </Typography>
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" color="text.secondary">
-                          {role.description || 'No description'}
+                          {truncateText(role.description) || 'No description'}
                         </Typography>
                       </TableCell>
                       <TableCell>
                         {role.isDefault ? (
-                          <Chip label="Default" size="small" color="primary" />
+                          <Chip label={truncateText('Default')} size="small" color="primary" />
                         ) : (
-                          <Chip label="Custom" size="small" variant="outlined" />
+                          <Chip label={truncateText('Custom')} size="small" variant="outlined" />
                         )}
                       </TableCell>
                       <TableCell sx={{ maxWidth: 400 }}>

@@ -26,6 +26,8 @@ import {
   TablePagination,
 } from '@mui/material';
 
+import { truncateText } from 'src/utils/text-truncate';
+
 import { useTranslate } from 'src/locales/use-locales';
 
 import { Iconify } from 'src/components/iconify';
@@ -161,16 +163,16 @@ export function ReportsTable({
           <Table size="medium" sx={{ minWidth: 960 }}>
             <TableHead>
               <TableRow>
-                <TableCell>Report</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Priority</TableCell>
-                <TableCell>Location</TableCell>
-                <TableCell>Client</TableCell>
-                <TableCell>Report Date</TableCell>
-                <TableCell>Created By</TableCell>
-                <TableCell>Total Cost</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell>{truncateText('Report')}</TableCell>
+                <TableCell>{truncateText('Type')}</TableCell>
+                <TableCell>{truncateText('Status')}</TableCell>
+                <TableCell>{truncateText('Priority')}</TableCell>
+                <TableCell>{truncateText('Location')}</TableCell>
+                <TableCell>{truncateText('Client')}</TableCell>
+                <TableCell>{truncateText('Report Date')}</TableCell>
+                <TableCell>{truncateText('Created By')}</TableCell>
+                <TableCell>{truncateText('Total Cost')}</TableCell>
+                <TableCell align="right">{truncateText('Actions')}</TableCell>
               </TableRow>
             </TableHead>
 
@@ -195,22 +197,27 @@ export function ReportsTable({
                       </Avatar>
                       <Box>
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          {report.type.charAt(0).toUpperCase() + report.type.slice(1)} Report
+                          {truncateText(report.type.charAt(0).toUpperCase() + report.type.slice(1))}{' '}
+                          Report
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          ID: {report._id.slice(-8)}
+                          ID: {truncateText(report._id.slice(-8))}
                         </Typography>
                       </Box>
                     </Box>
                   </TableCell>
 
                   <TableCell>
-                    <Chip label={report.type} size="small" sx={{ textTransform: 'capitalize' }} />
+                    <Chip
+                      label={truncateText(report.type)}
+                      size="small"
+                      sx={{ textTransform: 'capitalize' }}
+                    />
                   </TableCell>
 
                   <TableCell>
                     <Chip
-                      label={report.status.replace('_', ' ')}
+                      label={truncateText(report.status.replace('_', ' '))}
                       color={getStatusColor(report.status) as any}
                       size="small"
                       sx={{ textTransform: 'capitalize' }}
@@ -219,7 +226,7 @@ export function ReportsTable({
 
                   <TableCell>
                     <Chip
-                      label={report.priority}
+                      label={truncateText(report.priority)}
                       color={getPriorityColor(report.priority) as any}
                       size="small"
                       sx={{ textTransform: 'capitalize' }}
@@ -228,18 +235,19 @@ export function ReportsTable({
 
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">
-                      {report.location || '-'}
+                      {truncateText(report.location) || '-'}
                     </Typography>
                   </TableCell>
 
                   <TableCell>
                     <Typography variant="body2">
-                      {report.client?.name ||
-                        report.clientData?.name ||
-                        (typeof report.clientId === 'object' && report.clientId
-                          ? (report.clientId as any)?.name
-                          : undefined) ||
-                        '-'}
+                      {truncateText(
+                        report.client?.name ||
+                          report.clientData?.name ||
+                          (typeof report.clientId === 'object' && report.clientId
+                            ? (report.clientId as any)?.name
+                            : undefined)
+                      ) || '-'}
                     </Typography>
                     {(report.client?.company ||
                       report.clientData?.company ||
@@ -247,11 +255,13 @@ export function ReportsTable({
                         ? (report.clientId as any)?.company
                         : undefined)) && (
                       <Typography variant="caption" color="text.secondary">
-                        {report.client?.company ||
-                          report.clientData?.company ||
-                          (typeof report.clientId === 'object' && report.clientId
-                            ? (report.clientId as any)?.company
-                            : undefined)}
+                        {truncateText(
+                          report.client?.company ||
+                            report.clientData?.company ||
+                            (typeof report.clientId === 'object' && report.clientId
+                              ? (report.clientId as any)?.company
+                              : undefined)
+                        )}
                       </Typography>
                     )}
                   </TableCell>

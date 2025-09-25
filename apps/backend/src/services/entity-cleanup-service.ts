@@ -369,15 +369,21 @@ export class EntityCleanupService {
         const miscPath = path.join(taskFilesPath, 'misc');
         const files = await fs.readdir(miscPath);
         let filesDeleted = 0;
-        
+
+        // Before deleting any files, we need to be more careful
+        // Only delete files that were specifically uploaded for this task
+        // We should not delete files just because they contain the taskId substring
+        console.log(`🔍 Task cleanup: Checking ${files.length} files in misc folder for task ${taskId}`);
+
         for (const file of files) {
-          // Look for files that might contain the taskId in their name
-          if (file.includes(taskId)) {
-            await fs.unlink(path.join(miscPath, file));
-            filesDeleted++;
-          }
+          // Be more specific: only delete files that were uploaded with this exact taskId as the owner
+          // The upload system creates URLs like: /api/v1/uploads/{tenantId}/tasks/{ownerId}/{filename}
+          // where ownerId should be the taskId, NOT files that just happen to contain taskId in filename
+
+          // Skip this aggressive deletion for now - it's too dangerous
+          console.log(`⚠️  Skipping potentially dangerous file deletion: ${file} (contains ${taskId})`);
         }
-        
+
         result.details.filesDeleted += filesDeleted;
       } catch (error) {
         console.log(`📁 No task misc files directory found`);

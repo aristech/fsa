@@ -108,12 +108,21 @@ export function transformTaskToKanbanTask(
       string,
       { title?: string; workOrderNumber?: string }
     >;
+    clientById?: Record<
+      string,
+      { name?: string; company?: string }
+    >;
     columnById?: Record<string, { name: string; slug: string }>;
   },
 ): IKanbanTask {
   const workOrder =
     task.workOrderId && lookups?.workOrderById
       ? lookups.workOrderById[task.workOrderId.toString()] || undefined
+      : undefined;
+
+  const client =
+    task.clientId && lookups?.clientById
+      ? lookups.clientById[task.clientId.toString()] || undefined
       : undefined;
 
   // Determine status/column information
@@ -184,8 +193,8 @@ export function transformTaskToKanbanTask(
     comments: [], // Comments not available in current Task model
     ...(task.clientId && {
       clientId: task.clientId.toString(),
-      clientName: task.clientName,
-      clientCompany: task.clientCompany,
+      clientName: task.clientName || client?.name,
+      clientCompany: task.clientCompany || client?.company,
     }),
     ...(task.workOrderId && {
       workOrderId: task.workOrderId.toString(),

@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { usePopover } from 'minimal-shared/hooks';
 import useSWR, { type SWRConfiguration } from 'swr';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { usePopover, useBoolean } from 'minimal-shared/hooks';
 
 import {
   Box,
@@ -26,6 +26,7 @@ import {
 } from '@mui/material';
 
 import { fDateTime } from 'src/utils/format-time';
+import { truncateText } from 'src/utils/text-truncate';
 import { formatEstimatedDuration, formatMinutesToDuration } from 'src/utils/format-duration';
 
 import { useTranslate } from 'src/locales/use-locales';
@@ -34,10 +35,11 @@ import axiosInstance, { fetcher, endpoints } from 'src/lib/axios';
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
-import { ConfirmDialog } from 'src/components/custom-dialog';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
+import { CascadeDeleteDialog, type CascadeDeleteInfo } from 'src/components/cascade-delete-dialog';
 
 import { View403 } from 'src/sections/error';
+import { KanbanTaskCreateDialog } from 'src/sections/kanban/components/kanban-task-create-dialog';
 
 // ----------------------------------------------------------------------
 
@@ -121,7 +123,12 @@ export function WorkOrderList() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [cascadeDeleteInfo, setCascadeDeleteInfo] = useState<CascadeDeleteInfo | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Task creation dialog state
+  const taskCreateDialog = useBoolean();
+  const [selectedWorkOrderForTask, setSelectedWorkOrderForTask] = useState<WorkOrder | null>(null);
 
   // Get clientId from URL parameters
   const clientId = searchParams.get('clientId');
@@ -148,6 +155,18 @@ export function WorkOrderList() {
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
+  };
+
+  const handleCreateTaskFromWorkOrder = (workOrder: WorkOrder) => {
+    setSelectedWorkOrderForTask(workOrder);
+    taskCreateDialog.onTrue();
+  };
+
+  const handleTaskCreateSuccess = () => {
+    taskCreateDialog.onFalse();
+    setSelectedWorkOrderForTask(null);
+    // Optionally refresh the work order list or show success message
+    toast.success(t('taskCreatedSuccessfully', { defaultValue: 'Task created successfully!' }));
   };
 
   if (isLoading) {
@@ -194,15 +213,23 @@ export function WorkOrderList() {
           <Table sx={{ minWidth: 800 }}>
             <TableHead>
               <TableRow>
-                <TableCell>{t('workOrder', { defaultValue: 'Work Order' })}</TableCell>
-                <TableCell>{t('client', { defaultValue: 'Client' })}</TableCell>
-                <TableCell>{t('status', { defaultValue: 'Status' })}</TableCell>
-                <TableCell>{t('priority', { defaultValue: 'Priority' })}</TableCell>
-                <TableCell width={220}>{t('progress', { defaultValue: 'Progress' })}</TableCell>
-                <TableCell>{t('personnel', { defaultValue: 'Personnel' })}</TableCell>
-                <TableCell>{t('scheduled', { defaultValue: 'Scheduled:' })}</TableCell>
-                <TableCell>{t('duration', { defaultValue: 'Duration' })}</TableCell>
-                <TableCell align="right">{t('actions', { defaultValue: 'Actions' })}</TableCell>
+                <TableCell>
+                  {truncateText(t('workOrder', { defaultValue: 'Work Order' }))}
+                </TableCell>
+                <TableCell>{truncateText(t('client', { defaultValue: 'Client' }))}</TableCell>
+                <TableCell>{truncateText(t('status', { defaultValue: 'Status' }))}</TableCell>
+                <TableCell>{truncateText(t('priority', { defaultValue: 'Priority' }))}</TableCell>
+                <TableCell width={220}>
+                  {truncateText(t('progress', { defaultValue: 'Progress' }))}
+                </TableCell>
+                <TableCell>{truncateText(t('personnel', { defaultValue: 'Personnel' }))}</TableCell>
+                <TableCell>
+                  {truncateText(t('scheduled', { defaultValue: 'Scheduled:' }))}
+                </TableCell>
+                <TableCell>{truncateText(t('duration', { defaultValue: 'Duration' }))}</TableCell>
+                <TableCell align="right">
+                  {truncateText(t('actions', { defaultValue: 'Actions' }))}
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -218,20 +245,20 @@ export function WorkOrderList() {
                       <Typography variant="h6" color="text.secondary">
                         {clientId
                           ? t('noWorkOrdersForClient', {
-                            defaultValue: 'No work orders found for this client',
-                          })
+                              defaultValue: 'No work orders found for this client',
+                            })
                           : t('dashboard.noWorkOrdersFound', {
-                            defaultValue: 'No work orders found',
-                          })}
+                              defaultValue: 'No work orders found',
+                            })}
                       </Typography>
                       <Typography variant="body2" color="text.disabled">
                         {clientId
                           ? t('noWorkOrdersForClientHint', {
-                            defaultValue: 'This client does not have any work orders yet.',
-                          })
+                              defaultValue: 'This client does not have any work orders yet.',
+                            })
                           : t('createFirstWorkOrderHint', {
-                            defaultValue: 'Create your first work order to get started.',
-                          })}
+                              defaultValue: 'Create your first work order to get started.',
+                            })}
                       </Typography>
                     </Stack>
                   </TableCell>
@@ -241,22 +268,24 @@ export function WorkOrderList() {
                   <TableRow key={row._id} hover>
                     <TableCell>
                       <Stack spacing={0.5}>
-                        <Typography variant="subtitle2">{row.workOrderNumber}</Typography>
+                        <Typography variant="subtitle2">
+                          {truncateText(row.workOrderNumber)}
+                        </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {row.title}
+                          {truncateText(row.title)}
                         </Typography>
                       </Stack>
                     </TableCell>
 
                     <TableCell>
                       {typeof row.clientId === 'object'
-                        ? row.clientId.name
+                        ? truncateText(row.clientId.name)
                         : t('unknownClient', { defaultValue: 'Unknown Client' })}
                     </TableCell>
 
                     <TableCell>
                       <Chip
-                        label={row.status}
+                        label={truncateText(row.status)}
                         color={getStatusColor(row.status)}
                         variant="soft"
                         size="small"
@@ -265,7 +294,7 @@ export function WorkOrderList() {
 
                     <TableCell>
                       <Chip
-                        label={row.priority}
+                        label={truncateText(row.priority)}
                         color={getPriorityColor(row.priority)}
                         variant="soft"
                         size="small"
@@ -279,7 +308,11 @@ export function WorkOrderList() {
                             {(row.progress ?? 0).toString()}%
                           </Typography>
                           {row.progressMode && (
-                            <Chip label={row.progressMode} size="small" variant="outlined" />
+                            <Chip
+                              label={truncateText(row.progressMode)}
+                              size="small"
+                              variant="outlined"
+                            />
                           )}
                         </Stack>
                         <LinearProgress
@@ -302,7 +335,7 @@ export function WorkOrderList() {
                           {row.personnelIds.map((personnel, index) => (
                             <Chip
                               key={personnel._id}
-                              label={personnel.user?.name || personnel.employeeId}
+                              label={truncateText(personnel.user?.name || personnel.employeeId)}
                               size="small"
                               variant="outlined"
                               sx={{ mb: 0.5 }}
@@ -396,8 +429,36 @@ export function WorkOrderList() {
         <MenuItem
           onClick={() => {
             popover.onClose();
+            if (selectedId) {
+              // Find the selected work order data
+              const selectedWorkOrder = workOrders.find((wo) => wo._id === selectedId);
+              if (selectedWorkOrder) {
+                // Open task creation dialog with pre-populated data
+                handleCreateTaskFromWorkOrder(selectedWorkOrder);
+              }
+            }
+          }}
+        >
+          <Iconify icon="solar:task-square-bold" sx={{ mr: 2 }} />
+          {t('addTask', { defaultValue: '+ Add Task' })}
+        </MenuItem>
+
+        <MenuItem
+          onClick={async () => {
+            popover.onClose();
             if (!selectedId) return;
-            setDeleteOpen(true);
+
+            try {
+              // Fetch related data count before showing dialog
+              const response = await axiosInstance.get(
+                `${endpoints.fsa.workOrders.details(selectedId)}/delete-info`
+              );
+              setCascadeDeleteInfo(response.data.data);
+              setDeleteOpen(true);
+            } catch (fetchError) {
+              console.error('Failed to fetch delete info:', fetchError);
+              toast.error('Failed to load deletion information');
+            }
           }}
           sx={{ color: 'error.main' }}
         >
@@ -406,50 +467,62 @@ export function WorkOrderList() {
         </MenuItem>
       </Popover>
 
-      <ConfirmDialog
-        open={deleteOpen}
-        onClose={() => setDeleteOpen(false)}
-        title={t('deleteWorkOrderTitle', { defaultValue: 'Delete Work Order' })}
-        content={
-          <>
-            {t('deleteWorkOrderConfirm', {
-              defaultValue: 'Are you sure you want to delete this work order?',
-            })}
-            <br />
-            {t('deleteWorkOrderCleanup', {
-              defaultValue: 'This will clean up related references.',
-            })}
-          </>
-        }
-        action={
-          <Button
-            variant="contained"
-            color="error"
-            disabled={deleting}
-            onClick={async () => {
-              if (!selectedId) return;
-              try {
-                setDeleting(true);
-                await axiosInstance.delete(endpoints.fsa.workOrders.details(selectedId));
-                toast.success(t('workOrderDeleted', { defaultValue: 'Work order deleted' }));
-                setDeleteOpen(false);
-                setSelectedId(null);
-                // Refresh list via SWR
-                await mutate();
-              } catch (e) {
-                console.error('Failed to delete work order', e);
-                toast.error(
-                  t('workOrderDeleteFailed', { defaultValue: 'Failed to delete work order' })
-                );
-              } finally {
-                setDeleting(false);
-              }
-            }}
-          >
-            {deleting
-              ? t('deleting', { defaultValue: 'Deleting...' })
-              : t('delete', { defaultValue: 'Delete' })}
-          </Button>
+      {cascadeDeleteInfo && (
+        <CascadeDeleteDialog
+          open={deleteOpen}
+          onClose={() => {
+            setDeleteOpen(false);
+            setCascadeDeleteInfo(null);
+          }}
+          onConfirm={async (cascadeDelete) => {
+            if (!selectedId) return;
+            try {
+              setDeleting(true);
+              await axiosInstance.delete(
+                `${endpoints.fsa.workOrders.details(selectedId)}${cascadeDelete ? '?cascade=true' : ''}`
+              );
+              toast.success(t('workOrderDeleted', { defaultValue: 'Work order deleted' }));
+              setDeleteOpen(false);
+              setSelectedId(null);
+              setCascadeDeleteInfo(null);
+              // Refresh list via SWR
+              await mutate();
+            } catch (e) {
+              console.error('Failed to delete work order', e);
+              toast.error(
+                t('workOrderDeleteFailed', { defaultValue: 'Failed to delete work order' })
+              );
+            } finally {
+              setDeleting(false);
+            }
+          }}
+          title={t('deleteWorkOrderTitle', { defaultValue: 'Delete Work Order' })}
+          entityName={
+            data?.data?.workOrders?.find((wo: any) => wo._id === selectedId)?.title || 'Work Order'
+          }
+          entityType="work-order"
+          info={cascadeDeleteInfo}
+          loading={deleting}
+        />
+      )}
+
+      {/* Task Creation Dialog */}
+      <KanbanTaskCreateDialog
+        open={taskCreateDialog.value}
+        onClose={() => {
+          taskCreateDialog.onFalse();
+          setSelectedWorkOrderForTask(null);
+        }}
+        onSuccess={handleTaskCreateSuccess}
+        status="todo"
+        // Pre-populate with work order data
+        initialWorkOrderId={selectedWorkOrderForTask?._id}
+        initialClientId={
+          selectedWorkOrderForTask?.clientId
+            ? typeof selectedWorkOrderForTask.clientId === 'string'
+              ? selectedWorkOrderForTask.clientId
+              : selectedWorkOrderForTask.clientId._id
+            : undefined
         }
       />
     </>

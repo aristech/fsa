@@ -33,7 +33,10 @@ export async function getKanbanData(
     const { clientId } = request.query as { clientId?: string };
 
     // Get user permissions to filter data appropriately
-    const userPermissions = await PermissionService.getUserPermissions(user.id, tenant._id.toString());
+    const userPermissions = await PermissionService.getUserPermissions(
+      user.id,
+      tenant._id.toString(),
+    );
     if (!userPermissions) {
       return reply.code(403).send({
         success: false,
@@ -48,12 +51,12 @@ export async function getKanbanData(
     const projectFilter = PermissionService.getProjectFilter(
       userPermissions,
       tenant._id.toString(),
-      { isActive: true }
+      { isActive: true },
     );
 
     const taskFilter = PermissionService.getTaskFilter(
       userPermissions,
-      tenant._id.toString()
+      tenant._id.toString(),
     );
 
     // Get projects and tasks filtered by permissions
@@ -76,7 +79,12 @@ export async function getKanbanData(
       new Set(tasks.map((t: any) => t.workOrderId).filter(Boolean)),
     ).map((id) => id.toString());
 
-    const [users, personnel, workOrders] = await Promise.all([
+    // Collect client ids to enrich tasks with client name/company if missing
+    const clientIds = Array.from(
+      new Set(tasks.map((t: any) => t.clientId).filter(Boolean)),
+    ).map((id) => id.toString());
+
+    const [users, personnel, workOrders, clients] = await Promise.all([
       // lightweight projections
       (await import("../models")).User.find(
         { _id: { $in: Array.from(userIds) } },
@@ -102,6 +110,15 @@ export async function getKanbanData(
             {
               title: 1,
               workOrderNumber: 1,
+            },
+          ).lean()
+        : [],
+      clientIds.length
+        ? (await import("../models")).Client.find(
+            { _id: { $in: clientIds } },
+            {
+              name: 1,
+              company: 1,
             },
           ).lean()
         : [],
@@ -134,8 +151,6 @@ export async function getKanbanData(
       };
     });
 
- 
-
     // Filter by client if specified
     let filteredProjects = projects;
     let filteredTasks = tasks;
@@ -162,8 +177,6 @@ export async function getKanbanData(
           workOrderIdsForClient.has(task.workOrderId.toString());
         return matchesByClient || matchesByWO;
       });
-
-   
     }
 
     // Load dynamic statuses for tenant (fallback to defaults)
@@ -216,6 +229,17 @@ export async function getKanbanData(
       };
     });
 
+    const clientById: Record<
+      string,
+      { name?: string; company?: string }
+    > = {};
+    (clients as any[]).forEach((client: any) => {
+      clientById[client._id.toString()] = {
+        name: client.name,
+        company: client.company,
+      };
+    });
+
     // Build column lookup for transformers
     const columnById: Record<string, { name: string; slug: string }> = {};
     statusDocs.forEach((s: any) => {
@@ -236,6 +260,7 @@ export async function getKanbanData(
           subtasksCount: subtasksCountById[task._id.toString()] || 0,
           commentsCount: commentsCountById[task._id.toString()] || 0,
           workOrderById,
+          clientById,
           columnById,
         }),
       ),
@@ -279,8 +304,6 @@ export async function handleKanbanPost(
     const { tenant, user } = req.context!;
     const body = request.body as any;
     const endpoint = (request.query as any)?.endpoint || "create-task";
-
- 
 
     switch (endpoint) {
       case "create-task":
@@ -359,10 +382,15 @@ async function handleCreateTask(
   const { taskData, columnId } = body;
 
   // Check if user has permission to create tasks
-  const userPermissions = await PermissionService.getUserPermissions(user.id, tenant._id.toString());
-  if (!userPermissions ||
-      (!PermissionService.hasPermission(userPermissions, 'tasks.create') &&
-       !PermissionService.hasPermission(userPermissions, 'tasks.edit'))) {
+  const userPermissions = await PermissionService.getUserPermissions(
+    user.id,
+    tenant._id.toString(),
+  );
+  if (
+    !userPermissions ||
+    (!PermissionService.hasPermission(userPermissions, "tasks.create") &&
+      !PermissionService.hasPermission(userPermissions, "tasks.edit"))
+  ) {
     return reply.code(403).send({
       success: false,
       error: "Access denied: You don't have permission to create tasks",
@@ -405,7 +433,8 @@ async function handleCreateTask(
     if (!PermissionService.canAssignTasks(userPermissions)) {
       return reply.code(403).send({
         success: false,
-        error: "Access denied: You don't have permission to assign tasks to others",
+        error:
+          "Access denied: You don't have permission to assign tasks to others",
       });
     }
 
@@ -427,11 +456,9 @@ async function handleCreateTask(
           .filter((p: any) => p.isActive && p.status === "active")
           .map((p: any) => p._id.toString());
         validatedAssignees = eligible;
-
-
       }
     } catch (error) {
-      console.error('Error validating assignees:', error);
+      console.error("Error validating assignees:", error);
       // Continue with empty assignees array if validation fails
       validatedAssignees = [];
     }
@@ -526,8 +553,6 @@ async function handleCreateTask(
     ...(reminder && { reminder }),
   });
 
- 
-
   await newTask.save();
 
   // Add timeline entry for task creation if linked to a work order
@@ -538,10 +563,10 @@ async function handleCreateTask(
         newTask._id.toString(),
         newTask.title,
         user.id,
-        tenant._id.toString()
+        tenant._id.toString(),
       );
     } catch (error) {
-      console.error('Error adding timeline entry for task creation:', error);
+      console.error("Error adding timeline entry for task creation:", error);
     }
   }
 
@@ -550,21 +575,22 @@ async function handleCreateTask(
     try {
       await ReminderService.updateTaskReminder(newTask._id.toString());
     } catch (error) {
-      console.error('Error updating task reminder:', error);
+      console.error("Error updating task reminder:", error);
     }
   }
 
   // If task is linked to a work order, inherit personnel assignments
   if (workOrderId) {
     try {
-      const inheritedAssignees = await WorkOrderAssignmentService.inheritWorkOrderAssignments(
-        newTask._id.toString(),
-        workOrderId,
-        tenant._id.toString(),
-        user.id,
-        { skipNotifications: true } // We'll handle notifications after inheritance
-      );
-      
+      const inheritedAssignees =
+        await WorkOrderAssignmentService.inheritWorkOrderAssignments(
+          newTask._id.toString(),
+          workOrderId,
+          tenant._id.toString(),
+          user.id,
+          { skipNotifications: true }, // We'll handle notifications after inheritance
+        );
+
       // Update the task object with inherited assignees for notification purposes
       if (inheritedAssignees.length > 0) {
         newTask.assignees = inheritedAssignees;
@@ -586,13 +612,12 @@ async function handleCreateTask(
   // Send notifications for task assignment (including inherited ones)
   const finalAssignees = newTask.assignees || [];
   if (finalAssignees.length > 0) {
- 
     try {
       await NotificationService.notifyTaskAssigned(
         newTask,
         finalAssignees.map((id: any) => id.toString()),
         [],
-        user.id
+        user.id,
       );
     } catch (error) {
       console.error("Error sending task assignment notifications:", error);
@@ -666,15 +691,15 @@ async function handleDeleteTask(
       });
     }
 
-    const notificationPromises = Array.from(recipients).map(userId =>
+    const notificationPromises = Array.from(recipients).map((userId) =>
       NotificationService.createNotification({
         tenantId: tenant._id.toString(),
         userId,
-        type: 'task_deleted',
+        type: "task_deleted",
         title: `Task deleted: ${task.title}`,
         message: `The task "${task.title}" has been deleted.`,
         relatedEntity: {
-          entityType: 'task',
+          entityType: "task",
           entityId: task._id.toString(),
           entityTitle: task.title,
         },
@@ -684,7 +709,7 @@ async function handleDeleteTask(
           reporterId: task.createdBy,
         },
         createdBy: user.id,
-      })
+      }),
     );
 
     await Promise.all(notificationPromises);
@@ -713,7 +738,6 @@ async function handleDeleteTask(
   }
 
   // Log cleanup details
- 
 
   return reply.send({
     success: true,
@@ -745,7 +769,10 @@ async function handleUpdateTask(
   }
 
   // Check if user has permission to edit this specific task
-  const userPermissions = await PermissionService.getUserPermissions(user.id, tenant._id.toString());
+  const userPermissions = await PermissionService.getUserPermissions(
+    user.id,
+    tenant._id.toString(),
+  );
   if (!userPermissions) {
     return reply.code(403).send({
       success: false,
@@ -756,7 +783,7 @@ async function handleUpdateTask(
   const canEdit = await PermissionService.canEditTask(
     userPermissions,
     taskData.id,
-    tenant._id.toString()
+    tenant._id.toString(),
   );
 
   if (!canEdit) {
@@ -804,35 +831,47 @@ async function handleUpdateTask(
 
   // Track what fields are being changed for notifications
   const changes: string[] = [];
-  
+
   const updateData: any = {};
   if (name !== undefined && name !== existingTask.title) {
     updateData.title = name;
-    changes.push('title');
+    changes.push("title");
   }
   if (description !== undefined && description !== existingTask.description) {
     updateData.description = description;
-    changes.push('description');
+    changes.push("description");
   }
   if (priority !== undefined && priority !== existingTask.priority) {
     updateData.priority = priority;
-    changes.push('priority');
+    changes.push("priority");
   }
-  if (labels !== undefined && JSON.stringify(labels) !== JSON.stringify(existingTask.tags)) {
+  if (
+    labels !== undefined &&
+    JSON.stringify(labels) !== JSON.stringify(existingTask.tags)
+  ) {
     updateData.tags = labels;
-    changes.push('tags');
+    changes.push("tags");
   }
-  if (startDate !== undefined && new Date(startDate).getTime() !== existingTask.startDate?.getTime()) {
+  if (
+    startDate !== undefined &&
+    new Date(startDate).getTime() !== existingTask.startDate?.getTime()
+  ) {
     updateData.startDate = startDate;
-    changes.push('startDate');
+    changes.push("startDate");
   }
-  if (dueDate !== undefined && new Date(dueDate).getTime() !== existingTask.dueDate?.getTime()) {
+  if (
+    dueDate !== undefined &&
+    new Date(dueDate).getTime() !== existingTask.dueDate?.getTime()
+  ) {
     updateData.dueDate = dueDate;
-    changes.push('dueDate');
+    changes.push("dueDate");
   }
-  if (typeof completeStatus === "boolean" && completeStatus !== existingTask.completeStatus) {
+  if (
+    typeof completeStatus === "boolean" &&
+    completeStatus !== existingTask.completeStatus
+  ) {
     updateData.completeStatus = completeStatus;
-    changes.push('completeStatus');
+    changes.push("completeStatus");
   }
   let previousAssignees: string[] = [];
   if (assignees !== undefined) {
@@ -840,11 +879,14 @@ async function handleUpdateTask(
     if (!PermissionService.canAssignTasks(userPermissions)) {
       return reply.code(403).send({
         success: false,
-        error: "Access denied: You don't have permission to assign tasks to others",
+        error:
+          "Access denied: You don't have permission to assign tasks to others",
       });
     }
 
-    previousAssignees = (existingTask.assignees || []).map((id: any) => id.toString());
+    previousAssignees = (existingTask.assignees || []).map((id: any) =>
+      id.toString(),
+    );
     const list = Array.isArray(assignees)
       ? assignees
       : assignee
@@ -861,13 +903,16 @@ async function handleUpdateTask(
       updateData.assignees = eligible;
 
       // Check if assignees actually changed
-      if (JSON.stringify(eligible.sort()) !== JSON.stringify(previousAssignees.sort())) {
-        changes.push('assignees');
+      if (
+        JSON.stringify(eligible.sort()) !==
+        JSON.stringify(previousAssignees.sort())
+      ) {
+        changes.push("assignees");
       }
     } else {
       updateData.assignees = [];
       if (previousAssignees.length > 0) {
-        changes.push('assignees');
+        changes.push("assignees");
       }
     }
   }
@@ -897,16 +942,55 @@ async function handleUpdateTask(
     }
   }
 
+  // If work order link changed, resolve and update denormalized fields so UI reflects new WO
+  try {
+    if (workOrderId !== undefined) {
+      const prevId = existingTask.workOrderId
+        ? existingTask.workOrderId.toString()
+        : "";
+      const nextId = workOrderId ? String(workOrderId) : "";
+      if (prevId !== nextId) {
+        // Mark change for notifications
+        changes.push("workOrderId");
+
+        if (nextId) {
+          // Fetch the new work order to populate number/title
+          const wo = await WorkOrder.findById(nextId).select(
+            "title workOrderNumber",
+          );
+          if (wo) {
+            (updateData as any).workOrderNumber =
+              (wo as any).workOrderNumber || (wo as any).number || undefined;
+            (updateData as any).workOrderTitle = (wo as any).title || undefined;
+          } else {
+            (updateData as any).workOrderNumber = undefined;
+            (updateData as any).workOrderTitle = undefined;
+          }
+        } else {
+          // Unlinking from a work order
+          (updateData as any).workOrderNumber = undefined;
+          (updateData as any).workOrderTitle = undefined;
+        }
+      }
+    }
+  } catch (e) {
+    // Do not block updates if WO resolution fails
+    (updateData as any).workOrderNumber =
+      (updateData as any).workOrderNumber ?? undefined;
+    (updateData as any).workOrderTitle =
+      (updateData as any).workOrderTitle ?? undefined;
+  }
+
   // Handle repeat settings
   if (repeat !== undefined) {
     updateData.repeat = repeat;
-    changes.push('repeat');
+    changes.push("repeat");
   }
 
   // Handle reminder settings
   if (reminder !== undefined) {
     updateData.reminder = reminder;
-    changes.push('reminder');
+    changes.push("reminder");
   }
 
   const updatedTask = await Task.findOneAndUpdate(
@@ -929,7 +1013,10 @@ async function handleUpdateTask(
   if (updatedTask.workOrderId && changes.length > 0) {
     try {
       // Log priority changes
-      if (updateData.priority && updateData.priority !== existingTask.priority) {
+      if (
+        updateData.priority &&
+        updateData.priority !== existingTask.priority
+      ) {
         await WorkOrderTimelineService.logTaskPriorityChanged(
           updatedTask.workOrderId,
           updatedTask._id.toString(),
@@ -937,22 +1024,24 @@ async function handleUpdateTask(
           existingTask.priority,
           updateData.priority,
           user.id,
-          tenant._id.toString()
+          tenant._id.toString(),
         );
       }
 
       // Log assignment changes
-      if (changes.includes('assignees')) {
+      if (changes.includes("assignees")) {
         const newAssignees = updateData.assignees || [];
         if (newAssignees.length > 0) {
           // Get assignee names for timeline
           const assignedPersonnel = await Personnel.find({
             _id: { $in: newAssignees },
-            tenantId: tenant._id
-          }).populate('user', 'firstName lastName');
+            tenantId: tenant._id,
+          }).populate("user", "firstName lastName");
 
-          const assigneeNames = assignedPersonnel.map(p =>
-            p.user ? `${p.user.firstName} ${p.user.lastName}`.trim() : p.employeeId
+          const assigneeNames = assignedPersonnel.map((p) =>
+            p.user
+              ? `${p.user.firstName} ${p.user.lastName}`.trim()
+              : p.employeeId,
           );
 
           await WorkOrderTimelineService.logTaskAssigned(
@@ -961,23 +1050,26 @@ async function handleUpdateTask(
             updatedTask.title,
             assigneeNames,
             user.id,
-            tenant._id.toString()
+            tenant._id.toString(),
           );
         }
       }
 
       // Log completion status
-      if (updateData.completeStatus === true && existingTask.completeStatus !== true) {
+      if (
+        updateData.completeStatus === true &&
+        existingTask.completeStatus !== true
+      ) {
         await WorkOrderTimelineService.logTaskCompleted(
           updatedTask.workOrderId,
           updatedTask._id.toString(),
           updatedTask.title,
           user.id,
-          tenant._id.toString()
+          tenant._id.toString(),
         );
       }
     } catch (error) {
-      console.error('Error adding timeline entries for task update:', error);
+      console.error("Error adding timeline entries for task update:", error);
     }
   }
 
@@ -985,18 +1077,17 @@ async function handleUpdateTask(
   if (changes.length > 0) {
     try {
       // Handle assignment notifications separately
-      if (changes.includes('assignees') && assignees !== undefined) {
-     
+      if (changes.includes("assignees") && assignees !== undefined) {
         await NotificationService.notifyTaskAssigned(
           updatedTask,
           updateData.assignees || [],
           previousAssignees,
-          user.id
+          user.id,
         );
       }
 
       // Handle completion notification
-      if (changes.includes('completeStatus')) {
+      if (changes.includes("completeStatus")) {
         if (updateData.completeStatus === true) {
           await NotificationService.notifyTaskCompleted(updatedTask, user.id);
         } else if (updateData.completeStatus === false) {
@@ -1005,16 +1096,16 @@ async function handleUpdateTask(
             task: updatedTask,
             previousTask: existingTask,
             updatedBy: user.id,
-            changes: ['completeStatus'],
+            changes: ["completeStatus"],
           });
         }
       }
 
       // Send general update notification for other changes
-      const nonAssignmentChanges = changes.filter(change => 
-        !['assignees', 'completeStatus'].includes(change)
+      const nonAssignmentChanges = changes.filter(
+        (change) => !["assignees", "completeStatus"].includes(change),
       );
-      
+
       if (nonAssignmentChanges.length > 0) {
         await NotificationService.notifyTaskUpdated({
           task: updatedTask,
@@ -1111,13 +1202,17 @@ async function handleMoveTask(
             );
 
             // Send notification and log timeline if column changed (status change)
-            if (existingTask && updatedTask &&
-                existingTask.columnId?.toString() !== updatedTask.columnId?.toString()) {
+            if (
+              existingTask &&
+              updatedTask &&
+              existingTask.columnId?.toString() !==
+                updatedTask.columnId?.toString()
+            ) {
               try {
                 // Get status names for timeline logging
                 const [oldStatus, newStatus] = await Promise.all([
-                  Status.findById(existingTask.columnId).select('name'),
-                  Status.findById(updatedTask.columnId).select('name')
+                  Status.findById(existingTask.columnId).select("name"),
+                  Status.findById(updatedTask.columnId).select("name"),
                 ]);
 
                 // Log timeline entry for status change if task is linked to a work order
@@ -1126,10 +1221,10 @@ async function handleMoveTask(
                     updatedTask.workOrderId,
                     updatedTask._id.toString(),
                     updatedTask.title,
-                    oldStatus?.name || 'Unknown',
-                    newStatus?.name || 'Unknown',
+                    oldStatus?.name || "Unknown",
+                    newStatus?.name || "Unknown",
                     user.id,
-                    tenant._id.toString()
+                    tenant._id.toString(),
                   );
                 }
 
@@ -1137,7 +1232,7 @@ async function handleMoveTask(
                   task: updatedTask,
                   previousTask: existingTask,
                   updatedBy: user.id,
-                  changes: ['columnId'],
+                  changes: ["columnId"],
                 });
               } catch (error) {
                 console.error("Error sending task move notifications:", error);
@@ -1397,11 +1492,11 @@ async function handleRemoveTaskAssignees(
       taskId,
       personnelIds,
       tenant._id.toString(),
-      user.id
+      user.id,
     );
 
     // Get updated task for response
-    const updatedTask = await Task.findById(taskId).select('assignees title');
+    const updatedTask = await Task.findById(taskId).select("assignees title");
 
     return reply.send({
       success: true,

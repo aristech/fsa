@@ -55,6 +55,8 @@ type Props = {
   status: string;
   initialStartDate?: string;
   initialEndDate?: string;
+  initialWorkOrderId?: string;
+  initialClientId?: string;
 };
 
 export function KanbanTaskCreateDialog({
@@ -64,6 +66,8 @@ export function KanbanTaskCreateDialog({
   status,
   initialStartDate,
   initialEndDate,
+  initialWorkOrderId,
+  initialClientId,
 }: Props) {
   const { selectedClient } = useClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -118,7 +122,8 @@ export function KanbanTaskCreateDialog({
   const preserveTimeIfMidnight = useCallback((newDate: Dayjs | null, prevDate: Dayjs | null) => {
     if (!newDate) return null;
     if (!prevDate) return newDate;
-    const isMidnight = newDate.hour() === 0 && newDate.minute() === 0 && (newDate.second?.() ?? 0) === 0;
+    const isMidnight =
+      newDate.hour() === 0 && newDate.minute() === 0 && (newDate.second?.() ?? 0) === 0;
     if (isMidnight) {
       return newDate.hour(prevDate.hour()).minute(prevDate.minute());
     }
@@ -188,6 +193,18 @@ export function KanbanTaskCreateDialog({
     }
   }, [watchedWorkOrderId, watchedClientId, workOrders, setValue]);
 
+  // Pre-populate form with initial values when dialog opens
+  useEffect(() => {
+    if (open && (initialWorkOrderId || initialClientId)) {
+      if (initialWorkOrderId) {
+        setValue('workOrderId', initialWorkOrderId, { shouldDirty: true, shouldValidate: true });
+      }
+      if (initialClientId) {
+        setValue('clientId', initialClientId, { shouldDirty: true, shouldValidate: true });
+      }
+    }
+  }, [open, initialWorkOrderId, initialClientId, setValue]);
+
   const onSubmit = handleSubmit(
     async (data) => {
       setIsSubmitting(true);
@@ -223,18 +240,18 @@ export function KanbanTaskCreateDialog({
           // Fallback to context client if no form selection
           ...(!selectedClientFromForm &&
             selectedClient && {
-            clientId: selectedClient._id,
-            clientName: selectedClient.name,
-            clientCompany: selectedClient.company,
-          }),
+              clientId: selectedClient._id,
+              clientName: selectedClient.name,
+              clientCompany: selectedClient.company,
+            }),
           // Final fallback: derive client from selected work order if available
           ...(!selectedClientFromForm &&
             !selectedClient &&
             selectedWorkOrder?.clientId && {
-            clientId: (selectedWorkOrder.clientId as any)?._id || selectedWorkOrder.clientId,
-            clientName: (selectedWorkOrder.clientId as any)?.name,
-            clientCompany: (selectedWorkOrder.clientId as any)?.company,
-          }),
+              clientId: (selectedWorkOrder.clientId as any)?._id || selectedWorkOrder.clientId,
+              clientName: (selectedWorkOrder.clientId as any)?.name,
+              clientCompany: (selectedWorkOrder.clientId as any)?.company,
+            }),
         };
 
         // Create task on server directly to obtain created ID
@@ -264,7 +281,9 @@ export function KanbanTaskCreateDialog({
           mutate(endpoints.kanban),
           mutate((key: any) => typeof key === 'string' && key.startsWith(endpoints.kanban)),
           mutate(endpoints.calendar),
-          taskData.clientId ? mutate(`${endpoints.calendar}?clientId=${taskData.clientId}`) : Promise.resolve(),
+          taskData.clientId
+            ? mutate(`${endpoints.calendar}?clientId=${taskData.clientId}`)
+            : Promise.resolve(),
         ]);
 
         toast.success('Task created successfully!');
@@ -288,7 +307,6 @@ export function KanbanTaskCreateDialog({
     rangePicker.onReset?.();
     onClose();
   }, [reset, rangePicker, onClose]);
-
 
   return (
     <Drawer
@@ -432,11 +450,11 @@ export function KanbanTaskCreateDialog({
                       {selectedPeople.length > 0 ? (
                         selectedPeople.map((user: any) => (
                           <Avatar key={user._id}>
-                            {(user.name
+                            {user.name
                               ?.split(' ')
                               .map((n: string) => n.charAt(0))
                               .join('')
-                              .toUpperCase()) || 'A'}
+                              .toUpperCase() || 'A'}
                           </Avatar>
                         ))
                       ) : (

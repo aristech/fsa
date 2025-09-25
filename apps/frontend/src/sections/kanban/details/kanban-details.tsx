@@ -32,7 +32,6 @@ import IconButton from '@mui/material/IconButton';
 import FormControl from '@mui/material/FormControl';
 import Autocomplete from '@mui/material/Autocomplete';
 import LinearProgress from '@mui/material/LinearProgress';
-import FormControlLabel from '@mui/material/FormControlLabel';
 
 import { useTaskRealtime, useRealtimeComments } from 'src/hooks/use-realtime';
 
@@ -126,7 +125,9 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
   const [taskDescription, setTaskDescription] = useState(task.description || '');
   const [tags, setTags] = useState<string[]>(task.tags || task.labels || []);
   const [repeatData, setRepeatData] = useState<RepeatSettings | null>((task as any).repeat || null);
-  const [reminderData, setReminderData] = useState<ReminderSettings | null>((task as any).reminder || null);
+  const [reminderData, setReminderData] = useState<ReminderSettings | null>(
+    (task as any).reminder || null
+  );
   // Fetch subtasks from backend
   const { data: subtasksData } = useSWR(`/api/v1/subtasks/${task.id}`, async (url) => {
     const response = await axiosInstance.get(url);
@@ -208,7 +209,6 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     if (taskReminder && taskReminder.enabled !== undefined) {
       setReminderData(taskReminder);
     }
-
   }, [task]);
 
   // Handle real-time comment events
@@ -237,18 +237,19 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       : task.due?.[0]
         ? dayjs(task.due[0])
         : null,
-    (task as any).dueDate
-      ? dayjs((task as any).dueDate)
-      : task.due?.[1]
-        ? dayjs(task.due[1])
-        : null
+    (task as any).dueDate ? dayjs((task as any).dueDate) : task.due?.[1] ? dayjs(task.due[1]) : null
   );
 
   // Update rangePicker dates when task changes (after rangePicker is declared)
   const taskStartDateRaw = (task as any).startDate as unknown;
   const taskDueDateRaw = (task as any).dueDate as unknown;
   const taskDueArray = task.due as readonly [string, string] | undefined;
-  const { startDate: pickerStartDate, endDate: pickerEndDate, setStartDate, setEndDate } = rangePicker;
+  const {
+    startDate: pickerStartDate,
+    endDate: pickerEndDate,
+    setStartDate,
+    setEndDate,
+  } = rangePicker;
 
   useEffect(() => {
     const newStartDate = taskStartDateRaw
@@ -269,7 +270,16 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     if (newDueDate && (!pickerEndDate || !newDueDate.isSame(pickerEndDate))) {
       setEndDate?.(newDueDate);
     }
-  }, [task.id, taskStartDateRaw, taskDueDateRaw, taskDueArray, pickerStartDate, pickerEndDate, setStartDate, setEndDate]);
+  }, [
+    task.id,
+    taskStartDateRaw,
+    taskDueDateRaw,
+    taskDueArray,
+    pickerStartDate,
+    pickerEndDate,
+    setStartDate,
+    setEndDate,
+  ]);
 
   const handleChangeTaskName = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setTaskName(event.target.value);
@@ -386,7 +396,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       setStatus(newValue);
       // Move task to new column/status using the correct updateTasks format
       const updateTasks = {
-        [newValue]: [{ id: task.id }]
+        [newValue]: [{ id: task.id }],
       };
 
       axiosInstance
@@ -425,41 +435,46 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
   }, [rangePicker.startDate, rangePicker.endDate]);
 
   // Handler to save repeat/reminder data
-  const handleRepeatReminderSubmit = useCallback(async (data?: { repeat?: RepeatSettings; reminder?: ReminderSettings }) => {
-    try {
-      const taskData: any = { id: task.id };
+  const handleRepeatReminderSubmit = useCallback(
+    async (data?: { repeat?: RepeatSettings; reminder?: ReminderSettings }) => {
+      try {
+        const taskData: any = { id: task.id };
 
-      // Handle repeat data - always include it if provided
-      if (data?.repeat !== undefined) {
-        taskData.repeat = data.repeat;
-        setRepeatData(data.repeat);
+        // Handle repeat data - always include it if provided
+        if (data?.repeat !== undefined) {
+          taskData.repeat = data.repeat;
+          setRepeatData(data.repeat);
+        }
+
+        // Handle reminder data - always include it if provided
+        if (data?.reminder !== undefined) {
+          taskData.reminder = data.reminder;
+          setReminderData(data.reminder);
+        }
+
+        await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, { taskData });
+
+        // Invalidate kanban cache to ensure UI updates
+        await mutate(endpoints.kanban);
+
+        // Update the task with the new data, ensuring repeat/reminder are preserved
+        const updatedTask = {
+          ...task,
+          repeat: data?.repeat !== undefined ? data.repeat : (task as any).repeat,
+          reminder: data?.reminder !== undefined ? data.reminder : (task as any).reminder,
+        };
+        onUpdateTask(updatedTask as any);
+
+        toast.success(t('scheduleUpdated', { defaultValue: 'Schedule updated successfully' }));
+      } catch (error) {
+        console.error('Failed to update repeat/reminder settings:', error);
+        toast.error(
+          t('failedToUpdateSchedule', { defaultValue: 'Failed to update schedule settings' })
+        );
       }
-
-      // Handle reminder data - always include it if provided
-      if (data?.reminder !== undefined) {
-        taskData.reminder = data.reminder;
-        setReminderData(data.reminder);
-      }
-
-      await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, { taskData });
-
-      // Invalidate kanban cache to ensure UI updates
-      await mutate(endpoints.kanban);
-
-      // Update the task with the new data, ensuring repeat/reminder are preserved
-      const updatedTask = {
-        ...task,
-        repeat: data?.repeat !== undefined ? data.repeat : (task as any).repeat,
-        reminder: data?.reminder !== undefined ? data.reminder : (task as any).reminder
-      };
-      onUpdateTask(updatedTask as any);
-
-      toast.success(t('scheduleUpdated', { defaultValue: 'Schedule updated successfully' }));
-    } catch (error) {
-      console.error('Failed to update repeat/reminder settings:', error);
-      toast.error(t('failedToUpdateSchedule', { defaultValue: 'Failed to update schedule settings' }));
-    }
-  }, [task, onUpdateTask, t]);
+    },
+    [task, onUpdateTask, t]
+  );
 
   // Subtask handlers
   const handleToggleSubtask = useCallback(
@@ -532,9 +547,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       toast.success(t('subtaskUpdated', { defaultValue: 'Subtask updated' }));
     } catch (error) {
       console.error('Failed to update subtask title:', error);
-      toast.error(
-        t('failedToUpdateSubtask', { defaultValue: 'Failed to update subtask' })
-      );
+      toast.error(t('failedToUpdateSubtask', { defaultValue: 'Failed to update subtask' }));
     } finally {
       setIsSavingSubtask(false);
       handleCancelEditSubtask();
@@ -584,15 +597,18 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
               workOrderNumber: undefined,
               workOrderTitle: undefined,
             } as any);
+
+            // Invalidate kanban cache to refresh work order display
+            try {
+              await mutate(endpoints.kanban);
+            } catch (error) {
+              console.error('Failed to refresh kanban data:', error);
+            }
             return;
           }
 
-          // Persist WO selection
-          await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, {
-            taskData: { id: task.id, workOrderId: wo.id, workOrderNumber: wo.number },
-          });
-
-          // Prefill client from WO
+          // Fetch client info from WO first, then make single API call
+          let clientData = {};
           try {
             const woResp = await axiosInstance.get(endpoints.fsa.workOrders.details(wo.id));
             const clientId = woResp?.data?.data?.clientId || woResp?.data?.data?.client?._id;
@@ -600,27 +616,40 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
             const clientCompany =
               woResp?.data?.data?.clientCompany || woResp?.data?.data?.client?.company;
             if (clientId) {
-              await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, {
-                taskData: { id: task.id, clientId, clientName, clientCompany },
-              });
-              onUpdateTask({
-                ...(task as any),
-                workOrderId: wo.id,
-                workOrderNumber: wo.number,
-                clientId,
-                clientName,
-                clientCompany,
-              } as any);
-              return;
+              clientData = { clientId, clientName, clientCompany };
             }
           } catch (err) {
             console.warn('Failed to prefill client from work order', err);
           }
 
-          // Update local task without client if none found
-          onUpdateTask({ ...(task as any), workOrderId: wo.id, workOrderNumber: wo.number } as any);
+          // Single API call with all work order and client data
+          await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, {
+            taskData: {
+              id: task.id,
+              workOrderId: wo.id,
+              workOrderNumber: wo.number,
+              workOrderTitle: wo.label,
+              ...clientData
+            },
+          });
+
+          // Update local task with all the new information
+          onUpdateTask({
+            ...(task as any),
+            workOrderId: wo.id,
+            workOrderNumber: wo.number,
+            workOrderTitle: wo.label,
+            ...clientData,
+          } as any);
         } catch (e) {
           console.error('Failed to update work order on task', e);
+        }
+
+        // Invalidate kanban cache to refresh work order display
+        try {
+          await mutate(endpoints.kanban);
+        } catch (error) {
+          console.error('Failed to refresh kanban data:', error);
         }
       }}
       onCloseDetails={onClose}
@@ -883,13 +912,19 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
                 variant="soft"
                 color="info"
                 icon={<Iconify icon="solar:refresh-square-bold" width={16} />}
-                label={`${t('recurring', { defaultValue: 'Recurring' })}: ${repeatData.type === 'daily' ? t('daily', { defaultValue: 'Daily' }) :
-                  repeatData.type === 'weekly' ? t('weekly', { defaultValue: 'Weekly' }) :
-                    repeatData.type === 'monthly' ? t('monthly', { defaultValue: 'Monthly' }) :
-                      repeatData.type === 'yearly' ? t('yearly', { defaultValue: 'Yearly' }) :
-                        repeatData.type === 'custom' ? `${t('every', { defaultValue: 'Every' })} ${repeatData.frequency || 1} ${repeatData.customType || 'weeks'}` :
-                          repeatData.type
-                  }`}
+                label={`${t('recurring', { defaultValue: 'Recurring' })}: ${
+                  repeatData.type === 'daily'
+                    ? t('daily', { defaultValue: 'Daily' })
+                    : repeatData.type === 'weekly'
+                      ? t('weekly', { defaultValue: 'Weekly' })
+                      : repeatData.type === 'monthly'
+                        ? t('monthly', { defaultValue: 'Monthly' })
+                        : repeatData.type === 'yearly'
+                          ? t('yearly', { defaultValue: 'Yearly' })
+                          : repeatData.type === 'custom'
+                            ? `${t('every', { defaultValue: 'Every' })} ${repeatData.frequency || 1} ${repeatData.customType || 'weeks'}`
+                            : repeatData.type
+                }`}
               />
             )}
             {reminderData?.enabled && (
@@ -898,12 +933,17 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
                 variant="soft"
                 color="warning"
                 icon={<Iconify icon="solar:bell-bold" width={16} />}
-                label={`${t('reminder', { defaultValue: 'Reminder' })}: ${reminderData.type === '1hour' ? t('1hour', { defaultValue: '1 hour' }) :
-                  reminderData.type === '1day' ? t('1day', { defaultValue: '1 day' }) :
-                    reminderData.type === '1week' ? t('1week', { defaultValue: '1 week' }) :
-                      reminderData.type === '1month' ? t('1month', { defaultValue: '1 month' }) :
-                        reminderData.type
-                  } ${t('before', { defaultValue: 'before' })}`}
+                label={`${t('reminder', { defaultValue: 'Reminder' })}: ${
+                  reminderData.type === '1hour'
+                    ? t('1hour', { defaultValue: '1 hour' })
+                    : reminderData.type === '1day'
+                      ? t('1day', { defaultValue: '1 day' })
+                      : reminderData.type === '1week'
+                        ? t('1week', { defaultValue: '1 week' })
+                        : reminderData.type === '1month'
+                          ? t('1month', { defaultValue: '1 month' })
+                          : reminderData.type
+                } ${t('before', { defaultValue: 'before' })}`}
               />
             )}
           </Stack>
@@ -964,6 +1004,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         <BlockLabel>{t('attachments', { defaultValue: 'Attachments' })}</BlockLabel>
         <KanbanDetailsAttachments
           attachments={task.attachments}
+          taskId={task.id}
           onChange={async (files: any[]) => {
             try {
               await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, {
@@ -996,53 +1037,49 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
             value={totalCount > 0 ? (completedCount / totalCount) * 100 : 0}
           />
         </div>
-        <Label variant="soft" sx={{ letterSpacing: 1, color: 'text.secondary' }}>Double click to edit</Label>
+        <Label variant="soft" sx={{ letterSpacing: 1, color: 'text.secondary' }}>
+          Double click to edit
+        </Label>
         <FormGroup>
           {subtasks.map((subtask) => (
             <Fragment key={subtask._id}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      disableRipple
-                      checked={subtask.completed}
-                      onChange={(e) => handleToggleSubtask(subtask._id, e.target.checked)}
-                    />
-                  }
-                  label={
-                    editingSubtaskId === subtask._id ? (
-                      <TextField
-
-                        value={editingSubtaskTitle}
-                        autoFocus
-                        disabled={isSavingSubtask}
-                        fullWidth
-                        multiline
-                        minRows={1}
-                        maxRows={6}
-                        onChange={(e) => setEditingSubtaskTitle(e.target.value)}
-                        onBlur={handleSaveEditSubtask}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleSaveEditSubtask();
-                          } else if (e.key === 'Escape') {
-                            handleCancelEditSubtask();
-                          }
-                        }}
-                        sx={{ width: 380 }}
-                      />
-                    ) : (
-                      <Box
-                        onDoubleClick={() => handleStartEditSubtask(subtask)}
-                        sx={{ cursor: 'text', pr: 1 }}
-                      >
-                        {subtask.title}
-                      </Box>
-                    )
-                  }
-                  sx={{ flexGrow: 1, alignItems: 'flex-start' }}
+                <Checkbox
+                  disableRipple
+                  checked={subtask.completed}
+                  onChange={(e) => handleToggleSubtask(subtask._id, e.target.checked)}
                 />
+                <Box sx={{ flexGrow: 1, alignItems: 'flex-start' }}>
+                  {editingSubtaskId === subtask._id ? (
+                    <TextField
+                      value={editingSubtaskTitle}
+                      autoFocus
+                      disabled={isSavingSubtask}
+                      fullWidth
+                      multiline
+                      minRows={1}
+                      maxRows={6}
+                      onChange={(e) => setEditingSubtaskTitle(e.target.value)}
+                      onBlur={handleSaveEditSubtask}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleSaveEditSubtask();
+                        } else if (e.key === 'Escape') {
+                          handleCancelEditSubtask();
+                        }
+                      }}
+                      sx={{ width: 380 }}
+                    />
+                  ) : (
+                    <Box
+                      onDoubleClick={() => handleStartEditSubtask(subtask)}
+                      sx={{ cursor: 'text', pr: 1 }}
+                    >
+                      {subtask.title}
+                    </Box>
+                  )}
+                </Box>
                 <IconButton
                   size="small"
                   color="error"

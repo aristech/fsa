@@ -2,6 +2,8 @@
 
 import { Checkbox, TableRow, TableCell, TableHead, TableSortLabel } from '@mui/material';
 
+import { truncateText } from 'src/utils/text-truncate';
+
 import { useTranslate } from 'src/locales/use-locales';
 
 // ----------------------------------------------------------------------
@@ -65,10 +67,10 @@ export function MaterialsTableHead({
                 direction={orderBy === headCell.id ? order : 'asc'}
                 onClick={() => onSort(headCell.id)}
               >
-                {headCell.label}
+                {truncateText(headCell.label)}
               </TableSortLabel>
             ) : (
-              headCell.label
+              truncateText(headCell.label)
             )}
           </TableCell>
         ))}

@@ -15,6 +15,8 @@ import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
+import { truncateText } from 'src/utils/text-truncate';
+
 import axiosInstance from 'src/lib/axios';
 
 import { Label } from 'src/components/label';
@@ -99,18 +101,18 @@ export function PersonnelUserTableRow({
                   }
                 }}
               >
-                {row.name}
+                {truncateText(row.name)}
               </Link>
               <Box component="span" sx={{ color: 'text.disabled' }}>
-                {row.email}
+                {truncateText(row.email)}
               </Box>
             </Stack>
           </Box>
         </TableCell>
 
-        <TableCell sx={{ whiteSpace: 'nowrap' }}>{row.phoneNumber}</TableCell>
+        <TableCell sx={{ whiteSpace: 'nowrap' }}>{truncateText(row.phoneNumber)}</TableCell>
 
-        <TableCell sx={{ whiteSpace: 'nowrap' }}>{row.role}</TableCell>
+        <TableCell sx={{ whiteSpace: 'nowrap' }}>{truncateText(row.role)}</TableCell>
 
         <TableCell>
           <Label

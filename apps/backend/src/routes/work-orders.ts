@@ -671,6 +671,109 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
     },
   );
 
+  // GET /api/v1/work-orders/:id/delete-info - Get deletion impact info
+  fastify.get(
+    "/:id/delete-info",
+    { preHandler: requirePermission("workOrders.delete") },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const req = request as AuthenticatedRequest;
+        const { tenant } = req.context!;
+        const { id } = request.params as { id: string };
+
+        // Import models dynamically
+        const { Task, Comment, Assignment, Subtask } = await import("../models");
+
+        // Check if work order exists
+        const workOrder = await WorkOrder.findOne({
+          _id: id,
+          tenantId: tenant._id,
+        });
+
+        if (!workOrder) {
+          return reply.code(404).send({
+            success: false,
+            error: "Work order not found",
+          });
+        }
+
+        // Count related data
+        const [tasksCount, commentsCount, assignmentsCount] = await Promise.all([
+          Task.countDocuments({ workOrderId: id, tenantId: tenant._id }),
+          Comment.countDocuments({ workOrderId: id, tenantId: tenant._id }),
+          Assignment.countDocuments({ workOrderId: id, tenantId: tenant._id }),
+        ]);
+
+        // Count subtasks from related tasks
+        const tasks = await Task.find({ workOrderId: id, tenantId: tenant._id }, { _id: 1 });
+        const taskIds = tasks.map(t => t._id.toString());
+
+        const subtasksCount = taskIds.length > 0
+          ? await Subtask.countDocuments({ taskId: { $in: taskIds }, tenantId: tenant._id })
+          : 0;
+
+        // Count files (estimate based on upload directory structure)
+        let filesCount = 0;
+        try {
+          const fs = await import('fs/promises');
+          const path = await import('path');
+
+          const workOrderFilesPath = path.join(
+            process.cwd(),
+            'uploads',
+            tenant._id.toString(),
+            'work_orders',
+            id
+          );
+
+          try {
+            const files = await fs.readdir(workOrderFilesPath);
+            filesCount = files.length;
+          } catch {
+            // Directory doesn't exist, no files
+            filesCount = 0;
+          }
+
+          // Also check for files in task directories
+          for (const taskId of taskIds) {
+            const taskFilesPath = path.join(
+              process.cwd(),
+              'uploads',
+              tenant._id.toString(),
+              'tasks',
+              taskId
+            );
+            try {
+              const taskFiles = await fs.readdir(taskFilesPath);
+              filesCount += taskFiles.length;
+            } catch {
+              // Directory doesn't exist
+            }
+          }
+        } catch (error) {
+          console.warn('Could not count files:', error);
+        }
+
+        return reply.send({
+          success: true,
+          data: {
+            tasksCount,
+            filesCount,
+            commentsCount,
+            assignmentsCount,
+            subtasksCount,
+          },
+        });
+      } catch (error) {
+        console.error('Error fetching delete info:', error);
+        return reply.code(500).send({
+          success: false,
+          error: "Failed to fetch deletion information",
+        });
+      }
+    }
+  );
+
   // DELETE /api/v1/work-orders/:id - Delete work order
   fastify.delete(
     "/:id",
@@ -678,8 +781,12 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const req = request as AuthenticatedRequest;
-        const { tenant } = req.context!;
+        const { tenant, user } = req.context!;
         const { id } = request.params as { id: string };
+        const { cascade } = request.query as { cascade?: string };
+
+        // Parse cascade deletion option
+        const cascadeDelete = cascade === 'true';
 
         // Check if work order exists before cleanup
         const workOrder = await WorkOrder.findOne({
@@ -694,6 +801,14 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           });
         }
 
+        fastify.log.info({
+          workOrderId: id,
+          workOrderTitle: workOrder.title,
+          userId: user.id,
+          cascadeDelete,
+          tenantId: tenant._id.toString(),
+        }, "Work order deletion initiated");
+
         // Perform comprehensive cleanup
         const cleanupResult = await EntityCleanupService.cleanupWorkOrder(
           id,
@@ -702,7 +817,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
             deleteFiles: true,
             deleteComments: true,
             deleteAssignments: true,
-            cascadeDelete: false, // Don't delete related tasks by default
+            cascadeDelete, // Use user's choice for cascade deletion
           },
         );
 

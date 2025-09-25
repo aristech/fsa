@@ -44,17 +44,17 @@ const renderDropIndicator = (
 const renderTaskPreview = (state: UseTaskItemDndReturn['state'], task: IKanbanTask) =>
   state.type === kanbanClasses.state.preview
     ? createPortal(
-      <ItemPreview
-        sx={{
-          width: state.dragRect.width,
-          ...(!isSafari() && { borderRadius: 'var(--kanban-item-radius)' }),
-        }}
-      >
-        <ItemStatus status={task.priority} />
-        <ItemName name={task.name} />
-      </ItemPreview>,
-      state.container
-    )
+        <ItemPreview
+          sx={{
+            width: state.dragRect.width,
+            ...(!isSafari() && { borderRadius: 'var(--kanban-item-radius)' }),
+          }}
+        >
+          <ItemStatus status={task.priority} />
+          <ItemName name={task.name} />
+        </ItemPreview>,
+        state.container
+      )
     : null;
 
 // ----------------------------------------------------------------------
@@ -155,15 +155,19 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
         <ItemStatus status={task.priority} completed={!!task.completeStatus} />
         <ItemName name={task.name} />
         {/* Client / Work order indicators */}
-        {(task.clientName || (task as any).workOrderTitle || (task as any).workOrderNumber) && (
+        {(task.clientName ||
+          task.clientId ||
+          (task as any).workOrderTitle ||
+          (task as any).workOrderNumber ||
+          (task as any).workOrderId) && (
           <Box sx={{ mt: 0.5, mb: 0.5, display: 'flex', gap: 0.5, alignItems: 'flex-start' }}>
-            {task.clientName && (
+            {(task.clientName || task.clientId) && (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                 <Chip
                   size="small"
                   color="default"
                   variant="outlined"
-                  label={task.clientName}
+                  label={task.clientName || `Client: ${task.clientId?.slice(-6) || 'Unknown'}`}
                   sx={{
                     maxWidth: 140,
                     fontSize: '0.7rem',
@@ -177,12 +181,18 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
                     },
                   }}
                 />
-                {(task as any).workOrderTitle && (
+                {((task as any).workOrderTitle ||
+                  (task as any).workOrderNumber ||
+                  (task as any).workOrderId) && (
                   <Chip
                     size="small"
                     color="info"
                     variant="soft"
-                    label={(task as any).workOrderTitle}
+                    label={
+                      (task as any).workOrderTitle ||
+                      (task as any).workOrderNumber ||
+                      `WO: ${(task as any).workOrderId?.slice(-6) || 'Unknown'}`
+                    }
                     sx={{
                       maxWidth: 150,
                       fontSize: '0.7rem',
@@ -244,14 +254,16 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
             />
           )}
 
-          <Chip
-            size="small"
-            variant="outlined"
-            color="default"
-            icon={<Iconify icon="solar:clock-circle-bold" width={14} />}
-            label={`${totalHours.toFixed ? totalHours.toFixed(2) : Number(totalHours || 0).toFixed(2)}h`}
-            sx={{ height: 22, '& .MuiChip-label': { px: 0.75, fontSize: '0.72rem' } }}
-          />
+          {totalHours > 0 && (
+            <Chip
+              size="small"
+              variant="outlined"
+              color="default"
+              icon={<Iconify icon="solar:clock-circle-bold" width={14} />}
+              label={`${totalHours.toFixed ? totalHours.toFixed(2) : Number(totalHours || 0).toFixed(2)}h`}
+              sx={{ height: 22, '& .MuiChip-label': { px: 0.75, fontSize: '0.72rem' } }}
+            />
+          )}
         </Box>
         <Chip
           size="small"

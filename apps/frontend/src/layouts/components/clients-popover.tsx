@@ -4,16 +4,18 @@ import type { Theme, SxProps } from '@mui/material/styles';
 import type { ButtonBaseProps } from '@mui/material/ButtonBase';
 
 import { usePopover } from 'minimal-shared/hooks';
-import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useRef, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
 import MenuList from '@mui/material/MenuList';
 import MenuItem from '@mui/material/MenuItem';
+import TextField from '@mui/material/TextField';
 import ButtonBase from '@mui/material/ButtonBase';
 import Typography from '@mui/material/Typography';
+import InputAdornment from '@mui/material/InputAdornment';
 import Button, { buttonClasses } from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 
@@ -43,6 +45,8 @@ export function ClientsPopover({ sx, ...other }: ClientsPopoverProps) {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch clients from API
   const fetchClients = useCallback(async () => {
@@ -76,6 +80,49 @@ export function ClientsPopover({ sx, ...other }: ClientsPopoverProps) {
       fetchClients();
     }
   }, [open, clients.length, fetchClients]);
+
+  // Clear search when popover closes
+  useEffect(() => {
+    if (!open) {
+      setSearchQuery('');
+    }
+  }, [open]);
+
+  // Focus search input when popover opens
+  useEffect(() => {
+    if (open && searchInputRef.current) {
+      // Small delay to ensure the popover is fully rendered
+      const timer = setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [open]);
+
+  // Filter clients based on search query with locale-aware comparison
+  const filteredClients = clients
+    .filter((client) => {
+      if (!searchQuery.trim()) return true;
+
+      // Use locale-aware string comparison for Greek characters
+      const normalizeString = (str: string) =>
+        str
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '');
+
+      const query = normalizeString(searchQuery);
+      return (
+        normalizeString(client.name).includes(query) ||
+        (client.company && normalizeString(client.company).includes(query)) ||
+        (client.email && normalizeString(client.email).includes(query))
+      );
+    })
+    .sort((a, b) =>
+      // Sort alphabetically by name, case-insensitive
+      a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+    );
 
   // Synchronize client context with URL parameters
   useEffect(() => {
@@ -188,6 +235,40 @@ export function ClientsPopover({ sx, ...other }: ClientsPopoverProps) {
         paper: { sx: { mt: 0.5, ml: -1.55, width: 280 } },
       }}
     >
+      {/* Search Input */}
+      <Box sx={{ p: 2, pb: 1 }}>
+        <TextField
+          ref={searchInputRef}
+          fullWidth
+          size="small"
+          placeholder="Search clients..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Iconify icon="eva:search-fill" width={20} sx={{ color: 'text.disabled' }} />
+              </InputAdornment>
+            ),
+          }}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              '& fieldset': {
+                borderColor: 'divider',
+              },
+              '&:hover fieldset': {
+                borderColor: 'primary.main',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: 'primary.main',
+              },
+            },
+          }}
+        />
+      </Box>
+
+      <Divider />
+
       <Scrollbar sx={{ maxHeight: 320 }}>
         <MenuList>
           {/* All Clients Option */}
@@ -236,7 +317,7 @@ export function ClientsPopover({ sx, ...other }: ClientsPopoverProps) {
           {/* Client List */}
           {!loading &&
             !error &&
-            clients.map((client) => (
+            filteredClients.map((client) => (
               <MenuItem
                 key={client._id}
                 selected={client._id === selectedClient?._id}
@@ -278,6 +359,19 @@ export function ClientsPopover({ sx, ...other }: ClientsPopoverProps) {
               </Typography>
             </Box>
           )}
+
+          {/* No Search Results */}
+          {!loading &&
+            !error &&
+            clients.length > 0 &&
+            filteredClients.length === 0 &&
+            searchQuery.trim() && (
+              <Box sx={{ px: 2, py: 2, textAlign: 'center' }}>
+                <Typography variant="body2" color="text.secondary">
+                  No clients match &ldquo;{searchQuery}&rdquo;
+                </Typography>
+              </Box>
+            )}
         </MenuList>
       </Scrollbar>
 

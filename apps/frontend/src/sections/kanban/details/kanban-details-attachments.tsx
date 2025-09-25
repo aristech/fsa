@@ -10,10 +10,11 @@ import { UploadBox, MultiFilePreview } from 'src/components/upload';
 
 type Props = {
   attachments: string[];
+  taskId?: string;
   onChange?: (files: (File | string)[]) => void;
 };
 
-export function KanbanDetailsAttachments({ attachments, onChange }: Props) {
+export function KanbanDetailsAttachments({ attachments, taskId, onChange }: Props) {
   const [files, setFiles] = useState<(File | string)[]>(attachments);
 
   const validateFiles = useCallback((filesToValidate: File[]) => {
@@ -48,6 +49,9 @@ export function KanbanDetailsAttachments({ attachments, onChange }: Props) {
       const upload = async () => {
         const form = new FormData();
         form.append('scope', 'task');
+        if (taskId) {
+          form.append('taskId', taskId);
+        }
         acceptedFiles.forEach((file) => form.append('files', file));
 
         try {
@@ -74,7 +78,7 @@ export function KanbanDetailsAttachments({ attachments, onChange }: Props) {
       };
       void upload();
     },
-    [files, onChange, validateFiles]
+    [files, onChange, validateFiles, taskId]
   );
 
   const handleRemoveFile = useCallback(

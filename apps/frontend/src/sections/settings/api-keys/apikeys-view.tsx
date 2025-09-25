@@ -22,6 +22,8 @@ import CardContent from '@mui/material/CardContent';
 import TableContainer from '@mui/material/TableContainer';
 import CircularProgress from '@mui/material/CircularProgress';
 
+import { truncateText } from 'src/utils/text-truncate';
+
 import { apiKeysApi, type ApiKey } from 'src/services/api-keys';
 
 import { toast } from 'src/components/snackbar';
@@ -167,38 +169,41 @@ export function ApiKeysView() {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Personnel</TableCell>
-                    <TableCell>Permissions</TableCell>
-                    <TableCell>Last Used</TableCell>
-                    <TableCell>Usage</TableCell>
-                    <TableCell>Expires</TableCell>
-                    <TableCell align="right">Actions</TableCell>
+                    <TableCell>{truncateText('Name')}</TableCell>
+                    <TableCell>{truncateText('Personnel')}</TableCell>
+                    <TableCell>{truncateText('Permissions')}</TableCell>
+                    <TableCell>{truncateText('Last Used')}</TableCell>
+                    <TableCell>{truncateText('Usage')}</TableCell>
+                    <TableCell>{truncateText('Expires')}</TableCell>
+                    <TableCell align="right">{truncateText('Actions')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {apiKeys.map((k) => (
                     <TableRow key={k._id}>
                       <TableCell>
-                        <Typography variant="subtitle2">{k.name}</Typography>
+                        <Typography variant="subtitle2">{truncateText(k.name)}</Typography>
                       </TableCell>
                       <TableCell>
                         {k.personnelId ? (
                           <>
                             <Typography variant="body2">
-                              {k.personnelId.user.name} {k.personnelId.role && `(${k.personnelId.role.name})`}
+                              {truncateText(k.personnelId.user.name)}{' '}
+                              {k.personnelId.role && `(${truncateText(k.personnelId.role.name)})`}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
-                              {k.personnelId.user.email} • {k.personnelId.employeeId}
+                              {truncateText(k.personnelId.user.email)} •{' '}
+                              {truncateText(k.personnelId.employeeId)}
                             </Typography>
                           </>
                         ) : k.userId ? (
                           <>
                             <Typography variant="body2">
-                              {k.userId.firstName} {k.userId.lastName} (Legacy)
+                              {truncateText(k.userId.firstName)} {truncateText(k.userId.lastName)}{' '}
+                              (Legacy)
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
-                              {k.userId.email}
+                              {truncateText(k.userId.email)}
                             </Typography>
                           </>
                         ) : (
@@ -212,7 +217,7 @@ export function ApiKeysView() {
                           {k.permissions.map((p) => (
                             <Chip
                               key={p}
-                              label={p === '*' ? 'All' : p}
+                              label={truncateText(p === '*' ? 'All' : p)}
                               size="small"
                               variant="outlined"
                               color={p === '*' ? 'primary' : 'default'}

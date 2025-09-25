@@ -4,6 +4,7 @@ import useSWR from 'swr';
 import { z as zod } from 'zod';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
+import { useBoolean } from 'minimal-shared/hooks';
 import { useMemo, useState, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CustomBreadcrumbs } from '@/components/custom-breadcrumbs';
@@ -40,6 +41,8 @@ import {
   RHFDateTimePicker,
 } from 'src/components/hook-form';
 
+import { KanbanTaskCreateDialog } from 'src/sections/kanban/components/kanban-task-create-dialog';
+
 import { RHFWorkOrderPersonnel } from './rhf-work-order-personnel';
 
 // ----------------------------------------------------------------------
@@ -70,6 +73,9 @@ export function WorkOrderCreateForm({ id }: Props) {
   const [originalAttachments, setOriginalAttachments] = useState<any[]>([]);
   const router = useRouter();
   const { t } = useTranslate('common');
+
+  // Task creation dialog state
+  const taskCreateDialog = useBoolean();
 
   // Custom fetcher using axiosInstance for authentication
   const axiosFetcher = (url: string) => axiosInstance.get(url).then((res) => res.data);
@@ -257,7 +263,7 @@ export function WorkOrderCreateForm({ id }: Props) {
       } else {
         throw new Error(
           response.data.message ||
-          t('failedToCreateWorkOrder', { defaultValue: 'Failed to create work order' })
+            t('failedToCreateWorkOrder', { defaultValue: 'Failed to create work order' })
         );
       }
     } catch (error) {
@@ -270,6 +276,15 @@ export function WorkOrderCreateForm({ id }: Props) {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCreateTask = () => {
+    taskCreateDialog.onTrue();
+  };
+
+  const handleTaskCreateSuccess = () => {
+    taskCreateDialog.onFalse();
+    // Optionally show success message
   };
 
   return (
@@ -299,13 +314,22 @@ export function WorkOrderCreateForm({ id }: Props) {
                   sx={{ mb: 5 }}
                   action={
                     id && (
-                      <Button
-                        variant="contained"
-                        startIcon={<Iconify icon="eva:eye-fill" />}
-                        href={`${paths.dashboard.fsa.workOrders.details(id)}`}
-                      >
-                        {t('view', { defaultValue: 'View' })}
-                      </Button>
+                      <Stack direction="row" spacing={1}>
+                        <Button
+                          variant="contained"
+                          startIcon={<Iconify icon="solar:task-square-bold" />}
+                          onClick={handleCreateTask}
+                        >
+                          {t('addTask', { defaultValue: '+ Add Task' })}
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          startIcon={<Iconify icon="eva:eye-fill" />}
+                          href={`${paths.dashboard.fsa.workOrders.details(id)}`}
+                        >
+                          {t('view', { defaultValue: 'View' })}
+                        </Button>
+                      </Stack>
                     )
                   }
                 />
@@ -369,7 +393,6 @@ export function WorkOrderCreateForm({ id }: Props) {
                   <Grid size={{ xs: 12, md: 4 }}>
                     {personnel.length === 0 ? (
                       <Stack spacing={1}>
-
                         <Box
                           sx={{
                             p: 2.5,
@@ -404,7 +427,9 @@ export function WorkOrderCreateForm({ id }: Props) {
                             }}
                           >
                             <Iconify icon="solar:add-circle-bold" width={14} />
-                            {t('addYourFirstPersonnel', { defaultValue: 'Add Your First Personnel' })}
+                            {t('addYourFirstPersonnel', {
+                              defaultValue: 'Add Your First Personnel',
+                            })}
                           </Link>
                         </Box>
                       </Stack>
@@ -429,7 +454,10 @@ export function WorkOrderCreateForm({ id }: Props) {
                         {t('priorityOptional', { defaultValue: 'Priority (Optional)' })}
                       </Typography>
 
-                      <RHFSelect name="priority" label={t('priority', { defaultValue: 'Priority' })}>
+                      <RHFSelect
+                        name="priority"
+                        label={t('priority', { defaultValue: 'Priority' })}
+                      >
                         {getPriorityOptionsWithMetadata().map((priority) => (
                           <MenuItem key={priority.value} value={priority.value}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -467,9 +495,13 @@ export function WorkOrderCreateForm({ id }: Props) {
                         </Grid>
                         <Grid size={{ xs: 6 }}>
                           <RHFSelect name="estimatedDurationUnit">
-                            <MenuItem value="hours">{t('hours', { defaultValue: 'Hours' })}</MenuItem>
+                            <MenuItem value="hours">
+                              {t('hours', { defaultValue: 'Hours' })}
+                            </MenuItem>
                             <MenuItem value="days">{t('days', { defaultValue: 'Days' })}</MenuItem>
-                            <MenuItem value="weeks">{t('weeks', { defaultValue: 'Weeks' })}</MenuItem>
+                            <MenuItem value="weeks">
+                              {t('weeks', { defaultValue: 'Weeks' })}
+                            </MenuItem>
                             <MenuItem value="months">
                               {t('months', { defaultValue: 'Months' })}
                             </MenuItem>
@@ -536,7 +568,6 @@ export function WorkOrderCreateForm({ id }: Props) {
                         {t('computed', { defaultValue: 'Computed' })}
                       </MenuItem>
                       <MenuItem value="manual">{t('manual', { defaultValue: 'Manual' })}</MenuItem>
-
                     </RHFSelect>
                     <Stack spacing={1}>
                       <Typography variant="subtitle2">
@@ -548,7 +579,9 @@ export function WorkOrderCreateForm({ id }: Props) {
                           min={0}
                           max={100}
                           value={methods.watch('progressManual') ?? 0}
-                          onChange={(e) => methods.setValue('progressManual', Number(e.target.value))}
+                          onChange={(e) =>
+                            methods.setValue('progressManual', Number(e.target.value))
+                          }
                           disabled={methods.watch('progressMode') !== 'manual'}
                         />
                         <Typography variant="caption" color="text.secondary">
@@ -617,6 +650,17 @@ export function WorkOrderCreateForm({ id }: Props) {
           </CardContent>
         </Card>
       </Form>
+
+      {/* Task Creation Dialog */}
+      <KanbanTaskCreateDialog
+        open={taskCreateDialog.value}
+        onClose={() => taskCreateDialog.onFalse()}
+        onSuccess={handleTaskCreateSuccess}
+        status="todo"
+        // Pre-populate with work order data when editing
+        initialWorkOrderId={id}
+        initialClientId={methods.watch('clientId')}
+      />
     </Container>
   );
 }

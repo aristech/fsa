@@ -111,14 +111,21 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
       );
 
       for (const file of files) {
-        const filename = `${Date.now()}-${file.filename}`;
+        // Properly sanitize filename to handle Greek characters and spaces
+        const sanitizedOriginalName = file.filename
+          .replace(/[<>:"/\\|?*]/g, '_') // Remove invalid characters
+          .replace(/\s+/g, '_'); // Replace spaces with underscores
+
+        const filename = `${Date.now()}-${sanitizedOriginalName}`;
         const destPath = path.join(baseDir, filename);
 
         // Write buffer to final destination
         await fs.writeFile(destPath, file.buffer);
 
         const st = await fs.stat(destPath);
-        const rel = `/api/v1/uploads/${tenantId}/${scopeDir}/${ownerId}/${filename}`;
+        // Properly encode filename in URL to handle Greek characters and special chars
+        const encodedFilename = encodeURIComponent(filename);
+        const rel = `/api/v1/uploads/${tenantId}/${scopeDir}/${ownerId}/${encodedFilename}`;
         const host = request.headers.host;
         const protocol =
           (request.headers["x-forwarded-proto"] as string) || request.protocol;
@@ -128,6 +135,13 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
           { expiresIn: "7d" },
         );
         const absWithToken = `${abs}?token=${token}`;
+
+        fastify.log.info({
+          originalFilename: file.filename,
+          sanitizedFilename: sanitizedOriginalName,
+          finalFilename: filename,
+          encodedUrl: encodedFilename,
+        }, "uploads: processed filename");
 
         saved.push({
           url: absWithToken,

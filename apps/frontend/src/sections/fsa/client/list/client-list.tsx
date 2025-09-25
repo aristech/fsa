@@ -12,7 +12,6 @@ import {
   Table,
   Avatar,
   Button,
-  Dialog,
   Popover,
   MenuItem,
   TableRow,
@@ -21,13 +20,11 @@ import {
   TableHead,
   IconButton,
   Typography,
-  DialogTitle,
-  DialogActions,
-  DialogContent,
   TablePagination,
   CircularProgress,
-  DialogContentText,
 } from '@mui/material';
+
+import { truncateText } from 'src/utils/text-truncate';
 
 import { useTranslate } from 'src/locales/use-locales';
 import axiosInstance, { fetcher, endpoints } from 'src/lib/axios';
@@ -35,6 +32,7 @@ import axiosInstance, { fetcher, endpoints } from 'src/lib/axios';
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
+import { CascadeDeleteDialog, type CascadeDeleteInfo } from 'src/components/cascade-delete-dialog';
 
 import { View403 } from 'src/sections/error';
 
@@ -72,6 +70,7 @@ export function ClientList() {
   const router = useRouter();
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [cascadeDeleteInfo, setCascadeDeleteInfo] = useState<CascadeDeleteInfo | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -109,22 +108,36 @@ export function ClientList() {
     popover.onClose();
   };
 
-  const handleDeleteClient = (client: Client) => {
+  const handleDeleteClient = async (client: Client) => {
     setSelectedClient(client);
-    setDeleteDialogOpen(true);
     popover.onClose();
+
+    try {
+      // Fetch related data count before showing dialog
+      const response = await axiosInstance.get(
+        `${endpoints.fsa.clients.details(client._id)}/delete-info`
+      );
+      setCascadeDeleteInfo(response.data.data);
+      setDeleteDialogOpen(true);
+    } catch (fetchError) {
+      console.error('Failed to fetch delete info:', fetchError);
+      toast.error('Failed to load deletion information');
+    }
   };
 
-  const confirmDelete = async () => {
+  const confirmDelete = async (cascadeDelete: boolean) => {
     if (!selectedClient) return;
 
     try {
       setIsDeleting(true);
-      await axiosInstance.delete(endpoints.fsa.clients.details(selectedClient._id));
+      await axiosInstance.delete(
+        `${endpoints.fsa.clients.details(selectedClient._id)}${cascadeDelete ? '?cascade=true' : ''}`
+      );
       toast.success(t('clients.clientDeleted'));
       mutate(); // Refresh the list
       setDeleteDialogOpen(false);
       setSelectedClient(null);
+      setCascadeDeleteInfo(null);
     } catch (deleteError) {
       console.error('Error deleting client:', deleteError);
       toast.error(t('clients.failedToDelete'));
@@ -156,18 +169,28 @@ export function ClientList() {
 
   return (
     <>
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
+        <Button
+          variant="contained"
+          startIcon={<Iconify icon="mingcute:add-line" />}
+          onClick={() => router.push('/dashboard/clients/new/')}
+        >
+          {t('clients.createNew', { defaultValue: 'Create New Client' })}
+        </Button>
+      </Box>
+
       <Card>
         <Scrollbar>
           <Table sx={{ minWidth: 800 }}>
             <TableHead>
               <TableRow>
-                <TableCell>{t('clients.table.client')}</TableCell>
-                <TableCell>{t('clients.table.company')}</TableCell>
-                <TableCell>{t('clients.table.vatNumber')}</TableCell>
-                <TableCell>{t('clients.table.contact')}</TableCell>
-                <TableCell>{t('clients.table.location')}</TableCell>
-                <TableCell>{t('clients.table.created')}</TableCell>
-                <TableCell align="right">{t('clients.table.actions')}</TableCell>
+                <TableCell>{truncateText(t('clients.table.client'))}</TableCell>
+                <TableCell>{truncateText(t('clients.table.company'))}</TableCell>
+                <TableCell>{truncateText(t('clients.table.vatNumber'))}</TableCell>
+                <TableCell>{truncateText(t('clients.table.contact'))}</TableCell>
+                <TableCell>{truncateText(t('clients.table.location'))}</TableCell>
+                <TableCell>{truncateText(t('clients.table.created'))}</TableCell>
+                <TableCell align="right">{truncateText(t('clients.table.actions'))}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -186,29 +209,29 @@ export function ClientList() {
                         {client.name.charAt(0)}
                       </Avatar>
                       <Stack spacing={0.5}>
-                        <Typography variant="subtitle2">{client.name}</Typography>
+                        <Typography variant="subtitle2">{truncateText(client.name)}</Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {client.email}
+                          {truncateText(client.email)}
                         </Typography>
                       </Stack>
                     </Stack>
                   </TableCell>
 
-                  <TableCell>{client.company || '-'}</TableCell>
+                  <TableCell>{truncateText(client.company) || '-'}</TableCell>
 
-                  <TableCell>{client.vatNumber || '-'}</TableCell>
+                  <TableCell>{truncateText(client.vatNumber) || '-'}</TableCell>
 
                   <TableCell>
                     <Stack spacing={0.5}>
-                      <Typography variant="body2">{client.phone || '-'}</Typography>
+                      <Typography variant="body2">{truncateText(client.phone) || '-'}</Typography>
                     </Stack>
                   </TableCell>
 
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">
                       {client.address && client.address.city && client.address.state
-                        ? `${client.address.city}, ${client.address.state}`
-                        : client.address?.street || '-'}
+                        ? truncateText(`${client.address.city}, ${client.address.state}`)
+                        : truncateText(client.address?.street) || '-'}
                     </Typography>
                   </TableCell>
 
@@ -274,34 +297,22 @@ export function ClientList() {
         </MenuItem>
       </Popover>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        aria-labelledby="delete-dialog-title"
-        aria-describedby="delete-dialog-description"
-      >
-        <DialogTitle id="delete-dialog-title">{t('clients.deleteClient')}</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="delete-dialog-description">
-            {t('clients.deleteConfirmMessage', { name: selectedClient?.name })}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>
-            {t('clients.cancel')}
-          </Button>
-          <Button
-            onClick={confirmDelete}
-            color="error"
-            variant="contained"
-            disabled={isDeleting}
-            startIcon={isDeleting ? <CircularProgress size={16} /> : null}
-          >
-            {isDeleting ? t('clients.deleting') : t('clients.delete')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Cascade Delete Dialog */}
+      {cascadeDeleteInfo && (
+        <CascadeDeleteDialog
+          open={deleteDialogOpen}
+          onClose={() => {
+            setDeleteDialogOpen(false);
+            setCascadeDeleteInfo(null);
+          }}
+          onConfirm={confirmDelete}
+          title={t('clients.deleteClient', { defaultValue: 'Delete Client' })}
+          entityName={selectedClient?.name || 'Client'}
+          entityType="client"
+          info={cascadeDeleteInfo}
+          loading={isDeleting}
+        />
+      )}
     </>
   );
 }

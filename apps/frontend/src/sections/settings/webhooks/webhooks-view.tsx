@@ -27,6 +27,7 @@ import Alert from '@mui/material/Alert';
 import { Iconify } from 'src/components/iconify';
 import { toast } from 'src/components/snackbar';
 import { ConfirmDialog } from 'src/components/custom-dialog';
+import { truncateText } from 'src/utils/text-truncate';
 
 import { WebhookFormDialog, type Webhook as WebhookFormModel } from './webhook-form-dialog';
 import { webhooksApi, type Webhook } from 'src/services/webhooks';
@@ -162,24 +163,24 @@ export function WebhooksView() {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Topics</TableCell>
-                    <TableCell>Delivery URL</TableCell>
-                    <TableCell>Last Triggered</TableCell>
-                    <TableCell>Failures</TableCell>
-                    <TableCell align="right">Actions</TableCell>
+                    <TableCell>{truncateText('Name')}</TableCell>
+                    <TableCell>{truncateText('Status')}</TableCell>
+                    <TableCell>{truncateText('Topics')}</TableCell>
+                    <TableCell>{truncateText('Delivery URL')}</TableCell>
+                    <TableCell>{truncateText('Last Triggered')}</TableCell>
+                    <TableCell>{truncateText('Failures')}</TableCell>
+                    <TableCell align="right">{truncateText('Actions')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {webhooks.map((w) => (
                     <TableRow key={w._id}>
                       <TableCell>
-                        <Typography variant="subtitle2">{w.name}</Typography>
+                        <Typography variant="subtitle2">{truncateText(w.name)}</Typography>
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={w.status ? 'Active' : 'Inactive'}
+                          label={truncateText(w.status ? 'Active' : 'Inactive')}
                           color={w.status ? 'success' : 'default'}
                           size="small"
                         />
@@ -187,13 +188,13 @@ export function WebhooksView() {
                       <TableCell>
                         <Stack direction="row" spacing={0.5} flexWrap="wrap">
                           {w.topics.map((t) => (
-                            <Chip key={t} label={t} size="small" variant="outlined" />
+                            <Chip key={t} label={truncateText(t)} size="small" variant="outlined" />
                           ))}
                         </Stack>
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" color="text.secondary">
-                          {w.deliveryUrl}
+                          {truncateText(w.deliveryUrl)}
                         </Typography>
                       </TableCell>
                       <TableCell>

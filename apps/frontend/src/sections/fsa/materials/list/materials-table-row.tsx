@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 
 import { fCurrency } from 'src/utils/format-number';
+import { truncateText } from 'src/utils/text-truncate';
 
 import { useTranslate } from 'src/locales/use-locales';
 
@@ -59,16 +60,16 @@ export function MaterialsTableRow({ row, selected, onSelectRow, onEdit }: Materi
       <TableCell>
         <Stack spacing={0.5}>
           <Typography variant="subtitle2" noWrap>
-            {row.name}
+            {truncateText(row.name)}
           </Typography>
           {row.description && (
             <Typography variant="body2" color="text.secondary" noWrap>
-              {row.description}
+              {truncateText(row.description)}
             </Typography>
           )}
           {row.sku && (
             <Typography variant="caption" color="text.secondary">
-              SKU: {row.sku}
+              SKU: {truncateText(row.sku)}
             </Typography>
           )}
         </Stack>
@@ -76,7 +77,12 @@ export function MaterialsTableRow({ row, selected, onSelectRow, onEdit }: Materi
 
       <TableCell>
         {row.category ? (
-          <Chip label={row.category} size="small" variant="outlined" color="primary" />
+          <Chip
+            label={truncateText(row.category)}
+            size="small"
+            variant="outlined"
+            color="primary"
+          />
         ) : (
           <Typography variant="body2" color="text.secondary">
             -
@@ -86,7 +92,7 @@ export function MaterialsTableRow({ row, selected, onSelectRow, onEdit }: Materi
 
       <TableCell>
         <Typography variant="body2" color="text.secondary">
-          {row.sku || '-'}
+          {truncateText(row.sku) || '-'}
         </Typography>
       </TableCell>
 
@@ -117,7 +123,7 @@ export function MaterialsTableRow({ row, selected, onSelectRow, onEdit }: Materi
       </TableCell>
 
       <TableCell>
-        <Typography variant="body2">{row.location || '-'}</Typography>
+        <Typography variant="body2">{truncateText(row.location) || '-'}</Typography>
       </TableCell>
 
       <TableCell align="center">

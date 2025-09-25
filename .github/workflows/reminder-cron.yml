@@ -3,7 +3,7 @@ name: Task Reminder Cron Job
 on:
   schedule:
     # Run every 30 minutes
-    - cron: '*/30 * * * *'
+    - cron: "*/30 * * * *"
   workflow_dispatch: # Allow manual trigger for testing
 
 jobs:
@@ -69,7 +69,6 @@ jobs:
           # Check if all services are still healthy
           BACKEND_STATUS="unknown"
           FRONTEND_STATUS="unknown"
-          NLP_STATUS="unknown"
 
           if curl -f http://localhost:4005/api/health >/dev/null 2>&1; then
             BACKEND_STATUS="healthy"
@@ -83,16 +82,9 @@ jobs:
             FRONTEND_STATUS="unhealthy"
           fi
 
-          if curl -f http://localhost:8001/health >/dev/null 2>&1; then
-            NLP_STATUS="healthy"
-          else
-            NLP_STATUS="unhealthy"
-          fi
-
           echo "Service Health Status:"
           echo "Backend (4005): $BACKEND_STATUS"
           echo "Frontend (4004): $FRONTEND_STATUS"
-          echo "NLP Service (8001): $NLP_STATUS"
 
           # Alert if any critical service is down
           if [ "$BACKEND_STATUS" != "healthy" ]; then

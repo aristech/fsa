@@ -1,6 +1,7 @@
 'use client';
 
 import useSWR, { mutate } from 'swr';
+import { useBoolean } from 'minimal-shared/hooks';
 
 import {
   Card,
@@ -33,6 +34,7 @@ import { Iconify } from 'src/components/iconify';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { AnalyticsOrderTimeline } from 'src/sections/overview/analytics/analytics-order-timeline';
+import { KanbanTaskCreateDialog } from 'src/sections/kanban/components/kanban-task-create-dialog';
 
 import { WorkOrderDetailsAttachments } from './work-order-details-attachments';
 import { WorkOrderPersonnelSelection } from '../create/work-order-personnel-selection';
@@ -127,6 +129,18 @@ export function WorkOrderDetails({ id }: Props) {
     { revalidateOnFocus: true }
   );
 
+  // Task creation dialog state
+  const taskCreateDialog = useBoolean();
+
+  const handleCreateTask = () => {
+    taskCreateDialog.onTrue();
+  };
+
+  const handleTaskCreateSuccess = () => {
+    taskCreateDialog.onFalse();
+    // Optionally show success message or refresh data
+  };
+
   // Fetch timeline data
   const { data: timelineRes } = useSWR(
     `/api/v1/work-orders/${id}/timeline`,
@@ -145,16 +159,16 @@ export function WorkOrderDetails({ id }: Props) {
 
   const summary = summaryRes?.data as
     | {
-      progressMode?: 'computed' | 'manual';
-      progress?: number;
-      tasksTotal?: number;
-      tasksCompleted?: number;
-      tasksInProgress?: number;
-      tasksBlocked?: number;
-      startedAt?: string | null;
-      completedAt?: string | null;
-      status?: string;
-    }
+        progressMode?: 'computed' | 'manual';
+        progress?: number;
+        tasksTotal?: number;
+        tasksCompleted?: number;
+        tasksInProgress?: number;
+        tasksBlocked?: number;
+        startedAt?: string | null;
+        completedAt?: string | null;
+        status?: string;
+      }
     | undefined;
 
   const workOrder = detailsRes?.data;
@@ -179,6 +193,13 @@ export function WorkOrderDetails({ id }: Props) {
         ]}
         action={
           <Stack direction="row" spacing={1}>
+            <Button
+              variant="contained"
+              startIcon={<Iconify icon="solar:task-square-bold" />}
+              onClick={handleCreateTask}
+            >
+              {t('addTask', { defaultValue: '+ Add Task' })}
+            </Button>
             <Button
               variant="outlined"
               startIcon={<Iconify icon="eva:edit-fill" />}
@@ -446,13 +467,12 @@ export function WorkOrderDetails({ id }: Props) {
             <Card>
               <CardContent>
                 <Stack spacing={2}>
-
                   <WorkOrderPersonnelSelection
                     value={
                       Array.isArray(workOrder?.personnelIds)
                         ? workOrder.personnelIds
-                          .map((p: any) => (typeof p === 'string' ? p : p._id))
-                          .filter(Boolean)
+                            .map((p: any) => (typeof p === 'string' ? p : p._id))
+                            .filter(Boolean)
                         : []
                     }
                     onChange={async (personnelIds) => {
@@ -507,6 +527,23 @@ export function WorkOrderDetails({ id }: Props) {
           </Stack>
         </Grid>
       </Grid>
+
+      {/* Task Creation Dialog */}
+      <KanbanTaskCreateDialog
+        open={taskCreateDialog.value}
+        onClose={() => taskCreateDialog.onFalse()}
+        onSuccess={handleTaskCreateSuccess}
+        status="todo"
+        // Pre-populate with work order data
+        initialWorkOrderId={workOrder?._id}
+        initialClientId={
+          workOrder?.clientId
+            ? typeof workOrder.clientId === 'string'
+              ? workOrder.clientId
+              : workOrder.clientId._id
+            : undefined
+        }
+      />
     </Container>
   );
 }
