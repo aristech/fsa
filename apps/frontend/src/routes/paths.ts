@@ -56,8 +56,6 @@ export const paths = {
   dashboard: {
     root: ROOTS.DASHBOARD,
     mail: `${ROOTS.DASHBOARD}/mail`,
-    chat: `${ROOTS.DASHBOARD}/chat`,
-    ai: `${ROOTS.DASHBOARD}/ai`,
     blank: `${ROOTS.DASHBOARD}/blank`,
     kanban: `${ROOTS.DASHBOARD}/kanban`,
     calendar: `${ROOTS.DASHBOARD}/calendar`,
@@ -119,7 +117,6 @@ export const paths = {
       root: `${ROOTS.DASHBOARD}/settings`,
       webhooks: `${ROOTS.DASHBOARD}/settings/webhooks`,
       apiKeys: `${ROOTS.DASHBOARD}/settings/api-keys`,
-      ai: `${ROOTS.DASHBOARD}/settings/ai`,
     },
   },
 };

@@ -8,7 +8,6 @@
     "workOrders": "🔧 Work Orders",
     "reports": "📊 Creating Reports",
     "personnel": "👥 Personnel Management",
-    "aiAssistant": "🤖 AI Assistant",
     "fieldApp": "📱 Mobile Field App",
     "adminSetup": "⚙️ Admin Setup"
   },
@@ -64,27 +63,6 @@
       "content": "1. Click on work order to view details\n2. Review customer info and job requirements\n3. Update status to \"In Progress\" when starting\n4. Complete individual tasks within the work order\n5. Add notes and photos as work progresses\n6. Update status to \"Completed\" when finished"
     }
   },
-  "aiAssistant": {
-    "title": "🤖 AI Assistant",
-    "subtitle": "Get help and create tasks using natural language",
-    "what": {
-      "title": "What is the AI Assistant?",
-      "content": "The AI Assistant is like having a smart helper that understands everyday language. You can ask questions, create tasks, and get information without clicking through menus. Think of it as texting with a very knowledgeable coworker!"
-    },
-    "howTo": {
-      "title": "How to Use the AI Assistant",
-      "content": "1. Click \"Chat\" in the left menu\n2. Type your question or request in plain English\n3. Press Enter to send your message\n4. The AI will respond with helpful information or actions"
-    },
-    "examples": {
-      "title": "Example Requests",
-      "creating": "**Creating Tasks:**\n• \"Create a task to check HVAC filters tomorrow\"\n• \"Add urgent task for John to repair broken pump\"\n• \"Schedule maintenance for air conditioning next Friday\"",
-      "getting": "**Getting Information:**\n• \"Show me my tasks for today\"\n• \"What work orders are assigned to Sarah?\"\n• \"List all high priority jobs this week\""
-    },
-    "tips": {
-      "title": "Tips for Better Results",
-      "content": "• Be specific in your requests\n• Include timeframes when relevant\n• Mention specific people or locations\n• Ask follow-up questions if needed"
-    }
-  },
   "fieldApp": {
     "title": "📱 Mobile Field App",
     "subtitle": "Using the app on your phone or tablet",
@@ -132,12 +110,7 @@
       "title": "System Configuration",
       "content": "1. Go to Settings → General\n2. Configure company information\n3. Set time zones and business hours\n4. Configure user roles and permissions\n5. Test notification settings"
     },
-    "ai": {
-      "title": "AI Assistant Setup",
-      "content": "1. Go to Settings → AI Settings\n2. Configure API keys if needed\n3. Enable local processing for basic features\n4. Test functionality before team rollout"
-    },
     "buttons": {
-      "aiSettings": "AI Settings",
       "apiKeys": "API Keys",
       "webhooks": "Webhooks"
     }

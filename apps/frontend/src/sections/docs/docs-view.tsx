@@ -29,7 +29,6 @@ export function DocsView() {
       { label: t('quickLinks.workOrders'), href: '/docs#work-orders' },
       { label: t('quickLinks.reports'), href: '/docs#reports' },
       { label: t('quickLinks.personnel'), href: '/docs#personnel' },
-      { label: t('quickLinks.aiAssistant'), href: '/docs#ai-assistant' },
       { label: t('quickLinks.fieldApp'), href: '/docs#field-app' },
       { label: t('quickLinks.adminSetup'), href: '/docs#admin-setup' },
     ],
@@ -227,71 +226,6 @@ export function DocsView() {
             </CardContent>
           </Card>
 
-          {/* AI Assistant */}
-          <Card id="ai-assistant" sx={{ mt: 3 }}>
-            <CardHeader title={t('aiAssistant.title')} subheader={t('aiAssistant.subtitle')} />
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                {t('aiAssistant.what.title')}
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                {t('aiAssistant.what.content')}
-              </Typography>
-
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                {t('aiAssistant.howTo.title')}
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                {t('aiAssistant.howTo.content')
-                  .split('\n')
-                  .map((line, index) => (
-                    <span key={index}>
-                      {line}
-                      {index < t('aiAssistant.howTo.content').split('\n').length - 1 && <br />}
-                    </span>
-                  ))}
-              </Typography>
-
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                {t('aiAssistant.examples.title')}
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                {t('aiAssistant.examples.creating')
-                  .split('\n')
-                  .map((line, index) => (
-                    <span key={index}>
-                      {line}
-                      {index < t('aiAssistant.examples.creating').split('\n').length - 1 && <br />}
-                    </span>
-                  ))}
-                <br />
-                <br />
-                {t('aiAssistant.examples.getting')
-                  .split('\n')
-                  .map((line, index) => (
-                    <span key={index}>
-                      {line}
-                      {index < t('aiAssistant.examples.getting').split('\n').length - 1 && <br />}
-                    </span>
-                  ))}
-              </Typography>
-
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                {t('aiAssistant.tips.title')}
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                {t('aiAssistant.tips.content')
-                  .split('\n')
-                  .map((line, index) => (
-                    <span key={index}>
-                      {line}
-                      {index < t('aiAssistant.tips.content').split('\n').length - 1 && <br />}
-                    </span>
-                  ))}
-              </Typography>
-            </CardContent>
-          </Card>
-
           {/* Mobile App */}
           <Card id="field-app" sx={{ mt: 3 }}>
             <CardHeader title={t('fieldApp.title')} subheader={t('fieldApp.subtitle')} />
@@ -426,33 +360,11 @@ export function DocsView() {
                   ))}
               </Typography>
 
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                {t('adminSetup.ai.title')}
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                {t('adminSetup.ai.content')
-                  .split('\n')
-                  .map((line, index) => (
-                    <span key={index}>
-                      {line}
-                      {index < t('adminSetup.ai.content').split('\n').length - 1 && <br />}
-                    </span>
-                  ))}
-              </Typography>
-
               <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
                 <Button
                   component={Link}
-                  href={paths.dashboard.settings.ai}
-                  variant="contained"
-                  size="small"
-                >
-                  {t('adminSetup.buttons.aiSettings')}
-                </Button>
-                <Button
-                  component={Link}
                   href={paths.dashboard.settings.apiKeys}
-                  variant="outlined"
+                  variant="contained"
                   size="small"
                 >
                   {t('adminSetup.buttons.apiKeys')}

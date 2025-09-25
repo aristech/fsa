@@ -9,7 +9,6 @@ on:
 env:
   NODE_VERSION: "20"
   YARN_VERSION: "1.22.22"
-  PYTHON_VERSION: "3.11"
 
 jobs:
   lint-and-typecheck:
@@ -58,40 +57,9 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "yarn"
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-
-      - name: Install python3-venv (Ubuntu ARM64 compatibility)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-venv python3-full
-
       - name: Install dependencies
         run: |
           yarn install --frozen-lockfile
-
-      - name: Setup Local NLP Service
-        run: |
-          cd apps/backend/src/services/ai/local-nlp
-
-          # Ensure no processes are using port 8001 (cleanup from any previous runs)
-          lsof -ti:8001 | xargs kill -9 2>/dev/null || true
-
-          # Create virtual environment (handle PEP 668)
-          python3 -m venv nlp_env
-
-          # Use explicit paths to ensure virtual environment usage
-          ./nlp_env/bin/pip install --upgrade pip
-          ./nlp_env/bin/pip install -r requirements.txt
-
-          # Test the setup using virtual environment Python (standalone test, no server)
-          ./nlp_env/bin/python main.py "test build setup" > /dev/null
-          echo "✅ Local NLP service setup completed"
-
-          cd ../../../../../../..
 
       - name: Build backend
         run: |
@@ -108,7 +76,6 @@ jobs:
           path: |
             apps/backend/dist/
             apps/frontend/.next/
-            apps/backend/src/services/ai/local-nlp/nlp_env/
           retention-days: 7
 
   test:
@@ -230,27 +197,6 @@ jobs:
           # Install only production dependencies
           yarn install --production --frozen-lockfile
 
-          # Setup Python virtual environment for local NLP service
-          cd apps/backend/src/services/ai/local-nlp
-
-          # Create virtual environment if not present (handle PEP 668)
-          if [ ! -d "nlp_env" ]; then
-            python3 -m venv nlp_env
-          fi
-
-          # Use explicit paths to avoid PEP 668 issues
-          ./nlp_env/bin/pip install --upgrade pip
-          ./nlp_env/bin/pip install -r requirements.txt
-
-          # Test the NLP service setup and verify ARM64 compatibility
-          ./nlp_env/bin/python main.py "test deployment setup" > /dev/null
-          echo "✅ Local NLP service setup completed for deployment"
-
-          # Verify all packages installed correctly on ARM64
-          ./nlp_env/bin/python -c "import fastapi, uvicorn, pydantic; print('✅ All packages imported successfully on ARM64')"
-
-          # Return to deployment root directory
-          cd /var/www/progressnet.io-app-new
 
           # Create environment files from secrets (using cat with EOF to handle special characters)
           # Debug: Check current directory and structure
@@ -330,58 +276,6 @@ jobs:
           # Start frontend
           pm2 start ecosystem.config.js --only progressnet-frontend
 
-          # Start local NLP service with proper environment
-          cd apps/backend/src/services/ai/local-nlp
-
-          # Ensure port 8001 is completely free before starting
-          echo "Cleaning up any processes using port 8001..."
-          lsof -ti:8001 | xargs kill -9 2>/dev/null || true
-          sleep 1
-
-          # Stop any existing NLP service
-          if [ -f "/var/www/progressnet.io-app/pids/nlp-service.pid" ]; then
-            OLD_PID=$(cat /var/www/progressnet.io-app/pids/nlp-service.pid)
-            if kill -0 $OLD_PID 2>/dev/null; then
-              echo "Stopping existing NLP service (PID: $OLD_PID)"
-              kill $OLD_PID
-              sleep 3
-            fi
-            rm -f /var/www/progressnet.io-app/pids/nlp-service.pid
-          fi
-
-          # Kill any remaining python server processes and processes using port 8001
-          pkill -f "python.*server.py" || true
-          lsof -ti:8001 | xargs kill -9 2>/dev/null || true
-          sleep 2
-
-          # Create log directory in app space to avoid permission issues
-          mkdir -p /var/www/progressnet.io-app/logs
-          touch /var/www/progressnet.io-app/logs/nlp-service.log
-
-          # Start NLP service with virtual environment (explicit path)
-          echo "Starting local NLP service with virtual environment..."
-
-          # Create PID file in app directory instead of /var/run
-          mkdir -p /var/www/progressnet.io-app/pids
-
-          nohup ./nlp_env/bin/python server.py > /var/www/progressnet.io-app/logs/nlp-service.log 2>&1 &
-          NLP_PID=$!
-          echo $NLP_PID > /var/www/progressnet.io-app/pids/nlp-service.pid
-          echo "Local NLP service started with PID $NLP_PID"
-
-          # Wait a moment and verify it's running
-          sleep 3
-          if kill -0 $NLP_PID 2>/dev/null; then
-            echo "✅ Local NLP service is running successfully"
-          else
-            echo "❌ Local NLP service failed to start"
-            echo "=== NLP Service Log ==="
-            cat /var/www/progressnet.io-app/logs/nlp-service.log || true
-            echo "======================="
-            exit 1
-          fi
-
-          cd ../../../../../../..
 
           # Save PM2 configuration
           pm2 save
@@ -406,25 +300,10 @@ jobs:
             echo "⚠️  Frontend health check failed - service may still be starting"
           fi
 
-          # Check NLP service
-          if curl -f http://localhost:8001/health >/dev/null 2>&1; then
-            echo "✅ NLP service health check passed (port 8001)"
-          else
-            echo "⚠️  NLP service health check failed - checking service status"
-            if [ -f "/var/www/progressnet.io-app/pids/nlp-service.pid" ]; then
-              NLP_PID=$(cat /var/www/progressnet.io-app/pids/nlp-service.pid)
-              if kill -0 $NLP_PID 2>/dev/null; then
-                echo "NLP service process is running but not responding to HTTP requests"
-              else
-                echo "NLP service process is not running"
-              fi
-            fi
-          fi
 
           echo "Deployment completed - services should be running"
           echo "Backend: http://localhost:4005"
           echo "Frontend: http://localhost:4004"
-          echo "NLP Service: http://localhost:8001"
           sudo rm -rf /var/www/progressnet.io-app-old
 
       - name: Rollback on failure
@@ -446,39 +325,6 @@ jobs:
             echo "No previous version available for rollback"
           fi
 
-          # Stop local NLP service gracefully
-          echo "Stopping local NLP service during rollback..."
-          if [ -f "/var/www/progressnet.io-app/pids/nlp-service.pid" ]; then
-            NLP_PID=$(cat /var/www/progressnet.io-app/pids/nlp-service.pid)
-            if kill -0 $NLP_PID 2>/dev/null; then
-              echo "Stopping local NLP service (PID: $NLP_PID)"
-              kill $NLP_PID
-              sleep 3
-              # Force kill if still running
-              if kill -0 $NLP_PID 2>/dev/null; then
-                echo "Force stopping NLP service"
-                kill -9 $NLP_PID
-              fi
-            fi
-            rm -f /var/www/progressnet.io-app/pids/nlp-service.pid
-          fi
-
-          # Kill any remaining python server processes and processes using port 8001
-          pkill -f "python.*server.py" || true
-          lsof -ti:8001 | xargs kill -9 2>/dev/null || true
-
-          # Restart NLP service with old version if rollback successful
-          if [ -d "/var/www/progressnet.io-app/apps/backend/src/services/ai/local-nlp" ]; then
-            cd /var/www/progressnet.io-app/apps/backend/src/services/ai/local-nlp
-            if [ -d "nlp_env" ]; then
-              echo "Restarting NLP service with previous version..."
-              # Ensure PID directory exists
-              mkdir -p /var/www/progressnet.io-app/pids
-              nohup ./nlp_env/bin/python server.py > /var/www/progressnet.io-app/logs/nlp-service.log 2>&1 &
-              echo $! > /var/www/progressnet.io-app/pids/nlp-service.pid
-              echo "NLP service restarted with previous version"
-            fi
-          fi
 
           # Clean up failed deployment
           sudo rm -rf /var/www/progressnet.io-app-new

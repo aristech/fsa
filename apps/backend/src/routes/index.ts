@@ -23,9 +23,7 @@ import { webhookRoutes } from "./webhooks";
 import { apiKeyRoutes } from "./api-keys";
 import { publicApiRoutes } from "./public-api";
 import { webhookTestRoutes } from "./webhook-test";
-import { aiRoutes } from "./ai";
 import { autocompleteRoutes } from "./autocomplete";
-import { aiSettingsRoutes } from "./ai-settings";
 
 export async function registerRoutes(fastify: FastifyInstance) {
   // Health check
@@ -59,7 +57,5 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(apiKeyRoutes, { prefix: "/api/v1/api-keys" });
   await fastify.register(publicApiRoutes, { prefix: "/api/v1/public" });
   await fastify.register(webhookTestRoutes, { prefix: "/api/v1/test" });
-  await fastify.register(aiRoutes, { prefix: "/api/v1/ai" });
   await fastify.register(autocompleteRoutes, { prefix: "/api/v1" });
-  await fastify.register(aiSettingsRoutes, { prefix: "/api/v1" });
 }

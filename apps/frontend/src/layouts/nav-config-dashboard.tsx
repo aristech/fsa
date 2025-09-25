@@ -196,7 +196,6 @@ export function useNavData(): NavSectionProps['data'] {
           children: [
             { title: 'Webhooks', path: paths.dashboard.settings.webhooks },
             { title: 'API Keys', path: paths.dashboard.settings.apiKeys },
-            { title: 'AI Settings', path: paths.dashboard.settings.ai },
           ],
         },
         {

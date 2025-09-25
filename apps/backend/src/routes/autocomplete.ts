@@ -1,5 +1,9 @@
 import { FastifyInstance } from "fastify";
-import { generateAutocompleteTool } from "../services/ai/validation-tools";
+import { Personnel } from "../models/Personnel";
+import { Client } from "../models/Client";
+import { Material } from "../models/Material";
+import { Task } from "../models/Task";
+import { WorkOrder } from "../models/WorkOrder";
 
 export async function autocompleteRoutes(fastify: FastifyInstance) {
   // Handle CORS preflight requests
@@ -41,12 +45,6 @@ export async function autocompleteRoutes(fastify: FastifyInstance) {
         return;
       }
 
-      // Allow empty queries for showing available entries
-      // if (!searchQuery) {
-      //   reply.code(400).send({ error: "Query required" });
-      //   return;
-      // }
-
       // JWT validation
       try {
         const jwt = require("jsonwebtoken");
@@ -69,19 +67,105 @@ export async function autocompleteRoutes(fastify: FastifyInstance) {
 
       const user = (request as any).user;
 
-      // Create autocomplete tool
-      const autocompleteTool = generateAutocompleteTool();
+      // Simple autocomplete based on symbol
+      let results: any[] = [];
 
-      // Execute the tool
-      const result = await autocompleteTool.handler(
-        { symbol, query: searchQuery, limit: parseInt(limit) },
-        {
-          userId: user.id,
-          tenantId: user.tenantId,
-        },
-      );
+      switch (symbol) {
+        case "@": // Personnel
+          const personnel = await Personnel.find({
+            tenantId: user.tenantId,
+            ...(searchQuery && {
+              $or: [
+                { "userId.firstName": { $regex: searchQuery, $options: "i" } },
+                { "userId.lastName": { $regex: searchQuery, $options: "i" } },
+                { "userId.email": { $regex: searchQuery, $options: "i" } },
+              ],
+            }),
+          })
+            .populate("userId", "firstName lastName email")
+            .limit(parseInt(limit));
 
-      const response = JSON.parse(result.content);
+          results = personnel.map((p) => ({
+            id: p._id,
+            name: `${p.userId.firstName} ${p.userId.lastName}`,
+            email: p.userId.email,
+            type: "personnel",
+          }));
+          break;
+
+        case "#": // Tasks/Work Orders
+          const tasks = await Task.find({
+            tenantId: user.tenantId,
+            ...(searchQuery && {
+              title: { $regex: searchQuery, $options: "i" },
+            }),
+          }).limit(parseInt(limit));
+
+          results = tasks.map((t) => ({
+            id: t._id,
+            name: t.title,
+            type: "task",
+          }));
+          break;
+
+        case "/": // Materials
+          const materials = await Material.find({
+            tenantId: user.tenantId,
+            ...(searchQuery && {
+              $or: [
+                { name: { $regex: searchQuery, $options: "i" } },
+                { sku: { $regex: searchQuery, $options: "i" } },
+              ],
+            }),
+          }).limit(parseInt(limit));
+
+          results = materials.map((m) => ({
+            id: m._id,
+            name: m.name,
+            sku: m.sku,
+            type: "material",
+          }));
+          break;
+
+        case "+": // Clients
+          const clients = await Client.find({
+            tenantId: user.tenantId,
+            ...(searchQuery && {
+              $or: [
+                { name: { $regex: searchQuery, $options: "i" } },
+                { company: { $regex: searchQuery, $options: "i" } },
+              ],
+            }),
+          }).limit(parseInt(limit));
+
+          results = clients.map((c) => ({
+            id: c._id,
+            name: c.name,
+            company: c.company,
+            type: "client",
+          }));
+          break;
+
+        case "&": // Work Orders
+          const workOrders = await WorkOrder.find({
+            tenantId: user.tenantId,
+            ...(searchQuery && {
+              title: { $regex: searchQuery, $options: "i" },
+            }),
+          }).limit(parseInt(limit));
+
+          results = workOrders.map((w) => ({
+            id: w._id,
+            name: w.title,
+            type: "workorder",
+          }));
+          break;
+      }
+
+      const response = {
+        success: true,
+        data: results,
+      };
 
       // Add CORS headers
       reply.header("Access-Control-Allow-Origin", "*");
@@ -122,12 +206,6 @@ export async function autocompleteRoutes(fastify: FastifyInstance) {
         return;
       }
 
-      // Allow empty queries for showing available entries
-      // if (!searchQuery) {
-      //   reply.code(400).send({ error: "Query required" });
-      //   return;
-      // }
-
       // JWT validation
       try {
         const jwt = require("jsonwebtoken");
@@ -150,19 +228,105 @@ export async function autocompleteRoutes(fastify: FastifyInstance) {
 
       const user = (request as any).user;
 
-      // Create autocomplete tool
-      const autocompleteTool = generateAutocompleteTool();
+      // Simple autocomplete based on symbol
+      let results: any[] = [];
 
-      // Execute the tool
-      const result = await autocompleteTool.handler(
-        { symbol, query: searchQuery, limit: parseInt(limit) },
-        {
-          userId: user.id,
-          tenantId: user.tenantId,
-        },
-      );
+      switch (symbol) {
+        case "@": // Personnel
+          const personnel = await Personnel.find({
+            tenantId: user.tenantId,
+            ...(searchQuery && {
+              $or: [
+                { "userId.firstName": { $regex: searchQuery, $options: "i" } },
+                { "userId.lastName": { $regex: searchQuery, $options: "i" } },
+                { "userId.email": { $regex: searchQuery, $options: "i" } },
+              ],
+            }),
+          })
+            .populate("userId", "firstName lastName email")
+            .limit(parseInt(limit));
 
-      const response = JSON.parse(result.content);
+          results = personnel.map((p) => ({
+            id: p._id,
+            name: `${p.userId.firstName} ${p.userId.lastName}`,
+            email: p.userId.email,
+            type: "personnel",
+          }));
+          break;
+
+        case "#": // Tasks/Work Orders
+          const tasks = await Task.find({
+            tenantId: user.tenantId,
+            ...(searchQuery && {
+              title: { $regex: searchQuery, $options: "i" },
+            }),
+          }).limit(parseInt(limit));
+
+          results = tasks.map((t) => ({
+            id: t._id,
+            name: t.title,
+            type: "task",
+          }));
+          break;
+
+        case "/": // Materials
+          const materials = await Material.find({
+            tenantId: user.tenantId,
+            ...(searchQuery && {
+              $or: [
+                { name: { $regex: searchQuery, $options: "i" } },
+                { sku: { $regex: searchQuery, $options: "i" } },
+              ],
+            }),
+          }).limit(parseInt(limit));
+
+          results = materials.map((m) => ({
+            id: m._id,
+            name: m.name,
+            sku: m.sku,
+            type: "material",
+          }));
+          break;
+
+        case "+": // Clients
+          const clients = await Client.find({
+            tenantId: user.tenantId,
+            ...(searchQuery && {
+              $or: [
+                { name: { $regex: searchQuery, $options: "i" } },
+                { company: { $regex: searchQuery, $options: "i" } },
+              ],
+            }),
+          }).limit(parseInt(limit));
+
+          results = clients.map((c) => ({
+            id: c._id,
+            name: c.name,
+            company: c.company,
+            type: "client",
+          }));
+          break;
+
+        case "&": // Work Orders
+          const workOrders = await WorkOrder.find({
+            tenantId: user.tenantId,
+            ...(searchQuery && {
+              title: { $regex: searchQuery, $options: "i" },
+            }),
+          }).limit(parseInt(limit));
+
+          results = workOrders.map((w) => ({
+            id: w._id,
+            name: w.title,
+            type: "workorder",
+          }));
+          break;
+      }
+
+      const response = {
+        success: true,
+        data: results,
+      };
 
       // Add CORS headers
       reply.header("Access-Control-Allow-Origin", "*");
