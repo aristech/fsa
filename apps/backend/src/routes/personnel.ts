@@ -756,11 +756,27 @@ export async function personnelRoutes(fastify: FastifyInstance) {
       Object.assign(personnel, validatedData);
       await personnel.save();
 
+      // Update related user fields
+      const userUpdates: any = {};
+
       // If phone was updated, also update the User's phone
-      if (validatedData.phone) {
+      if (validatedData.phone !== undefined) {
+        userUpdates.phone = validatedData.phone;
+      }
+
+      // If name was updated, also update the User's firstName/lastName
+      if (validatedData.name !== undefined) {
+        // Split the full name into firstName and lastName
+        const nameParts = validatedData.name.trim().split(' ');
+        userUpdates.firstName = nameParts[0] || '';
+        userUpdates.lastName = nameParts.slice(1).join(' ') || '';
+      }
+
+      // Apply user updates if any
+      if (Object.keys(userUpdates).length > 0) {
         await User.findOneAndUpdate(
           { _id: user.id, tenantId: tenant._id },
-          { phone: validatedData.phone },
+          userUpdates,
         );
       }
 
@@ -809,6 +825,9 @@ export async function personnelRoutes(fastify: FastifyInstance) {
       Object.assign(personnel, validatedData);
       await personnel.save();
 
+      // Update related user fields
+      const userUpdates: any = {};
+
       // If roleId was updated, also update the User's role and permissions
       if (validatedData.roleId) {
         const role = await Role.findOne({
@@ -816,14 +835,33 @@ export async function personnelRoutes(fastify: FastifyInstance) {
           tenantId: tenant._id,
         });
         if (role) {
-          await User.findOneAndUpdate(
-            { _id: personnel.userId, tenantId: tenant._id },
-            {
-              role: role.slug,
-              permissions: role.permissions,
-            },
-          );
+          userUpdates.role = role.slug;
+          userUpdates.permissions = role.permissions;
         }
+      }
+
+      // If phone was updated, also update the User's phone
+      if (validatedData.phone !== undefined) {
+        userUpdates.phone = validatedData.phone;
+      }
+
+      // If name was updated, also update the User's firstName/lastName
+      if (validatedData.name !== undefined) {
+        // Split the full name into firstName and lastName
+        const nameParts = validatedData.name.trim().split(' ');
+        userUpdates.firstName = nameParts[0] || '';
+        userUpdates.lastName = nameParts.slice(1).join(' ') || '';
+      }
+
+      // Note: Email updates are handled separately for security reasons
+      // and should not be updated through personnel edit
+
+      // Apply user updates if any
+      if (Object.keys(userUpdates).length > 0) {
+        await User.findOneAndUpdate(
+          { _id: personnel.userId, tenantId: tenant._id },
+          userUpdates,
+        );
       }
 
       // Populate and normalize the response
@@ -1020,9 +1058,8 @@ export async function personnelRoutes(fastify: FastifyInstance) {
         return reply.send({
           success: true,
           data: { isActive: personnel.isActive },
-          message: `Personnel ${
-            personnel.isActive ? "activated" : "deactivated"
-          } successfully`,
+          message: `Personnel ${personnel.isActive ? "activated" : "deactivated"
+            } successfully`,
         });
       } catch (error) {
         fastify.log.error(error as Error, "Error toggling personnel status");
@@ -1033,4 +1070,90 @@ export async function personnelRoutes(fastify: FastifyInstance) {
       }
     },
   );
+
+  // POST /api/v1/personnel/resend-invite - Resend invitation to personnel
+  fastify.post("/resend-invite", async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const req = request as AuthenticatedRequest;
+      const { tenant } = req.context!;
+
+      const resendInviteSchema = z.object({
+        personnelId: z.string().min(1),
+        email: z.string().email(),
+        name: z.string().min(1),
+      });
+
+      const { personnelId, email, name } = resendInviteSchema.parse(request.body);
+
+      // Find the personnel record
+      const personnel = await Personnel.findOne({
+        _id: personnelId,
+        tenantId: tenant._id,
+      }).populate('userId');
+
+      if (!personnel) {
+        return reply.status(404).send({
+          success: false,
+          message: "Personnel not found",
+        });
+      }
+
+      // Create magic link for personnel invitation
+      const result = await MagicLinkService.createMagicLink({
+        email: email.toLowerCase(),
+        tenantId: tenant._id.toString(),
+        userId: (personnel.userId as any)?._id?.toString(),
+        type: 'personnel_invitation',
+        metadata: {
+          firstName: name.split(' ')[0],
+          companyName: tenant.name || 'Field Service Automation',
+        },
+        expirationHours: 48, // Personnel invites expire in 48 hours
+      });
+
+      if (!result.success || !result.magicLink) {
+        return reply.status(500).send({
+          success: false,
+          message: "Failed to create invitation link",
+        });
+      }
+
+      // Send invitation email
+      try {
+        await sendPersonnelMagicLink({
+          to: email,
+          name,
+          companyName: tenant.name || 'Field Service Automation',
+          magicLink: result.magicLink.replace('/verify-account', '/verify-account'),
+          expirationHours: 48,
+        });
+      } catch (emailError) {
+        console.error('Error sending personnel invitation email:', emailError);
+        return reply.status(500).send({
+          success: false,
+          message: "Failed to send invitation email",
+        });
+      }
+
+      return reply.send({
+        success: true,
+        message: "Invitation resent successfully",
+      });
+
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({
+          success: false,
+          message: "Validation error",
+          errors: error.issues,
+        });
+      }
+
+      fastify.log.error(error as Error, "Error resending personnel invitation");
+      return reply.status(500).send({
+        success: false,
+        message: "Failed to resend invitation",
+      });
+    }
+  });
 }

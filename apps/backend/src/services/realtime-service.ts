@@ -48,7 +48,33 @@ class RealtimeService {
   initialize(server: HttpServer) {
     this.io = new SocketIOServer(server, {
       cors: {
-        origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+        origin: (origin, callback) => {
+          // Allow requests with no origin (like mobile apps)
+          if (!origin) return callback(null, true);
+
+          // Allow localhost on any port for development
+          if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+            return callback(null, true);
+          }
+
+          // Allow the configured CORS origin
+          if (origin === (process.env.CORS_ORIGIN || "http://localhost:3000")) {
+            return callback(null, true);
+          }
+
+          // Allow progressnet.io domains
+          if (origin.endsWith('.progressnet.io') || origin === 'https://progressnet.io' || origin === 'https://www.progressnet.io') {
+            return callback(null, true);
+          }
+
+          // For HTTPS origins, allow them (they are authenticated via JWT)
+          if (origin.startsWith('https://')) {
+            return callback(null, true);
+          }
+
+          // Reject other origins
+          return callback(new Error("Not allowed by CORS"), false);
+        },
         credentials: true,
         methods: ["GET", "POST"]
       },
@@ -106,7 +132,6 @@ class RealtimeService {
     if (!this.io) return;
 
     this.io.on('connection', (socket: any) => {
-      const authenticatedSocket = socket as AuthenticatedSocket;
       
      
       
@@ -155,7 +180,7 @@ class RealtimeService {
       });
 
       // Handle disconnection
-      socket.on('disconnect', (reason: string) => {
+      socket.on('disconnect', () => {
        
         
         // Remove from connected users

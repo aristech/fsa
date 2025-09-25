@@ -16,6 +16,8 @@ export interface IKanbanTask {
     avatarUrl?: string;
   }>;
   due?: [string, string];
+  startDate?: string;
+  dueDate?: string;
   reporter: {
     id: string;
     name: string;
@@ -33,6 +35,18 @@ export interface IKanbanTask {
   completeStatus?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  repeat?: {
+    enabled: boolean;
+    type: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
+    customType?: 'weeks' | 'months';
+    frequency?: number;
+  };
+  reminder?: {
+    enabled: boolean;
+    type: '1hour' | '1day' | '1week' | '1month';
+    lastSent?: string;
+    nextReminder?: string;
+  };
 }
 
 export function transformProjectToKanbanTask(
@@ -147,6 +161,8 @@ export function transformTaskToKanbanTask(
               "",
           ]
         : undefined,
+    startDate: (task as any).startDate?.toISOString(),
+    dueDate: task.dueDate?.toISOString(),
     reporter: (() => {
       const id = task.createdBy?.toString() || "unknown";
       const u = lookups?.userById?.[id];
@@ -179,5 +195,7 @@ export function transformTaskToKanbanTask(
     completeStatus: (task as any).completeStatus || false,
     createdAt: task.createdAt?.toISOString(),
     updatedAt: task.updatedAt?.toISOString(),
+    ...((task as any).repeat && { repeat: (task as any).repeat }),
+    ...((task as any).reminder && { reminder: (task as any).reminder }),
   };
 }

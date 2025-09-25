@@ -94,6 +94,14 @@ interface TenantActivationEmailData {
   expirationHours?: number;
 }
 
+interface PasswordResetEmailData {
+  to: string;
+  name: string;
+  companyName: string;
+  magicLink: string;
+  expirationHours?: number;
+}
+
 // Send personnel invitation email
 export async function sendPersonnelInvitation(
   data: PersonnelInvitationEmailData,
@@ -389,6 +397,158 @@ export async function sendPersonnelMagicLink(data: MagicLinkEmailData) {
   } catch (error: any) {
     const duration = Date.now() - startTime;
    
+
+    let errorMessage = error.message;
+    if (error.code === "EAUTH") {
+      errorMessage =
+        "SMTP authentication failed. Please check your credentials.";
+    } else if (error.code === "ECONNECTION") {
+      errorMessage =
+        "SMTP connection failed. Please check your host and port settings.";
+    } else if (error.code === "ETIMEDOUT") {
+      errorMessage =
+        "SMTP connection timed out. Please check your network connection.";
+    }
+
+    return {
+      success: false,
+      error: errorMessage,
+      code: error.code,
+      duration,
+    };
+  }
+}
+
+// Send password reset email
+export async function sendPasswordResetEmail(data: PasswordResetEmailData) {
+  const startTime = Date.now();
+  const requestId = Math.random().toString(36).substr(2, 9);
+
+  // Validate required fields
+  const requiredFields = {
+    to: data.to,
+    name: data.name,
+    companyName: data.companyName,
+    magicLink: data.magicLink,
+  };
+
+  const missingFields = Object.entries(requiredFields)
+    .filter(([_, value]) => !value)
+    .map(([key]) => key);
+
+  if (missingFields.length > 0) {
+    const error = `Missing required fields: ${missingFields.join(", ")}`;
+    return { success: false, error };
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(data.to)) {
+    const error = `Invalid email format: ${data.to}`;
+    return { success: false, error };
+  }
+
+  try {
+    const transporter = await createEmailTransporter();
+
+    const expirationHours = data.expirationHours || 1;
+    const expirationText = expirationHours === 1 ? '1 hour' : `${expirationHours} hours`;
+
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Password Reset - ${data.companyName}</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+          .button { display: inline-block; background: #e53e3e; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: bold; }
+          .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
+          .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+          .security-notice { background: #fed7d7; border: 1px solid #fc8181; padding: 15px; border-radius: 5px; margin: 20px 0; }
+          .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🔐 Password Reset Request</h1>
+            <p>Reset your ${data.companyName} account password</p>
+          </div>
+          <div class="content">
+            <h2>Hello ${data.name},</h2>
+            <p>We received a request to reset the password for your <strong>${data.companyName}</strong> account associated with this email address.</p>
+
+            <p>To reset your password and create a new secure password, please click the button below:</p>
+
+            <div style="text-align: center;">
+              <a href="${data.magicLink}" class="button">Reset My Password</a>
+            </div>
+
+            <div class="warning">
+              <strong>⚠️ Important Security Information:</strong>
+              <ul>
+                <li>This password reset link will expire in <strong>${expirationText}</strong></li>
+                <li>The link can only be used once</li>
+                <li>Never share this link with anyone</li>
+                <li>This link will redirect you to create a new password</li>
+              </ul>
+            </div>
+
+            <div class="security-notice">
+              <strong>🚨 Did you request this password reset?</strong>
+              <p>If you did NOT request this password reset, please ignore this email and delete it immediately. Your account will remain secure and unchanged.</p>
+              <p>If you continue to receive unwanted password reset emails, please contact our support team.</p>
+            </div>
+
+            <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+            <p style="background: #f1f1f1; padding: 10px; border-radius: 5px; word-break: break-all; font-family: monospace;">
+              ${data.magicLink}
+            </p>
+
+            <div class="info">
+              <p><strong>For your security:</strong></p>
+              <ul>
+                <li>Always use a strong, unique password</li>
+                <li>Don't reuse passwords from other accounts</li>
+                <li>Consider using a password manager</li>
+                <li>Enable two-factor authentication if available</li>
+              </ul>
+            </div>
+
+            <p>If you have any questions about this password reset request, please contact our support team.</p>
+          </div>
+          <div class="footer">
+            <p>This is an automated security message from ${data.companyName}. Please do not reply to this email.</p>
+            <p>If you did not request this password reset, please ignore this email.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const mailOptions = {
+      from: process.env.SMTP_FROM,
+      to: data.to,
+      subject: `Password Reset Request - ${data.companyName}`,
+      html: emailHtml,
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    const duration = Date.now() - startTime;
+
+    return {
+      success: true,
+      messageId: result.messageId,
+      response: result.response,
+      duration,
+    };
+  } catch (error: any) {
+    const duration = Date.now() - startTime;
 
     let errorMessage = error.message;
     if (error.code === "EAUTH") {

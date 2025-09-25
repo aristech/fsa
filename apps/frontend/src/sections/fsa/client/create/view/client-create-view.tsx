@@ -1,22 +1,13 @@
-'use client';
-
-import { Container, Typography } from '@mui/material';
-
-import { useTranslate } from 'src/locales/use-locales';
+import { Container } from '@mui/material';
 
 import { ClientCreateForm } from '../client-create-form';
 
 // ----------------------------------------------------------------------
 
 export function ClientCreateView() {
-  const { t } = useTranslate('dashboard');
 
   return (
-    <Container maxWidth="lg">
-      <Typography variant="h4" sx={{ mb: 5 }}>
-        {t('clients.createClient')}
-      </Typography>
-
+    <Container maxWidth="xl">
       <ClientCreateForm />
     </Container>
   );

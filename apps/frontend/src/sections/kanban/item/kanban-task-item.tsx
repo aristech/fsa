@@ -44,17 +44,17 @@ const renderDropIndicator = (
 const renderTaskPreview = (state: UseTaskItemDndReturn['state'], task: IKanbanTask) =>
   state.type === kanbanClasses.state.preview
     ? createPortal(
-        <ItemPreview
-          sx={{
-            width: state.dragRect.width,
-            ...(!isSafari() && { borderRadius: 'var(--kanban-item-radius)' }),
-          }}
-        >
-          <ItemStatus status={task.priority} />
-          <ItemName name={task.name} />
-        </ItemPreview>,
-        state.container
-      )
+      <ItemPreview
+        sx={{
+          width: state.dragRect.width,
+          ...(!isSafari() && { borderRadius: 'var(--kanban-item-radius)' }),
+        }}
+      >
+        <ItemStatus status={task.priority} />
+        <ItemName name={task.name} />
+      </ItemPreview>,
+      state.container
+    )
     : null;
 
 // ----------------------------------------------------------------------
@@ -216,6 +216,30 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
                     ? `Start: ${formatTime(startDate)}`
                     : `Due: ${formatTime(dueDate)}`
               }
+              sx={{ height: 22, '& .MuiChip-label': { px: 0.75, fontSize: '0.72rem' } }}
+            />
+          )}
+
+          {/* Recurring indicator */}
+          {(task as any).repeat?.enabled && (
+            <Chip
+              size="small"
+              variant="soft"
+              color="info"
+              icon={<Iconify icon="solar:refresh-square-bold" width={14} />}
+              label="Recurring"
+              sx={{ height: 22, '& .MuiChip-label': { px: 0.75, fontSize: '0.72rem' } }}
+            />
+          )}
+
+          {/* Reminder indicator */}
+          {(task as any).reminder?.enabled && (
+            <Chip
+              size="small"
+              variant="soft"
+              color="warning"
+              icon={<Iconify icon="solar:bell-bold" width={14} />}
+              label="Reminder"
               sx={{ height: 22, '& .MuiChip-label': { px: 0.75, fontSize: '0.72rem' } }}
             />
           )}

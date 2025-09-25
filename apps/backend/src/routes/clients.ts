@@ -28,7 +28,7 @@ export async function clientRoutes(fastify: FastifyInstance) {
           tenantId: tenant._id,
           isActive: true,
         })
-          .select("_id name company email phone vatNumber address createdAt")
+          .select("_id name company email phone vatNumber address billingAddress contactPerson notes createdAt")
           .sort({ createdAt: -1 }) // Sort by created_at descending (latest first)
           .limit(parseInt(String(limit), 10))
           .skip(parseInt(String(offset), 10));
@@ -71,7 +71,7 @@ export async function clientRoutes(fastify: FastifyInstance) {
           _id: id,
           tenantId: tenant._id,
           isActive: true,
-        }).select("_id name company email phone vatNumber address createdAt");
+        }).select("_id name company email phone vatNumber address billingAddress contactPerson notes createdAt");
 
         if (!client) {
           return reply.code(404).send({

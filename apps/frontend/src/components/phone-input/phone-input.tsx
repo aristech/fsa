@@ -38,7 +38,14 @@ export function PhoneInput({
   const theme = useTheme();
   const variant = variantProp ?? theme.components?.MuiTextField?.defaultProps?.variant;
 
-  const normalizedValue = value ? value.trim().replace(/[\s-]+/g, '') : undefined;
+  const normalizedValue = value
+    ? value
+      .trim()
+      .replace(/[\s-]+/g, '')
+      .replace(/^00/, '+')
+    : undefined;
+
+  const valueForInput = normalizedValue ?? '';
 
   const [searchCountry, setSearchCountry] = useState('');
   const [selectedCountry, setSelectedCountry] = useState<PhoneCountry | undefined>(
@@ -54,7 +61,15 @@ export function PhoneInput({
   }, [country, selectedCountry, normalizedValue, defaultCountry]);
 
   const debouncedChange = useMemo(
-    () => debounce((inputValue: PhoneValue) => onChange(inputValue), 200),
+    () =>
+      debounce((inputValue: PhoneValue) => {
+        const normalized = (inputValue || '')
+          .toString()
+          .trim()
+          .replace(/[\s-]+/g, '')
+          .replace(/^00/, '+');
+        onChange(normalized as PhoneValue);
+      }, 200),
     [onChange]
   );
 
@@ -124,7 +139,7 @@ export function PhoneInput({
     };
 
     const phoneInputProps: PhoneInputProps = {
-      value: normalizedValue,
+      value: valueForInput,
       onChange: handleChangeInput,
       inputComponent: CustomInput,
       ...(isCountryLocked ? { country: activeCountry } : { defaultCountry: activeCountry }),
@@ -170,6 +185,12 @@ function CustomInput({ ref, ...other }: TextFieldProps) {
 // ----------------------------------------------------------------------
 
 function parseCountryFromPhone(inputValue?: PhoneInputProps['value']): PhoneCountry | undefined {
-  const parsed = inputValue ? parsePhoneNumber(inputValue) : undefined;
+  const normalized = inputValue
+    ? inputValue
+      .trim()
+      .replace(/[\s-]+/g, '')
+      .replace(/^00/, '+')
+    : undefined;
+  const parsed = normalized ? parsePhoneNumber(normalized) : undefined;
   return parsed?.country ?? undefined;
 }

@@ -67,7 +67,7 @@ interface WorkOrder {
   actualDuration?: number; // in minutes
   // Progress fields
   progress?: number;
-  progressMode?: 'computed' | 'manual' | 'weighted';
+  progressMode?: 'computed' | 'manual';
   tasksTotal?: number;
   tasksCompleted?: number;
   tasksInProgress?: number;
@@ -218,20 +218,20 @@ export function WorkOrderList() {
                       <Typography variant="h6" color="text.secondary">
                         {clientId
                           ? t('noWorkOrdersForClient', {
-                              defaultValue: 'No work orders found for this client',
-                            })
+                            defaultValue: 'No work orders found for this client',
+                          })
                           : t('dashboard.noWorkOrdersFound', {
-                              defaultValue: 'No work orders found',
-                            })}
+                            defaultValue: 'No work orders found',
+                          })}
                       </Typography>
                       <Typography variant="body2" color="text.disabled">
                         {clientId
                           ? t('noWorkOrdersForClientHint', {
-                              defaultValue: 'This client does not have any work orders yet.',
-                            })
+                            defaultValue: 'This client does not have any work orders yet.',
+                          })
                           : t('createFirstWorkOrderHint', {
-                              defaultValue: 'Create your first work order to get started.',
-                            })}
+                            defaultValue: 'Create your first work order to get started.',
+                          })}
                       </Typography>
                     </Stack>
                   </TableCell>

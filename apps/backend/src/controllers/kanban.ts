@@ -21,6 +21,7 @@ import {
   transformTaskToKanbanTask,
 } from "../utils/kanban-transformers";
 import { WorkOrderAssignmentService } from "../services/work-order-assignment-service";
+import { ReminderService } from "../services/reminder-service";
 
 export async function getKanbanData(
   request: FastifyRequest,
@@ -386,6 +387,8 @@ async function handleCreateTask(
     tags,
     attachments,
     estimatedHours,
+    repeat,
+    reminder,
   } = taskData;
 
   // If clientId is provided, validate it belongs to the tenant
@@ -517,6 +520,10 @@ async function handleCreateTask(
       workOrderNumber: resolvedWorkOrderNumber,
       workOrderTitle: resolvedWorkOrderTitle,
     }),
+    // Add repeat information if provided
+    ...(repeat && { repeat }),
+    // Add reminder information if provided
+    ...(reminder && { reminder }),
   });
 
  
@@ -535,6 +542,15 @@ async function handleCreateTask(
       );
     } catch (error) {
       console.error('Error adding timeline entry for task creation:', error);
+    }
+  }
+
+  // Update reminder settings if task has reminder enabled
+  if (newTask.reminder?.enabled && newTask.dueDate) {
+    try {
+      await ReminderService.updateTaskReminder(newTask._id.toString());
+    } catch (error) {
+      console.error('Error updating task reminder:', error);
     }
   }
 
@@ -782,6 +798,8 @@ async function handleUpdateTask(
     clientCompany,
     completeStatus,
     workOrderTitle,
+    repeat,
+    reminder,
   } = taskData;
 
   // Track what fields are being changed for notifications
@@ -877,6 +895,18 @@ async function handleUpdateTask(
     } catch {
       updateData.attachments = [];
     }
+  }
+
+  // Handle repeat settings
+  if (repeat !== undefined) {
+    updateData.repeat = repeat;
+    changes.push('repeat');
+  }
+
+  // Handle reminder settings
+  if (reminder !== undefined) {
+    updateData.reminder = reminder;
+    changes.push('reminder');
   }
 
   const updatedTask = await Task.findOneAndUpdate(

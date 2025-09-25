@@ -24,7 +24,9 @@ import { CONFIG } from 'src/global-config';
 import { useTranslate } from 'src/locales/use-locales';
 
 import { toast } from 'src/components/snackbar';
-import { Form, RHFTextField } from 'src/components/hook-form';
+import { Form, RHFTextField, RHFPhoneInput, RHFNumberInput } from 'src/components/hook-form';
+// Use RHFPhoneInput for controlled behavior
+// Removed direct NumberInput import; using RHFNumberInput for controlled behavior
 
 // ----------------------------------------------------------------------
 
@@ -85,6 +87,8 @@ export function PersonnelCreateView({
   const [loading, setLoading] = useState<boolean>(false);
   const [skillOptions, setSkillOptions] = useState<string[]>([]);
   const [certOptions, setCertOptions] = useState<string[]>([]);
+  const [resendingInvite, setResendingInvite] = useState<boolean>(false);
+  const [currentPersonnel, setCurrentPersonnel] = useState<any>(null);
 
   const methods = useForm<zod.input<ReturnType<typeof createPersonnelSchema>>>({
     resolver: zodResolver(createPersonnelSchema(t)),
@@ -195,12 +199,29 @@ export function PersonnelCreateView({
 
         // Reset form with personnel data if editing
         if (p) {
+          setCurrentPersonnel(p);
+
+          // Format phone number to E.164 format if it exists and doesn't start with +
+          let formattedPhone = p.user?.phone || '';
+          if (formattedPhone && !formattedPhone.startsWith('+')) {
+            // Assume US number if no country code, or keep as-is if we can't determine format
+            if (formattedPhone.length === 10 && /^\d+$/.test(formattedPhone)) {
+              formattedPhone = `+1${formattedPhone}`;
+            } else if (formattedPhone.length > 10 && /^\d+$/.test(formattedPhone)) {
+              formattedPhone = `+${formattedPhone}`;
+            }
+            // If it doesn't match expected patterns, leave it empty to avoid errors
+            else if (!/^\+\d+$/.test(formattedPhone)) {
+              formattedPhone = '';
+            }
+          }
+
           const formData = {
             userId: p.user?._id || '',
             employeeId: p.employeeId || '',
             name: p.user?.name || '',
             email: p.user?.email || '',
-            phone: p.user?.phone || '',
+            phone: formattedPhone,
             roleId: p.role?._id || undefined,
             hourlyRate: p.hourlyRate || 0,
             notes: p.notes || '',
@@ -284,6 +305,31 @@ export function PersonnelCreateView({
     }
   });
 
+  const handleResendInvite = async () => {
+    if (!currentPersonnel?.user?._id || !currentPersonnel?.user?.email) {
+      toast.error('Cannot resend invite: Personnel user information is missing');
+      return;
+    }
+
+    setResendingInvite(true);
+    try {
+      const response = await axiosInstance.post('/api/v1/personnel/resend-invite', {
+        personnelId,
+        email: currentPersonnel.user.email,
+        name: currentPersonnel.user.name,
+      });
+
+      if (response.status >= 200 && response.status < 300) {
+        toast.success('Invitation resent successfully');
+      }
+    } catch (error: any) {
+      console.error('Error resending invite:', error);
+      toast.error('Failed to resend invitation');
+    } finally {
+      setResendingInvite(false);
+    }
+  };
+
   const roleOptions = useMemo(() => roles.map((r) => ({ label: r.name, id: r._id })), [roles]);
 
   return (
@@ -315,9 +361,29 @@ export function PersonnelCreateView({
         ) : (
           <Stack spacing={2} sx={{ px: 2.5, py: 2 }}>
             <RHFTextField name="name" label={t('personnel.form.name')} />
-            <RHFTextField name="email" label={t('personnel.form.email')} type="email" />
-            <RHFTextField name="phone" label={t('personnel.form.phone')} />
-            <RHFTextField name="hourlyRate" label={t('personnel.form.hourlyRate')} type="number" />
+            <Stack spacing={1}>
+              <RHFTextField
+                name="email"
+                label={t('personnel.form.email')}
+                type="email"
+                disabled={!!personnelId}
+                helperText={personnelId ? 'Email cannot be changed after creation' : undefined}
+              />
+              {personnelId && currentPersonnel?.user?._id && (
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  size="small"
+                  onClick={handleResendInvite}
+                  disabled={resendingInvite}
+                  sx={{ alignSelf: 'flex-start' }}
+                >
+                  {resendingInvite ? 'Resending...' : 'Resend Invitation'}
+                </Button>
+              )}
+            </Stack>
+            <RHFPhoneInput name="phone" label={t('personnel.form.phone')} />
+            <RHFNumberInput name="hourlyRate" captionText={t('personnel.form.hourlyRate')} />
 
             <Controller
               name="roleId"

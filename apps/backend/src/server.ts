@@ -36,7 +36,7 @@ async function registerPlugins() {
       }
 
       // Allow progressnet.io domains
-      if (origin.endsWith('.progressnet.io') || origin === 'https://progressnet.io') {
+      if (origin.endsWith('.progressnet.io') || origin === 'https://progressnet.io' || origin === 'https://www.progressnet.io') {
         return callback(null, true);
       }
 

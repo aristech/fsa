@@ -47,28 +47,6 @@ type DialogPersonnel = {
   };
 };
 
-type BlockLabelProps = {
-  children: React.ReactNode;
-  sx?: Record<string, any>;
-  [key: string]: any;
-};
-
-const BlockLabel = ({ children, ...other }: BlockLabelProps) => (
-  <Typography
-    component="span"
-    variant="caption"
-    sx={{
-      width: 100,
-      flexShrink: 0,
-      color: 'text.secondary',
-      fontWeight: 'fontWeightSemiBold',
-      ...other.sx,
-    }}
-    {...other}
-  >
-    {children}
-  </Typography>
-);
 
 // ----------------------------------------------------------------------
 
@@ -96,9 +74,7 @@ export function WorkOrderPersonnelSelection({ value = [], onChange, disabled = f
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <BlockLabel sx={{ height: 40, lineHeight: '40px' }}>
-        {t('assignedPersonnel', { defaultValue: 'Assigned Personnel' })}
-      </BlockLabel>
+
 
       <Box sx={{ gap: 1, display: 'flex', flexWrap: 'wrap' }}>
         {error ? (
@@ -145,7 +121,7 @@ export function WorkOrderPersonnelSelection({ value = [], onChange, disabled = f
                     border: `dashed 1px ${theme.vars?.palette?.divider || theme.palette.divider}`,
                     bgcolor: varAlpha(
                       theme.vars?.palette?.grey?.['500Channel'] ||
-                        theme.palette.grey[500] + 'Channel',
+                      theme.palette.grey[500] + 'Channel',
                       0.08
                     ),
                     width: 32,

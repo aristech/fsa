@@ -42,10 +42,6 @@ export class WorkOrderProgressService {
     let progress = 0;
     if (mode === "manual") {
       progress = Math.max(0, Math.min(100, workOrder.progressManual ?? 0));
-    } else if (mode === "weighted") {
-      // For now, fallback to computed by status; add weighting later if tasks contain progress/effort
-      progress =
-        totals.total === 0 ? 0 : Math.round((totals.done / totals.total) * 100);
     } else {
       progress =
         totals.total === 0 ? 0 : Math.round((totals.done / totals.total) * 100);

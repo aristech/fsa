@@ -1,5 +1,6 @@
 import type { ITimeEntry } from 'src/types/kanban';
 
+import dayjs from 'dayjs';
 import useSWR, { mutate } from 'swr';
 import { useMemo, useState, useEffect } from 'react';
 
@@ -53,11 +54,10 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
   }, [entries]);
 
   const [hours, setHours] = useState<string>('');
-  const [days, setDays] = useState<string>('');
-  const [date, setDate] = useState<string>('');
+  const [date, setDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [notes, setNotes] = useState<string>('');
 
-  const canSubmit = !!date && (!!hours || !!days);
+  const canSubmit = !!date && (!!hours);
 
   const handleCreate = async () => {
     try {
@@ -68,12 +68,10 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
       };
       if (workOrderId) payload.workOrderId = workOrderId;
       if (hours) payload.hours = parseFloat(hours);
-      if (days) payload.days = parseFloat(days);
 
       await axiosInstance.post(endpoints.fsa.timeEntries.create, payload);
       setHours('');
-      setDays('');
-      setDate('');
+      setDate(dayjs().format('YYYY-MM-DD'));
       setNotes('');
       mutate(listKey);
       toast.success('Time entry added successfully');
@@ -93,7 +91,7 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
       toast.error(message);
     }
   };
-
+  console.log(date);
   return (
     <Stack spacing={2}>
       <Paper variant="outlined" sx={{ p: 2 }}>
@@ -103,11 +101,14 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems="center">
           <TextField
             label="Date"
+            placeholder={dayjs().format("DD-MM-YYYY")}
             type="date"
             size="small"
+            sx={{ width: 320, '& .MuiInputBase-input': { fontSize: 12 } }}
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            slotProps={{ inputLabel: { shrink: true } as any }}
+            slotProps={{ inputLabel: { shrink: true } as any, input: { sx: { fontSize: 12 } } }}
+
           />
           <TextField
             label="Hours"
@@ -117,14 +118,7 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
             value={hours}
             onChange={(e) => setHours(e.target.value)}
           />
-          <TextField
-            label="Days"
-            type="number"
-            size="small"
-            inputProps={{ step: 0.25, min: 0 }}
-            value={days}
-            onChange={(e) => setDays(e.target.value)}
-          />
+
           <TextField
             label="Notes"
             size="small"
@@ -133,7 +127,7 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
             onChange={(e) => setNotes(e.target.value)}
           />
           <Button variant="contained" disabled={!canSubmit} onClick={handleCreate}>
-            Add
+            <Iconify icon="mingcute:add-line" />
           </Button>
         </Stack>
       </Paper>

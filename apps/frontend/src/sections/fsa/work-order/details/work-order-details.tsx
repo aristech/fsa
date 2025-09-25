@@ -10,6 +10,7 @@ import {
   Button,
   Slider,
   Divider,
+  Container,
   Typography,
   CardContent,
   LinearProgress,
@@ -144,22 +145,22 @@ export function WorkOrderDetails({ id }: Props) {
 
   const summary = summaryRes?.data as
     | {
-        progressMode?: 'computed' | 'manual' | 'weighted';
-        progress?: number;
-        tasksTotal?: number;
-        tasksCompleted?: number;
-        tasksInProgress?: number;
-        tasksBlocked?: number;
-        startedAt?: string | null;
-        completedAt?: string | null;
-        status?: string;
-      }
+      progressMode?: 'computed' | 'manual';
+      progress?: number;
+      tasksTotal?: number;
+      tasksCompleted?: number;
+      tasksInProgress?: number;
+      tasksBlocked?: number;
+      startedAt?: string | null;
+      completedAt?: string | null;
+      status?: string;
+    }
     | undefined;
 
   const workOrder = detailsRes?.data;
 
   return (
-    <>
+    <Container maxWidth="xl">
       <CustomBreadcrumbs
         heading={
           workOrder?.title ||
@@ -445,15 +446,13 @@ export function WorkOrderDetails({ id }: Props) {
             <Card>
               <CardContent>
                 <Stack spacing={2}>
-                  <Typography variant="h6">
-                    {t('assignedPersonnel', { defaultValue: 'Assigned Personnel' })}
-                  </Typography>
+
                   <WorkOrderPersonnelSelection
                     value={
                       Array.isArray(workOrder?.personnelIds)
                         ? workOrder.personnelIds
-                            .map((p: any) => (typeof p === 'string' ? p : p._id))
-                            .filter(Boolean)
+                          .map((p: any) => (typeof p === 'string' ? p : p._id))
+                          .filter(Boolean)
                         : []
                     }
                     onChange={async (personnelIds) => {
@@ -508,6 +507,6 @@ export function WorkOrderDetails({ id }: Props) {
           </Stack>
         </Grid>
       </Grid>
-    </>
+    </Container>
   );
 }
