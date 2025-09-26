@@ -49,15 +49,44 @@ export class ReminderService {
   static async getTasksNeedingReminders(): Promise<ITask[]> {
     const now = new Date();
 
-    return await Task.find({
+    // First query: tasks with calculated nextReminder
+    const tasksWithReminder = await Task.find({
       'reminder.enabled': true,
       'reminder.nextReminder': { $lte: now },
       $or: [
         { 'reminder.lastSent': { $exists: false } },
         { 'reminder.lastSent': null },
-        { 'reminder.lastSent': { $lt: '$reminder.nextReminder' } }
+        { $expr: { $lt: ['$reminder.lastSent', '$reminder.nextReminder'] } }
       ]
     });
+
+    // Second query: tasks with enabled reminders but no nextReminder calculated
+    const tasksWithoutReminder = await Task.find({
+      'reminder.enabled': true,
+      'reminder.nextReminder': { $exists: false },
+      dueDate: { $exists: true },
+      $or: [
+        { 'reminder.lastSent': { $exists: false } },
+        { 'reminder.lastSent': null }
+      ]
+    });
+
+    // For tasks without nextReminder, calculate it and check if reminder is due
+    const additionalTasks = [];
+    for (const task of tasksWithoutReminder) {
+      if (task.dueDate && task.reminder) {
+        const nextReminder = this.calculateNextReminder(task.dueDate, task.reminder.type);
+        if (nextReminder <= now) {
+          // Update the task with calculated nextReminder for future queries
+          await Task.findByIdAndUpdate(task._id, {
+            'reminder.nextReminder': nextReminder,
+          });
+          additionalTasks.push(task);
+        }
+      }
+    }
+
+    return [...tasksWithReminder, ...additionalTasks];
   }
 
   /**
@@ -66,14 +95,25 @@ export class ReminderService {
   static async getTaskNotificationEmails(task: ITask): Promise<string[]> {
     const emails: string[] = [];
 
-    // Get assignee emails
-    if (task.assignees && task.assignees.length > 0) {
-      const personnel = await Personnel.find({
-        _id: { $in: task.assignees },
-        tenantId: task.tenantId
-      }).select('email');
+    // Handle assignees - check both assignees array and assignee (populated objects)
+    const assigneeData = (task as any).assignees || (task as any).assignee || [];
 
-      emails.push(...personnel.map(p => p.email).filter(Boolean));
+    if (assigneeData && assigneeData.length > 0) {
+      // Check if assignees are populated objects with email or just IDs
+      const firstAssignee = assigneeData[0];
+      if (typeof firstAssignee === 'object' && firstAssignee.email) {
+        // Assignees are populated objects with email
+        emails.push(...assigneeData.map((a: any) => a.email).filter(Boolean));
+      } else {
+        // Assignees are just IDs, need to fetch from Personnel
+        const assigneeIds = assigneeData.map((a: any) => typeof a === 'object' ? a.id || a._id : a);
+        const personnel = await Personnel.find({
+          _id: { $in: assigneeIds },
+          tenantId: task.tenantId
+        }).select('email');
+
+        emails.push(...personnel.map(p => p.email).filter(Boolean));
+      }
     }
 
     // Get reporter email
@@ -184,16 +224,21 @@ export class ReminderService {
 
     for (const task of tasks) {
       try {
+        console.log(`Processing reminder for task "${task.title}" (${task._id})`);
         const emails = await this.getTaskNotificationEmails(task);
+        console.log(`Found ${emails.length} email recipients:`, emails);
 
         if (emails.length > 0) {
+          console.log(`Sending reminder email for task "${task.title}" to: ${emails.join(', ')}`);
           await this.sendReminderEmail(task, emails);
           await this.markReminderSent(task._id);
           processed++;
-          console.log(`Reminder sent for task "${task.title}" to: ${emails.join(', ')}`);
+          console.log(`✅ Reminder sent successfully for task "${task.title}"`);
+        } else {
+          console.log(`⚠️ No email recipients found for task "${task.title}"`);
         }
       } catch (error) {
-        console.error(`Error processing reminder for task ${task._id}:`, error);
+        console.error(`❌ Error processing reminder for task ${task._id}:`, error);
         errors.push(`Task ${task._id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }

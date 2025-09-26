@@ -1,6 +1,10 @@
 import type { Dayjs } from 'dayjs';
 
+import dayjs from 'dayjs';
 import { z as zod } from 'zod';
+import utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
 import useSWR, { mutate } from 'swr';
 import { useBoolean } from 'minimal-shared/hooks';
 import { useForm, Controller } from 'react-hook-form';
@@ -225,9 +229,9 @@ export function KanbanTaskCreateDialog({
           workOrderId: data.workOrderId || undefined,
           workOrderNumber: selectedWorkOrder?.workOrderNumber || undefined,
           workOrderTitle: selectedWorkOrder?.title || undefined,
-          // Persist explicit start/due dates so time is saved
-          ...(rangePicker.startDate && { startDate: rangePicker.startDate.toISOString() }),
-          ...(rangePicker.endDate && { dueDate: rangePicker.endDate.toISOString() }),
+          // Persist explicit start/due dates so time is saved (in UTC)
+          ...(rangePicker.startDate && { startDate: rangePicker.startDate.utc().toISOString() }),
+          ...(rangePicker.endDate && { dueDate: rangePicker.endDate.utc().toISOString() }),
           createdAt: new Date().toISOString(),
           status: 'Todo', // Default status
           columnId: status,

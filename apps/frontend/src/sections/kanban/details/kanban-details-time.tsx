@@ -12,6 +12,8 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 
+import { fDate } from 'src/utils/format-time';
+
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
 import { toast } from 'src/components/snackbar';
@@ -161,7 +163,7 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
                 }}
               >
                 <Typography variant="body2" sx={{ minWidth: 80 }}>
-                  {new Date(e.date).toLocaleDateString()}
+                  {fDate(e.date)}
                 </Typography>
                 <Typography variant="body2" sx={{ minWidth: 80 }}>
                   {e.hours?.toFixed(2)}h

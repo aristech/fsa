@@ -4,6 +4,9 @@ import type { IKanbanTask } from 'src/types/kanban';
 import type { RepeatSettings, ReminderSettings } from 'src/components/custom-date-range-picker';
 
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
 import useSWR, { mutate } from 'swr';
 import { Label } from '@/components/label';
 import { varAlpha } from 'minimal-shared/utils';
@@ -252,6 +255,9 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
   } = rangePicker;
 
   useEffect(() => {
+    // Don't reset picker dates when the user is actively selecting dates
+    if (rangePicker.open) return;
+
     const newStartDate = taskStartDateRaw
       ? dayjs(taskStartDateRaw as string | Date)
       : taskDueArray?.[0]
@@ -279,6 +285,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     pickerEndDate,
     setStartDate,
     setEndDate,
+    rangePicker.open, // Add this dependency to re-run when dialog closes
   ]);
 
   const handleChangeTaskName = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -421,24 +428,35 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     },
     [task, onUpdateTask, t]
   );
-  // Persist date changes (start/end)
+  // Persist date changes (start/end) with debounce to prevent conflicts during selection
   useEffect(() => {
-    if (!rangePicker.startDate || !rangePicker.endDate) return;
-    const start = rangePicker.startDate?.toDate();
-    const end = rangePicker.endDate?.toDate();
-    axiosInstance
-      .post(`${endpoints.kanban}?endpoint=update-task`, {
-        taskData: { id: task.id, startDate: start, dueDate: end },
-      })
-      .catch((e) => console.error('Failed to update dates', e));
+    if (!rangePicker.startDate || !rangePicker.endDate) return undefined;
+
+    const timeoutId = setTimeout(() => {
+      const start = rangePicker.startDate?.utc().toISOString();
+      const end = rangePicker.endDate?.utc().toISOString();
+      axiosInstance
+        .post(`${endpoints.kanban}?endpoint=update-task`, {
+          taskData: { id: task.id, startDate: start, dueDate: end },
+        })
+        .catch((e) => console.error('Failed to update dates', e));
+    }, 1000); // 1 second debounce
+
+    return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rangePicker.startDate, rangePicker.endDate]);
 
-  // Handler to save repeat/reminder data
+  // Handler to save repeat/reminder data AND current date selections
   const handleRepeatReminderSubmit = useCallback(
     async (data?: { repeat?: RepeatSettings; reminder?: ReminderSettings }) => {
       try {
         const taskData: any = { id: task.id };
+
+        // Always save current date selections when Apply is pressed (in UTC)
+        if (rangePicker.startDate && rangePicker.endDate) {
+          taskData.startDate = rangePicker.startDate.utc().toISOString();
+          taskData.dueDate = rangePicker.endDate.utc().toISOString();
+        }
 
         // Handle repeat data - always include it if provided
         if (data?.repeat !== undefined) {
@@ -457,9 +475,13 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         // Invalidate kanban cache to ensure UI updates
         await mutate(endpoints.kanban);
 
-        // Update the task with the new data, ensuring repeat/reminder are preserved
+        // Update the task with the new data, including dates, repeat, and reminder
         const updatedTask = {
           ...task,
+          ...(rangePicker.startDate && rangePicker.endDate && {
+            startDate: rangePicker.startDate.utc().toISOString(),
+            dueDate: rangePicker.endDate.utc().toISOString(),
+          }),
           repeat: data?.repeat !== undefined ? data.repeat : (task as any).repeat,
           reminder: data?.reminder !== undefined ? data.reminder : (task as any).reminder,
         };
@@ -473,7 +495,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         );
       }
     },
-    [task, onUpdateTask, t]
+    [task, onUpdateTask, t, rangePicker.startDate, rangePicker.endDate]
   );
 
   // Subtask handlers

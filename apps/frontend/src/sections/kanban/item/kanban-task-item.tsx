@@ -11,6 +11,8 @@ import { mergeClasses } from 'minimal-shared/utils';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 
+import { fDateTime } from 'src/utils/format-time';
+
 import axiosInstance, { endpoints } from 'src/lib/axios';
 import { deleteTask, updateTask } from 'src/actions/kanban';
 
@@ -94,16 +96,7 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
   // const attachmentsCount = task.attachments?.length || 0;
 
   const startDate = (task as any).startDate || task.due?.[0];
-  const dueDate = (task as any).endDate || task.due?.[1];
-  const formatTime = (d?: any) => {
-    if (!d) return '';
-    try {
-      const date = typeof d === 'string' || typeof d === 'number' ? new Date(d) : new Date(d);
-      return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    } catch {
-      return '';
-    }
-  };
+  const dueDate = (task as any).dueDate || task.due?.[1];
 
   const handleDeleteTask = useCallback(async () => {
     try {
@@ -221,10 +214,10 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
               icon={<Iconify icon="solar:calendar-mark-bold" width={14} />}
               label={
                 startDate && dueDate
-                  ? `${formatTime(startDate)} → ${formatTime(dueDate)}`
+                  ? `${fDateTime(startDate)} → ${fDateTime(dueDate)}`
                   : startDate
-                    ? `Start: ${formatTime(startDate)}`
-                    : `Due: ${formatTime(dueDate)}`
+                    ? `Start: ${fDateTime(startDate)}`
+                    : `Due: ${fDateTime(dueDate)}`
               }
               sx={{ height: 22, '& .MuiChip-label': { px: 0.75, fontSize: '0.72rem' } }}
             />

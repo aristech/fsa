@@ -225,11 +225,11 @@ export function CustomDateRangePicker({
     return date.format('HH:mm');
   }, []);
 
-  // Generate time options in 30-minute intervals
+  // Generate time options in 15-minute intervals
   const timeOptions = useCallback(() => {
     const options = [];
     for (let hour = 0; hour < 24; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
+      for (let minute = 0; minute < 60; minute += 15) {
         const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         options.push(timeString);
       }
@@ -348,14 +348,14 @@ export function CustomDateRangePicker({
                   label={t('startDateTime', { defaultValue: 'Start date & time' })}
                   value={startDate}
                   onChange={onChangeStartDate}
-                  minutesStep={30}
+                  minutesStep={15}
                   ampm={false}
                 />
                 <DateTimePicker
                   label={t('endDateTime', { defaultValue: 'End date & time' })}
                   value={endDate}
                   onChange={onChangeEndDate}
-                  minutesStep={30}
+                  minutesStep={15}
                   ampm={false}
                 />
               </>
@@ -402,7 +402,7 @@ export function CustomDateRangePicker({
                   <FormControl fullWidth size="small">
                     <InputLabel>{t('repeat.type', { defaultValue: 'Repeat Type' })}</InputLabel>
                     <Select
-                      value={repeatSettings.type}
+                      value={repeatSettings.type || 'daily'}
                       label={t('repeat.type', { defaultValue: 'Repeat Type' })}
                       onChange={(e) =>
                         setRepeatSettings((prev) => ({
@@ -548,7 +548,7 @@ export function CustomDateRangePicker({
                 <FormControl fullWidth size="small">
                   <InputLabel>{t('reminder.time', { defaultValue: 'Reminder Time' })}</InputLabel>
                   <Select
-                    value={reminderSettings.type}
+                    value={reminderSettings.type || '1hour'}
                     label={t('reminder.time', { defaultValue: 'Reminder Time' })}
                     onChange={(e) =>
                       setReminderSettings((prev) => ({
