@@ -24,6 +24,7 @@ import { apiKeyRoutes } from "./api-keys";
 import { publicApiRoutes } from "./public-api";
 import { webhookTestRoutes } from "./webhook-test";
 import { autocompleteRoutes } from "./autocomplete";
+import { reminderRoutes } from "./reminders";
 
 export async function registerRoutes(fastify: FastifyInstance) {
   // Health check
@@ -58,4 +59,5 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(publicApiRoutes, { prefix: "/api/v1/public" });
   await fastify.register(webhookTestRoutes, { prefix: "/api/v1/test" });
   await fastify.register(autocompleteRoutes, { prefix: "/api/v1" });
+  await fastify.register(reminderRoutes, { prefix: "/api/v1/reminders" });
 }
