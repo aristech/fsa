@@ -2,6 +2,7 @@
 
 import useSWR from 'swr';
 import React, { useMemo } from 'react';
+import { truncateText } from '@/utils/text-truncate';
 
 import { useTheme } from '@mui/material/styles';
 import {
@@ -302,7 +303,7 @@ export function FsaRecentWorkOrders() {
                         }}
                       >
                         <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                          {wo.title}
+                          {truncateText(wo.title, 50)}
                         </Typography>
                       </Link>
                       <Label color={getStatusColor(wo.status)} variant="soft">
@@ -312,11 +313,32 @@ export function FsaRecentWorkOrders() {
                         {wo.priority}
                       </Label>
                     </Stack>
-                    {wo.workOrderNumber && wo.title !== wo.workOrderNumber && (
-                      <Typography variant="body2" color="text.secondary">
-                        {wo.workOrderNumber}
+                    <Stack spacing={1}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                        {t('client', { defaultValue: 'Client' })}
                       </Typography>
-                    )}
+                      <Stack spacing={0.5}>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {truncateText(wo.customer, 50)}
+                        </Typography>
+                        {wo.clientPhone && (
+                          <Stack direction="row" alignItems="center" spacing={0.5}>
+                            <Iconify icon="eva:phone-fill" width={14} />
+                            <Typography variant="caption" color="text.secondary">
+                              {wo.clientPhone}
+                            </Typography>
+                          </Stack>
+                        )}
+                        {wo.clientEmail && (
+                          <Stack direction="row" alignItems="center" spacing={0.5}>
+                            <Iconify icon="eva:email-fill" width={14} />
+                            <Typography variant="caption" color="text.secondary">
+                              {wo.clientEmail}
+                            </Typography>
+                          </Stack>
+                        )}
+                      </Stack>
+                    </Stack>
                   </Stack>
 
                   {/* Actions */}
@@ -374,30 +396,7 @@ export function FsaRecentWorkOrders() {
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <Stack spacing={1}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                        {t('client', { defaultValue: 'Client' })}
-                      </Typography>
-                      <Stack spacing={0.5}>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {wo.customer}
-                        </Typography>
-                        {wo.clientPhone && (
-                          <Stack direction="row" alignItems="center" spacing={0.5}>
-                            <Iconify icon="eva:phone-fill" width={14} />
-                            <Typography variant="caption" color="text.secondary">
-                              {wo.clientPhone}
-                            </Typography>
-                          </Stack>
-                        )}
-                        {wo.clientEmail && (
-                          <Stack direction="row" alignItems="center" spacing={0.5}>
-                            <Iconify icon="eva:email-fill" width={14} />
-                            <Typography variant="caption" color="text.secondary">
-                              {wo.clientEmail}
-                            </Typography>
-                          </Stack>
-                        )}
-                      </Stack>
+
                       <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
                         <Iconify icon="eva:people-fill" width={14} />
                         <Typography

@@ -27,7 +27,7 @@ export const CONFIG: ConfigValue = {
   appName: 'Field Service Automation',
   appVersion: packageJson.version,
   serverUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001',
-  assetsDir: process.env.NEXT_PUBLIC_ASSETS_DIR ?? '/assets',
+  assetsDir: process.env.NEXT_PUBLIC_ASSETS_DIR ?? '',
   isStaticExport: JSON.parse(process.env.BUILD_STATIC_EXPORT ?? 'false'),
   /**
    * File Upload
