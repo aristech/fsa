@@ -579,6 +579,16 @@ async function handleCreateTask(
     }
   }
 
+  // Update recurring task settings if task has repeat enabled
+  if (newTask.repeat?.enabled && newTask.dueDate) {
+    try {
+      const { RecurringTaskService } = await import('../services/recurring-task-service');
+      await RecurringTaskService.updateTaskRecurrence(newTask._id.toString());
+    } catch (error) {
+      console.error("Error updating task recurrence:", error);
+    }
+  }
+
   // If task is linked to a work order, inherit personnel assignments
   if (workOrderId) {
     try {
@@ -1133,6 +1143,25 @@ async function handleUpdateTask(
       updatedTask.assignees || [],
       tenant._id.toString(),
     );
+  }
+
+  // Update reminder settings if reminder was changed and task has due date
+  if (changes.includes("reminder") && updatedTask.reminder?.enabled && updatedTask.dueDate) {
+    try {
+      await ReminderService.updateTaskReminder(updatedTask._id.toString());
+    } catch (error) {
+      console.error("Error updating task reminder:", error);
+    }
+  }
+
+  // Update recurring task settings if repeat was changed and task has due date
+  if (changes.includes("repeat") && updatedTask.repeat?.enabled && updatedTask.dueDate) {
+    try {
+      const { RecurringTaskService } = await import('../services/recurring-task-service');
+      await RecurringTaskService.updateTaskRecurrence(updatedTask._id.toString());
+    } catch (error) {
+      console.error("Error updating task recurrence:", error);
+    }
   }
 
   return reply.send({

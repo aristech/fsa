@@ -38,6 +38,8 @@ export interface ITask extends Document {
     type: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
     customType?: 'weeks' | 'months';
     frequency?: number;
+    lastCreated?: Date;
+    nextOccurrence?: Date;
   };
   // Reminder settings
   reminder?: {
@@ -46,6 +48,8 @@ export interface ITask extends Document {
     lastSent?: Date;
     nextReminder?: Date;
   };
+  // Reference to original recurring task (for instances created from recurring tasks)
+  originalRecurringTaskId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -182,6 +186,13 @@ const TaskSchema = new Schema<ITask>(
         min: 1,
         max: 26,
       },
+      lastCreated: {
+        type: Date,
+      },
+      nextOccurrence: {
+        type: Date,
+        index: true, // Index for efficient querying of pending recurring tasks
+      },
     },
     // Reminder settings
     reminder: {
@@ -200,6 +211,11 @@ const TaskSchema = new Schema<ITask>(
         type: Date,
         index: true, // Index for efficient querying of pending reminders
       },
+    },
+    // Reference to original recurring task (for instances created from recurring tasks)
+    originalRecurringTaskId: {
+      type: String,
+      ref: 'Task',
     },
   },
   {

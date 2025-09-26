@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { ReminderService } from '../services/reminder-service';
+import { RecurringTaskService } from '../services/recurring-task-service';
 
 // Reminder routes
 export async function reminderRoutes(fastify: FastifyInstance) {
@@ -72,6 +73,85 @@ export async function reminderRoutes(fastify: FastifyInstance) {
       return reply.send({
         success: true,
         message: 'Task reminder updated successfully',
+      });
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({
+        success: false,
+        error: 'Internal server error',
+      });
+    }
+  });
+
+  // POST /api/v1/reminders/process-recurring - Process pending recurring tasks (for cron job)
+  fastify.post('/process-recurring', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const result = await RecurringTaskService.processPendingRecurringTasks();
+
+      return reply.send({
+        success: true,
+        processed: result.processed,
+        errors: result.errors,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({
+        success: false,
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // GET /api/v1/reminders/pending-recurring - Get tasks that need recurring instances (for debugging)
+  fastify.get('/pending-recurring', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const tasks = await RecurringTaskService.getTasksNeedingRecurrence();
+
+      return reply.send({
+        success: true,
+        tasks: tasks.map(task => ({
+          id: task._id,
+          name: task.name,
+          dueDate: task.dueDate,
+          repeatType: task.repeat?.type,
+          nextOccurrence: task.repeat?.nextOccurrence,
+          lastCreated: task.repeat?.lastCreated,
+        })),
+        count: tasks.length,
+      });
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({
+        success: false,
+        error: 'Internal server error',
+      });
+    }
+  });
+
+  // POST /api/v1/reminders/update-recurring/:taskId - Update recurrence settings for a task
+  fastify.post('/update-recurring/:taskId', {
+    schema: {
+      params: {
+        type: 'object',
+        properties: {
+          taskId: { type: 'string' }
+        },
+        required: ['taskId']
+      }
+    }
+  }, async (request: FastifyRequest<{
+    Params: { taskId: string }
+  }>, reply: FastifyReply) => {
+    try {
+      const { taskId } = request.params;
+
+      await RecurringTaskService.updateTaskRecurrence(taskId);
+
+      return reply.send({
+        success: true,
+        message: 'Task recurrence updated successfully',
       });
     } catch (error) {
       fastify.log.error(error);
