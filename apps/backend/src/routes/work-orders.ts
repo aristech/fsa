@@ -15,6 +15,7 @@ import { EntityCleanupService } from "../services/entity-cleanup-service";
 import { WorkOrderAssignmentService } from "../services/work-order-assignment-service";
 import { WorkOrderTimelineService } from "../services/work-order-timeline-service";
 import { WebhookService } from "../services/webhook-service";
+import { WorkOrderSmsService } from "../services/work-order-sms-service";
 
 export async function workOrderRoutes(fastify: FastifyInstance) {
   // Apply authentication middleware to all routes
@@ -560,6 +561,27 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           }
         }
 
+        // Process SMS reminders if configured
+        if (body.smsReminders && body.smsReminders.enabled) {
+          try {
+            const smsResult = await WorkOrderSmsService.processSmsReminders(
+              workOrder._id.toString(),
+              body.smsReminders,
+              tenant._id.toString()
+            );
+
+            if (!smsResult.success) {
+              console.warn('SMS reminders failed for work order:', smsResult.message);
+              // Don't fail work order creation if SMS reminders fail
+            } else {
+              console.log('SMS reminders processed successfully:', smsResult.message);
+            }
+          } catch (error) {
+            console.error('Error processing SMS reminders for work order:', error);
+            // Don't fail work order creation if SMS reminder processing fails
+          }
+        }
+
         // Trigger webhook for work order creation
         try {
           await WebhookService.triggerWebhooks(
@@ -819,6 +841,27 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
               );
               // Don't fail the update if assignment propagation fails
             }
+          }
+        }
+
+        // Process SMS reminders if they were updated
+        if (body.smsReminders !== undefined) {
+          try {
+            const smsResult = await WorkOrderSmsService.updateSmsReminders(
+              workOrder._id.toString(),
+              body.smsReminders,
+              tenant._id.toString()
+            );
+
+            if (!smsResult.success) {
+              console.warn('SMS reminders update failed for work order:', smsResult.message);
+              // Don't fail work order update if SMS reminders fail
+            } else {
+              console.log('SMS reminders updated successfully:', smsResult.message);
+            }
+          } catch (error) {
+            console.error('Error updating SMS reminders for work order:', error);
+            // Don't fail work order update if SMS reminder processing fails
           }
         }
 

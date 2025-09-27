@@ -19,12 +19,17 @@ else
 fi
 
 echo ""
-echo "2. Processing reminders..."
+echo "2. Processing email reminders..."
 REMINDER_RESULT=$(curl -s -X POST $BACKEND_URL/api/v1/reminders/process)
 echo $REMINDER_RESULT | jq '.'
 
 echo ""
-echo "3. Processing recurring tasks..."
+echo "3. Processing SMS/Viber reminders..."
+SMS_RESULT=$(curl -s -X POST $BACKEND_URL/api/v1/sms-reminders/process)
+echo $SMS_RESULT | jq '.'
+
+echo ""
+echo "4. Processing recurring tasks..."
 RECURRING_RESULT=$(curl -s -X POST $BACKEND_URL/api/v1/reminders/process-recurring)
 echo $RECURRING_RESULT | jq '.'
 

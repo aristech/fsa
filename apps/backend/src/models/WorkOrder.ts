@@ -65,6 +65,20 @@ export interface IWorkOrder {
     userId: string;
     notes?: string;
   }>;
+  smsReminders?: {
+    enabled: boolean;
+    serviceActive: boolean;
+    reminderType: 'monthly' | 'yearly' | 'custom' | 'test';
+    customReminderDate?: Date;
+    customReminderInterval?: 'monthly' | 'yearly';
+    selectedPhoneNumber?: string;
+    selectedRecipientName?: string;
+    messageType: 'preset' | 'custom';
+    customMessage?: string;
+    presetMessageId?: string;
+    nextScheduled?: Date;
+    lastSent?: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -187,6 +201,32 @@ const WorkOrderSchema = new Schema<IWorkOrder>(
         notes: { type: String, trim: true },
       },
     ],
+    smsReminders: {
+      enabled: { type: Boolean, default: false },
+      serviceActive: { type: Boolean, default: false },
+      reminderType: {
+        type: String,
+        enum: ['monthly', 'yearly', 'custom', 'test'],
+        default: 'monthly'
+      },
+      customReminderDate: { type: Date },
+      customReminderInterval: {
+        type: String,
+        enum: ['monthly', 'yearly'],
+        default: 'monthly'
+      },
+      selectedPhoneNumber: { type: String, trim: true },
+      selectedRecipientName: { type: String, trim: true },
+      messageType: {
+        type: String,
+        enum: ['preset', 'custom'],
+        default: 'preset'
+      },
+      customMessage: { type: String, trim: true },
+      presetMessageId: { type: String, trim: true, default: 'monthly-service' },
+      nextScheduled: { type: Date },
+      lastSent: { type: Date }
+    },
   },
   {
     timestamps: true,

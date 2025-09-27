@@ -245,7 +245,6 @@
   "profileSetupSuccess": "Profile set up successfully! You can now use field operations.",
   "personnelExists": "Personnel record already exists",
   "failedToSetupProfile": "Failed to set up profile. Please try again.",
-  "fieldOnly": "Field Only",
   "dashboardOnly": "Dashboard Only",
   "allEnvironments": "All Environments",
   "loadingProfile": "Loading profile...",
@@ -264,7 +263,6 @@
   "notProvided": "Not provided",
   "role": "Role",
   "environmentAccess": "Environment Access",
-  "active": "Active",
   "inactive": "Inactive",
   "skillsAndCertifications": "Skills & Certifications",
   "skills": "Skills",
@@ -303,7 +301,6 @@
       "subtitle": "ProgressNet FSA?",
       "caption": "Field Service Excellence",
       "workOrderManagement": {
-        "title": "Work Order Management",
         "description": "Efficiently manage and track work orders from creation to completion."
       },
       "realTimeTracking": {
@@ -320,7 +317,6 @@
       "subtitle": "Capabilities",
       "caption": "Field Service Features",
       "mobileApp": {
-        "title": "Mobile Field App",
         "description": "Access work orders, track time, and update progress on the go."
       },
       "scheduling": {

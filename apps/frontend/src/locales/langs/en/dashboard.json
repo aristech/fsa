@@ -63,7 +63,7 @@
     "noReportsDescription": "Get started by creating your first report",
     "exportToCSV": "Export to CSV",
     "deleteReport": "Delete Report",
-    "deleteConfirmMessage": "Are you sure you want to delete this {type} report? This action cannot be undone.",
+    "deleteConfirmMessage": "Are you sure you want to delete this {{type}} report? This action cannot be undone.",
     "delete": "Delete",
     "cancel": "Cancel",
     "reportCreated": "Report created successfully",
@@ -243,7 +243,17 @@
     "apply": "Apply",
     "clear": "Clear",
     "search": "Search",
-    "filters": "Filters",
+    "filters": {
+      "name": "Name",
+      "role": "Role",
+      "status": "Status",
+      "searchPlaceholder": "Search personnel...",
+      "selectRole": "Select Role",
+      "selectStatus": "Select Status",
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
     "filtersApplied": "Filters applied:",
     "noResults": "No results found",
     "loading": "Loading...",
@@ -286,17 +296,6 @@
         "hourlyRateRequired": "Hourly rate is required",
         "hourlyRatePositive": "Hourly rate must be positive"
       }
-    },
-    "filters": {
-      "name": "Name",
-      "role": "Role",
-      "status": "Status",
-      "searchPlaceholder": "Search personnel...",
-      "selectRole": "Select Role",
-      "selectStatus": "Select Status",
-      "all": "All",
-      "active": "Active",
-      "inactive": "Inactive"
     },
     "roles": {
       "title": "Roles Management",
@@ -371,11 +370,41 @@
     "clear": "Clear",
     "clearAll": "Clear All",
     "search": "Search",
-    "filters": "Filters",
+    "filters": {
+      "name": "Name",
+      "category": "Category",
+      "status": "Status",
+      "searchPlaceholder": "Search materials...",
+      "selectCategory": "Select Category",
+      "selectStatus": "Select Status",
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive",
+      "lowStock": "Low Stock",
+      "outOfStock": "Out of Stock"
+    },
     "filtersApplied": "Filters applied:",
     "noResults": "No results found",
     "loading": "Loading...",
-    "import": "Import",
+    "import": {
+      "title": "Import Materials",
+      "subtitle": "Import materials from CSV file",
+      "selectFile": "Select CSV File",
+      "dragDrop": "Drag and drop a CSV file here, or click to select",
+      "supportedFormats": "Supported formats: CSV",
+      "template": "Download Template",
+      "importing": "Importing...",
+      "importSuccess": "Materials imported successfully",
+      "importFailed": "Failed to import materials",
+      "results": "Import Results",
+      "successful": "Successful",
+      "failed": "Failed",
+      "errors": "Errors",
+      "warnings": "Warnings",
+      "totalRows": "Total Rows",
+      "processedRows": "Processed Rows",
+      "skippedRows": "Skipped Rows"
+    },
     "export": "Export",
     "table": {
       "material": "Material",
@@ -420,44 +449,74 @@
         "unitCostPositive": "Unit cost must be positive"
       }
     },
-    "filters": {
-      "name": "Name",
-      "category": "Category",
-      "status": "Status",
-      "searchPlaceholder": "Search materials...",
-      "selectCategory": "Select Category",
-      "selectStatus": "Select Status",
-      "all": "All",
-      "active": "Active",
-      "inactive": "Inactive",
-      "lowStock": "Low Stock",
-      "outOfStock": "Out of Stock"
-    },
-    "import": {
-      "title": "Import Materials",
-      "subtitle": "Import materials from CSV file",
-      "selectFile": "Select CSV File",
-      "dragDrop": "Drag and drop a CSV file here, or click to select",
-      "supportedFormats": "Supported formats: CSV",
-      "template": "Download Template",
-      "importing": "Importing...",
-      "importSuccess": "Materials imported successfully",
-      "importFailed": "Failed to import materials",
-      "results": "Import Results",
-      "successful": "Successful",
-      "failed": "Failed",
-      "errors": "Errors",
-      "warnings": "Warnings",
-      "totalRows": "Total Rows",
-      "processedRows": "Processed Rows",
-      "skippedRows": "Skipped Rows"
-    },
     "status": {
       "active": "Active",
       "inactive": "Inactive",
       "lowStock": "Low Stock",
       "outOfStock": "Out of Stock",
       "discontinued": "Discontinued"
+    }
+  },
+  "smsReminders": {
+    "title": "SMS/Viber Reminders",
+    "subtitle": "Automated service reminders via SMS and Viber",
+    "description": "Send personalized SMS and Viber messages to clients for upcoming service appointments.",
+    "manageSmsReminders": "Manage SMS/Viber Reminders",
+    "serviceStatus": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "serviceActive": "Service Active",
+      "nextScheduled": "Next: {{date}}"
+    },
+    "configuration": {
+      "title": "Current Settings",
+      "recipient": "Recipient: {{name}}",
+      "reminderType": "Reminder Type: {{type}}",
+      "message": "Message:{{message}}",
+      "configureReminders": "Configure Reminders"
+    },
+    "steps": {
+      "selectRecipient": "Step 1: Select Recipient",
+      "reminderSchedule": "Step 2: Reminder Schedule",
+      "messageContent": "Step 3: Message Content"
+    },
+    "reminderTypes": {
+      "monthly": "Monthly (1 month from scheduled date)",
+      "yearly": "Yearly (1 year from scheduled date)",
+      "custom": "Custom Date & Interval",
+      "test": "Test (Send immediately)"
+    },
+    "messageTypes": {
+      "preset": "Use Preset Message",
+      "custom": "Custom Message"
+    },
+    "presetMessages": {
+      "monthlyService": "Monthly Service Reminder",
+      "yearlyService": "Yearly Service Reminder",
+      "customService": "Custom Service Reminder"
+    },
+    "form": {
+      "customMessagePlaceholder": "Enter your custom message (140 characters max)...",
+      "characterCount": "{count}/140 characters",
+      "preview": "Preview"
+    },
+    "dialog": {
+      "title": "Confirm SMS/Viber Service",
+      "cancel": "Cancel",
+      "activateService": "Activate Service"
+    },
+    "validation": {
+      "phoneRequired": "Phone number is required",
+      "messageRequired": "Custom message is required",
+      "messageTooLong": "Message cannot exceed 140 characters"
+    },
+    "history": {
+      "title": "Message History",
+      "placeholder": "Message history will be displayed here once messages are sent."
+    },
+    "requirements": {
+      "title": "SMS/Viber reminders require a client with phone number and a scheduled date.",
+      "description": "Configure SMS/Viber reminders to automatically notify clients about upcoming services."
     }
   },
   "settings": {

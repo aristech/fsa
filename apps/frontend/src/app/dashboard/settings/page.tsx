@@ -24,6 +24,7 @@ export default function SettingsLandingPage() {
       <SettingsView
         webhooksHref={paths.dashboard.settings.webhooks}
         apiKeysHref={paths.dashboard.settings.apiKeys}
+        smsRemindersHref={paths.dashboard.settings.smsReminders}
       />
     </>
   );

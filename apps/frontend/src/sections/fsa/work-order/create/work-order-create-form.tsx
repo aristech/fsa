@@ -5,9 +5,9 @@ import { z as zod } from 'zod';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { useBoolean } from 'minimal-shared/hooks';
-import { useMemo, useState, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CustomBreadcrumbs } from '@/components/custom-breadcrumbs';
+import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 
 import {
   Box,
@@ -43,7 +43,10 @@ import {
 
 import { KanbanTaskCreateDialog } from 'src/sections/kanban/components/kanban-task-create-dialog';
 
+import { useAuthContext } from 'src/auth/hooks';
+
 import { RHFWorkOrderPersonnel } from './rhf-work-order-personnel';
+import { WorkOrderSmsReminders } from '../components/work-order-sms-reminders';
 
 // ----------------------------------------------------------------------
 
@@ -60,6 +63,22 @@ const workOrderSchema = zod.object({
   attachments: zod.array(zod.any()).optional(),
   progressMode: zod.enum(['computed', 'manual']).optional(),
   progressManual: zod.number().min(0).max(100).optional(),
+  smsReminders: zod
+    .object({
+      enabled: zod.boolean().optional(),
+      reminderType: zod.enum(['monthly', 'yearly', 'custom', 'test']).optional(),
+      customReminderDate: zod.union([zod.string(), zod.date(), zod.null()]).optional(),
+      customReminderInterval: zod.enum(['monthly', 'yearly']).optional(),
+      selectedPhoneNumber: zod.string().optional(),
+      selectedRecipientName: zod.string().optional(),
+      messageType: zod.enum(['preset', 'custom']).optional(),
+      customMessage: zod.string().optional(),
+      presetMessageId: zod.string().optional(),
+      serviceActive: zod.boolean().optional(),
+      lastSent: zod.union([zod.string(), zod.date(), zod.null()]).optional(),
+      nextScheduled: zod.union([zod.string(), zod.date(), zod.null()]).optional(),
+    })
+    .optional(),
 });
 
 type WorkOrderFormValues = zod.infer<typeof workOrderSchema>;
@@ -73,6 +92,7 @@ export function WorkOrderCreateForm({ id }: Props) {
   const [originalAttachments, setOriginalAttachments] = useState<any[]>([]);
   const router = useRouter();
   const { t } = useTranslate('common');
+  const { authenticated, loading: authLoading } = useAuthContext();
 
   // Task creation dialog state
   const taskCreateDialog = useBoolean();
@@ -103,23 +123,60 @@ export function WorkOrderCreateForm({ id }: Props) {
       attachments: [],
       progressMode: 'computed',
       progressManual: undefined,
+      smsReminders: {
+        enabled: false,
+        reminderType: 'monthly',
+        customReminderDate: null,
+        customReminderInterval: 'monthly',
+        selectedPhoneNumber: '',
+        selectedRecipientName: '',
+        messageType: 'preset',
+        customMessage: '',
+        presetMessageId: 'monthly-service',
+        serviceActive: false,
+        lastSent: null,
+        nextScheduled: null,
+      },
     },
   });
+
+  // Create stable reference for SMS reminders config to prevent infinite loops
+  const smsRemindersConfigRef = useRef(methods.watch('smsReminders'));
+  const currentSmsConfig = methods.watch('smsReminders');
+
+  // Update ref only when config actually changes
+  useEffect(() => {
+    if (JSON.stringify(smsRemindersConfigRef.current) !== JSON.stringify(currentSmsConfig)) {
+      smsRemindersConfigRef.current = currentSmsConfig;
+    }
+  }, [currentSmsConfig]);
 
   // Load existing work order for edit mode
   useEffect(() => {
     const load = async () => {
       if (!id) return;
+
+      // Wait for authentication to be determined
+      if (authLoading) return;
+
+      // Only proceed if user is authenticated
+      if (!authenticated) {
+        console.warn('User not authenticated, cannot load work order');
+        return;
+      }
+
       try {
         const res = await axiosInstance.get(endpoints.fsa.workOrders.details(id));
         const w = res.data?.data;
         if (!w) return;
 
+        // Server data loaded successfully
+
         // Store original attachment objects for edit mode
         const attachments = Array.isArray(w.attachments) ? w.attachments : [];
         setOriginalAttachments(attachments);
 
-        methods.reset({
+        const formData = {
           clientId: typeof w.clientId === 'object' ? w.clientId._id : w.clientId,
           title: w.title ?? '',
           details: w.details ?? '',
@@ -134,21 +191,69 @@ export function WorkOrderCreateForm({ id }: Props) {
           attachments: attachments.map((att: any) => att.url || att),
           progressMode: w.progressMode ?? 'computed',
           progressManual: w.progressManual,
-        });
+          smsReminders: w.smsReminders
+            ? {
+                enabled: w.smsReminders.enabled ?? false,
+                reminderType: w.smsReminders.reminderType ?? 'monthly',
+                customReminderDate: w.smsReminders.customReminderDate ?? null,
+                customReminderInterval: w.smsReminders.customReminderInterval ?? 'monthly',
+                selectedPhoneNumber: w.smsReminders.selectedPhoneNumber ?? '',
+                selectedRecipientName: w.smsReminders.selectedRecipientName ?? '',
+                messageType: w.smsReminders.messageType ?? 'preset',
+                customMessage: w.smsReminders.customMessage ?? '',
+                presetMessageId: w.smsReminders.presetMessageId ?? 'monthly-service',
+                serviceActive: w.smsReminders.serviceActive ?? false,
+                lastSent: w.smsReminders.lastSent ?? null,
+                nextScheduled: w.smsReminders.nextScheduled ?? null,
+              }
+            : {
+                enabled: false,
+                reminderType: 'monthly',
+                customReminderDate: null,
+                customReminderInterval: 'monthly',
+                selectedPhoneNumber: '',
+                selectedRecipientName: '',
+                messageType: 'preset',
+                customMessage: '',
+                presetMessageId: 'monthly-service',
+                serviceActive: false,
+                lastSent: null,
+                nextScheduled: null,
+              },
+        };
+
+        // Form data set with server data
+
+        methods.reset(formData);
+
+        // Force update the ref with the server data
+        smsRemindersConfigRef.current = formData.smsReminders;
       } catch (e) {
         console.error('Failed to load work order', e);
+        // Handle authentication errors gracefully
+        if ((e as any)?.response?.status === 401) {
+          console.warn('Authentication required to load work order');
+          return;
+        }
+        // Handle other errors
+        if ((e as any)?.message?.includes('Unexpected token')) {
+          console.error(
+            'Received HTML response instead of JSON - possible server error or authentication issue'
+          );
+          return;
+        }
       }
     };
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, authenticated, authLoading]);
 
   // Auto-select first client when clients are loaded (only for create)
   useEffect(() => {
     if (!id && clients.length > 0 && !methods.getValues('clientId')) {
       methods.setValue('clientId', clients[0]._id);
     }
-  }, [clients, methods, id]);
+  }, [clients, id, methods]);
 
   const { handleSubmit } = methods;
 
@@ -557,7 +662,24 @@ export function WorkOrderCreateForm({ id }: Props) {
                       }}
                     />
                   </Grid>
-
+                  {/* SMS Reminders */}
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <WorkOrderSmsReminders
+                      client={clients.find((c: Client) => c._id === methods.watch('clientId'))}
+                      scheduledDate={methods.watch('scheduledDate')}
+                      workOrderTitle={methods.watch('title')}
+                      onConfigChange={useCallback(
+                        (config: any) => {
+                          methods.setValue('smsReminders', config);
+                        },
+                        [methods]
+                      )}
+                      defaultConfig={smsRemindersConfigRef.current}
+                      mode={id ? 'edit' : 'create'}
+                      showComponent
+                      workOrderId={id}
+                    />
+                  </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <RHFSelect
                       name="progressMode"
@@ -590,23 +712,22 @@ export function WorkOrderCreateForm({ id }: Props) {
                       </Box>
                     </Stack>
                   </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Stack spacing={1}>
-                      <Typography variant="subtitle2">
-                        {t('attachmentsOptional', { defaultValue: 'Attachments (Optional)' })}
-                      </Typography>
-                      <RHFUpload
-                        name="attachments"
-                        multiple
-                        accept={{ 'image/*': [], 'application/pdf': [], 'text/*': [] }}
-                        helperText={t('uploadHelper', {
-                          defaultValue: 'Upload photos, documents, or other relevant files',
-                        })}
-                      />
-                    </Stack>
-                  </Grid>
                 </Grid>
-
+                <Grid size={{ xs: 12 }}>
+                  <Stack spacing={1}>
+                    <Typography variant="subtitle2">
+                      {t('attachmentsOptional', { defaultValue: 'Attachments (Optional)' })}
+                    </Typography>
+                    <RHFUpload
+                      name="attachments"
+                      multiple
+                      accept={{ 'image/*': [], 'application/pdf': [], 'text/*': [] }}
+                      helperText={t('uploadHelper', {
+                        defaultValue: 'Upload photos, documents, or other relevant files',
+                      })}
+                    />
+                  </Stack>
+                </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <Stack spacing={1.5}>
                     <Typography variant="subtitle2">

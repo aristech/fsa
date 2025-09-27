@@ -24,7 +24,7 @@
   "fieldService": {
     "title": "Αυτοματισμός Εργασιών",
     "workOrders": {
-      "title": "Έργα",
+      "title": "Εργασίες",
       "list": "Λίστα",
       "create": "Δημιουργία"
     },

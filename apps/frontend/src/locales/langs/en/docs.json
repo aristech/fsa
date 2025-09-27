@@ -15,7 +15,6 @@
     "title": "🚀 Getting Started Guide",
     "subtitle": "First time using the app? Start here!",
     "step1": {
-      "title": "Step 1: Logging In",
       "content": "1. Open your web browser (Chrome, Firefox, Safari, or Edge)\n2. Go to the app website (ask your supervisor for the web address)\n3. Enter your username and password (provided by your manager)\n4. Click the \"Sign In\" button\n5. If successful, you'll see the main dashboard"
     },
     "step2": {
@@ -31,7 +30,6 @@
     "title": "📋 Managing Tasks",
     "subtitle": "How to work with daily tasks",
     "finding": {
-      "title": "Finding Your Tasks",
       "content": "1. Click \"Tasks\" in the left menu or go to Dashboard → Tasks\n2. You'll see a list of tasks assigned to you\n3. Tasks are color-coded by priority:\n   • 🔴 Red = Urgent\n   • 🟠 Orange = High\n   • 🔵 Blue = Medium\n   • 🟢 Green = Low"
     },
     "working": {
@@ -51,7 +49,6 @@
     "title": "🔧 Work Orders",
     "subtitle": "Managing customer jobs and service requests",
     "what": {
-      "title": "What is a Work Order?",
       "content": "A work order is a complete job for a customer. It contains:\n• Customer information and location\n• Description of the problem or service needed\n• List of tasks to complete the job\n• Materials and tools required\n• Time tracking and cost information"
     },
     "creating": {
@@ -67,7 +64,6 @@
     "title": "📱 Mobile Field App",
     "subtitle": "Using the app on your phone or tablet",
     "accessing": {
-      "title": "Accessing on Mobile",
       "content": "1. Open web browser on your mobile device\n2. Go to the same website as desktop version\n3. Login with your username and password\n4. Interface automatically adjusts for mobile\n5. Tap \"Field\" for mobile-optimized view"
     },
     "features": {
@@ -83,7 +79,6 @@
     "title": "📊 Creating Reports",
     "subtitle": "Document your work and track time",
     "daily": {
-      "title": "Daily Time Reports",
       "content": "1. Go to Reports section\n2. Click \"New Report\" or \"+ Create\"\n3. Select date and work order/task\n4. Enter start and end times\n5. Write description of work completed\n6. Add materials used if applicable\n7. Attach photos if available\n8. Save report"
     },
     "bestPractices": {
@@ -95,7 +90,6 @@
     "title": "👥 Personnel Management",
     "subtitle": "Managing team members and assignments",
     "viewing": {
-      "title": "Viewing Team Members",
       "content": "1. Click \"Personnel\" in left menu\n2. See list of all team members\n3. View contact information and skills\n4. Check current assignments and availability\n5. Click name for detailed profile"
     },
     "assigning": {
@@ -107,7 +101,6 @@
     "title": "⚙️ Admin Setup",
     "subtitle": "Configuration for administrators",
     "system": {
-      "title": "System Configuration",
       "content": "1. Go to Settings → General\n2. Configure company information\n3. Set time zones and business hours\n4. Configure user roles and permissions\n5. Test notification settings"
     },
     "buttons": {

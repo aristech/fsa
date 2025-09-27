@@ -243,7 +243,17 @@
     "apply": "Εφαρμογή",
     "clear": "Καθαρισμός",
     "search": "Αναζήτηση",
-    "filters": "Φίλτρα",
+    "filters": {
+      "name": "Όνομα",
+      "role": "Ρόλος",
+      "status": "Κατάσταση",
+      "searchPlaceholder": "Αναζήτηση προσωπικού...",
+      "selectRole": "Επιλογή Ρόλου",
+      "selectStatus": "Επιλογή Κατάστασης",
+      "all": "Όλα",
+      "active": "Ενεργό",
+      "inactive": "Ανενεργό"
+    },
     "filtersApplied": "Εφαρμοσμένα φίλτρα:",
     "noResults": "Δεν βρέθηκαν αποτελέσματα",
     "loading": "Φόρτωση...",
@@ -286,17 +296,6 @@
         "hourlyRateRequired": "Το ωρομίσθιο είναι υποχρεωτικό",
         "hourlyRatePositive": "Το ωρομίσθιο πρέπει να είναι θετικό"
       }
-    },
-    "filters": {
-      "name": "Όνομα",
-      "role": "Ρόλος",
-      "status": "Κατάσταση",
-      "searchPlaceholder": "Αναζήτηση προσωπικού...",
-      "selectRole": "Επιλογή Ρόλου",
-      "selectStatus": "Επιλογή Κατάστασης",
-      "all": "Όλα",
-      "active": "Ενεργό",
-      "inactive": "Ανενεργό"
     },
     "roles": {
       "title": "Διαχείριση Ρόλων",
@@ -371,11 +370,41 @@
     "clear": "Καθαρισμός",
     "clearAll": "Καθαρισμός Όλων",
     "search": "Αναζήτηση",
-    "filters": "Φίλτρα",
+    "filters": {
+      "name": "Όνομα",
+      "category": "Κατηγορία",
+      "status": "Κατάσταση",
+      "searchPlaceholder": "Αναζήτηση υλικών...",
+      "selectCategory": "Επιλογή Κατηγορίας",
+      "selectStatus": "Επιλογή Κατάστασης",
+      "all": "Όλα",
+      "active": "Ενεργό",
+      "inactive": "Ανενεργό",
+      "lowStock": "Χαμηλό Απόθεμα",
+      "outOfStock": "Εκτός Αποθέματος"
+    },
     "filtersApplied": "Εφαρμοσμένα φίλτρα:",
     "noResults": "Δεν βρέθηκαν αποτελέσματα",
     "loading": "Φόρτωση...",
-    "import": "Εισαγωγή",
+    "import": {
+      "title": "Εισαγωγή Υλικών",
+      "subtitle": "Εισαγωγή υλικών από αρχείο CSV",
+      "selectFile": "Επιλογή Αρχείου CSV",
+      "dragDrop": "Σύρετε και αφήστε ένα αρχείο CSV εδώ, ή κάντε κλικ για επιλογή",
+      "supportedFormats": "Υποστηριζόμενες μορφές: CSV",
+      "template": "Λήψη Προτύπου",
+      "importing": "Εισαγωγή...",
+      "importSuccess": "Τα υλικά εισήχθησαν επιτυχώς",
+      "importFailed": "Αποτυχία εισαγωγής υλικών",
+      "results": "Αποτελέσματα Εισαγωγής",
+      "successful": "Επιτυχής",
+      "failed": "Αποτυχής",
+      "errors": "Σφάλματα",
+      "warnings": "Προειδοποιήσεις",
+      "totalRows": "Συνολικές Γραμμές",
+      "processedRows": "Επεξεργασμένες Γραμμές",
+      "skippedRows": "Παραλειπόμενες Γραμμές"
+    },
     "export": "Εξαγωγή",
     "table": {
       "material": "Υλικό",
@@ -420,44 +449,74 @@
         "unitCostPositive": "Το κόστος μονάδας πρέπει να είναι θετικό"
       }
     },
-    "filters": {
-      "name": "Όνομα",
-      "category": "Κατηγορία",
-      "status": "Κατάσταση",
-      "searchPlaceholder": "Αναζήτηση υλικών...",
-      "selectCategory": "Επιλογή Κατηγορίας",
-      "selectStatus": "Επιλογή Κατάστασης",
-      "all": "Όλα",
-      "active": "Ενεργό",
-      "inactive": "Ανενεργό",
-      "lowStock": "Χαμηλό Απόθεμα",
-      "outOfStock": "Εκτός Αποθέματος"
-    },
-    "import": {
-      "title": "Εισαγωγή Υλικών",
-      "subtitle": "Εισαγωγή υλικών από αρχείο CSV",
-      "selectFile": "Επιλογή Αρχείου CSV",
-      "dragDrop": "Σύρετε και αφήστε ένα αρχείο CSV εδώ, ή κάντε κλικ για επιλογή",
-      "supportedFormats": "Υποστηριζόμενες μορφές: CSV",
-      "template": "Λήψη Προτύπου",
-      "importing": "Εισαγωγή...",
-      "importSuccess": "Τα υλικά εισήχθησαν επιτυχώς",
-      "importFailed": "Αποτυχία εισαγωγής υλικών",
-      "results": "Αποτελέσματα Εισαγωγής",
-      "successful": "Επιτυχής",
-      "failed": "Αποτυχής",
-      "errors": "Σφάλματα",
-      "warnings": "Προειδοποιήσεις",
-      "totalRows": "Συνολικές Γραμμές",
-      "processedRows": "Επεξεργασμένες Γραμμές",
-      "skippedRows": "Παραλειπόμενες Γραμμές"
-    },
     "status": {
       "active": "Ενεργό",
       "inactive": "Ανενεργό",
       "lowStock": "Χαμηλό Απόθεμα",
       "outOfStock": "Εκτός Αποθέματος",
       "discontinued": "Διακοπή"
+    }
+  },
+  "smsReminders": {
+    "title": "Υπενθυμίσεις SMS/Viber",
+    "subtitle": "Αυτοματοποιημένες υπενθυμίσεις υπηρεσιών μέσω SMS και Viber",
+    "description": "Στείλτε εξατομικευμένα μηνύματα SMS και Viber σε πελάτες για επερχόμενα ραντεβού υπηρεσιών.",
+    "manageSmsReminders": "Διαχείριση Υπενθυμίσεων SMS/Viber",
+    "serviceStatus": {
+      "active": "Ενεργό",
+      "inactive": "Ανενεργό",
+      "serviceActive": "Ενεργή Υπηρεσία",
+      "nextScheduled": "Επόμενο: {{date}}"
+    },
+    "configuration": {
+      "title": "Τρέχουσες Ρυθμίσεις",
+      "recipient": "Παραλήπτης: {{name}}",
+      "reminderType": "Τύπος Υπενθύμισης: {{type}}",
+      "message": "Μήνυμα: {message}",
+      "configureReminders": "Ρύθμιση Υπενθυμίσεων"
+    },
+    "steps": {
+      "selectRecipient": "Βήμα 1: Επιλογή Παραλήπτη",
+      "reminderSchedule": "Βήμα 2: Πρόγραμμα Υπενθύμισης",
+      "messageContent": "Βήμα 3: Περιεχόμενο Μηνύματος"
+    },
+    "reminderTypes": {
+      "monthly": "Μηνιαία (1 μήνας από την προγραμματισμένη ημερομηνία)",
+      "yearly": "Ετήσια (1 έτος από την προγραμματισμένη ημερομηνία)",
+      "custom": "Προσαρμοσμένη Ημερομηνία & Διάστημα",
+      "test": "Δοκιμή (Αποστολή αμέσως)"
+    },
+    "messageTypes": {
+      "preset": "Χρήση Προκαθορισμένου Μηνύματος",
+      "custom": "Προσαρμοσμένο Μήνυμα"
+    },
+    "presetMessages": {
+      "monthlyService": "Υπενθύμιση Μηνιαίας Υπηρεσίας",
+      "yearlyService": "Υπενθύμιση Ετήσιας Υπηρεσίας",
+      "customService": "Υπενθύμιση Προσαρμοσμένης Υπηρεσίας"
+    },
+    "form": {
+      "customMessagePlaceholder": "Εισάγετε το προσαρμοσμένο μήνυμά σας (μέγιστο 140 χαρακτήρες)...",
+      "characterCount": "{count}/140 χαρακτήρες",
+      "preview": "Προεπισκόπηση"
+    },
+    "dialog": {
+      "title": "Επιβεβαίωση Υπηρεσίας SMS/Viber",
+      "cancel": "Ακύρωση",
+      "activateService": "Ενεργοποίηση Υπηρεσίας"
+    },
+    "validation": {
+      "phoneRequired": "Απαιτείται αριθμός τηλεφώνου",
+      "messageRequired": "Απαιτείται προσαρμοσμένο μήνυμα",
+      "messageTooLong": "Το μήνυμα δεν μπορεί να υπερβαίνει τους 140 χαρακτήρες"
+    },
+    "history": {
+      "title": "Ιστορικό Μηνυμάτων",
+      "placeholder": "Το ιστορικό μηνυμάτων θα εμφανιστεί εδώ μόλις σταλούν μηνύματα."
+    },
+    "requirements": {
+      "title": "Οι υπενθυμίσεις SMS/Viber απαιτούν πελάτη με αριθμό τηλεφώνου και προγραμματισμένη ημερομηνία.",
+      "description": "Ρυθμίστε τις υπενθυμίσεις SMS/Viber για να ειδοποιείτε αυτόματα τους πελάτες για επερχόμενες υπηρεσίες."
     }
   },
   "settings": {

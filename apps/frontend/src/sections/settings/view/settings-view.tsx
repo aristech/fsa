@@ -16,9 +16,10 @@ import { Iconify } from 'src/components/iconify';
 type Props = {
   webhooksHref: string;
   apiKeysHref: string;
+  smsRemindersHref: string;
 };
 
-export function SettingsView({ webhooksHref, apiKeysHref }: Props) {
+export function SettingsView({ webhooksHref, apiKeysHref, smsRemindersHref }: Props) {
   const { t } = useTranslate('dashboard');
 
   return (
@@ -62,6 +63,28 @@ export function SettingsView({ webhooksHref, apiKeysHref }: Props) {
               startIcon={<Iconify icon="solar:key-bold" />}
             >
               {t('settings.apiKeys.manageApiKeys')}
+            </Button>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      <Grid size={{ xs: 12, md: 6 }}>
+        <Card>
+          <CardHeader
+            title={t('settings.smsReminders.title')}
+            subheader={t('settings.smsReminders.subtitle')}
+          />
+          <CardContent>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {t('settings.smsReminders.description')}
+            </Typography>
+            <Button
+              component={Link}
+              href={smsRemindersHref}
+              variant="contained"
+              startIcon={<Iconify icon="solar:chat-line-bold" />}
+            >
+              {t('settings.smsReminders.manageSmsReminders')}
             </Button>
           </CardContent>
         </Card>

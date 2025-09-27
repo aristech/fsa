@@ -29,7 +29,21 @@ axiosInstance.interceptors.request.use((config) => {
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    const message = error?.response?.data?.message || error?.message || 'Something went wrong!';
+    let message = error?.response?.data?.message || error?.message || 'Something went wrong!';
+
+    // Check if we got HTML instead of JSON (common when server returns error page)
+    if (error?.response?.data && typeof error.response.data === 'string' &&
+        error.response.data.includes('<!DOCTYPE')) {
+      message = `Server returned HTML instead of JSON. This usually indicates an authentication issue or the API endpoint doesn't exist. Status: ${error?.response?.status || 'unknown'}`;
+      console.error('🚨 HTML Response Error:', {
+        url: error?.config?.url,
+        method: error?.config?.method,
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        responseType: typeof error?.response?.data,
+        responseSnippet: error?.response?.data?.substring(0, 200)
+      });
+    }
 
     // Don't log 401 errors as they're expected for authentication checks
     if (error?.response?.status !== 401) {
@@ -212,6 +226,14 @@ export const endpoints = {
     topics: () => axiosInstance.get('/api/v1/webhooks/topics'),
     regenerateSecret: (id: string) =>
       axiosInstance.post(`/api/v1/webhooks/${id}/regenerate-secret`),
+  },
+  smsReminders: {
+    status: '/api/v1/sms-reminders/status',
+    activate: '/api/v1/sms-reminders/activate',
+    deactivate: '/api/v1/sms-reminders/deactivate',
+    presets: '/api/v1/sms-reminders/presets',
+    sendTest: '/api/v1/sms-reminders/send-test',
+    test: '/api/v1/sms-reminders/test',
   },
   apiKey: {
     list: () => axiosInstance.get('/api/v1/api-keys'),

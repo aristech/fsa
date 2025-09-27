@@ -37,6 +37,7 @@ import { AnalyticsOrderTimeline } from 'src/sections/overview/analytics/analytic
 import { KanbanTaskCreateDialog } from 'src/sections/kanban/components/kanban-task-create-dialog';
 
 import { WorkOrderDetailsAttachments } from './work-order-details-attachments';
+import { WorkOrderSmsReminders } from '../components/work-order-sms-reminders';
 import { WorkOrderPersonnelSelection } from '../create/work-order-personnel-selection';
 
 // ----------------------------------------------------------------------
@@ -248,6 +249,40 @@ export function WorkOrderDetails({ id }: Props) {
                         : t('notScheduled', { defaultValue: 'Not scheduled' })}
                     </Typography>
                   </Stack>
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  {/* SMS Reminders */}
+                  <WorkOrderSmsReminders
+                    client={
+                      typeof workOrder?.clientId === 'object' ? workOrder.clientId : undefined
+                    }
+                    scheduledDate={workOrder?.scheduledDate}
+                    workOrderTitle={workOrder?.title}
+                    onConfigChange={async (config) => {
+                      try {
+                        console.log('Updating SMS reminders:', { id, config });
+                        const response = await axiosInstance.put(
+                          endpoints.fsa.workOrders.details(id),
+                          {
+                            smsReminders: config,
+                          }
+                        );
+                        console.log('SMS reminders update response:', response.data);
+                        await mutate(endpoints.fsa.workOrders.details(id));
+                      } catch (error) {
+                        console.error('Failed to update SMS reminders:', error);
+                        console.error('Error details:', {
+                          message: (error as any)?.message,
+                          response: (error as any)?.response?.data,
+                          status: (error as any)?.response?.status,
+                          url: endpoints.fsa.workOrders.details(id),
+                        });
+                      }
+                    }}
+                    defaultConfig={(workOrder as any)?.smsReminders}
+                    mode="view"
+                    workOrderId={id}
+                  />
                 </Grid>
               </Grid>
             </CardContent>
