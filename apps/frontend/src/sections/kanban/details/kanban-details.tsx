@@ -11,7 +11,7 @@ import useSWR, { mutate } from 'swr';
 import { Label } from '@/components/label';
 import { varAlpha } from 'minimal-shared/utils';
 import { useTabs, useBoolean } from 'minimal-shared/hooks';
-import { useRef, useState, Fragment, useEffect, useCallback } from 'react';
+import { useRef, useMemo, useState, Fragment, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
@@ -26,10 +26,8 @@ import Select from '@mui/material/Select';
 import Tooltip from '@mui/material/Tooltip';
 import Divider from '@mui/material/Divider';
 import { styled } from '@mui/material/styles';
-import Checkbox from '@mui/material/Checkbox';
 import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
-import FormGroup from '@mui/material/FormGroup';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import FormControl from '@mui/material/FormControl';
@@ -37,6 +35,8 @@ import Autocomplete from '@mui/material/Autocomplete';
 import LinearProgress from '@mui/material/LinearProgress';
 
 import { useTaskRealtime, useRealtimeComments } from 'src/hooks/use-realtime';
+
+import { fDateTime } from 'src/utils/format-time';
 
 import { useTranslate } from 'src/locales/use-locales';
 import axiosInstance, { endpoints } from 'src/lib/axios';
@@ -49,6 +49,7 @@ import { useDateRangePicker, CustomDateRangePicker } from 'src/components/custom
 
 import { ReportCreateDrawer } from 'src/sections/field/reports/report-create-drawer';
 
+import { SubtaskItem } from '../components/subtask-item';
 import { KanbanDetailsTime } from './kanban-details-time';
 import { KanbanDetailsToolbar } from './kanban-details-toolbar';
 import { KanbanDetailsPriority } from './kanban-details-priority';
@@ -56,6 +57,7 @@ import { KanbanInputName } from '../components/kanban-input-name';
 import { KanbanDetailsMaterials } from './kanban-details-materials';
 import { KanbanDetailsAttachments } from './kanban-details-attachments';
 import { KanbanDetailsCommentList } from './kanban-details-comment-list';
+import { useSubtaskDropMonitor } from '../hooks/use-subtask-drop-monitor';
 import { KanbanDetailsCommentInput } from './kanban-details-comment-input';
 import { KanbanContactsDialog } from '../components/kanban-contacts-dialog';
 
@@ -66,6 +68,20 @@ interface ISubtask {
   title: string;
   description?: string;
   completed: boolean;
+  order: number;
+  attachments?: Array<{
+    _id: string;
+    filename: string;
+    originalName: string;
+    size: number;
+    mimetype: string;
+    uploadedAt: string;
+    uploadedBy: {
+      _id: string;
+      name: string;
+      email?: string;
+    };
+  }>;
   createdBy: {
     _id: string;
     name: string;
@@ -136,7 +152,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     const response = await axiosInstance.get(url);
     return response.data;
   });
-  const subtasks: ISubtask[] = subtasksData?.data || [];
+  const subtasks: ISubtask[] = useMemo(() => subtasksData?.data || [], [subtasksData?.data]);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   const [editingSubtaskTitle, setEditingSubtaskTitle] = useState('');
@@ -478,10 +494,11 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         // Update the task with the new data, including dates, repeat, and reminder
         const updatedTask = {
           ...task,
-          ...(rangePicker.startDate && rangePicker.endDate && {
-            startDate: rangePicker.startDate.utc().toISOString(),
-            dueDate: rangePicker.endDate.utc().toISOString(),
-          }),
+          ...(rangePicker.startDate &&
+            rangePicker.endDate && {
+              startDate: rangePicker.startDate.utc().toISOString(),
+              dueDate: rangePicker.endDate.utc().toISOString(),
+            }),
           repeat: data?.repeat !== undefined ? data.repeat : (task as any).repeat,
           reminder: data?.reminder !== undefined ? data.reminder : (task as any).reminder,
         };
@@ -576,9 +593,112 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     }
   }, [editingSubtaskId, editingSubtaskTitle, handleCancelEditSubtask, t, task.id]);
 
+  const handleReorderSubtasks = useCallback(
+    async ({
+      subtaskId,
+      targetSubtaskId,
+      position,
+    }: {
+      subtaskId: string;
+      targetSubtaskId: string;
+      position: 'before' | 'after';
+    }) => {
+      try {
+        // Find current positions
+        const sourceIndex = subtasks.findIndex((s) => s._id === subtaskId);
+        const targetIndex = subtasks.findIndex((s) => s._id === targetSubtaskId);
+
+        if (sourceIndex === -1 || targetIndex === -1) return;
+
+        // Calculate new order
+        const reorderedSubtasks = [...subtasks];
+        const [movedSubtask] = reorderedSubtasks.splice(sourceIndex, 1);
+
+        const insertIndex = position === 'before' ? targetIndex : targetIndex + 1;
+        const adjustedIndex = sourceIndex < targetIndex ? insertIndex - 1 : insertIndex;
+
+        reorderedSubtasks.splice(adjustedIndex, 0, movedSubtask);
+
+        // Create array of subtask IDs in new order
+        const subtaskIds = reorderedSubtasks.map((s) => s._id);
+
+        // Send reorder request to backend
+        await axiosInstance.put(`/api/v1/subtasks/${task.id}/reorder`, { subtaskIds });
+
+        // Refresh subtasks data
+        mutate(`/api/v1/subtasks/${task.id}`);
+
+        toast.success(t('subtasksReordered', { defaultValue: 'Subtasks reordered' }));
+      } catch (error) {
+        console.error('Failed to reorder subtasks:', error);
+        toast.error(t('failedToReorderSubtasks', { defaultValue: 'Failed to reorder subtasks' }));
+      }
+    },
+    [subtasks, task.id, t]
+  );
+
+  // Set up drag and drop monitor
+  useSubtaskDropMonitor({ onReorder: handleReorderSubtasks });
+
+  const handleUploadSubtaskAttachment = useCallback(
+    async (subtaskId: string, files: File[]) => {
+      try {
+        const uploadPromises = files.map(async (file) => {
+          const formData = new FormData();
+          formData.append('file', file);
+
+          await axiosInstance.post(
+            `/api/v1/subtasks/${task.id}/${subtaskId}/attachments`,
+            formData,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+            }
+          );
+        });
+
+        await Promise.all(uploadPromises);
+
+        // Refresh subtasks data
+        mutate(`/api/v1/subtasks/${task.id}`);
+
+        toast.success(
+          t('attachmentsUploaded', { defaultValue: 'Attachments uploaded successfully' })
+        );
+      } catch (error) {
+        console.error('Failed to upload attachments:', error);
+        toast.error(
+          t('failedToUploadAttachments', { defaultValue: 'Failed to upload attachments' })
+        );
+      }
+    },
+    [task.id, t]
+  );
+
+  const handleDeleteSubtaskAttachment = useCallback(
+    async (subtaskId: string, attachmentId: string) => {
+      try {
+        await axiosInstance.delete(
+          `/api/v1/subtasks/${task.id}/${subtaskId}/attachments/${attachmentId}`
+        );
+
+        // Refresh subtasks data
+        mutate(`/api/v1/subtasks/${task.id}`);
+
+        toast.success(t('attachmentDeleted', { defaultValue: 'Attachment deleted successfully' }));
+      } catch (error) {
+        console.error('Failed to delete attachment:', error);
+        toast.error(t('failedToDeleteAttachment', { defaultValue: 'Failed to delete attachment' }));
+      }
+    },
+    [task.id, t]
+  );
+
   const renderToolbar = () => (
     <KanbanDetailsToolbar
       taskName={task.name}
+      taskId={task.id}
       onDelete={onDeleteTask}
       taskStatus={task.status}
       workOrderId={(task as any)?.workOrderId}
@@ -651,7 +771,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
               workOrderId: wo.id,
               workOrderNumber: wo.number,
               workOrderTitle: wo.label,
-              ...clientData
+              ...clientData,
             },
           });
 
@@ -875,18 +995,34 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         <BlockLabel>{t('startDue', { defaultValue: 'Start / Due' })}</BlockLabel>
 
         {rangePicker.selected ? (
-          <Stack direction="column" spacing={0.5} alignItems="flex-start">
-            <Button size="small" onClick={rangePicker.onOpen}>
+          <Button size="small" onClick={rangePicker.onOpen}>
+            <Chip
+              size="small"
+              variant="outlined"
+              color="default"
+              icon={<Iconify icon="solar:calendar-mark-bold" width={14} />}
+              label={
+                rangePicker.startDate && rangePicker.endDate
+                  ? `${fDateTime(rangePicker.startDate)} → ${fDateTime(rangePicker.endDate)}`
+                  : rangePicker.startDate
+                    ? `Start: ${fDateTime(rangePicker.startDate)}`
+                    : `Due: ${fDateTime(rangePicker.endDate)}`
+              }
+              sx={{ height: 22, '& .MuiChip-label': { px: 0.75, fontSize: '0.72rem' } }}
+            />
+
+            {/* <Stack direction="column" spacing={0.5} alignItems="flex-start">
               {rangePicker.shortLabel}
-            </Button>
-            {rangePicker.startDate && rangePicker.endDate && (
-              <Chip
-                size="small"
-                label={`${rangePicker.startDate.format('HH:mm')} - ${rangePicker.endDate.format('HH:mm')}`}
-                sx={{ ml: 0.5 }}
-              />
-            )}
-          </Stack>
+
+              {rangePicker.startDate && rangePicker.endDate && (
+                <Chip
+                  size="small"
+                  label={`${rangePicker.startDate.format('HH:mm')} - ${rangePicker.endDate.format('HH:mm')}`}
+                  sx={{ ml: 0.5 }}
+                />
+              )}
+            </Stack> */}
+          </Button>
         ) : (
           <Tooltip title={t('addDueDate', { defaultValue: 'Add due date' })}>
             <IconButton
@@ -1047,7 +1183,16 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     const totalCount = subtasks.length;
 
     return (
-      <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
+      <Box
+        sx={{
+          gap: 3,
+          display: 'flex',
+          flexDirection: 'column',
+          width: '100%',
+          maxWidth: '100%',
+          overflow: 'hidden',
+        }}
+      >
         <div>
           <Typography variant="body2" sx={{ mb: 1 }}>
             {completedCount} {t('of', { defaultValue: 'of' })} {totalCount}{' '}
@@ -1060,75 +1205,65 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           />
         </div>
         <Label variant="soft" sx={{ letterSpacing: 1, color: 'text.secondary' }}>
-          Double click to edit
+          Double click to edit • Drag to reorder
         </Label>
-        <FormGroup>
-          {subtasks.map((subtask) => (
+        <Box sx={{ width: '100%', maxWidth: '100%' }}>
+          {subtasks.map((subtask, index) => (
             <Fragment key={subtask._id}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Checkbox
-                  disableRipple
-                  checked={subtask.completed}
-                  onChange={(e) => handleToggleSubtask(subtask._id, e.target.checked)}
-                />
-                <Box sx={{ flexGrow: 1, alignItems: 'flex-start' }}>
-                  {editingSubtaskId === subtask._id ? (
-                    <TextField
-                      value={editingSubtaskTitle}
-                      autoFocus
-                      disabled={isSavingSubtask}
-                      fullWidth
-                      multiline
-                      minRows={1}
-                      maxRows={6}
-                      onChange={(e) => setEditingSubtaskTitle(e.target.value)}
-                      onBlur={handleSaveEditSubtask}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleSaveEditSubtask();
-                        } else if (e.key === 'Escape') {
-                          handleCancelEditSubtask();
-                        }
-                      }}
-                      sx={{ width: 380 }}
-                    />
-                  ) : (
-                    <Box
-                      onDoubleClick={() => handleStartEditSubtask(subtask)}
-                      sx={{ cursor: 'text', pr: 1 }}
-                    >
-                      {subtask.title}
-                    </Box>
-                  )}
-                </Box>
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={() => handleDeleteSubtask(subtask._id)}
-                  sx={{ ml: 1 }}
-                >
-                  <Iconify icon="mingcute:delete-2-line" width={18} />
-                </IconButton>
-              </Box>
-              <Divider sx={{ my: 1 }} />
+              <SubtaskItem
+                subtask={subtask}
+                taskId={task.id}
+                isEditing={editingSubtaskId === subtask._id}
+                editingTitle={editingSubtaskTitle}
+                isSaving={isSavingSubtask}
+                onToggleCompleted={handleToggleSubtask}
+                onStartEdit={handleStartEditSubtask}
+                onEditTitleChange={setEditingSubtaskTitle}
+                onSaveEdit={handleSaveEditSubtask}
+                onCancelEdit={handleCancelEditSubtask}
+                onDelete={handleDeleteSubtask}
+                onUploadAttachment={handleUploadSubtaskAttachment}
+                onDeleteAttachment={handleDeleteSubtaskAttachment}
+              />
+              {index < subtasks.length - 1 && <Divider sx={{ my: 1 }} />}
             </Fragment>
           ))}
-        </FormGroup>
+        </Box>
 
         {/* Add new subtask */}
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 1,
+            alignItems: 'flex-start',
+            width: '100%',
+            maxWidth: '100%',
+          }}
+        >
           <TextField
             size="small"
+            multiline
+            minRows={1}
+            maxRows={4}
             placeholder={t('addSubtask', { defaultValue: 'Add subtask...' })}
             value={newSubtaskTitle}
             onChange={(e) => setNewSubtaskTitle(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
                 handleCreateSubtask();
               }
             }}
-            sx={{ flexGrow: 1 }}
+            sx={{
+              flexGrow: 1,
+              minWidth: 0,
+              '& .MuiInputBase-root': {
+                alignItems: 'flex-start',
+              },
+              '& .MuiInputBase-input': {
+                resize: 'none',
+              },
+            }}
           />
           <Button
             variant="outlined"
@@ -1136,6 +1271,12 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
             startIcon={<Iconify icon="mingcute:add-line" />}
             onClick={handleCreateSubtask}
             disabled={!newSubtaskTitle.trim()}
+            sx={{
+              mt: 0.5,
+              flexShrink: 0,
+              minWidth: 'auto',
+              px: 1.5,
+            }}
           >
             {t('add', { defaultValue: 'Add' })}
           </Button>

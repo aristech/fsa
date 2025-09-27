@@ -18,11 +18,11 @@ import {
   Autocomplete,
 } from '@mui/material';
 
-import { networkManager } from 'src/lib/network-utils';
 import axiosInstance, { endpoints } from 'src/lib/axios';
 import { offlineStorage } from 'src/lib/offline-storage';
 import { offlineSyncService } from 'src/lib/offline-sync';
 import { ReportService } from 'src/lib/services/report-service';
+import { getNetworkStatus, addNetworkStatusListener } from 'src/lib/network-utils';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
@@ -183,7 +183,7 @@ export function ReportCreateDrawer({
 
   // Monitor network status
   useEffect(() => {
-    const unsubscribe = networkManager.addListener((status) => {
+    const unsubscribe = addNetworkStatusListener((status) => {
       setIsOffline(!status.isOnline);
     });
     return unsubscribe;
@@ -191,7 +191,7 @@ export function ReportCreateDrawer({
 
   // Trigger sync when component mounts (if online)
   useEffect(() => {
-    if (networkManager.getStatus().isOnline) {
+    if (getNetworkStatus().isOnline) {
       offlineSyncService.syncPendingDrafts();
     }
   }, []);

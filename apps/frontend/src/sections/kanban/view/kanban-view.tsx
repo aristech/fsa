@@ -1,10 +1,13 @@
 'use client';
 
 import type { CSSObject } from '@mui/material/styles';
+import type { IKanbanTask } from 'src/types/kanban';
 
 import { mutate } from 'swr';
-import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'next/navigation';
+import { useBoolean } from 'minimal-shared/hooks';
+import { useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Switch from '@mui/material/Switch';
@@ -12,6 +15,8 @@ import { styled } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import GlobalStyles from '@mui/material/GlobalStyles';
 import FormControlLabel from '@mui/material/FormControlLabel';
+
+import { extractTaskIdFromUrl } from 'src/utils/task-sharing';
 
 import { useGetBoard } from 'src/actions/kanban';
 import { useTranslate } from 'src/locales/use-locales';
@@ -22,6 +27,7 @@ import { EmptyContent } from 'src/components/empty-content';
 import { kanbanClasses } from '../classes';
 import { useBoardDnd } from '../hooks/use-board-dnd';
 import { KanbanColumn } from '../column/kanban-column';
+import { KanbanDetails } from '../details/kanban-details';
 import { KanbanColumnAdd } from '../column/kanban-column-add';
 import { KanbanTableView } from '../components/kanban-table-view';
 import { KanbanColumnSkeleton } from '../components/kanban-skeleton';
@@ -47,13 +53,50 @@ const inputGlobalStyles = () => (
 
 // ----------------------------------------------------------------------
 
-export function KanbanView() {
+type KanbanViewProps = {
+  taskId?: string;
+};
+
+export function KanbanView({ taskId }: KanbanViewProps = {}) {
   const { board, boardLoading, boardEmpty } = useGetBoard();
   const { boardRef } = useBoardDnd(board);
   const { t } = useTranslate('common');
+  const searchParams = useSearchParams();
 
   const [columnFixed, setColumnFixed] = useState(false);
   const [tableView, setTableView] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<IKanbanTask | null>(null);
+  const taskDetailsDialog = useBoolean();
+
+  // Find task by ID from all tasks in the board
+  const findTaskById = useCallback(
+    (id: string): IKanbanTask | null => {
+      if (!board?.tasks) return null;
+
+      for (const columnTasks of Object.values(board.tasks)) {
+        const task = columnTasks.find((tsk) => tsk.id === id);
+        if (task) return task;
+      }
+      return null;
+    },
+    [board?.tasks]
+  );
+
+  // Handle task selection from URL parameters
+  useEffect(() => {
+    if (!board?.tasks) return;
+
+    // Get task ID from either prop or URL parameters
+    const urlTaskId = taskId || extractTaskIdFromUrl(searchParams, window.location.pathname);
+
+    if (urlTaskId) {
+      const task = findTaskById(urlTaskId);
+      if (task) {
+        setSelectedTask(task);
+        taskDetailsDialog.onTrue();
+      }
+    }
+  }, [board?.tasks, taskId, searchParams, findTaskById, taskDetailsDialog]);
 
   // Listen for kanban refresh events from AI
   useEffect(() => {
@@ -76,6 +119,20 @@ export function KanbanView() {
   );
 
   const renderEmpty = () => <EmptyContent filled sx={{ py: 10, maxHeight: { md: 480 } }} />;
+
+  const handleTaskUpdate = useCallback((updatedTask: IKanbanTask) => {
+    setSelectedTask(updatedTask);
+  }, []);
+
+  const handleTaskDelete = useCallback(() => {
+    setSelectedTask(null);
+    taskDetailsDialog.onFalse();
+  }, [taskDetailsDialog]);
+
+  const handleCloseTask = useCallback(() => {
+    setSelectedTask(null);
+    taskDetailsDialog.onFalse();
+  }, [taskDetailsDialog]);
 
   const renderList = () => {
     if (tableView) {
@@ -162,6 +219,17 @@ export function KanbanView() {
           {boardLoading ? renderLoading() : <>{boardEmpty ? renderEmpty() : renderList()}</>}
         </ScrollContainer>
       </DashboardContent>
+
+      {/* Task Details Drawer */}
+      {selectedTask && (
+        <KanbanDetails
+          task={selectedTask}
+          open={taskDetailsDialog.value}
+          onClose={handleCloseTask}
+          onUpdateTask={handleTaskUpdate}
+          onDeleteTask={handleTaskDelete}
+        />
+      )}
     </>
   );
 }

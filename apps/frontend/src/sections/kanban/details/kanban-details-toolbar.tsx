@@ -15,6 +15,8 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
+import { copyTaskShareUrl } from 'src/utils/task-sharing';
+
 import { useTranslate } from 'src/locales';
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
@@ -29,6 +31,7 @@ import { RealtimeIndicator } from 'src/components/realtime-indicator';
 type Props = BoxProps & {
   taskName: string;
   taskStatus: string;
+  taskId: string;
   workOrderId?: string;
   workOrderNumber?: string;
   onDelete: () => void;
@@ -43,6 +46,7 @@ type Props = BoxProps & {
 export function KanbanDetailsToolbar({
   sx,
   taskName,
+  taskId,
   onDelete,
   taskStatus,
   workOrderId,
@@ -61,6 +65,10 @@ export function KanbanDetailsToolbar({
   const confirmDialog = useBoolean();
 
   const [completed, setCompleted] = useState<boolean>(!!completeStatus);
+
+  const handleShareTask = async () => {
+    await copyTaskShareUrl({ taskId });
+  };
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<{
     id: string;
     number?: string;
@@ -192,6 +200,20 @@ export function KanbanDetailsToolbar({
         <Box component="span" sx={{ flexGrow: 1 }} />
 
         <Box sx={{ display: 'flex', gap: 1 }}>
+          <Tooltip title="Share task">
+            <IconButton onClick={handleShareTask} color="primary">
+              <Iconify
+                sx={{
+                  minWidth: 40,
+                  height: 40,
+                  fontWeight: 600,
+                  borderRadius: '50%',
+                }}
+                icon="solar:share-bold"
+              />
+            </IconButton>
+          </Tooltip>
+
           <Tooltip title="Create report from task">
             <IconButton onClick={onCreateReport} color="primary">
               <Iconify

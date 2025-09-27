@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import useSWR, { type SWRConfiguration } from 'swr';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { usePopover, useBoolean } from 'minimal-shared/hooks';
@@ -18,9 +18,11 @@ import {
   TableBody,
   TableCell,
   TableHead,
+  TextField,
   IconButton,
   Typography,
   LinearProgress,
+  InputAdornment,
   TablePagination,
   CircularProgress,
 } from '@mui/material';
@@ -55,10 +57,12 @@ interface WorkOrder {
   _id: string;
   workOrderNumber: string;
   title: string;
+  details?: string;
   clientId: string | { _id: string; name: string; email: string; phone: string; company: string };
   status: 'created' | 'assigned' | 'in-progress' | 'completed' | 'cancelled' | 'on-hold';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   scheduledDate?: string;
+  location?: { address?: string };
   personnelIds?: Array<{
     _id: string;
     employeeId: string;
@@ -125,6 +129,7 @@ export function WorkOrderList() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [cascadeDeleteInfo, setCascadeDeleteInfo] = useState<CascadeDeleteInfo | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Task creation dialog state
   const taskCreateDialog = useBoolean();
@@ -133,10 +138,18 @@ export function WorkOrderList() {
   // Get clientId from URL parameters
   const clientId = searchParams.get('clientId');
 
-  // Build API URL with client filter and pagination
-  const apiUrl = clientId
-    ? `${endpoints.fsa.workOrders.list}?clientId=${clientId}&page=${page + 1}&limit=${rowsPerPage}`
-    : `${endpoints.fsa.workOrders.list}?page=${page + 1}&limit=${rowsPerPage}`;
+  // Build API URL with client filter and pagination (search is now client-side)
+  const apiUrl = useMemo(() => {
+    const params = new URLSearchParams({
+      page: '1', // Always fetch first page, we'll handle pagination client-side
+      limit: '1000', // Fetch more records for client-side filtering
+    });
+
+    if (clientId) params.append('clientId', clientId);
+    // Remove search param - now client-side
+
+    return `${endpoints.fsa.workOrders.list}?${params.toString()}`;
+  }, [clientId]); // Remove searchTerm from dependencies
 
   // Fetch work orders data
   const { data, error, isLoading, mutate } = useSWR<{
@@ -144,8 +157,52 @@ export function WorkOrderList() {
     data: { workOrders: WorkOrder[]; pagination: { total: number; pages: number } };
   }>(apiUrl, fetcher, swrOptions);
 
-  const workOrders = data?.data?.workOrders ?? [];
-  const pagination = data?.data?.pagination ?? { total: 0, pages: 0 };
+  // Client-side search filtering
+  const filteredWorkOrders = useMemo(() => {
+    const allWorkOrders = data?.data?.workOrders ?? [];
+    if (!searchTerm.trim()) return allWorkOrders;
+
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    return allWorkOrders.filter((workOrder) => {
+      // Search in work order fields
+      const workOrderMatches =
+        workOrder.title?.toLowerCase().includes(lowerSearchTerm) ||
+        workOrder.workOrderNumber?.toLowerCase().includes(lowerSearchTerm) ||
+        workOrder.details?.toLowerCase().includes(lowerSearchTerm) ||
+        workOrder.location?.address?.toLowerCase().includes(lowerSearchTerm);
+
+      // Search in client fields
+      const client = typeof workOrder.clientId === 'object' ? workOrder.clientId : null;
+      const clientMatches =
+        client &&
+        (client.name?.toLowerCase().includes(lowerSearchTerm) ||
+          client.company?.toLowerCase().includes(lowerSearchTerm) ||
+          client.email?.toLowerCase().includes(lowerSearchTerm) ||
+          client.phone?.toLowerCase().includes(lowerSearchTerm));
+
+      // Search in personnel fields
+      const personnelMatches = workOrder.personnelIds?.some(
+        (personnel) =>
+          personnel.user?.name?.toLowerCase().includes(lowerSearchTerm) ||
+          personnel.role?.name?.toLowerCase().includes(lowerSearchTerm)
+      );
+
+      return workOrderMatches || clientMatches || personnelMatches;
+    });
+  }, [data?.data?.workOrders, searchTerm]);
+
+  // Client-side pagination
+  const paginatedWorkOrders = useMemo(() => {
+    const startIndex = page * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    return filteredWorkOrders.slice(startIndex, endIndex);
+  }, [filteredWorkOrders, page, rowsPerPage]);
+
+  // Update pagination info for client-side filtering
+  const clientPagination = {
+    total: filteredWorkOrders.length,
+    pages: Math.ceil(filteredWorkOrders.length / rowsPerPage),
+  };
 
   // Pagination handlers
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -155,6 +212,11 @@ export function WorkOrderList() {
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
+  };
+
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value);
+    setPage(0); // Reset to first page when searching
   };
 
   const handleCreateTaskFromWorkOrder = (workOrder: WorkOrder) => {
@@ -209,6 +271,26 @@ export function WorkOrderList() {
           sx={{ mb: { xs: 3, md: 5 } }}
         />
 
+        {/* Search Input */}
+        <Box sx={{ mb: 3 }}>
+          <TextField
+            fullWidth
+            value={searchTerm}
+            onChange={handleSearchChange}
+            placeholder={t('searchWorkOrders', {
+              defaultValue: 'Search work orders, clients, personnel...',
+            })}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ maxWidth: 400 }}
+          />
+        </Box>
+
         <Scrollbar>
           <Table sx={{ minWidth: 800 }}>
             <TableHead>
@@ -233,7 +315,7 @@ export function WorkOrderList() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {workOrders.length === 0 ? (
+              {paginatedWorkOrders.length === 0 && !isLoading ? (
                 <TableRow>
                   <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                     <Stack spacing={2} alignItems="center">
@@ -243,36 +325,48 @@ export function WorkOrderList() {
                         sx={{ color: 'text.disabled' }}
                       />
                       <Typography variant="h6" color="text.secondary">
-                        {clientId
-                          ? t('noWorkOrdersForClient', {
-                              defaultValue: 'No work orders found for this client',
+                        {searchTerm.trim()
+                          ? t('noSearchResults', {
+                              defaultValue: 'No work orders found matching your search',
                             })
-                          : t('dashboard.noWorkOrdersFound', {
-                              defaultValue: 'No work orders found',
-                            })}
+                          : clientId
+                            ? t('noWorkOrdersForClient', {
+                                defaultValue: 'No work orders found for this client',
+                              })
+                            : t('dashboard.noWorkOrdersFound', {
+                                defaultValue: 'No work orders found',
+                              })}
                       </Typography>
                       <Typography variant="body2" color="text.disabled">
-                        {clientId
-                          ? t('noWorkOrdersForClientHint', {
-                              defaultValue: 'This client does not have any work orders yet.',
+                        {searchTerm.trim()
+                          ? t('noSearchResultsHint', {
+                              defaultValue: 'Try adjusting your search terms or filters.',
                             })
-                          : t('createFirstWorkOrderHint', {
-                              defaultValue: 'Create your first work order to get started.',
-                            })}
+                          : clientId
+                            ? t('noWorkOrdersForClientHint', {
+                                defaultValue: 'This client does not have any work orders yet.',
+                              })
+                            : t('createFirstWorkOrderHint', {
+                                defaultValue: 'Create your first work order to get started.',
+                              })}
                       </Typography>
                     </Stack>
                   </TableCell>
                 </TableRow>
+              ) : isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                    <CircularProgress />
+                  </TableCell>
+                </TableRow>
               ) : (
-                workOrders.map((row: WorkOrder) => (
+                paginatedWorkOrders.map((row: WorkOrder) => (
                   <TableRow key={row._id} hover>
                     <TableCell>
                       <Stack spacing={0.5}>
-                        <Typography variant="subtitle2">
-                          {truncateText(row.workOrderNumber)}
-                        </Typography>
+                        <Typography variant="subtitle2">{truncateText(row.title)}</Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {truncateText(row.title)}
+                          {truncateText(row?.location?.address)}
                         </Typography>
                       </Stack>
                     </TableCell>
@@ -388,7 +482,7 @@ export function WorkOrderList() {
         <TablePagination
           rowsPerPageOptions={[5, 10, 25, 50]}
           component="div"
-          count={pagination.total}
+          count={clientPagination.total}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
@@ -431,7 +525,9 @@ export function WorkOrderList() {
             popover.onClose();
             if (selectedId) {
               // Find the selected work order data
-              const selectedWorkOrder = workOrders.find((wo) => wo._id === selectedId);
+              const selectedWorkOrder = data?.data?.workOrders?.find(
+                (wo: WorkOrder) => wo._id === selectedId
+              );
               if (selectedWorkOrder) {
                 // Open task creation dialog with pre-populated data
                 handleCreateTaskFromWorkOrder(selectedWorkOrder);

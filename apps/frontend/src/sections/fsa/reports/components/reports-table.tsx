@@ -268,7 +268,7 @@ export function ReportsTable({
 
                   <TableCell>
                     <Typography variant="body2">
-                      {dayjs(report.reportDate).format('MMM DD, YYYY HH:mm')}
+                      {truncateText(dayjs(report.reportDate).format('MMM DD, YYYY HH:mm'))}
                     </Typography>
                   </TableCell>
 
@@ -277,15 +277,17 @@ export function ReportsTable({
                       title={
                         <Box>
                           <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                            {report.createdBy?.name ||
-                              report.createdByData?.name ||
-                              report.createdBy?.email ||
-                              report.createdByData?.email ||
-                              'Unknown User'}
+                            {truncateText(
+                              report.createdBy?.name ||
+                                report.createdByData?.name ||
+                                report.createdBy?.email ||
+                                report.createdByData?.email ||
+                                'Unknown User'
+                            )}
                           </Typography>
                           {(report.createdBy?.email || report.createdByData?.email) && (
                             <Typography variant="caption" color="text.secondary">
-                              {report.createdBy?.email || report.createdByData?.email}
+                              {truncateText(report.createdBy?.email || report.createdByData?.email)}
                             </Typography>
                           )}
                         </Box>
@@ -310,7 +312,7 @@ export function ReportsTable({
 
                   <TableCell>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      ${report.totalCost.toFixed(2)}
+                      {truncateText(`${report.totalCost.toFixed(2)}€`)}
                     </Typography>
                   </TableCell>
 

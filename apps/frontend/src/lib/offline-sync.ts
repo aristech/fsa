@@ -8,9 +8,9 @@ import axiosInstance from 'src/lib/axios';
 
 import { toast } from 'src/components/snackbar';
 
-import { networkManager } from './network-utils';
 import { ReportService } from './services/report-service';
 import { offlineStorage, type OfflineDraftReport } from './offline-storage';
+import { getNetworkStatus, addNetworkStatusListener } from './network-utils';
 
 // State management
 let isSyncing = false;
@@ -21,7 +21,7 @@ const syncListeners = new Set<(syncing: boolean) => void>();
  */
 const initializeOfflineSync = (): void => {
   // Listen for network status changes
-  networkManager.addListener((status) => {
+  addNetworkStatusListener((status) => {
     if (status.isOnline && !isSyncing) {
       // Network restored, attempt to sync pending drafts
       syncPendingDrafts();
@@ -29,7 +29,7 @@ const initializeOfflineSync = (): void => {
   });
 
   // Attempt sync on service initialization if online
-  if (networkManager.getStatus().isOnline) {
+  if (getNetworkStatus().isOnline) {
     setTimeout(() => syncPendingDrafts(), 1000);
   }
 };
@@ -163,7 +163,7 @@ const syncDraft = async (draft: OfflineDraftReport): Promise<void> => {
  * Manually trigger sync of pending drafts
  */
 export const syncPendingDrafts = async (): Promise<void> => {
-  if (isSyncing || !networkManager.getStatus().isOnline) {
+  if (isSyncing || !getNetworkStatus().isOnline) {
     return;
   }
 
