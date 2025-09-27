@@ -105,14 +105,35 @@ export class ReminderService {
         // Assignees are populated objects with email
         emails.push(...assigneeData.map((a: any) => a.email).filter(Boolean));
       } else {
-        // Assignees are just IDs, need to fetch from Personnel
+        // Assignees are Personnel IDs, need to fetch Personnel -> User -> email
         const assigneeIds = assigneeData.map((a: any) => typeof a === 'object' ? a.id || a._id : a);
         const personnel = await Personnel.find({
           _id: { $in: assigneeIds },
           tenantId: task.tenantId
-        }).select('email');
+        }).populate('userId', 'email firstName lastName');
 
-        emails.push(...personnel.map(p => p.email).filter(Boolean));
+        const assigneeEmails: string[] = [];
+        const assigneesWithoutEmail: any[] = [];
+
+        personnel.forEach(p => {
+          const user = (p as any).userId;
+          if (user && user.email) {
+            assigneeEmails.push(user.email);
+          } else {
+            assigneesWithoutEmail.push({
+              personnelId: p._id,
+              userId: user?._id || 'missing',
+              userName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Unknown'
+            });
+          }
+        });
+
+        emails.push(...assigneeEmails);
+
+        // Log assignees without emails for debugging
+        if (assigneesWithoutEmail.length > 0) {
+          console.log(`⚠️ Assignees without email addresses for task "${task.title}":`, assigneesWithoutEmail);
+        }
       }
     }
 
@@ -142,6 +163,7 @@ export class ReminderService {
    */
   static async sendReminderEmail(task: ITask, emails: string[]): Promise<void> {
     const transporter = await createEmailTransporter();
+    const { config } = await import("../config");
 
     const reminderTypeText = {
       '1hour': '1 hour',
@@ -152,6 +174,7 @@ export class ReminderService {
 
     const startDate = task.startDate ? dayjs(task.startDate).format('MMM DD, YYYY [at] h:mm A') : 'Not set';
     const dueDate = task.dueDate ? dayjs(task.dueDate).format('MMM DD, YYYY [at] h:mm A') : 'Not set';
+    const taskLink = `${config.FRONTEND_URL}/dashboard/kanban/${task._id}`;
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -172,6 +195,8 @@ export class ReminderService {
           .priority-medium { background: #fff3e0; color: #ef6c00; }
           .priority-low { background: #e8f5e8; color: #2e7d32; }
           .priority-urgent { background: #fce4ec; color: #ad1457; }
+          .btn { display: inline-block; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+          .btn:hover { background: #5a6fd8; }
         </style>
       </head>
       <body>
@@ -192,6 +217,10 @@ export class ReminderService {
             </div>
 
             <p>This is a friendly reminder that your task is due soon. Please make sure you complete it on time and have all necessary resources ready.</p>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${taskLink}" class="btn">View Task Details</a>
+            </div>
 
             <p>If you have any questions or need to reschedule, please contact your supervisor.</p>
           </div>

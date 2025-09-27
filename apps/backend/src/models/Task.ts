@@ -38,7 +38,8 @@ export interface ITask extends Document {
     type: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
     customType?: 'weeks' | 'months';
     frequency?: number;
-    lastCreated?: Date;
+    lastCreated?: Date; // Keep for backward compatibility
+    lastShifted?: Date; // New field for date-shifting approach
     nextOccurrence?: Date;
   };
   // Reminder settings
@@ -188,6 +189,10 @@ const TaskSchema = new Schema<ITask>(
       },
       lastCreated: {
         type: Date,
+      },
+      lastShifted: {
+        type: Date,
+        index: true, // Index for efficient querying of recurring tasks
       },
       nextOccurrence: {
         type: Date,

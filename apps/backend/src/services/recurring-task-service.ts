@@ -48,135 +48,73 @@ export class RecurringTaskService {
   }
 
   /**
-   * Get all tasks that need new recurring instances created
+   * Get all tasks that need their dates shifted for recurrence
    */
   static async getTasksNeedingRecurrence(): Promise<ITask[]> {
     const now = new Date();
 
-    // First query: tasks with calculated nextOccurrence
-    const tasksWithOccurrence = await Task.find({
+    // Find tasks where due date has passed and need shifting
+    const tasksNeedingShift = await Task.find({
       "repeat.enabled": true,
-      "repeat.nextOccurrence": { $lte: now },
+      dueDate: { $lte: now },
       $or: [
-        { "repeat.lastCreated": { $exists: false } },
-        { "repeat.lastCreated": null },
-        { $expr: { $lt: ["$repeat.lastCreated", "$repeat.nextOccurrence"] } },
+        { "repeat.lastShifted": { $exists: false } },
+        { "repeat.lastShifted": null },
+        { $expr: { $lt: ["$repeat.lastShifted", "$dueDate"] } },
       ],
     });
 
-    // Second query: tasks with enabled repeat but no nextOccurrence calculated
-    const tasksWithoutOccurrence = await Task.find({
-      "repeat.enabled": true,
-      "repeat.nextOccurrence": { $exists: false },
-      dueDate: { $exists: true },
-      $or: [
-        { "repeat.lastCreated": { $exists: false } },
-        { "repeat.lastCreated": null },
-      ],
-    });
-
-    // For tasks without nextOccurrence, calculate it and check if recurrence is due
-    const additionalTasks = [];
-    for (const task of tasksWithoutOccurrence) {
-      if (task.dueDate && task.repeat) {
-        const nextOccurrence = this.calculateNextOccurrence(
-          task.dueDate,
-          task.repeat,
-        );
-        if (nextOccurrence <= now) {
-          // Update the task with calculated nextOccurrence for future queries
-          await Task.findByIdAndUpdate(task._id, {
-            "repeat.nextOccurrence": nextOccurrence,
-          });
-          additionalTasks.push(task);
-        }
-      }
-    }
-
-    return [...tasksWithOccurrence, ...additionalTasks];
+    return tasksNeedingShift;
   }
 
   /**
-   * Create a new instance of a recurring task
+   * Shift task dates to next occurrence for recurring tasks
    */
-  static async createRecurringInstance(
-    originalTask: ITask,
-  ): Promise<ITask | null> {
-    if (!originalTask.repeat?.enabled || !originalTask.dueDate) {
+  static async shiftRecurringTask(task: ITask): Promise<ITask | null> {
+    if (!task.repeat?.enabled || !task.dueDate) {
       return null;
     }
 
-    // Calculate new dates for the recurring instance
-    const originalDueDate = dayjs(originalTask.dueDate);
-    const originalStartDate = originalTask.startDate
-      ? dayjs(originalTask.startDate)
+    // Calculate new dates
+    const newDueDate = this.calculateNextOccurrence(task.dueDate, task.repeat);
+    const newStartDate = task.startDate
+      ? this.calculateNextOccurrence(task.startDate, task.repeat)
       : null;
 
-    const newDueDate = dayjs(
-      this.calculateNextOccurrence(originalTask.dueDate, originalTask.repeat),
-    );
-    const newStartDate = originalStartDate
-      ? originalStartDate.add(newDueDate.diff(originalDueDate))
-      : null;
-
-    // Create the new task data
-    const newTaskData = {
-      title: originalTask.title,
-      description: originalTask.description,
-      priority: originalTask.priority,
-      tags: originalTask.tags || [],
-      assignees: originalTask.assignees || [],
-      dueDate: newDueDate.toDate(),
-      startDate: newStartDate?.toDate(),
-      tenantId: originalTask.tenantId,
-      projectId: originalTask.projectId,
-      columnId: originalTask.columnId,
-      status: "Todo", // Reset status for new instance
+    // Update the task with new dates and reset completion status
+    const updateData: any = {
+      dueDate: newDueDate,
       completeStatus: false, // Reset completion status
-      workOrderId: originalTask.workOrderId,
-      workOrderNumber: originalTask.workOrderNumber,
-      workOrderTitle: originalTask.workOrderTitle,
-      clientId: originalTask.clientId,
-      clientName: originalTask.clientName,
-      clientCompany: originalTask.clientCompany,
-      createdBy: originalTask.createdBy,
-      // Copy repeat settings to new instance
-      repeat: originalTask.repeat,
-      // Copy reminder settings if enabled
-      reminder: originalTask.reminder?.enabled
-        ? originalTask.reminder
-        : undefined,
-      // Reference to original recurring task
-      originalRecurringTaskId: originalTask._id,
+      "repeat.lastShifted": new Date(), // Track when we last shifted
     };
 
-    // Create the new task
-    const newTask = new Task(newTaskData);
-    await newTask.save();
-
-    // Update reminder for the new task if enabled
-    if (newTask.reminder?.enabled && newTask.dueDate) {
-      const { ReminderService } = await import("./reminder-service");
-      await ReminderService.updateTaskReminder(newTask._id.toString());
+    if (newStartDate) {
+      updateData.startDate = newStartDate;
     }
 
-    // Update the next occurrence for the new task
-    await this.updateTaskRecurrence(newTask._id.toString());
+    await Task.findByIdAndUpdate(task._id, updateData);
 
-    return newTask;
+    // Update reminder for the shifted task if enabled
+    if (task.reminder?.enabled) {
+      const { ReminderService } = await import("./reminder-service");
+      await ReminderService.updateTaskReminder(task._id.toString());
+    }
+
+    // Get the updated task to return
+    const updatedTask = await Task.findById(task._id);
+    return updatedTask;
   }
 
   /**
-   * Mark recurring task as processed
+   * Mark recurring task as processed (for backward compatibility)
    */
   static async markRecurrenceProcessed(taskId: string): Promise<void> {
-    await Task.findByIdAndUpdate(taskId, {
-      "repeat.lastCreated": new Date(),
-    });
+    // This is now handled in shiftRecurringTask method
+    // Keeping for compatibility but no action needed
   }
 
   /**
-   * Process all pending recurring tasks
+   * Process all pending recurring tasks by shifting their dates
    */
   static async processPendingRecurringTasks(): Promise<{
     processed: number;
@@ -190,17 +128,19 @@ export class RecurringTaskService {
       try {
         console.log(`Processing recurring task "${task.title}" (${task._id})`);
 
-        const newTask = await this.createRecurringInstance(task);
+        const updatedTask = await this.shiftRecurringTask(task);
 
-        if (newTask) {
-          await this.markRecurrenceProcessed(task._id);
+        if (updatedTask) {
           processed++;
           console.log(
-            `✅ Created recurring instance of "${task.title}" with ID: ${newTask._id}`,
+            `✅ Shifted recurring task "${task.title}" to new due date: ${updatedTask.dueDate}`,
           );
+
+          // Send recurring task notification email
+          await this.sendRecurringTaskNotification(updatedTask);
         } else {
           console.log(
-            `⚠️ Could not create recurring instance for task "${task.title}"`,
+            `⚠️ Could not shift recurring task "${task.title}"`,
           );
         }
       } catch (error) {
@@ -212,5 +152,61 @@ export class RecurringTaskService {
     }
 
     return { processed, errors };
+  }
+
+  /**
+   * Send notification email for recurring task
+   */
+  static async sendRecurringTaskNotification(task: ITask): Promise<void> {
+    try {
+      const { EmailService } = await import("./email-service");
+      const { config } = await import("../config");
+
+      // Get assignees' email addresses
+      const assigneeEmails: string[] = [];
+      if (task.assignees && task.assignees.length > 0) {
+        const { Personnel } = await import("../models/Personnel");
+        const assignees = await Personnel.find({
+          _id: { $in: task.assignees },
+          email: { $exists: true, $ne: "" },
+        });
+        assigneeEmails.push(...assignees.map(p => p.email));
+      }
+
+      if (assigneeEmails.length === 0) {
+        console.log(`No email addresses found for recurring task ${task._id} assignees`);
+        return;
+      }
+
+      const taskLink = `${config.FRONTEND_URL}/dashboard/kanban/${task._id}`;
+      const dueDate = new Date(task.dueDate!).toLocaleDateString();
+
+      const subject = `Recurring Task Scheduled: ${task.title}`;
+      const message = `
+        <h2>Recurring Task Scheduled</h2>
+        <p>A recurring task has been scheduled and is ready for your attention.</p>
+
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
+          <h3>${task.title}</h3>
+          <p><strong>Due Date:</strong> ${dueDate}</p>
+          ${task.description ? `<p><strong>Description:</strong> ${task.description}</p>` : ''}
+          <p><strong>Priority:</strong> ${task.priority}</p>
+        </div>
+
+        <p><a href="${taskLink}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Task</a></p>
+
+        <p>This is an automated notification for a recurring task.</p>
+      `;
+
+      await EmailService.sendBulkEmail(
+        assigneeEmails,
+        subject,
+        message
+      );
+
+      console.log(`✅ Sent recurring task notification for "${task.title}" to ${assigneeEmails.length} assignees`);
+    } catch (error) {
+      console.error(`❌ Failed to send recurring task notification for ${task._id}:`, error);
+    }
   }
 }

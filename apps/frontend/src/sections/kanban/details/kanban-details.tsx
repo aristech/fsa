@@ -1081,7 +1081,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
                           ? t('yearly', { defaultValue: 'Yearly' })
                           : repeatData.type === 'custom'
                             ? `${t('every', { defaultValue: 'Every' })} ${repeatData.frequency || 1} ${repeatData.customType || 'weeks'}`
-                            : repeatData.type
+                            : repeatData.type || t('daily', { defaultValue: 'Daily' })
                 }`}
               />
             )}
@@ -1100,7 +1100,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
                         ? t('1week', { defaultValue: '1 week' })
                         : reminderData.type === '1month'
                           ? t('1month', { defaultValue: '1 month' })
-                          : reminderData.type
+                          : reminderData.type || t('1hour', { defaultValue: '1 hour' })
                 } ${t('before', { defaultValue: 'before' })}`}
               />
             )}

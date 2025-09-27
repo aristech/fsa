@@ -5,9 +5,9 @@ import type { IKanbanTask } from 'src/types/kanban';
 
 import { mutate } from 'swr';
 import { AnimatePresence } from 'framer-motion';
-import { useSearchParams } from 'next/navigation';
 import { useBoolean } from 'minimal-shared/hooks';
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import Box from '@mui/material/Box';
 import Switch from '@mui/material/Switch';
@@ -62,6 +62,7 @@ export function KanbanView({ taskId }: KanbanViewProps = {}) {
   const { boardRef } = useBoardDnd(board);
   const { t } = useTranslate('common');
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const [columnFixed, setColumnFixed] = useState(false);
   const [tableView, setTableView] = useState(false);
@@ -132,7 +133,22 @@ export function KanbanView({ taskId }: KanbanViewProps = {}) {
   const handleCloseTask = useCallback(() => {
     setSelectedTask(null);
     taskDetailsDialog.onFalse();
-  }, [taskDetailsDialog]);
+
+    // Update URL to remove task ID when closing drawer
+    const currentPath = window.location.pathname;
+    const currentSearch = window.location.search;
+
+    // Handle path-based task ID (e.g., /dashboard/kanban/{id})
+    if (currentPath.includes('/dashboard/kanban/') && currentPath !== '/dashboard/kanban') {
+      router.push('/dashboard/kanban');
+    }
+    // Handle query-based task ID (e.g., /dashboard/kanban?task={id})
+    else if (currentSearch.includes('task=')) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('task');
+      router.push(url.pathname + url.search);
+    }
+  }, [taskDetailsDialog, router]);
 
   const renderList = () => {
     if (tableView) {
