@@ -214,6 +214,28 @@ WorkOrderSchema.index({ tenantId: 1, priority: 1 });
 WorkOrderSchema.index({ tenantId: 1, scheduledDate: 1 });
 WorkOrderSchema.index({ tenantId: 1, progressMode: 1 });
 
+// Text indexes for better search performance with Unicode support
+WorkOrderSchema.index(
+  {
+    title: "text",
+    details: "text",
+    workOrderNumber: "text",
+    "location.address": "text",
+    "materials.name": "text"
+  },
+  {
+    name: "workorder_text_search",
+    weights: {
+      title: 10,
+      workOrderNumber: 8,
+      details: 5,
+      "location.address": 3,
+      "materials.name": 2
+    },
+    default_language: "none" // Disable stemming for better Greek support
+  }
+);
+
 // ----------------------------------------------------------------------
 
 // ----------------------------------------------------------------------

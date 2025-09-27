@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import jwt from "@fastify/jwt";
 import multipart from "@fastify/multipart";
+import staticFiles from "@fastify/static";
 import { config } from "./config";
 import { connectDB } from "./utils/database";
 import { registerRoutes } from "./routes";
@@ -10,6 +11,7 @@ import { realtimeService } from "./services/realtime-service";
 import { ensureSuperUsers } from "./services/superuser-bootstrap";
 import { fixWorkOrderIndexes } from "./services/index-maintenance";
 import { TaskMigrationService } from "./services/task-migration";
+import * as path from "path";
 
 const fastify = Fastify({
   logger: {
@@ -77,6 +79,12 @@ async function registerPlugins() {
       files: config.MAX_FILES_PER_REQUEST, // Max files per request
       fieldSize: 1024 * 1024, // 1MB for form fields
     },
+  });
+
+  // Static file serving for uploads
+  await fastify.register(staticFiles, {
+    root: path.join(process.cwd(), 'uploads'),
+    prefix: '/uploads/',
   });
 
   // Register routes

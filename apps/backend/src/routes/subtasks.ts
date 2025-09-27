@@ -3,6 +3,10 @@ import { authenticate } from "../middleware/auth";
 import { Subtask, Task, User } from "../models";
 import { AuthenticatedRequest } from "../types";
 import { WorkOrderTimelineService } from "../services/work-order-timeline-service";
+import * as path from "path";
+import * as fs from "fs/promises";
+import { createWriteStream } from "fs";
+import { pipeline } from "stream/promises";
 
 export async function subtasksRoutes(fastify: FastifyInstance) {
   // Get subtasks for a task
@@ -20,7 +24,8 @@ export async function subtasksRoutes(fastify: FastifyInstance) {
       const subtasks = await Subtask.find({ taskId, tenantId: user.tenantId })
         .populate('createdBy', 'name email')
         .populate('assignedTo', 'name email')
-        .sort({ createdAt: 1 });
+        .populate('attachments.uploadedBy', 'name email')
+        .sort({ order: 1, createdAt: 1 });
 
       return reply.send({ success: true, data: subtasks });
     } catch (error) {
@@ -54,10 +59,17 @@ export async function subtasksRoutes(fastify: FastifyInstance) {
         }
       }
 
+      // Get the next order number for this task
+      const lastSubtask = await Subtask.findOne({ taskId, tenantId: user.tenantId })
+        .sort({ order: -1 })
+        .select('order');
+      const nextOrder = lastSubtask ? lastSubtask.order + 1 : 0;
+
       const subtask = new Subtask({
         taskId,
         title,
         description,
+        order: nextOrder,
         assignedTo: assignedTo || undefined,
         createdBy: user.id,
         tenantId: user.tenantId,
@@ -249,4 +261,183 @@ export async function subtasksRoutes(fastify: FastifyInstance) {
       return reply.code(500).send({ success: false, message: 'Internal server error' });
     }
   });
+
+  // Reorder subtasks
+  fastify.put('/:taskId/reorder', { preHandler: authenticate }, async (request, reply) => {
+    try {
+      const { taskId } = request.params as { taskId: string };
+      const { subtaskIds } = request.body as { subtaskIds: string[] };
+      const user = (request as AuthenticatedRequest).user;
+
+      // Verify task exists and user has access
+      const task = await Task.findOne({ _id: taskId, tenantId: user.tenantId });
+      if (!task) {
+        return reply.code(404).send({ success: false, message: 'Task not found' });
+      }
+
+      // Update the order of each subtask
+      const updatePromises = subtaskIds.map((subtaskId, index) =>
+        Subtask.updateOne(
+          { _id: subtaskId, taskId, tenantId: user.tenantId },
+          { order: index }
+        )
+      );
+
+      await Promise.all(updatePromises);
+
+      // Fetch updated subtasks
+      const subtasks = await Subtask.find({ taskId, tenantId: user.tenantId })
+        .populate('createdBy', 'name email')
+        .populate('assignedTo', 'name email')
+        .populate('attachments.uploadedBy', 'name email')
+        .sort({ order: 1, createdAt: 1 });
+
+      // Log timeline entry if task is linked to a work order
+      if (task.workOrderId) {
+        try {
+          await WorkOrderTimelineService.addTimelineEntry({
+            workOrderId: task.workOrderId,
+            entityType: 'task',
+            entityId: taskId,
+            eventType: 'updated',
+            title: `Subtasks were reordered in task "${task.title}"`,
+            metadata: {
+              taskTitle: task.title,
+              taskId: taskId,
+              subtaskCount: subtaskIds.length
+            },
+            userId: user.id,
+            tenantId: user.tenantId,
+          });
+        } catch (error) {
+          console.error('Error adding timeline entry for subtask reordering:', error);
+        }
+      }
+
+      return reply.send({ success: true, data: subtasks });
+    } catch (error) {
+      fastify.log.error({ error }, 'Failed to reorder subtasks');
+      return reply.code(500).send({ success: false, message: 'Internal server error' });
+    }
+  });
+
+  // Add attachment to subtask
+  fastify.post('/:taskId/:subtaskId/attachments', { preHandler: authenticate }, async (request, reply) => {
+    try {
+      const { taskId, subtaskId } = request.params as { taskId: string; subtaskId: string };
+      const user = (request as AuthenticatedRequest).user;
+
+      // Verify task exists and user has access
+      const task = await Task.findOne({ _id: taskId, tenantId: user.tenantId });
+      if (!task) {
+        return reply.code(404).send({ success: false, message: 'Task not found' });
+      }
+
+      // Find subtask
+      const subtask = await Subtask.findOne({
+        _id: subtaskId,
+        taskId,
+        tenantId: user.tenantId,
+      });
+
+      if (!subtask) {
+        return reply.code(404).send({ success: false, message: 'Subtask not found' });
+      }
+
+      // Handle file upload
+      const data = await request.file();
+      if (!data) {
+        return reply.code(400).send({ success: false, message: 'No file uploaded' });
+      }
+
+      // Create uploads directory if it doesn't exist
+      const uploadsDir = path.join(process.cwd(), 'uploads', 'subtask-attachments');
+      await fs.mkdir(uploadsDir, { recursive: true });
+
+      // Generate unique filename
+      const fileExtension = path.extname(data.filename);
+      const uniqueFilename = `${Date.now()}-${Math.random().toString(36).substring(2)}${fileExtension}`;
+      const filePath = path.join(uploadsDir, uniqueFilename);
+
+      // Save file to disk
+      await pipeline(data.file, createWriteStream(filePath));
+
+      // Add attachment to subtask
+      const attachment = {
+        filename: uniqueFilename,
+        originalName: data.filename,
+        size: (await fs.stat(filePath)).size,
+        mimetype: data.mimetype,
+        uploadedAt: new Date(),
+        uploadedBy: user.id,
+      };
+
+      if (!subtask.attachments) {
+        subtask.attachments = [];
+      }
+      subtask.attachments.push(attachment);
+
+      await subtask.save();
+      await subtask.populate('attachments.uploadedBy', 'name email');
+
+      return reply.send({ success: true, data: subtask });
+    } catch (error) {
+      fastify.log.error({ error }, 'Failed to add attachment to subtask');
+      return reply.code(500).send({ success: false, message: 'Internal server error' });
+    }
+  });
+
+  // Remove attachment from subtask
+  fastify.delete('/:taskId/:subtaskId/attachments/:attachmentId', { preHandler: authenticate }, async (request, reply) => {
+    try {
+      const { taskId, subtaskId, attachmentId } = request.params as {
+        taskId: string;
+        subtaskId: string;
+        attachmentId: string;
+      };
+      const user = (request as AuthenticatedRequest).user;
+
+      // Verify task exists and user has access
+      const task = await Task.findOne({ _id: taskId, tenantId: user.tenantId });
+      if (!task) {
+        return reply.code(404).send({ success: false, message: 'Task not found' });
+      }
+
+      // Find subtask to get attachment filename before deletion
+      const subtask = await Subtask.findOne({
+        _id: subtaskId,
+        taskId,
+        tenantId: user.tenantId,
+      });
+
+      if (!subtask) {
+        return reply.code(404).send({ success: false, message: 'Subtask not found' });
+      }
+
+      // Find the attachment to get filename
+      const attachment = subtask.attachments?.find(att => att._id?.toString() === attachmentId);
+      if (attachment) {
+        // Delete file from disk
+        const filePath = path.join(process.cwd(), 'uploads', 'subtask-attachments', attachment.filename);
+        try {
+          await fs.unlink(filePath);
+        } catch (fileError) {
+          fastify.log.warn({ error: fileError }, 'Failed to delete file from disk');
+        }
+      }
+
+      // Remove attachment from database
+      const updatedSubtask = await Subtask.findOneAndUpdate(
+        { _id: subtaskId, taskId, tenantId: user.tenantId },
+        { $pull: { attachments: { _id: attachmentId } } },
+        { new: true }
+      ).populate('attachments.uploadedBy', 'name email');
+
+      return reply.send({ success: true, data: updatedSubtask });
+    } catch (error) {
+      fastify.log.error({ error }, 'Failed to remove attachment from subtask');
+      return reply.code(500).send({ success: false, message: 'Internal server error' });
+    }
+  });
+
 }

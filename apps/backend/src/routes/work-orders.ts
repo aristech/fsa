@@ -35,6 +35,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           priority,
           personnelId,
           clientId,
+          search,
         } = request.query as {
           page?: number;
           limit?: number;
@@ -42,6 +43,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           priority?: string;
           personnelId?: string;
           clientId?: string;
+          search?: string;
         };
 
         // Build filter
@@ -50,6 +52,97 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         if (priority) filter.priority = priority;
         if (personnelId) filter.personnelIds = personnelId;
         if (clientId) filter.clientId = clientId;
+
+        // Add search functionality using aggregation pipeline
+        let aggregationPipeline: any[] = [];
+
+        if (search && search.trim()) {
+          // Normalize search term for better Greek character matching
+          const normalizedSearch = search.trim().normalize('NFD');
+          // Create regex with Unicode support and case-insensitive matching
+          const searchRegex = {
+            $regex: normalizedSearch,
+            $options: "iu" // 'i' for case-insensitive, 'u' for Unicode support
+          };
+
+          aggregationPipeline = [
+            // First, try MongoDB text search for direct work order fields
+            {
+              $match: {
+                ...filter,
+                $or: [
+                  // Text search on indexed fields
+                  { $text: { $search: normalizedSearch } },
+                  // Fallback regex search for better Unicode support
+                  { title: searchRegex },
+                  { workOrderNumber: searchRegex },
+                  { details: searchRegex },
+                  { "location.address": searchRegex },
+                ]
+              }
+            },
+            {
+              $lookup: {
+                from: "clients",
+                localField: "clientId",
+                foreignField: "_id",
+                as: "client",
+              },
+            },
+            {
+              $lookup: {
+                from: "personnel",
+                localField: "personnelIds",
+                foreignField: "_id",
+                as: "personnel",
+              },
+            },
+            {
+              $lookup: {
+                from: "users",
+                localField: "personnel.user",
+                foreignField: "_id",
+                as: "personnelUsers",
+              },
+            },
+            {
+              $addFields: {
+                personnelNames: {
+                  $map: {
+                    input: "$personnelUsers",
+                    as: "user",
+                    in: {
+                      $concat: ["$$user.firstName", " ", "$$user.lastName"],
+                    },
+                  },
+                },
+                // Add text search score for sorting
+                textScore: { $meta: "textScore" }
+              },
+            },
+            // Additional filter for client and personnel search
+            {
+              $match: {
+                $or: [
+                  // Already matched by text search or regex above
+                  { textScore: { $gt: 0 } },
+                  { title: searchRegex },
+                  { workOrderNumber: searchRegex },
+                  { details: searchRegex },
+                  { "location.address": searchRegex },
+                  // Client and personnel searches
+                  { "client.name": searchRegex },
+                  { "client.company": searchRegex },
+                  { "client.email": searchRegex },
+                  { "client.phone": searchRegex },
+                  { personnelNames: searchRegex },
+                  // Material names
+                  { "materials.name": searchRegex },
+                ],
+              },
+            },
+          ];
+        }
 
         // Check if user only has "own" permissions and filter accordingly
         const { PermissionService } = await import(
@@ -60,12 +153,12 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         const hasFullPermission = await PermissionService.hasPermissionAsync(
           user.id,
           "workOrders.view",
-          tenant._id.toString()
+          tenant._id.toString(),
         );
         const hasOwnPermission = await PermissionService.hasPermissionAsync(
           user.id,
           "workOrders.viewOwn",
-          tenant._id.toString()
+          tenant._id.toString(),
         );
 
         if (
@@ -97,15 +190,58 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         }
 
         // Get work orders with pagination, sorted by created_at (latest first)
-        const skip = (page - 1) * limit;
-        const workOrders = await WorkOrder.find(filter)
-          .populate("clientId", "name email phone company")
-          .populate("personnelIds", "employeeId user role")
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit);
+        const skip = (Number(page) - 1) * Number(limit);
 
-        const total = await WorkOrder.countDocuments(filter);
+        let workOrders: any[];
+        let total: number;
+
+        if (aggregationPipeline.length > 0) {
+          // Use aggregation pipeline for search
+          const pipeline = [
+            ...aggregationPipeline,
+            // Sort by text search score when available, then by creation date
+            {
+              $sort: {
+                textScore: { $meta: "textScore" },
+                createdAt: -1
+              }
+            },
+            { $skip: skip },
+            { $limit: Number(limit) },
+          ];
+
+          try {
+            workOrders = await WorkOrder.aggregate(pipeline);
+            total =
+              (
+                await WorkOrder.aggregate([
+                  ...aggregationPipeline,
+                  { $count: "total" },
+                ])
+              )[0]?.total || 0;
+          } catch (aggregationError) {
+            console.error("Aggregation pipeline error:", aggregationError);
+            // Fallback to regular query if aggregation fails
+            workOrders = await WorkOrder.find(filter)
+              .populate("clientId", "name email phone company")
+              .populate("personnelIds", "employeeId user role")
+              .sort({ createdAt: -1 })
+              .skip(skip)
+              .limit(Number(limit));
+
+            total = await WorkOrder.countDocuments(filter);
+          }
+        } else {
+          // Use regular query for non-search
+          workOrders = await WorkOrder.find(filter)
+            .populate("clientId", "name email phone company")
+            .populate("personnelIds", "employeeId user role")
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(Number(limit));
+
+          total = await WorkOrder.countDocuments(filter);
+        }
 
         return reply.send({
           success: true,
@@ -221,10 +357,14 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         const req = request as AuthenticatedRequest;
         const { tenant } = req.context!;
         const { id } = request.params as { id: string };
-        const { limit = 50, offset = 0, entityType } = request.query as {
+        const {
+          limit = 50,
+          offset = 0,
+          entityType,
+        } = request.query as {
           limit?: number;
           offset?: number;
-          entityType?: 'work_order' | 'task';
+          entityType?: "work_order" | "task";
         };
 
         // Verify work order exists and user has access
@@ -243,7 +383,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         const timeline = await WorkOrderTimelineService.getWorkOrderTimeline(
           id,
           tenant._id.toString(),
-          { limit: Number(limit), offset: Number(offset), entityType }
+          { limit: Number(limit), offset: Number(offset), entityType },
         );
 
         return reply.send({
@@ -320,21 +460,21 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         let processedCreateBody = { ...body };
         if (body.attachments && Array.isArray(body.attachments)) {
           processedCreateBody.attachments = body.attachments.map((att: any) => {
-            if (typeof att === 'string') {
+            if (typeof att === "string") {
               // Convert string URL to attachment object format
               return {
-                name: att.split('/').pop() || 'Unknown',
+                name: att.split("/").pop() || "Unknown",
                 url: att,
-                type: 'application/octet-stream',
-                size: 0
+                type: "application/octet-stream",
+                size: 0,
               };
             }
             // Ensure all required fields are present
             return {
-              name: att.name || 'Unknown',
-              url: att.url || '',
-              type: att.type || 'application/octet-stream',
-              size: att.size || 0
+              name: att.name || "Unknown",
+              url: att.url || "",
+              type: att.type || "application/octet-stream",
+              size: att.size || 0,
             };
           });
         }
@@ -366,10 +506,13 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
             workOrder._id.toString(),
             workOrder.title,
             user.id,
-            tenant._id.toString()
+            tenant._id.toString(),
           );
         } catch (error) {
-          console.error('Error adding timeline entry for work order creation:', error);
+          console.error(
+            "Error adding timeline entry for work order creation:",
+            error,
+          );
         }
 
         // Recompute aggregates after creation
@@ -379,34 +522,40 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         );
 
         // Propagate personnel assignments to existing tasks linked to this work order
-        if (body.personnelIds && Array.isArray(body.personnelIds) && body.personnelIds.length > 0) {
+        if (
+          body.personnelIds &&
+          Array.isArray(body.personnelIds) &&
+          body.personnelIds.length > 0
+        ) {
           try {
             await WorkOrderAssignmentService.propagateWorkOrderAssignments(
               workOrder._id.toString(),
               body.personnelIds,
               [], // no previous personnel for new work order
               tenant._id.toString(),
-              user.id
+              user.id,
             );
 
             // Log assignment in timeline
             const assignedPersonnel = await Personnel.find({
               _id: { $in: body.personnelIds },
-              tenantId: tenant._id
-            }).populate('user', 'firstName lastName');
+              tenantId: tenant._id,
+            }).populate("user", "firstName lastName");
 
-            const assigneeNames = assignedPersonnel.map(p =>
-              p.user ? `${p.user.firstName} ${p.user.lastName}`.trim() : p.employeeId
+            const assigneeNames = assignedPersonnel.map((p) =>
+              p.user
+                ? `${p.user.firstName} ${p.user.lastName}`.trim()
+                : p.employeeId,
             );
 
             await WorkOrderTimelineService.logWorkOrderAssigned(
               workOrder._id.toString(),
               assigneeNames,
               user.id,
-              tenant._id.toString()
+              tenant._id.toString(),
             );
           } catch (error) {
-            console.error('Error propagating work order assignments:', error);
+            console.error("Error propagating work order assignments:", error);
             // Don't fail work order creation if assignment propagation fails
           }
         }
@@ -415,7 +564,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         try {
           await WebhookService.triggerWebhooks(
             tenant._id.toString(),
-            'work_order.created',
+            "work_order.created",
             {
               workOrder: {
                 _id: workOrder._id,
@@ -428,12 +577,15 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
                 personnelIds: workOrder.personnelIds,
                 createdAt: workOrder.createdAt,
                 createdBy: workOrder.createdBy,
-              }
+              },
             },
-            workOrder._id.toString()
+            workOrder._id.toString(),
           );
         } catch (error) {
-          console.error('Error triggering work order creation webhooks:', error);
+          console.error(
+            "Error triggering work order creation webhooks:",
+            error,
+          );
           // Don't fail work order creation if webhook fails
         }
 
@@ -467,7 +619,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         const currentWorkOrderLite = await WorkOrder.findOne({
           _id: id,
           tenantId: tenant._id,
-        }).select('personnelIds');
+        }).select("personnelIds");
 
         if (!currentWorkOrderLite) {
           return reply.code(404).send({
@@ -509,21 +661,21 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         let processedBody = { ...body };
         if (body.attachments && Array.isArray(body.attachments)) {
           processedBody.attachments = body.attachments.map((att: any) => {
-            if (typeof att === 'string') {
+            if (typeof att === "string") {
               // Convert string URL to attachment object format
               return {
-                name: att.split('/').pop() || 'Unknown',
+                name: att.split("/").pop() || "Unknown",
                 url: att,
-                type: 'application/octet-stream',
-                size: 0
+                type: "application/octet-stream",
+                size: 0,
               };
             }
             // Ensure all required fields are present
             return {
-              name: att.name || 'Unknown',
-              url: att.url || '',
-              type: att.type || 'application/octet-stream',
-              size: att.size || 0
+              name: att.name || "Unknown",
+              url: att.url || "",
+              type: att.type || "application/octet-stream",
+              size: att.size || 0,
             };
           });
         }
@@ -569,7 +721,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
               currentWorkOrder.status,
               body.status,
               user.id,
-              tenant._id.toString()
+              tenant._id.toString(),
             );
           }
 
@@ -580,22 +732,25 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
               currentWorkOrder.priority,
               body.priority,
               user.id,
-              tenant._id.toString()
+              tenant._id.toString(),
             );
           }
 
           // Track progress changes
-          if (body.progress !== undefined && currentWorkOrder.progress !== body.progress) {
+          if (
+            body.progress !== undefined &&
+            currentWorkOrder.progress !== body.progress
+          ) {
             await WorkOrderTimelineService.logWorkOrderProgressUpdated(
               workOrder._id.toString(),
               currentWorkOrder.progress || 0,
               body.progress,
               user.id,
-              tenant._id.toString()
+              tenant._id.toString(),
             );
           }
         } catch (error) {
-          console.error('Error logging work order changes to timeline:', error);
+          console.error("Error logging work order changes to timeline:", error);
         }
 
         // Recompute aggregates after update
@@ -614,14 +769,22 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
 
           // Propagate assignment changes to existing tasks
           const newPersonnelIds = workOrder.personnelIds || [];
-          const previousPersonnelIdsStr = previousPersonnelIds.map((id: any) => id.toString());
-          const newPersonnelIdsStr = newPersonnelIds.map((id: any) => id.toString());
-          
+          const previousPersonnelIdsStr = previousPersonnelIds.map((id: any) =>
+            id.toString(),
+          );
+          const newPersonnelIdsStr = newPersonnelIds.map((id: any) =>
+            id.toString(),
+          );
+
           // Check if there are any changes in personnel assignments
-          const hasChanges = 
+          const hasChanges =
             previousPersonnelIdsStr.length !== newPersonnelIdsStr.length ||
-            !previousPersonnelIdsStr.every((id: string) => newPersonnelIdsStr.includes(id)) ||
-            !newPersonnelIdsStr.every((id: string) => previousPersonnelIdsStr.includes(id));
+            !previousPersonnelIdsStr.every((id: string) =>
+              newPersonnelIdsStr.includes(id),
+            ) ||
+            !newPersonnelIdsStr.every((id: string) =>
+              previousPersonnelIdsStr.includes(id),
+            );
 
           if (hasChanges) {
             try {
@@ -632,25 +795,28 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
                   newPersonnelIdsStr,
                   previousPersonnelIdsStr,
                   tenant._id.toString(),
-                  user.id
+                  user.id,
                 );
               }
 
               // Handle removed personnel (they remain on tasks but we log this)
-              const removedPersonnelIds = previousPersonnelIdsStr.filter((id: string) => 
-                !newPersonnelIdsStr.includes(id)
+              const removedPersonnelIds = previousPersonnelIdsStr.filter(
+                (id: string) => !newPersonnelIdsStr.includes(id),
               );
-              
+
               if (removedPersonnelIds.length > 0) {
                 await WorkOrderAssignmentService.handleWorkOrderPersonnelRemoval(
                   workOrder._id.toString(),
                   removedPersonnelIds,
                   tenant._id.toString(),
-                  user.id
+                  user.id,
                 );
               }
             } catch (error) {
-              console.error('Error propagating work order assignment changes:', error);
+              console.error(
+                "Error propagating work order assignment changes:",
+                error,
+              );
               // Don't fail the update if assignment propagation fails
             }
           }
@@ -682,7 +848,9 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         const { id } = request.params as { id: string };
 
         // Import models dynamically
-        const { Task, Comment, Assignment, Subtask } = await import("../models");
+        const { Task, Comment, Assignment, Subtask } = await import(
+          "../models"
+        );
 
         // Check if work order exists
         const workOrder = await WorkOrder.findOne({
@@ -698,32 +866,44 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         }
 
         // Count related data
-        const [tasksCount, commentsCount, assignmentsCount] = await Promise.all([
-          Task.countDocuments({ workOrderId: id, tenantId: tenant._id }),
-          Comment.countDocuments({ workOrderId: id, tenantId: tenant._id }),
-          Assignment.countDocuments({ workOrderId: id, tenantId: tenant._id }),
-        ]);
+        const [tasksCount, commentsCount, assignmentsCount] = await Promise.all(
+          [
+            Task.countDocuments({ workOrderId: id, tenantId: tenant._id }),
+            Comment.countDocuments({ workOrderId: id, tenantId: tenant._id }),
+            Assignment.countDocuments({
+              workOrderId: id,
+              tenantId: tenant._id,
+            }),
+          ],
+        );
 
         // Count subtasks from related tasks
-        const tasks = await Task.find({ workOrderId: id, tenantId: tenant._id }, { _id: 1 });
-        const taskIds = tasks.map(t => t._id.toString());
+        const tasks = await Task.find(
+          { workOrderId: id, tenantId: tenant._id },
+          { _id: 1 },
+        );
+        const taskIds = tasks.map((t) => t._id.toString());
 
-        const subtasksCount = taskIds.length > 0
-          ? await Subtask.countDocuments({ taskId: { $in: taskIds }, tenantId: tenant._id })
-          : 0;
+        const subtasksCount =
+          taskIds.length > 0
+            ? await Subtask.countDocuments({
+                taskId: { $in: taskIds },
+                tenantId: tenant._id,
+              })
+            : 0;
 
         // Count files (estimate based on upload directory structure)
         let filesCount = 0;
         try {
-          const fs = await import('fs/promises');
-          const path = await import('path');
+          const fs = await import("fs/promises");
+          const path = await import("path");
 
           const workOrderFilesPath = path.join(
             process.cwd(),
-            'uploads',
+            "uploads",
             tenant._id.toString(),
-            'work_orders',
-            id
+            "work_orders",
+            id,
           );
 
           try {
@@ -738,10 +918,10 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           for (const taskId of taskIds) {
             const taskFilesPath = path.join(
               process.cwd(),
-              'uploads',
+              "uploads",
               tenant._id.toString(),
-              'tasks',
-              taskId
+              "tasks",
+              taskId,
             );
             try {
               const taskFiles = await fs.readdir(taskFilesPath);
@@ -751,7 +931,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
             }
           }
         } catch (error) {
-          console.warn('Could not count files:', error);
+          console.warn("Could not count files:", error);
         }
 
         return reply.send({
@@ -765,13 +945,13 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           },
         });
       } catch (error) {
-        console.error('Error fetching delete info:', error);
+        console.error("Error fetching delete info:", error);
         return reply.code(500).send({
           success: false,
           error: "Failed to fetch deletion information",
         });
       }
-    }
+    },
   );
 
   // DELETE /api/v1/work-orders/:id - Delete work order
@@ -786,7 +966,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         const { cascade } = request.query as { cascade?: string };
 
         // Parse cascade deletion option
-        const cascadeDelete = cascade === 'true';
+        const cascadeDelete = cascade === "true";
 
         // Check if work order exists before cleanup
         const workOrder = await WorkOrder.findOne({
@@ -801,13 +981,16 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           });
         }
 
-        fastify.log.info({
-          workOrderId: id,
-          workOrderTitle: workOrder.title,
-          userId: user.id,
-          cascadeDelete,
-          tenantId: tenant._id.toString(),
-        }, "Work order deletion initiated");
+        fastify.log.info(
+          {
+            workOrderId: id,
+            workOrderTitle: workOrder.title,
+            userId: user.id,
+            cascadeDelete,
+            tenantId: tenant._id.toString(),
+          },
+          "Work order deletion initiated",
+        );
 
         // Perform comprehensive cleanup
         const cleanupResult = await EntityCleanupService.cleanupWorkOrder(
