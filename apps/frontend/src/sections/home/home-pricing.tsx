@@ -279,7 +279,7 @@ function PlanCard({ plan, sx, ...other }: PlanCardProps) {
             size="large"
             target="_blank"
             rel="noopener noreferrer"
-            href={paths.minimalStore}
+            href={paths.upgradePlan}
           >
             Get started
           </Button>

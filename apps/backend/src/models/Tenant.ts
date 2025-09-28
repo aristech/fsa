@@ -25,12 +25,56 @@ export interface ITenant {
       end: string;
       days: number[];
     };
+    sms: {
+      enabled: boolean;
+      provider: "yuboto" | "apifon";
+      fallbackProvider?: "yuboto" | "apifon";
+    };
   };
   subscription: {
     plan: "free" | "basic" | "premium" | "enterprise";
-    status: "active" | "inactive" | "cancelled";
+    status: "active" | "inactive" | "cancelled" | "trial" | "past_due" | "unpaid";
     startDate: Date;
     endDate?: Date;
+    trialEndDate?: Date;
+    stripeCustomerId?: string;
+    stripeSubscriptionId?: string;
+    stripePriceId?: string;
+    billingCycle: "monthly" | "yearly";
+    limits: {
+      maxUsers: number;
+      maxClients: number;
+      maxWorkOrdersPerMonth: number;
+      maxSmsPerMonth: number;
+      maxStorageGB: number;
+      features: {
+        smsReminders: boolean;
+        advancedReporting: boolean;
+        apiAccess: boolean;
+        customBranding: boolean;
+        multiLocation: boolean;
+        integrations: boolean;
+        prioritySupport: boolean;
+      };
+    };
+    usage: {
+      currentUsers: number;
+      currentClients: number;
+      workOrdersThisMonth: number;
+      smsThisMonth: number;
+      storageUsedGB: number;
+      lastResetDate: Date;
+    };
+  };
+  branding: {
+    logoUrl?: string;
+    primaryColor?: string;
+    secondaryColor?: string;
+    companyInfo?: {
+      website?: string;
+      description?: string;
+      industry?: string;
+    };
   };
   isActive: boolean;
   createdAt: Date;
@@ -85,6 +129,11 @@ const TenantSchema = new Schema<ITenant>(
         end: { type: String, default: "17:00" },
         days: { type: [Number], default: [1, 2, 3, 4, 5] }, // Monday to Friday
       },
+      sms: {
+        enabled: { type: Boolean, default: false }, // Disabled by default, enabled per subscription plan
+        provider: { type: String, enum: ["yuboto", "apifon"], default: "apifon" },
+        fallbackProvider: { type: String, enum: ["yuboto", "apifon"], required: false },
+      },
     },
     subscription: {
       plan: {
@@ -94,11 +143,54 @@ const TenantSchema = new Schema<ITenant>(
       },
       status: {
         type: String,
-        enum: ["active", "inactive", "cancelled"],
-        default: "active",
+        enum: ["active", "inactive", "cancelled", "trial", "past_due", "unpaid"],
+        default: "trial",
       },
       startDate: { type: Date, default: Date.now },
       endDate: Date,
+      trialEndDate: Date,
+      stripeCustomerId: String,
+      stripeSubscriptionId: String,
+      stripePriceId: String,
+      billingCycle: {
+        type: String,
+        enum: ["monthly", "yearly"],
+        default: "monthly",
+      },
+      limits: {
+        maxUsers: { type: Number, default: 2 },
+        maxClients: { type: Number, default: 10 },
+        maxWorkOrdersPerMonth: { type: Number, default: 50 },
+        maxSmsPerMonth: { type: Number, default: 0 },
+        maxStorageGB: { type: Number, default: 1 },
+        features: {
+          smsReminders: { type: Boolean, default: false },
+          advancedReporting: { type: Boolean, default: false },
+          apiAccess: { type: Boolean, default: false },
+          customBranding: { type: Boolean, default: false },
+          multiLocation: { type: Boolean, default: false },
+          integrations: { type: Boolean, default: false },
+          prioritySupport: { type: Boolean, default: false },
+        },
+      },
+      usage: {
+        currentUsers: { type: Number, default: 0 },
+        currentClients: { type: Number, default: 0 },
+        workOrdersThisMonth: { type: Number, default: 0 },
+        smsThisMonth: { type: Number, default: 0 },
+        storageUsedGB: { type: Number, default: 0 },
+        lastResetDate: { type: Date, default: Date.now },
+      },
+    },
+    branding: {
+      logoUrl: String,
+      primaryColor: String,
+      secondaryColor: String,
+      companyInfo: {
+        website: String,
+        description: String,
+        industry: String,
+      },
     },
     isActive: {
       type: Boolean,

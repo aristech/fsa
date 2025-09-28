@@ -16,6 +16,7 @@ import { WorkOrderAssignmentService } from "../services/work-order-assignment-se
 import { WorkOrderTimelineService } from "../services/work-order-timeline-service";
 import { WebhookService } from "../services/webhook-service";
 import { WorkOrderSmsService } from "../services/work-order-sms-service";
+import { subscriptionMiddleware, updateUsageAfterAction } from "../middleware/subscription-enforcement";
 
 export async function workOrderRoutes(fastify: FastifyInstance) {
   // Apply authentication middleware to all routes
@@ -410,7 +411,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
   // POST /api/v1/work-orders - Create work order
   fastify.post(
     "/",
-    { preHandler: requirePermission("workOrders.create") },
+    { preHandler: [requirePermission("workOrders.create"), subscriptionMiddleware.checkWorkOrderLimit()] },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const req = request as AuthenticatedRequest;
@@ -500,6 +501,9 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         });
 
         await workOrder.save();
+
+        // Track work order creation in usage statistics
+        await updateUsageAfterAction(tenant._id.toString(), 'create_work_order', 1);
 
         // Add timeline entry for work order creation
         try {

@@ -18,6 +18,16 @@ export interface IUser {
   lastLoginAt?: Date;
   isOnline: boolean;
   lastSeenAt?: Date;
+  // Social login tracking
+  socialLogins?: {
+    google?: {
+      id: string;
+      email: string;
+      picture?: string;
+      connectedAt: Date;
+    };
+    // Future: facebook, microsoft, etc.
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -87,6 +97,16 @@ const UserSchema = new Schema<IUser>(
     },
     lastSeenAt: {
       type: Date,
+    },
+    // Social login tracking
+    socialLogins: {
+      google: {
+        id: String,
+        email: String,
+        picture: String,
+        connectedAt: Date,
+      },
+      // Future: facebook, microsoft, etc.
     },
   },
   {

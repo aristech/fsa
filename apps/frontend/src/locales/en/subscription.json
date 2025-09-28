@@ -1,0 +1,93 @@
+{
+  "subscription": {
+    "plans": {
+      "free": {
+        "name": "Free",
+        "description": "Perfect for getting started with basic field service management",
+        "highlights": {
+          "0": "Up to 2 users",
+          "1": "Up to 10 clients",
+          "2": "50 work orders per month",
+          "3": "Basic reporting",
+          "4": "1GB storage",
+          "5": "Community support"
+        }
+      },
+      "basic": {
+        "name": "Basic",
+        "description": "Essential features for small teams with SMS notifications",
+        "highlights": {
+          "0": "Up to 5 users",
+          "1": "Up to 100 clients",
+          "2": "500 work orders per month",
+          "3": "100 SMS per month",
+          "4": "SMS reminders",
+          "5": "10GB storage",
+          "6": "Email support"
+        }
+      },
+      "premium": {
+        "name": "Premium",
+        "description": "Advanced features for growing businesses with multiple locations",
+        "highlights": {
+          "0": "Up to 20 users",
+          "1": "Up to 1,000 clients",
+          "2": "2,000 work orders per month",
+          "3": "500 SMS per month",
+          "4": "Advanced reporting & analytics",
+          "5": "API access",
+          "6": "Custom branding",
+          "7": "Multi-location support",
+          "8": "50GB storage",
+          "9": "Priority email support"
+        }
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Full-featured solution for large organizations with dedicated support",
+        "highlights": {
+          "0": "Unlimited users",
+          "1": "Unlimited clients",
+          "2": "Unlimited work orders",
+          "3": "2,000 SMS per month",
+          "4": "All premium features",
+          "5": "Third-party integrations",
+          "6": "Dedicated account manager",
+          "7": "Phone & priority support",
+          "8": "200GB storage",
+          "9": "Custom onboarding"
+        }
+      }
+    },
+    "labels": {
+      "mostPopular": "Most Popular",
+      "freeTrial": "Free Trial",
+      "trialDays": "days free trial",
+      "features": "Features",
+      "loading": "Loading subscription plans...",
+      "error": "No subscription plans available"
+    },
+    "actions": {
+      "selectPlan": "Select Plan",
+      "getStarted": "Get Started",
+      "upgrade": "Upgrade",
+      "contactSales": "Contact Sales",
+      "currentPlan": "Current Plan"
+    },
+    "status": {
+      "currentPlan": "Current Plan"
+    },
+    "billing": {
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "perMonth": "/month",
+      "perYear": "/year",
+      "savings": "Save 17%"
+    },
+    "sections": {
+      "title": "Transparent",
+      "subtitle": "plans",
+      "description": "Choose from flexible pricing options designed to fit your business needs and budget with no hidden fees."
+    }
+  }
+}

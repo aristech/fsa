@@ -1,6 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { authenticate } from "../middleware/auth";
 import { User } from "../models";
+import { subscriptionMiddleware, updateUsageAfterAction } from "../middleware/subscription-enforcement";
+import { SubscriptionPlansService } from "../services/subscription-plans-service";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
@@ -20,6 +22,7 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
       let taskId = "";
       let workOrderId = "";
       let reportId = "";
+      let logoType = "";
 
       // Process all multipart parts
       for await (const part of parts) {
@@ -47,6 +50,8 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
             workOrderId = value.trim();
           } else if (part.fieldname === "reportId") {
             reportId = value.trim();
+          } else if (part.fieldname === "logoType") {
+            logoType = value.trim();
           }
         }
       }
@@ -60,8 +65,8 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
           taskId,
           workOrderId,
           reportId,
-          finalScopeDir: scope === "workOrder" ? "work_orders" : scope === "report" ? "reports" : "tasks",
-          finalOwnerId: taskId || workOrderId || reportId || "misc",
+          finalScopeDir: scope === "workOrder" ? "work_orders" : scope === "report" ? "reports" : scope === "logo" ? "branding" : "tasks",
+          finalOwnerId: taskId || workOrderId || reportId || logoType || "misc",
         },
         "uploads: parsed multipart data",
       );
@@ -75,13 +80,42 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
 
       const user: any = (request as any).user;
       const tenantId = user.tenantId;
+
+      // Check storage limits before processing files
+      const totalUploadSize = files.reduce((sum, file) => sum + file.buffer.length, 0);
+
+      // Get tenant to check current storage usage
+      const { Tenant } = require("../models");
+      const tenant = await Tenant.findById(tenantId);
+      if (!tenant) {
+        return reply.code(404).send({
+          success: false,
+          error: "Tenant not found",
+        });
+      }
+
+      // Check if the upload would exceed storage limits
+      const storageCheck = SubscriptionPlansService.canPerformAction(tenant, 'upload_file', totalUploadSize);
+      if (!storageCheck.allowed) {
+        return reply.code(413).send({
+          success: false,
+          error: storageCheck.reason || "Storage limit exceeded",
+          details: {
+            currentUsage: `${storageCheck.currentUsage?.toFixed(2)}GB`,
+            limit: `${storageCheck.limit}GB`,
+            uploadSize: `${(totalUploadSize / (1024 * 1024 * 1024)).toFixed(2)}GB`,
+          },
+        });
+      }
       const scopeDir =
         scope === "workOrder"
           ? "work_orders"
           : scope === "report"
             ? "reports"
+            : scope === "logo"
+            ? "branding"
             : "tasks";
-      const ownerId = taskId || workOrderId || reportId || "misc";
+      const ownerId = taskId || workOrderId || reportId || logoType || "misc";
 
       const baseDir = path.join(
         process.cwd(),
@@ -109,6 +143,54 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
         { fileCount: files.length },
         "uploads: processing files",
       );
+
+      // Validate logo uploads if scope is logo
+      if (scope === "logo") {
+        // Check if user has custom branding feature
+        const { Tenant } = require("../models");
+        const tenant = await Tenant.findById(tenantId);
+        if (!tenant?.subscription?.limits?.features?.customBranding) {
+          return reply.status(403).send({
+            success: false,
+            error: "Custom branding is not available on your current plan",
+          });
+        }
+
+        // Only tenant owners can upload logos
+        if (!user.isTenantOwner) {
+          return reply.status(403).send({
+            success: false,
+            error: "Only tenant owners can upload logos",
+          });
+        }
+
+        // Validate file types for logos (only images)
+        for (const file of files) {
+          const allowedMimeTypes = [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+            'image/svg+xml'
+          ];
+
+          if (!allowedMimeTypes.includes(file.mimetype)) {
+            return reply.status(400).send({
+              success: false,
+              error: `Invalid file type for logo: ${file.mimetype}. Only image files are allowed.`,
+            });
+          }
+
+          // Validate file size for logos (max 2MB)
+          if (file.buffer.length > 2 * 1024 * 1024) {
+            return reply.status(413).send({
+              success: false,
+              error: `Logo file too large. Maximum size is 2MB.`,
+            });
+          }
+        }
+      }
 
       for (const file of files) {
         // Properly sanitize filename to handle Greek characters and spaces
@@ -152,9 +234,17 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
         });
       }
 
+      // Track storage usage after successful upload
+      const totalSizeGB = totalUploadSize / (1024 * 1024 * 1024);
+      await updateUsageAfterAction(tenantId, 'upload_file', totalSizeGB);
+
       fastify.log.info(
-        { savedCount: saved.length },
-        "uploads: completed successfully",
+        {
+          savedCount: saved.length,
+          totalSizeGB: totalSizeGB.toFixed(4),
+          tenantId
+        },
+        "uploads: completed successfully with storage tracking",
       );
       return reply.send({ success: true, data: saved });
     } catch (err: any) {

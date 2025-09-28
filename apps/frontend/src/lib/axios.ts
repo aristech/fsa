@@ -32,8 +32,11 @@ axiosInstance.interceptors.response.use(
     let message = error?.response?.data?.message || error?.message || 'Something went wrong!';
 
     // Check if we got HTML instead of JSON (common when server returns error page)
-    if (error?.response?.data && typeof error.response.data === 'string' &&
-        error.response.data.includes('<!DOCTYPE')) {
+    if (
+      error?.response?.data &&
+      typeof error.response.data === 'string' &&
+      error.response.data.includes('<!DOCTYPE')
+    ) {
       message = `Server returned HTML instead of JSON. This usually indicates an authentication issue or the API endpoint doesn't exist. Status: ${error?.response?.status || 'unknown'}`;
       console.error('🚨 HTML Response Error:', {
         url: error?.config?.url,
@@ -41,7 +44,7 @@ axiosInstance.interceptors.response.use(
         status: error?.response?.status,
         statusText: error?.response?.statusText,
         responseType: typeof error?.response?.data,
-        responseSnippet: error?.response?.data?.substring(0, 200)
+        responseSnippet: error?.response?.data?.substring(0, 200),
       });
     }
 
@@ -89,6 +92,7 @@ export const endpoints = {
     signIn: '/api/v1/auth/sign-in',
     signUp: '/api/v1/auth/sign-up',
     signOut: '/api/v1/auth/sign-out',
+    google: '/api/v1/auth/google',
   },
   mail: {
     list: '/api/mail/list',
@@ -244,5 +248,30 @@ export const endpoints = {
     permissions: () => axiosInstance.get('/api/v1/api-keys/permissions'),
     usage: (id: string) => axiosInstance.get(`/api/v1/api-keys/${id}/usage`),
     test: (id: string) => axiosInstance.post(`/api/v1/api-keys/${id}/test`),
+  },
+  subscription: {
+    status: () => axiosInstance.get('/api/v1/subscription/status'),
+    usage: () => axiosInstance.get('/api/v1/subscription/usage'),
+    plans: () => axiosInstance.get('/api/v1/subscription/plans'),
+    changePlan: (data: { planId: string; billingCycle: string }) =>
+      axiosInstance.post('/api/v1/subscription/change-plan', data),
+    cancel: () => axiosInstance.post('/api/v1/subscription/cancel'),
+    resume: () => axiosInstance.post('/api/v1/subscription/resume'),
+    invoices: () => axiosInstance.get('/api/v1/subscription/invoices'),
+    paymentMethods: () => axiosInstance.get('/api/v1/subscription/payment-methods'),
+    createCheckoutSession: (data: {
+      planId: string;
+      billingCycle: string;
+      successUrl?: string;
+      cancelUrl?: string;
+      trialPeriodDays?: number;
+    }) => axiosInstance.post('/api/v1/subscription/checkout-session', data),
+    createPortalSession: () => axiosInstance.post('/api/v1/subscription/billing-portal'),
+    checkoutSuccess: (sessionId: string) =>
+      axiosInstance.get(`/api/v1/subscription/checkout/success?session_id=${sessionId}`),
+    checkoutCancel: (sessionId?: string) =>
+      axiosInstance.get(
+        `/api/v1/subscription/checkout/cancel${sessionId ? `?session_id=${sessionId}` : ''}`
+      ),
   },
 } as const;

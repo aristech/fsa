@@ -7,6 +7,7 @@ import { authenticate } from "../middleware/auth";
 import { AuthenticatedRequest } from "../types";
 import { MagicLinkService } from "../services/magic-link-service";
 import { UserCleanupService } from "../services/user-cleanup-service";
+import { subscriptionMiddleware, updateUsageAfterAction } from "../middleware/subscription-enforcement";
 
 // Personnel creation schema
 const createPersonnelSchema = z.object({
@@ -445,7 +446,9 @@ export async function personnelRoutes(fastify: FastifyInstance) {
   });
 
   // POST /api/v1/personnel - Create new personnel
-  fastify.post("/", async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post("/", {
+    preHandler: [subscriptionMiddleware.checkUserLimit()]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const req = request as AuthenticatedRequest;
       const { tenant } = req.context!;
@@ -496,6 +499,9 @@ export async function personnelRoutes(fastify: FastifyInstance) {
               permissions: role?.permissions || [],
               isActive: true,
             });
+
+            // Track user creation in usage statistics
+            await updateUsageAfterAction(tenant._id.toString(), 'create_user', 1);
           } catch (err: any) {
             const isDup =
               err?.code === 11000 ||

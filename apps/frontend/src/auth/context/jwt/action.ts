@@ -20,6 +20,11 @@ export type SignUpParams = {
   lastName: string;
 };
 
+export type GoogleSignInParams = {
+  idToken: string;
+  accessToken?: string;
+};
+
 /** **************************************
  * Sign in
  *************************************** */
@@ -79,6 +84,35 @@ export const signUp = async ({
     sessionStorage.setItem(JWT_STORAGE_KEY, accessToken);
   } catch (error) {
     console.error('Error during sign up:', error);
+    throw error;
+  }
+};
+
+/** **************************************
+ * Google Sign In
+ *************************************** */
+export const signInWithGoogle = async ({
+  idToken,
+  accessToken,
+}: GoogleSignInParams): Promise<void> => {
+  try {
+    const params = {
+      idToken,
+      accessToken,
+    };
+
+    const res = await axios.post(endpoints.auth.google, params);
+
+    // Handle both response formats
+    const accessTokenResponse = res.data.accessToken || res.data.data?.token;
+
+    if (!accessTokenResponse) {
+      throw new Error('Access token not found in response');
+    }
+
+    setSession(accessTokenResponse, { remember: true });
+  } catch (error) {
+    console.error('Error during Google sign in:', error);
     throw error;
   }
 };

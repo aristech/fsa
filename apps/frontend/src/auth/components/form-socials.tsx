@@ -1,7 +1,7 @@
 import type { BoxProps } from '@mui/material/Box';
 
 import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
+import Button from '@mui/material/Button';
 
 import { Iconify } from 'src/components/iconify';
 
@@ -9,22 +9,13 @@ import { Iconify } from 'src/components/iconify';
 
 type FormSocialsProps = BoxProps & {
   signInWithGoogle?: () => void;
-  singInWithGithub?: () => void;
-  signInWithTwitter?: () => void;
 };
 
-export function FormSocials({
-  sx,
-  signInWithGoogle,
-  singInWithGithub,
-  signInWithTwitter,
-  ...other
-}: FormSocialsProps) {
+export function FormSocials({ sx, signInWithGoogle, ...other }: FormSocialsProps) {
   return (
     <Box
       sx={[
         {
-          gap: 1.5,
           display: 'flex',
           justifyContent: 'center',
         },
@@ -32,15 +23,23 @@ export function FormSocials({
       ]}
       {...other}
     >
-      <IconButton color="inherit" onClick={signInWithGoogle}>
-        <Iconify width={22} icon="socials:google" />
-      </IconButton>
-      <IconButton color="inherit" onClick={singInWithGithub}>
-        <Iconify width={22} icon="socials:github" />
-      </IconButton>
-      <IconButton color="inherit" onClick={signInWithTwitter}>
-        <Iconify width={22} icon="socials:twitter" />
-      </IconButton>
+      <Button
+        fullWidth
+        variant="outlined"
+        size="large"
+        startIcon={<Iconify width={20} icon="socials:google" />}
+        onClick={signInWithGoogle}
+        sx={{
+          py: 1.5,
+          borderColor: 'divider',
+          '&:hover': {
+            borderColor: 'primary.main',
+            backgroundColor: 'primary.lighter',
+          },
+        }}
+      >
+        Continue with Google
+      </Button>
     </Box>
   );
 }

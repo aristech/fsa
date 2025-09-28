@@ -1,8 +1,8 @@
 # 🔒 Clients Endpoint Security Audit Report
 
-**Date:** 2025-01-09  
-**Auditor:** System Security Review  
-**Scope:** `/api/v1/clients` endpoint tenant isolation security  
+**Date:** 2025-01-09
+**Auditor:** System Security Review
+**Scope:** `/api/v1/clients` endpoint tenant isolation security
 
 ## 📊 Security Assessment Summary
 
@@ -154,7 +154,7 @@ fastify.addHook("preHandler", authenticate);
 ```typescript
 // ✅ Granular permissions per operation
 "clients.view"    // Read operations
-"clients.create"  // Create operations  
+"clients.create"  // Create operations
 "clients.edit"    // Update operations
 "clients.delete"  // Delete operations
 ```
@@ -238,3 +238,32 @@ The clients endpoint can be safely used without tenant isolation concerns. The i
 ---
 
 *This audit confirms that the clients endpoint is secure and ready for production use with multi-tenant environments.*
+
+
+  1. 🆓 Acme Field Services (Free Plan)
+    - Email: admin@acme-field.com
+    - Realistic free plan usage: 1 user, 5 clients, 15 work
+  orders
+  2. 💼 TechRepair Pro (Basic Plan)
+    - Email: owner@techrepair-pro.com
+    - Basic plan usage: 3 users, 25 clients, 120 work orders,
+   45 SMS
+  3. ⭐ Elite Service Solutions (Premium Plan)
+    - Email: admin@elite-services.com
+    - Premium usage: 12 users, 340 clients, 850 work orders,
+  280 SMS
+  4. 🏢 Global Field Enterprise (Enterprise Plan)
+    - Email: ceo@global-field.com
+    - Enterprise usage: 45 users, 1,250 clients, 3,200 work
+  orders, 1,100 SMS
+  5. 🚀 StartUp Services (Basic Plan)
+    - Email: founder@startup-services.com
+    - Another basic example with different usage patterns
+  6. 🏠 Family HVAC & Repair (Free Plan)
+    - Email: owner@familyhvac.com
+    - Small family business on free plan
+
+  🔑 Login Credentials
+
+  - Password for ALL demo tenants: Demo123!@#
+  - Login URL: http://localhost:3000/auth/signin

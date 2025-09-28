@@ -24,6 +24,8 @@ import { useAuthContext } from '../../hooks';
 import { getErrorMessage } from '../../utils';
 import { FormHead } from '../../components/form-head';
 import { signInWithPassword } from '../../context/jwt';
+import { FormDivider } from '../../components/form-divider';
+import { FormSocials } from '../../components/form-socials';
 
 // ----------------------------------------------------------------------
 
@@ -108,6 +110,35 @@ export function JwtSignInView() {
     }
   });
 
+  const handleGoogleSignIn = async () => {
+    try {
+      setErrorMessage(null);
+
+      // Use backend OAuth flow to avoid CORS issues
+      const returnTo = new URL(window.location.href).searchParams.get('returnTo') || '/dashboard';
+
+      const axiosInstance = (await import('src/lib/axios')).default;
+
+      const response = await axiosInstance.post('/api/v1/auth/google', {
+        redirectPath: returnTo,
+      });
+
+      if (response.data.success && response.data.data?.authUrl) {
+        // Redirect to Google OAuth URL provided by backend
+        window.location.href = response.data.data.authUrl;
+      } else {
+        throw new Error('Failed to get OAuth URL from server');
+      }
+    } catch (error) {
+      console.error('Google sign-in setup error:', error);
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Failed to initialize Google sign-in. Please try again.'
+      );
+    }
+  };
+
   const renderForm = () => (
     <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
       <Field.Text name="email" label="Email address" slotProps={{ inputLabel: { shrink: true } }} />
@@ -185,6 +216,10 @@ export function JwtSignInView() {
       <Form methods={methods} onSubmit={onSubmit}>
         {renderForm()}
       </Form>
+
+      <FormDivider />
+
+      <FormSocials signInWithGoogle={handleGoogleSignIn} />
     </>
   );
 }

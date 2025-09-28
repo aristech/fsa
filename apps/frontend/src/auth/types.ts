@@ -4,6 +4,25 @@ export type TenantType = {
   slug: string;
   email: string;
   isActive: boolean;
+  subscription?: {
+    plan: string;
+    status: string;
+    billingCycle: string;
+    limits?: {
+      maxUsers: number;
+      maxClients: number;
+      maxWorkOrdersPerMonth: number;
+      maxSmsPerMonth: number;
+      maxStorageGB: number;
+    };
+    usage?: {
+      currentUsers: number;
+      currentClients: number;
+      workOrdersThisMonth: number;
+      smsThisMonth: number;
+      storageUsedGB: number;
+    };
+  };
 } | null;
 
 export type UserType = {

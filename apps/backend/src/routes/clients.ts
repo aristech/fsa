@@ -4,6 +4,7 @@ import { requirePermission } from "../middleware/permission-guard";
 import { Client } from "../models";
 import { AuthenticatedRequest } from "../types";
 import { EntityCleanupService } from "../services/entity-cleanup-service";
+import { subscriptionMiddleware, updateUsageAfterAction } from "../middleware/subscription-enforcement";
 
 export async function clientRoutes(fastify: FastifyInstance) {
   // Apply authentication middleware to all routes
@@ -98,7 +99,7 @@ export async function clientRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/",
     {
-      preHandler: requirePermission("clients.create"),
+      preHandler: [requirePermission("clients.create"), subscriptionMiddleware.checkClientLimit()],
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
@@ -112,6 +113,9 @@ export async function clientRoutes(fastify: FastifyInstance) {
         });
 
         await newClient.save();
+
+        // Track client creation in usage statistics
+        await updateUsageAfterAction(tenant._id.toString(), 'create_client', 1);
 
         return reply.code(201).send({
           success: true,

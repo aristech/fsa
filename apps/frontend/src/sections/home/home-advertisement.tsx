@@ -115,7 +115,7 @@ const renderDescription = () => (
           variant="contained"
           target="_blank"
           rel="noopener noreferrer"
-          href={paths.minimalStore}
+          href={paths.upgradePlan}
         >
           Purchase now
         </Button>

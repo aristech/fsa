@@ -372,7 +372,7 @@ export function WorkOrderSmsReminders({
             </Box>
 
             {/* Test Message */}
-            <Box>
+            {/* <Box>
               <Typography variant="subtitle2" gutterBottom>
                 Send Test Message
               </Typography>
@@ -425,7 +425,7 @@ export function WorkOrderSmsReminders({
               >
                 Send Test SMS
               </Button>
-            </Box>
+            </Box> */}
 
             {/* Message History Placeholder */}
             <Box>

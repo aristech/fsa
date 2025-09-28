@@ -26,6 +26,9 @@ import { webhookTestRoutes } from "./webhook-test";
 import { autocompleteRoutes } from "./autocomplete";
 import { reminderRoutes } from "./reminders";
 import { smsReminderRoutes } from "./sms-reminders";
+import { subscriptionRoutes } from "./subscription";
+import { stripeWebhookRoutes } from "./stripe-webhook";
+import brandingRoutes from "./branding";
 
 export async function registerRoutes(fastify: FastifyInstance) {
   // Health check
@@ -62,4 +65,12 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(autocompleteRoutes, { prefix: "/api/v1" });
   await fastify.register(reminderRoutes, { prefix: "/api/v1/reminders" });
   await fastify.register(smsReminderRoutes, { prefix: "/api/v1/sms-reminders" });
+  await fastify.register(subscriptionRoutes, { prefix: "/api/v1/subscription" });
+  await fastify.register(stripeWebhookRoutes, { prefix: "/api/v1/stripe" });
+
+  // Authenticated routes - Branding
+  await fastify.register(async function (fastify) {
+    await fastify.addHook('preHandler', authenticate);
+    await fastify.register(brandingRoutes, { prefix: "/api/v1" });
+  });
 }

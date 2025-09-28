@@ -9,6 +9,7 @@ import { CheckInSession } from "../models/CheckInSession";
 import { authenticate } from "../middleware/auth";
 import { MagicLinkService } from "../services/magic-link-service";
 import { TenantSetupService } from "../services/tenant-setup";
+import { GoogleOAuthService } from "../services/google-oauth-service";
 import { sendPersonnelMagicLink, sendPasswordResetEmail } from "./email";
 
 const signInSchema = z.object({
@@ -69,6 +70,20 @@ const setupAccountSchema = z
     message: "Passwords don't match",
     path: ["confirmPassword"],
   });
+
+// Google OAuth schemas
+const googleAuthStartSchema = z.object({
+  planId: z.string().optional(),
+  billingCycle: z.enum(["monthly", "yearly"]).optional(),
+  companyName: z.string().optional(),
+  redirectPath: z.string().optional(),
+});
+
+const googleAuthCallbackSchema = z.object({
+  code: z.string().min(1),
+  state: z.string().optional(),
+  error: z.string().optional(),
+});
 
 export async function authRoutes(fastify: FastifyInstance) {
   // Sign out
@@ -225,15 +240,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           },
           token,
           // Include tenant info when available for convenience
-          tenant: tenant
-            ? {
-                _id: tenant._id,
-                name: tenant.name,
-                slug: tenant.slug,
-                email: tenant.email,
-                isActive: tenant.isActive,
-              }
-            : null,
+          tenant: tenant || null,
         },
       });
     } catch (error) {
@@ -382,15 +389,7 @@ export async function authRoutes(fastify: FastifyInstance) {
             lastLoginAt: user.lastLoginAt,
             environmentAccess: personnel?.environmentAccess || null,
           },
-          tenant: tenant
-            ? {
-                _id: tenant._id,
-                name: tenant.name,
-                slug: tenant.slug,
-                email: tenant.email,
-                isActive: tenant.isActive,
-              }
-            : null,
+          tenant: tenant || null,
         },
         message: "User verified successfully",
       });
@@ -831,6 +830,339 @@ export async function authRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         success: false,
         message: "Failed to update heartbeat",
+      });
+    }
+  });
+
+  // Google OAuth start - Generate authorization URL
+  fastify.post("/google", async (request, reply) => {
+    try {
+      const validatedData = googleAuthStartSchema.parse(request.body);
+
+      // Create state parameter with tenant context
+      const state = GoogleOAuthService.createStateParameter({
+        planId: validatedData.planId,
+        billingCycle: validatedData.billingCycle,
+        companyName: validatedData.companyName,
+        redirectPath: validatedData.redirectPath,
+      });
+
+      // Generate Google OAuth URL
+      const authUrl = GoogleOAuthService.generateAuthUrl(state);
+
+      return reply.send({
+        success: true,
+        message: "Google OAuth URL generated",
+        data: {
+          authUrl,
+          state,
+        },
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({
+          success: false,
+          message: "Invalid request data",
+          errors: error.issues,
+        });
+      }
+
+      fastify.log.error({ error }, "Error generating Google OAuth URL");
+      return reply.status(500).send({
+        success: false,
+        message: "Failed to generate OAuth URL",
+      });
+    }
+  });
+
+  // Google OAuth callback - Handle OAuth response and create tenant
+  fastify.get("/google/callback", async (request, reply) => {
+    try {
+      const validatedData = googleAuthCallbackSchema.parse(request.query);
+
+      // Handle OAuth errors
+      if (validatedData.error) {
+        fastify.log.warn(`Google OAuth error: ${validatedData.error}`);
+        return reply.status(400).send({
+          success: false,
+          message: `OAuth error: ${validatedData.error}`,
+        });
+      }
+
+      // Exchange code for tokens
+      const tokens = await GoogleOAuthService.exchangeCodeForTokens(validatedData.code);
+
+      // Get user profile
+      let userProfile;
+      if (tokens.idToken) {
+        userProfile = await GoogleOAuthService.verifyIdToken(tokens.idToken);
+      } else {
+        userProfile = await GoogleOAuthService.getUserProfile(tokens.accessToken);
+      }
+
+      // Parse state parameter
+      let stateData: any = {};
+      if (validatedData.state) {
+        try {
+          stateData = GoogleOAuthService.parseStateParameter(validatedData.state);
+        } catch (error) {
+          fastify.log.warn(`Invalid OAuth state: ${error}`);
+          // Continue without state data
+        }
+      }
+
+      // Check if user already exists
+      const existingUser = await User.findOne({ email: userProfile.email });
+      if (existingUser) {
+        // User exists - sign them in
+        const tenant = await Tenant.findById(existingUser.tenantId);
+
+        const token = jwt.sign(
+          {
+            userId: existingUser._id,
+            email: existingUser.email,
+            role: existingUser.role,
+            tenantId: existingUser.tenantId,
+            isTenantOwner: existingUser.isTenantOwner,
+          },
+          process.env.JWT_SECRET!,
+          { expiresIn: "7d" }
+        );
+
+        // Redirect to frontend with token as URL parameter (temporary, frontend should store it properly)
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const redirectPath = stateData.redirectPath || '/dashboard';
+
+        // Redirect to frontend callback page that will handle the token
+        const redirectUrl = `${frontendUrl}/auth/oauth-callback?token=${encodeURIComponent(token)}&redirect=${encodeURIComponent(redirectPath)}&provider=google&type=existing`;
+        return reply.redirect(redirectUrl);
+      }
+
+      // New user - create tenant and admin user
+      const companyName = stateData.companyName ||
+                         `${userProfile.givenName} ${userProfile.familyName}'s Company`;
+      const planId = stateData.planId || 'free';
+
+      // Create tenant using TenantSetupService
+      const setupResult = await TenantSetupService.createTenant({
+        companyName,
+        adminEmail: userProfile.email,
+        adminFirstName: userProfile.givenName,
+        adminLastName: userProfile.familyName,
+        subscriptionPlan: planId,
+        skipMagicLink: true, // Skip magic link since we're using OAuth
+        googleProfile: {
+          id: userProfile.id,
+          picture: userProfile.picture,
+        },
+      });
+
+      if (!setupResult.success) {
+        return reply.status(500).send({
+          success: false,
+          message: setupResult.message || "Failed to create tenant",
+        });
+      }
+
+      const { tenant, adminUser } = setupResult;
+
+      // Generate JWT token
+      const token = jwt.sign(
+        {
+          userId: adminUser._id,
+          email: adminUser.email,
+          role: adminUser.role,
+          tenantId: tenant._id,
+          isTenantOwner: true,
+        },
+        process.env.JWT_SECRET!,
+        { expiresIn: "7d" }
+      );
+
+      fastify.log.info(`New tenant created via Google OAuth: ${tenant.name} (${userProfile.email})`);
+
+      // Redirect to frontend with token as URL parameter (temporary, frontend should store it properly)
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const redirectPath = stateData.redirectPath || '/dashboard';
+
+      // Redirect to frontend callback page that will handle the token
+      const redirectUrl = `${frontendUrl}/auth/oauth-callback?token=${encodeURIComponent(token)}&redirect=${encodeURIComponent(redirectPath)}&provider=google&type=new`;
+      return reply.redirect(redirectUrl);
+
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({
+          success: false,
+          message: "Invalid callback parameters",
+          errors: error.issues,
+        });
+      }
+
+      fastify.log.error({ error }, "Error processing Google OAuth callback");
+      return reply.status(500).send({
+        success: false,
+        message: "Failed to process OAuth callback",
+      });
+    }
+  });
+
+  // Google OAuth callback - Frontend-first flow (POST endpoint)
+  fastify.post("/google/callback", async (request, reply) => {
+    try {
+      const validatedData = googleAuthCallbackSchema.parse(request.body);
+
+      // Handle OAuth errors
+      if (validatedData.error) {
+        fastify.log.warn(`Google OAuth error: ${validatedData.error}`);
+        return reply.status(400).send({
+          success: false,
+          message: `OAuth error: ${validatedData.error}`,
+        });
+      }
+
+      // Exchange code for tokens
+      const tokens = await GoogleOAuthService.exchangeCodeForTokens(validatedData.code);
+
+      // Get user profile
+      let userProfile;
+      if (tokens.idToken) {
+        userProfile = await GoogleOAuthService.verifyIdToken(tokens.idToken);
+      } else {
+        userProfile = await GoogleOAuthService.getUserProfile(tokens.accessToken);
+      }
+
+      // Parse state parameter
+      let stateData: any = {};
+      if (validatedData.state) {
+        try {
+          stateData = GoogleOAuthService.parseStateParameter(validatedData.state);
+        } catch (error) {
+          fastify.log.warn(`Invalid OAuth state: ${error}`);
+          // Continue without state data
+        }
+      }
+
+      // Check if user already exists
+      const existingUser = await User.findOne({ email: userProfile.email });
+      if (existingUser) {
+        // User exists - sign them in
+        const tenant = await Tenant.findById(existingUser.tenantId);
+
+        const token = jwt.sign(
+          {
+            userId: existingUser._id,
+            email: existingUser.email,
+            role: existingUser.role,
+            tenantId: existingUser.tenantId,
+            isTenantOwner: existingUser.isTenantOwner,
+          },
+          process.env.JWT_SECRET!,
+          { expiresIn: "7d" }
+        );
+
+        // Return JSON response with token and user info
+        return reply.send({
+          success: true,
+          data: {
+            token,
+            user: {
+              id: existingUser._id,
+              email: existingUser.email,
+              firstName: existingUser.firstName,
+              lastName: existingUser.lastName,
+              role: existingUser.role,
+              tenantId: existingUser.tenantId,
+              isTenantOwner: existingUser.isTenantOwner,
+            },
+            tenant: tenant ? {
+              id: tenant._id,
+              name: tenant.name,
+              slug: tenant.slug,
+            } : null,
+            type: 'existing'
+          }
+        });
+      }
+
+      // New user - create tenant and admin user
+      const companyName = stateData.companyName ||
+                         `${userProfile.givenName} ${userProfile.familyName}'s Company`;
+      const planId = stateData.planId || 'free';
+
+      // Create tenant using TenantSetupService
+      const setupResult = await TenantSetupService.createTenant({
+        companyName,
+        adminEmail: userProfile.email,
+        adminFirstName: userProfile.givenName,
+        adminLastName: userProfile.familyName,
+        subscriptionPlan: planId,
+        skipMagicLink: true, // Skip magic link since we're using OAuth
+        googleProfile: {
+          id: userProfile.id,
+          picture: userProfile.picture,
+        },
+      });
+
+      if (!setupResult.success) {
+        return reply.status(500).send({
+          success: false,
+          message: setupResult.message || "Failed to create tenant",
+        });
+      }
+
+      const { tenant, adminUser } = setupResult;
+
+      // Generate JWT token
+      const token = jwt.sign(
+        {
+          userId: adminUser._id,
+          email: adminUser.email,
+          role: adminUser.role,
+          tenantId: tenant._id,
+          isTenantOwner: true,
+        },
+        process.env.JWT_SECRET!,
+        { expiresIn: "7d" }
+      );
+
+      fastify.log.info(`New tenant created via Google OAuth: ${tenant.name} (${userProfile.email})`);
+
+      // Return JSON response with token and user info
+      return reply.send({
+        success: true,
+        data: {
+          token,
+          user: {
+            id: adminUser._id,
+            email: adminUser.email,
+            firstName: adminUser.firstName,
+            lastName: adminUser.lastName,
+            role: adminUser.role,
+            tenantId: tenant._id,
+            isTenantOwner: true,
+          },
+          tenant: {
+            id: tenant._id,
+            name: tenant.name,
+            slug: tenant.slug,
+          },
+          type: 'new'
+        }
+      });
+
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({
+          success: false,
+          message: "Invalid callback parameters",
+          errors: error.issues,
+        });
+      }
+
+      fastify.log.error({ error }, "Error processing Google OAuth callback");
+      return reply.status(500).send({
+        success: false,
+        message: "Failed to process OAuth callback",
       });
     }
   });

@@ -4,6 +4,7 @@ import * as z from 'zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useBoolean } from 'minimal-shared/hooks';
+import { useSearchParams } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import Box from '@mui/material/Box';
@@ -24,6 +25,8 @@ import { signUp } from '../../context/jwt';
 import { useAuthContext } from '../../hooks';
 import { getErrorMessage } from '../../utils';
 import { FormHead } from '../../components/form-head';
+import { FormDivider } from '../../components/form-divider';
+import { FormSocials } from '../../components/form-socials';
 import { SignUpTerms } from '../../components/sign-up-terms';
 
 // ----------------------------------------------------------------------
@@ -44,12 +47,18 @@ export const SignUpSchema = z.object({
 
 export function JwtSignUpView() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const showPassword = useBoolean();
 
   const { checkUserSession } = useAuthContext();
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Extract plan info from URL query parameters
+  const planId = searchParams.get('plan') || 'free';
+  const billingCycle = searchParams.get('cycle') || 'monthly';
+  const hasTrial = searchParams.get('trial') === 'true';
 
   const defaultValues: SignUpSchemaType = {
     firstName: 'Hello',
@@ -85,6 +94,35 @@ export function JwtSignUpView() {
       setErrorMessage(feedbackMessage);
     }
   });
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setErrorMessage(null);
+
+      // Use backend OAuth flow to avoid CORS issues
+      const axiosInstance = (await import('src/lib/axios')).default;
+
+      const response = await axiosInstance.post('/api/v1/auth/google', {
+        planId, // Use plan from URL parameters
+        billingCycle, // Include billing cycle
+        redirectPath: '/dashboard',
+      });
+
+      if (response.data.success && response.data.data?.authUrl) {
+        // Redirect to Google OAuth URL provided by backend
+        window.location.href = response.data.data.authUrl;
+      } else {
+        throw new Error('Failed to get OAuth URL from server');
+      }
+    } catch (error) {
+      console.error('Google sign-in setup error:', error);
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Failed to initialize Google sign-in. Please try again.'
+      );
+    }
+  };
 
   const renderForm = () => (
     <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
@@ -141,9 +179,18 @@ export function JwtSignUpView() {
   return (
     <>
       <FormHead
-        title="Get started absolutely free"
+        title={
+          planId === 'free'
+            ? 'Get started absolutely free'
+            : `Get started with ${planId.charAt(0).toUpperCase() + planId.slice(1)} plan`
+        }
         description={
           <>
+            {planId !== 'free' && hasTrial && (
+              <Box sx={{ mb: 1, color: 'success.main', fontSize: '0.875rem' }}>
+                ✨ Start with a free trial!
+              </Box>
+            )}
             {`Already have an account? `}
             <Link component={RouterLink} href={paths.auth.jwt.signIn} variant="subtitle2">
               Get started
@@ -162,6 +209,10 @@ export function JwtSignUpView() {
       <Form methods={methods} onSubmit={onSubmit}>
         {renderForm()}
       </Form>
+
+      <FormDivider />
+
+      <FormSocials signInWithGoogle={handleGoogleSignIn} />
 
       <SignUpTerms />
     </>

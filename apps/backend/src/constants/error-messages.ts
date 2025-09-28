@@ -54,6 +54,14 @@ export const BUSINESS_MESSAGES = {
   ASSIGNMENT_REQUIRED: 'business.assignment_required',
   CANNOT_DELETE_DEFAULT: 'business.cannot_delete_default',
   TENANT_SLUG_EXISTS: 'business.tenant_slug_exists',
+
+  // Subscription & Billing Messages
+  INVALID_TENANT: 'business.invalid_tenant',
+  SUBSCRIPTION_INACTIVE: 'business.subscription_inactive',
+  TRIAL_EXPIRED: 'business.trial_expired',
+  SUBSCRIPTION_LIMIT_EXCEEDED: 'business.subscription_limit_exceeded',
+  FEATURE_NOT_AVAILABLE: 'business.feature_not_available',
+  SUBSCRIPTION_ERROR: 'business.subscription_error',
 } as const;
 
 // Resource Not Found Messages

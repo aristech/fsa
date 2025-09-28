@@ -1,0 +1,5 @@
+module.exports = {
+    "VERTICAL": "VERTICAL",
+    "HORIZONTAL": "HORIZONTAL",
+    "DROPDOWN_LIST": "DROPDOWN_LIST"
+};

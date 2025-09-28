@@ -100,9 +100,9 @@ export function NavMobile({ data, open, onClose, slots, sx }: NavMobileProps) {
             variant="contained"
             rel="noopener noreferrer"
             target="_blank"
-            href={paths.minimalStore}
+            href={paths.upgradePlan}
           >
-            Purchase
+            Upgrade Plan
           </Button>
         </Box>
       )}

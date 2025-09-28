@@ -1,4 +1,6 @@
 import { Role, Tenant, User, Status } from "../models";
+import { SubscriptionPlansService } from "./subscription-plans-service";
+import { StripeService } from "./stripe-service";
 
 // ----------------------------------------------------------------------
 
@@ -206,15 +208,49 @@ export class TenantSetupService {
     settings?: any;
     ownerFirstName?: string;
     ownerLastName?: string;
+    subscriptionPlan?: string;
   }): Promise<{ tenant: any; roles: any[]; owner: any }> {
     try {
-      // Create tenant
+      // Determine subscription plan (default to "free")
+      const planName = tenantData.subscriptionPlan || "free";
+
+      // Apply plan limits and settings
+      const subscriptionConfig = SubscriptionPlansService.applyPlanLimits(planName);
+
+      // Create Stripe customer for the tenant
+      let stripeCustomerId = undefined;
+      try {
+        const stripeCustomer = await StripeService.createCustomer({
+          email: tenantData.email,
+          name: tenantData.name,
+          metadata: {
+            tenantSlug: tenantData.slug,
+            planName: planName,
+            source: 'tenant_setup'
+          }
+        });
+        stripeCustomerId = stripeCustomer.id;
+        console.log(`✅ Created Stripe customer: ${stripeCustomerId} for tenant: ${tenantData.name}`);
+      } catch (error) {
+        console.error("Warning: Failed to create Stripe customer:", error);
+        // Continue with tenant creation even if Stripe fails
+        // This allows the system to work without Stripe configuration
+      }
+
+      // Create tenant with plan-based settings and Stripe customer ID
       const tenant = new Tenant({
         ...tenantData,
         subscription: {
-          plan: "free",
-          status: "active",
-          startDate: new Date(),
+          ...subscriptionConfig,
+          stripeCustomerId: stripeCustomerId,
+        },
+        settings: {
+          ...tenantData.settings,
+          sms: {
+            enabled: subscriptionConfig.limits.features.smsReminders,
+            provider: "apifon",
+            fallbackProvider: subscriptionConfig.limits.features.smsReminders ? "yuboto" : undefined,
+          },
         },
         isActive: true,
       });
@@ -249,8 +285,9 @@ export class TenantSetupService {
       await owner.save();
       console.log(`✅ Created tenant owner user: ${owner.email} (inactive until activation)`);
 
-      // Update tenant with owner ID
+      // Update tenant with owner ID and increment user count
       tenant.ownerId = owner._id.toString();
+      tenant.subscription.usage.currentUsers = 1; // Owner counts as first user
       await tenant.save();
       console.log(`✅ Updated tenant with owner ID: ${owner._id}`);
 
@@ -280,6 +317,80 @@ export class TenantSetupService {
    */
   static isDefaultRole(roleName: string): boolean {
     return DEFAULT_ROLES.some((r) => r.name === roleName);
+  }
+
+  /**
+   * Create Stripe customer for existing tenant (migration utility)
+   */
+  static async createStripeCustomerForTenant(tenantId: string): Promise<string | null> {
+    try {
+      const tenant = await Tenant.findById(tenantId);
+      if (!tenant) {
+        throw new Error(`Tenant not found: ${tenantId}`);
+      }
+
+      // Skip if tenant already has a Stripe customer
+      if (tenant.subscription.stripeCustomerId) {
+        console.log(`Tenant ${tenant.name} already has Stripe customer: ${tenant.subscription.stripeCustomerId}`);
+        return tenant.subscription.stripeCustomerId;
+      }
+
+      // Create Stripe customer
+      const stripeCustomer = await StripeService.createCustomer({
+        email: tenant.email,
+        name: tenant.name,
+        metadata: {
+          tenantSlug: tenant.slug,
+          tenantId: tenant._id.toString(),
+          planName: tenant.subscription.plan,
+          source: 'migration'
+        }
+      });
+
+      // Update tenant with Stripe customer ID
+      await Tenant.findByIdAndUpdate(tenantId, {
+        'subscription.stripeCustomerId': stripeCustomer.id
+      });
+
+      console.log(`✅ Created Stripe customer ${stripeCustomer.id} for existing tenant: ${tenant.name}`);
+      return stripeCustomer.id;
+    } catch (error) {
+      console.error(`Error creating Stripe customer for tenant ${tenantId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Migrate all tenants without Stripe customers (bulk migration utility)
+   */
+  static async migrateTenantsToStripe(): Promise<{ success: number; failed: number }> {
+    try {
+      // Find tenants without Stripe customers
+      const tenantsWithoutStripe = await Tenant.find({
+        'subscription.stripeCustomerId': { $exists: false },
+        isActive: true
+      });
+
+      console.log(`Found ${tenantsWithoutStripe.length} tenants without Stripe customers`);
+
+      let success = 0;
+      let failed = 0;
+
+      for (const tenant of tenantsWithoutStripe) {
+        const stripeCustomerId = await this.createStripeCustomerForTenant(tenant._id.toString());
+        if (stripeCustomerId) {
+          success++;
+        } else {
+          failed++;
+        }
+      }
+
+      console.log(`Migration completed: ${success} success, ${failed} failed`);
+      return { success, failed };
+    } catch (error) {
+      console.error('Error during tenant migration to Stripe:', error);
+      throw error;
+    }
   }
 
   /**
@@ -341,5 +452,104 @@ export class TenantSetupService {
       // Admin - Full access
       "admin.access",
     ];
+  }
+
+  /**
+   * Create a new tenant with admin user (for Google OAuth and other flows)
+   */
+  static async createTenant(params: {
+    companyName: string;
+    adminEmail: string;
+    adminFirstName: string;
+    adminLastName: string;
+    subscriptionPlan?: string;
+    skipMagicLink?: boolean;
+    googleProfile?: {
+      id: string;
+      picture?: string;
+    };
+  }): Promise<{
+    success: boolean;
+    message?: string;
+    tenant?: any;
+    adminUser?: any;
+  }> {
+    try {
+      // Check if user already exists
+      const existingUser = await User.findOne({ email: params.adminEmail });
+      if (existingUser) {
+        return {
+          success: false,
+          message: "User with this email already exists",
+        };
+      }
+
+      // Generate slug from company name
+      const slug = params.companyName
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+
+      // Check if tenant with this slug exists
+      const existingTenant = await Tenant.findOne({ slug });
+      if (existingTenant) {
+        return {
+          success: false,
+          message: "Company with this name already exists",
+        };
+      }
+
+      // Setup tenant with default data
+      const tenantData = {
+        name: params.companyName,
+        slug,
+        email: params.adminEmail,
+        ownerFirstName: params.adminFirstName,
+        ownerLastName: params.adminLastName,
+        subscriptionPlan: params.subscriptionPlan || 'free',
+      };
+
+      const { tenant, roles, owner } = await this.setupNewTenant(tenantData);
+
+      // Update user with Google profile data if provided
+      if (params.googleProfile) {
+        await User.findByIdAndUpdate(owner._id, {
+          $set: {
+            'socialLogins.google': {
+              id: params.googleProfile.id,
+              email: params.adminEmail,
+              picture: params.googleProfile.picture,
+              connectedAt: new Date(),
+            },
+            avatar: params.googleProfile.picture, // Set as main avatar
+            isEmailVerified: true, // Google emails are verified
+          },
+        });
+      }
+
+      // Set user as active (skip magic link if requested)
+      if (params.skipMagicLink) {
+        await User.findByIdAndUpdate(owner._id, {
+          $set: {
+            isActive: true,
+            isEmailVerified: true,
+          },
+        });
+      }
+
+      return {
+        success: true,
+        tenant,
+        adminUser: owner,
+      };
+
+    } catch (error) {
+      console.error("Error creating tenant:", error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to create tenant",
+      };
+    }
   }
 }

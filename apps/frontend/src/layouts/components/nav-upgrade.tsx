@@ -19,7 +19,31 @@ import { useAuthContext } from 'src/auth/hooks';
 // ----------------------------------------------------------------------
 
 export function NavUpgrade({ sx, ...other }: BoxProps) {
-  const { user } = useAuthContext();
+  const { user, tenant } = useAuthContext();
+
+  // Get subscription data
+  const subscription = tenant?.subscription;
+  const currentPlan = subscription?.plan || 'free';
+
+  // Plan label configuration
+  const getPlanLabel = () => {
+    const planLabels: Record<
+      string,
+      {
+        label: string;
+        color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
+      }
+    > = {
+      free: { label: 'FREE', color: 'default' },
+      basic: { label: 'BASIC', color: 'primary' },
+      premium: { label: 'PREMIUM', color: 'secondary' },
+      enterprise: { label: 'ENTERPRISE', color: 'error' },
+    };
+
+    return planLabels[currentPlan] || { label: 'UNKNOWN', color: 'default' };
+  };
+
+  const planInfo = getPlanLabel();
 
   return (
     <Box
@@ -33,7 +57,7 @@ export function NavUpgrade({ sx, ...other }: BoxProps) {
           </Avatar>
 
           <Label
-            color="success"
+            color={planInfo.color}
             variant="filled"
             sx={{
               top: -6,
@@ -44,7 +68,7 @@ export function NavUpgrade({ sx, ...other }: BoxProps) {
               borderBottomLeftRadius: 2,
             }}
           >
-            Free
+            {planInfo.label}
           </Label>
         </Box>
 
@@ -66,14 +90,17 @@ export function NavUpgrade({ sx, ...other }: BoxProps) {
           </Typography>
         </Box>
 
-        <Button
-          variant="contained"
-          href={paths.minimalStore}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Upgrade to Pro
-        </Button>
+        {currentPlan === 'free' && (
+          <Button variant="contained" href={paths.upgradePlan}>
+            Upgrade Plan
+          </Button>
+        )}
+
+        {currentPlan !== 'free' && (
+          <Button variant="outlined" href={paths.upgradePlan}>
+            Manage Plan
+          </Button>
+        )}
       </Box>
     </Box>
   );
@@ -157,7 +184,7 @@ export function UpgradeBlock({ sx, ...other }: BoxProps) {
         </Box>
 
         <Button variant="contained" size="small" color="warning">
-          Upgrade to Pro
+          Upgrade Plan
         </Button>
       </Box>
     </Box>

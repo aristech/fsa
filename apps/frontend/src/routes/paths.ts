@@ -23,7 +23,7 @@ export const paths = {
   docs: '#',
   changelog: '#',
   zoneStore: '#',
-  minimalStore: '#',
+  upgradePlan: '/upgrade',
   freeUI: '#',
   figmaUrl: '#',
   documentation: '/docs',
