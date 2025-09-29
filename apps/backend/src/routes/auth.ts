@@ -22,6 +22,7 @@ const signUpSchema = z.object({
   lastName: z.string().min(1),
   email: z.string().email(),
   password: z.string().min(6),
+  companyName: z.string().min(1),
   role: z
     .enum(["admin", "manager", "technician", "dispatcher", "customer"])
     .optional(),
@@ -260,6 +261,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         lastName,
         email,
         password,
+        companyName,
         role = "admin",
       } = signUpSchema.parse(request.body);
 
@@ -272,12 +274,64 @@ export async function authRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // For sign-up without tenant slug, we disable direct sign-up
-      // Users should be invited through the invitation flow instead
-      return reply.status(400).send({
-        success: false,
-        message:
-          "Direct sign-up is not supported. Please use the invitation link provided by your organization.",
+      // Create tenant and admin user using TenantSetupService
+      const result = await TenantSetupService.createTenant({
+        companyName,
+        adminEmail: email,
+        adminFirstName: firstName,
+        adminLastName: lastName,
+        subscriptionPlan: "free",
+        skipMagicLink: true,
+      });
+
+      if (!result.success) {
+        return reply.status(400).send({
+          success: false,
+          message: result.message || "Failed to create account",
+        });
+      }
+
+      const { tenant, adminUser } = result;
+
+      // Hash the password and update the user
+      const hashedPassword = await bcrypt.hash(password, 12);
+      await User.findByIdAndUpdate(adminUser._id, {
+        password: hashedPassword,
+        isActive: true,
+      });
+
+      // Generate JWT token
+      const token = jwt.sign(
+        {
+          userId: adminUser._id,
+          email: adminUser.email,
+          role: adminUser.role || "admin",
+          tenantId: tenant._id,
+          isTenantOwner: true,
+        },
+        process.env.JWT_SECRET || "fallback-secret",
+        { expiresIn: "7d" },
+      );
+
+      return reply.send({
+        success: true,
+        data: {
+          user: {
+            id: adminUser._id,
+            name: `${adminUser.firstName} ${adminUser.lastName}`,
+            email: adminUser.email,
+            role: adminUser.role || "admin",
+            tenantId: tenant._id,
+            isTenantOwner: true,
+          },
+          tenant: {
+            id: tenant._id,
+            name: tenant.name,
+            slug: tenant.slug,
+          },
+          token,
+        },
+        message: "Account created successfully",
       });
     } catch (error) {
       fastify.log.error(error);

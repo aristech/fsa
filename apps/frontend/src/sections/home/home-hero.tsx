@@ -162,7 +162,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
         <Stack spacing={2.5} sx={{ alignItems: 'center' }}>
           <Button
             component={RouterLink}
-            href={paths.dashboard.root}
+            href={paths.auth.jwt.signUp}
             color="inherit"
             size="large"
             variant="contained"

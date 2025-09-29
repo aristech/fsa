@@ -18,6 +18,7 @@ export type SignUpParams = {
   password: string;
   firstName: string;
   lastName: string;
+  companyName: string;
 };
 
 export type GoogleSignInParams = {
@@ -63,12 +64,14 @@ export const signUp = async ({
   password,
   firstName,
   lastName,
+  companyName,
 }: SignUpParams): Promise<void> => {
   const params = {
     email,
     password,
     firstName,
     lastName,
+    companyName,
   };
 
   try {

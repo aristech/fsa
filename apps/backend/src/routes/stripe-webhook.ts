@@ -125,10 +125,22 @@ async function handleCheckoutSessionCompleted(
     const billingCycle = session.metadata?.billingCycle as 'monthly' | 'yearly';
     const tenantId = session.metadata?.tenantId;
 
+    // Enhanced logging for debugging
+    fastify.log.info({
+      sessionId: session.id,
+      customerId,
+      metadata: session.metadata,
+      subscriptionId: session.subscription,
+      mode: session.mode,
+      status: session.status,
+      paymentStatus: session.payment_status,
+    }, 'Processing checkout.session.completed webhook');
+
     if (!planId) {
       fastify.log.error({
         sessionId: session.id,
         customerId,
+        metadata: session.metadata,
       }, 'No planId in checkout session metadata');
       return;
     }
@@ -214,14 +226,30 @@ async function handleSubscriptionCreated(
 ): Promise<void> {
   try {
     const customerId = subscription.customer as string;
-    const planId = subscription.metadata?.planId;
-    const billingCycle = subscription.metadata?.billingCycle as 'monthly' | 'yearly';
+    let planId = subscription.metadata?.planId;
+    let billingCycle = subscription.metadata?.billingCycle as 'monthly' | 'yearly';
+
+    // If no planId in metadata, try to determine it from the price ID
+    if (!planId && subscription.items.data.length > 0) {
+      const priceId = subscription.items.data[0].price.id;
+      const planInfo = StripeService.getPlanFromPriceId(priceId);
+      if (planInfo) {
+        planId = planInfo.planId;
+        billingCycle = planInfo.billingCycle as 'monthly' | 'yearly';
+        fastify.log.info({
+          priceId,
+          detectedPlanId: planId,
+          detectedBillingCycle: billingCycle,
+        }, 'Detected plan from price ID in subscription.created');
+      }
+    }
 
     if (!planId) {
       fastify.log.error({
         subscriptionId: subscription.id,
         customerId,
-      }, 'No planId in subscription metadata');
+        items: subscription.items.data,
+      }, 'No planId in subscription metadata and could not detect from price');
       return;
     }
 
@@ -272,8 +300,20 @@ async function handleSubscriptionUpdated(
 ): Promise<void> {
   try {
     const customerId = subscription.customer as string;
-    const planId = subscription.metadata?.planId;
+    let planId = subscription.metadata?.planId;
     const billingCycle = subscription.metadata?.billingCycle as 'monthly' | 'yearly';
+
+    // Enhanced logging for debugging
+    fastify.log.info({
+      subscriptionId: subscription.id,
+      customerId,
+      metadata: subscription.metadata,
+      status: subscription.status,
+      items: subscription.items.data.map(item => ({
+        priceId: item.price.id,
+        productId: item.price.product,
+      })),
+    }, 'Processing customer.subscription.updated webhook');
 
     // Find tenant by Stripe customer ID
     const tenant = await Tenant.findOne({
@@ -286,6 +326,20 @@ async function handleSubscriptionUpdated(
         subscriptionId: subscription.id,
       }, 'Tenant not found for subscription update');
       return;
+    }
+
+    // If no planId in metadata, try to determine it from the price ID
+    if (!planId && subscription.items.data.length > 0) {
+      const priceId = subscription.items.data[0].price.id;
+      const planInfo = StripeService.getPlanFromPriceId(priceId);
+      if (planInfo) {
+        planId = planInfo.planId;
+        fastify.log.info({
+          priceId,
+          detectedPlanId: planId,
+          detectedBillingCycle: planInfo.billingCycle,
+        }, 'Detected plan from price ID');
+      }
     }
 
     // Map Stripe status to our status

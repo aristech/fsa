@@ -41,6 +41,7 @@ export const SignUpSchema = z.object({
     .string()
     .min(1, { error: 'Password is required!' })
     .min(6, { error: 'Password must be at least 6 characters!' }),
+  companyName: z.string().min(1, { error: 'Company name is required!' }),
 });
 
 // ----------------------------------------------------------------------
@@ -61,10 +62,11 @@ export function JwtSignUpView() {
   const hasTrial = searchParams.get('trial') === 'true';
 
   const defaultValues: SignUpSchemaType = {
-    firstName: 'Hello',
-    lastName: 'Friend',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
+    companyName: '',
   };
 
   const methods = useForm({
@@ -84,6 +86,7 @@ export function JwtSignUpView() {
         password: data.password,
         firstName: data.firstName,
         lastName: data.lastName,
+        companyName: data.companyName,
       });
       await checkUserSession?.();
 
@@ -142,6 +145,8 @@ export function JwtSignUpView() {
       </Box>
 
       <Field.Text name="email" label="Email address" slotProps={{ inputLabel: { shrink: true } }} />
+
+      <Field.Text name="companyName" label="Company name" slotProps={{ inputLabel: { shrink: true } }} />
 
       <Field.Text
         name="password"
