@@ -36,4 +36,5 @@ build
 tsconfig.tsbuildinfo
 .ncurc.js
 **/.env*
-**/*uploads/*apps/backend/.env.live
+**/*uploads/*
+apps/*/.env*
