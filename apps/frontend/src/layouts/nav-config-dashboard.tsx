@@ -119,36 +119,13 @@ export function useNavData(): NavSectionProps['data'] {
           path: paths.dashboard.fsa.workOrders.root,
           icon: ICONS.workOrder,
           requiredPermissions: 'work_orders.view',
-          children: [
-            {
-              title: t('fieldService.workOrders.list'),
-              path: paths.dashboard.fsa.workOrders.root,
-              requiredPermissions: 'work_orders.view',
-            },
-            {
-              title: t('fieldService.workOrders.create'),
-              path: paths.dashboard.fsa.workOrders.new,
-              requiredPermissions: 'work_orders.create',
-            },
-          ],
         },
+
         {
           title: t('fieldService.clients.title'),
           path: paths.dashboard.fsa.clients.root,
           icon: ICONS.customer,
           requiredPermissions: 'clients.view',
-          children: [
-            {
-              title: t('fieldService.clients.list'),
-              path: paths.dashboard.fsa.clients.root,
-              requiredPermissions: 'clients.view',
-            },
-            {
-              title: t('fieldService.clients.create'),
-              path: paths.dashboard.fsa.clients.new,
-              requiredPermissions: 'clients.create',
-            },
-          ],
         },
         {
           title: t('fieldService.personnel.title'),
@@ -173,13 +150,6 @@ export function useNavData(): NavSectionProps['data'] {
           path: paths.dashboard.fsa.materials.root,
           icon: ICONS.materials,
           requiredPermissions: 'materials.view',
-          children: [
-            {
-              title: t('fieldService.materials.list'),
-              path: paths.dashboard.fsa.materials.root,
-              requiredPermissions: 'materials.view',
-            },
-          ],
         },
       ],
     },
@@ -190,10 +160,11 @@ export function useNavData(): NavSectionProps['data'] {
       subheader: t('settings.title'),
       items: [
         {
-          title: 'Settings',
+          title: t('settings.title'),
           path: paths.dashboard.settings.root,
           icon: ICONS.gear,
           children: [
+            { title: t('company.title'), path: paths.dashboard.settings.company },
             { title: 'Webhooks', path: paths.dashboard.settings.webhooks },
             { title: 'API Keys', path: paths.dashboard.settings.apiKeys },
           ],

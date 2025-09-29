@@ -674,6 +674,53 @@
         "it": "Italian"
       }
     },
+    "smsReminders": {
+      "title": "SMS/Viber Reminders",
+      "subtitle": "Automated service reminders via SMS and Viber",
+      "description": "Send personalized SMS and Viber messages to clients for upcoming service appointments.",
+      "manageSmsReminders": "Manage SMS/Viber Reminders"
+    },
+    "company": {
+      "title": "Company Settings",
+      "subtitle": "Manage your company information and branding",
+      "description": "Update your company details, upload logo, and customize brand colors.",
+      "manageCompany": "Manage Company",
+      "info": {
+        "title": "Company Information",
+        "subtitle": "Basic company details and contact information",
+        "basicInfo": "Basic Information",
+        "companyName": "Company Name",
+        "phone": "Phone Number",
+        "website": "Website",
+        "industry": "Industry",
+        "description": "Description",
+        "address": "Address",
+        "street": "Street Address",
+        "city": "City",
+        "state": "State/Province",
+        "zipCode": "ZIP/Postal Code",
+        "country": "Country",
+        "updateSuccess": "Company information updated successfully",
+        "updateError": "Failed to update company information"
+      },
+      "logo": {
+        "title": "Company Logo",
+        "subtitle": "Upload and manage your company logo",
+        "instructions": "Upload your company logo in PNG, JPG, WebP, or SVG format",
+        "requirements": "Maximum file size: 5MB • Recommended: 200x200px or larger",
+        "uploadLogo": "Upload Logo",
+        "changeLogo": "Change Logo",
+        "removeLogo": "Remove Logo",
+        "uploadSuccess": "Logo uploaded successfully",
+        "uploadError": "Failed to upload logo",
+        "removeSuccess": "Logo removed successfully",
+        "removeError": "Failed to remove logo",
+        "invalidFileType": "Invalid file type. Please upload PNG, JPG, WebP, or SVG files.",
+        "fileTooLarge": "File size too large. Maximum size is 5MB.",
+        "upgradeRequired": "Basic Plan Required",
+        "upgradeDescription": "Custom logo upload is available with Basic plan and above."
+      }
+    },
     "common": {
       "save": "Save",
       "cancel": "Cancel",

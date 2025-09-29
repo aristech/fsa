@@ -27,10 +27,59 @@ export interface ITenant {
   };
   subscription: {
     plan: 'free' | 'basic' | 'premium' | 'enterprise';
-    status: 'active' | 'inactive' | 'cancelled';
+    status: 'active' | 'inactive' | 'cancelled' | 'trial' | 'past_due' | 'unpaid';
     startDate: Date;
     endDate?: Date;
+    trialEndDate?: Date;
+    stripeCustomerId?: string;
+    stripeSubscriptionId?: string;
+    stripePriceId?: string;
+    billingCycle: 'monthly' | 'yearly';
+    limits: {
+      maxUsers: number;
+      maxClients: number;
+      maxWorkOrdersPerMonth: number;
+      maxSmsPerMonth: number;
+      maxStorageGB: number;
+      features: {
+        smsReminders: boolean;
+        advancedReporting: boolean;
+        apiAccess: boolean;
+        customBranding: boolean;
+        multiLocation: boolean;
+        integrations: boolean;
+        prioritySupport: boolean;
+      };
+    };
+    usage: {
+      currentUsers: number;
+      currentClients: number;
+      workOrdersThisMonth: number;
+      smsThisMonth: number;
+      storageUsedGB: number;
+      totalFiles: number;
+      lastResetDate: Date;
+    };
   };
+  branding?: {
+    logoUrl?: string;
+    primaryColor?: string;
+    secondaryColor?: string;
+    companyInfo?: {
+      website?: string;
+      description?: string;
+      industry?: string;
+    };
+  };
+  fileMetadata?: Array<{
+    filename: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+    category: 'logo' | 'workorder_attachment' | 'client_document' | 'material_image' | 'other';
+    uploadDate: Date;
+    filePath: string;
+  }>;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -88,12 +137,69 @@ const TenantSchema = new Schema<ITenant>(
       },
       status: {
         type: String,
-        enum: ['active', 'inactive', 'cancelled'],
-        default: 'active',
+        enum: ['active', 'inactive', 'cancelled', 'trial', 'past_due', 'unpaid'],
+        default: 'trial',
       },
       startDate: { type: Date, default: Date.now },
       endDate: Date,
+      trialEndDate: Date,
+      stripeCustomerId: String,
+      stripeSubscriptionId: String,
+      stripePriceId: String,
+      billingCycle: {
+        type: String,
+        enum: ['monthly', 'yearly'],
+        default: 'monthly',
+      },
+      limits: {
+        maxUsers: { type: Number, default: 2 },
+        maxClients: { type: Number, default: 10 },
+        maxWorkOrdersPerMonth: { type: Number, default: 50 },
+        maxSmsPerMonth: { type: Number, default: 0 },
+        maxStorageGB: { type: Number, default: 1 },
+        features: {
+          smsReminders: { type: Boolean, default: false },
+          advancedReporting: { type: Boolean, default: false },
+          apiAccess: { type: Boolean, default: false },
+          customBranding: { type: Boolean, default: false },
+          multiLocation: { type: Boolean, default: false },
+          integrations: { type: Boolean, default: false },
+          prioritySupport: { type: Boolean, default: false },
+        },
+      },
+      usage: {
+        currentUsers: { type: Number, default: 0 },
+        currentClients: { type: Number, default: 0 },
+        workOrdersThisMonth: { type: Number, default: 0 },
+        smsThisMonth: { type: Number, default: 0 },
+        storageUsedGB: { type: Number, default: 0 },
+        totalFiles: { type: Number, default: 0 },
+        lastResetDate: { type: Date, default: Date.now },
+      },
     },
+    branding: {
+      logoUrl: String,
+      primaryColor: String,
+      secondaryColor: String,
+      companyInfo: {
+        website: String,
+        description: String,
+        industry: String,
+      },
+    },
+    fileMetadata: [{
+      filename: String,
+      originalName: String,
+      mimeType: String,
+      size: Number,
+      category: {
+        type: String,
+        enum: ['logo', 'workorder_attachment', 'client_document', 'material_image', 'other'],
+        default: 'other'
+      },
+      uploadDate: { type: Date, default: Date.now },
+      filePath: String,
+    }],
     isActive: {
       type: Boolean,
       default: true,

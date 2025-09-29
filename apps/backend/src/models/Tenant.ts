@@ -63,6 +63,7 @@ export interface ITenant {
       workOrdersThisMonth: number;
       smsThisMonth: number;
       storageUsedGB: number;
+      totalFiles: number;
       lastResetDate: Date;
     };
   };
@@ -76,6 +77,15 @@ export interface ITenant {
       industry?: string;
     };
   };
+  fileMetadata?: Array<{
+    filename: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+    category: 'logo' | 'workorder_attachment' | 'client_document' | 'material_image' | 'other';
+    uploadDate: Date;
+    filePath: string;
+  }>;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -179,6 +189,7 @@ const TenantSchema = new Schema<ITenant>(
         workOrdersThisMonth: { type: Number, default: 0 },
         smsThisMonth: { type: Number, default: 0 },
         storageUsedGB: { type: Number, default: 0 },
+        totalFiles: { type: Number, default: 0 },
         lastResetDate: { type: Date, default: Date.now },
       },
     },
@@ -192,6 +203,19 @@ const TenantSchema = new Schema<ITenant>(
         industry: String,
       },
     },
+    fileMetadata: [{
+      filename: String,
+      originalName: String,
+      mimeType: String,
+      size: Number,
+      category: {
+        type: String,
+        enum: ['logo', 'workorder_attachment', 'client_document', 'material_image', 'other'],
+        default: 'other'
+      },
+      uploadDate: { type: Date, default: Date.now },
+      filePath: String,
+    }],
     isActive: {
       type: Boolean,
       default: true,

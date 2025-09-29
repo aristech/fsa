@@ -23,6 +23,16 @@ export type TenantType = {
       storageUsedGB: number;
     };
   };
+  branding?: {
+    logoUrl?: string;
+    primaryColor?: string;
+    secondaryColor?: string;
+    companyInfo?: {
+      website?: string;
+      description?: string;
+      industry?: string;
+    };
+  };
 } | null;
 
 export type UserType = {

@@ -119,6 +119,7 @@ export const paths = {
       webhooks: `${ROOTS.DASHBOARD}/settings/webhooks`,
       apiKeys: `${ROOTS.DASHBOARD}/settings/api-keys`,
       smsReminders: `${ROOTS.DASHBOARD}/settings/sms-reminders`,
+      company: `${ROOTS.DASHBOARD}/settings/company`,
     },
   },
 };

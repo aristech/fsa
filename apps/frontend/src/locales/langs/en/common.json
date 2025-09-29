@@ -328,5 +328,19 @@
         "description": "Let customers track service requests and view progress."
       }
     }
+  },
+  "onboarding": {
+    "title": "Welcome to Field Service App",
+    "subtitle": "Let’s set up the basics so you can make the most of your workspace.",
+    "step_personnel_title": "Add your first technician",
+    "step_personnel_desc": "Create a personnel record so you can assign work orders and track time.",
+    "action_add_personnel": "Add personnel",
+    "step_client_title": "Add a client",
+    "step_client_desc": "Create a client to keep contact details and related work centralized.",
+    "action_add_client": "Add client",
+    "step_work_order_title": "Create your first work order",
+    "step_work_order_desc": "Plan the work, assign personnel, and start tracking progress.",
+    "action_create_work_order": "Create work order",
+    "cta_primary": "Skip and create work order"
   }
 }

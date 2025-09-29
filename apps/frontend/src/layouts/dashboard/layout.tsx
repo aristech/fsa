@@ -18,7 +18,7 @@ import { allLangs } from 'src/locales';
 import { ClientProvider } from 'src/contexts/client-context';
 import { ClientsPopover } from 'src/layouts/components/clients-popover';
 
-import { Logo } from 'src/components/logo';
+import { TenantLogo } from 'src/components/logo';
 import { useSettingsContext } from 'src/components/settings';
 
 import { NavMobile } from './nav-mobile';
@@ -116,7 +116,7 @@ export function DashboardLayout({
 
           {/** @slot Logo */}
           {isNavHorizontal && (
-            <Logo
+            <TenantLogo
               sx={{
                 display: 'none',
                 [theme.breakpoints.up(layoutQuery)]: { display: 'inline-flex' },

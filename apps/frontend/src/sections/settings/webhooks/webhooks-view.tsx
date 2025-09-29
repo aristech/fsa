@@ -31,6 +31,7 @@ import { truncateText } from 'src/utils/text-truncate';
 
 import { WebhookFormDialog, type Webhook as WebhookFormModel } from './webhook-form-dialog';
 import { webhooksApi, type Webhook } from 'src/services/webhooks';
+import { Container } from '@mui/material';
 
 // ----------------------------------------------------------------------
 
@@ -139,7 +140,7 @@ export function WebhooksView() {
   };
 
   return (
-    <>
+    <Container maxWidth={false}>
       <Card>
         <CardHeader
           title="Webhooks"
@@ -292,6 +293,6 @@ export function WebhooksView() {
           </Button>
         }
       />
-    </>
+    </Container>
   );
 }

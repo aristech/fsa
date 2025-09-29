@@ -24,10 +24,11 @@
   "fieldService": {
     "title": "Αυτοματισμός Εργασιών",
     "workOrders": {
-      "title": "Εργασίες",
+      "title": "Έργα (Projects)",
       "list": "Λίστα",
       "create": "Δημιουργία"
     },
+
     "clients": {
       "title": "Πελάτες",
       "list": "Λίστα",
@@ -43,6 +44,9 @@
       "list": "Λίστα"
     }
   },
+      "company": {
+      "title": "Εταιρεία"
+    },
   "settings": {
     "title": "Ρυθμίσεις"
   },

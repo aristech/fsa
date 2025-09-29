@@ -3,6 +3,7 @@ import { authenticate } from "../middleware/auth";
 import { User } from "../models";
 import { subscriptionMiddleware, updateUsageAfterAction } from "../middleware/subscription-enforcement";
 import { SubscriptionPlansService } from "../services/subscription-plans-service";
+import { FileTrackingService } from "../services/file-tracking-service";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
@@ -232,6 +233,23 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
           size: st.size,
           mime: file.mimetype,
         });
+
+        // Track individual file in FileTrackingService to prevent deletion by cleanup
+        try {
+          await FileTrackingService.trackFileUpload(
+            tenantId,
+            filename,
+            file.filename,
+            file.mimetype,
+            st.size,
+            scope === "logo" ? 'logo' : scope === "workOrder" ? 'workorder_attachment' : 'other',
+            destPath
+          );
+        } catch (trackingError) {
+          console.error('Error tracking file upload:', trackingError);
+          // Don't fail the upload if tracking fails, but log it
+          fastify.log.error({ trackingError, filename }, 'Failed to track file upload');
+        }
       }
 
       // Track storage usage after successful upload

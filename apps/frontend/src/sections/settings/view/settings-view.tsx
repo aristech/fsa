@@ -17,9 +17,10 @@ type Props = {
   webhooksHref: string;
   apiKeysHref: string;
   smsRemindersHref: string;
+  companyHref?: string;
 };
 
-export function SettingsView({ webhooksHref, apiKeysHref, smsRemindersHref }: Props) {
+export function SettingsView({ webhooksHref, apiKeysHref, smsRemindersHref, companyHref }: Props) {
   const { t } = useTranslate('dashboard');
 
   return (
@@ -89,6 +90,30 @@ export function SettingsView({ webhooksHref, apiKeysHref, smsRemindersHref }: Pr
           </CardContent>
         </Card>
       </Grid>
+
+      {companyHref && (
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card>
+            <CardHeader
+              title={t('settings.company.title')}
+              subheader={t('settings.company.subtitle')}
+            />
+            <CardContent>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                {t('settings.company.description')}
+              </Typography>
+              <Button
+                component={Link}
+                href={companyHref}
+                variant="contained"
+                startIcon={<Iconify icon="solar:buildings-bold" />}
+              >
+                {t('settings.company.manageCompany')}
+              </Button>
+            </CardContent>
+          </Card>
+        </Grid>
+      )}
     </Grid>
   );
 }

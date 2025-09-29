@@ -10,6 +10,7 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
+import { Container } from '@mui/material';
 import TableRow from '@mui/material/TableRow';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -145,7 +146,7 @@ export function ApiKeysView() {
   };
 
   return (
-    <>
+    <Container maxWidth={false}>
       <Card>
         <CardHeader
           title="API Keys"
@@ -343,6 +344,6 @@ export function ApiKeysView() {
         apiKey={testDialog.apiKey}
         onClose={() => setTestDialog({ open: false, apiKey: null })}
       />
-    </>
+    </Container>
   );
 }

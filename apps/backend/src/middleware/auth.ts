@@ -69,6 +69,7 @@ export async function authenticate(
       email: user.email,
       role: user.role,
       tenantId: user.tenantId,
+      isTenantOwner: user.isTenantOwner || false,
     };
     (request as AuthenticatedRequest).tenant = tenant;
     (request as AuthenticatedRequest).context = {
@@ -131,6 +132,7 @@ export async function optionalAuth(
       email: user.email,
       role: user.role,
       tenantId: user.tenantId,
+      isTenantOwner: user.isTenantOwner || false,
     };
     (request as AuthenticatedRequest).tenant = tenant;
     (request as AuthenticatedRequest).context = {

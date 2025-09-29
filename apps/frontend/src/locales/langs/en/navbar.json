@@ -28,6 +28,7 @@
       "list": "List",
       "create": "Create"
     },
+  
     "clients": {
       "title": "Clients",
       "list": "List",
@@ -43,6 +44,9 @@
       "list": "List"
     }
   },
+    "company": {
+      "title": "Company"
+    },
   "settings": {
     "title": "Settings"
   },
