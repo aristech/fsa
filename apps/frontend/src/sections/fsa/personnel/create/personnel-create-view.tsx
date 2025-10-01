@@ -103,7 +103,7 @@ export function PersonnelCreateView({
       notes: '',
       skills: [],
       certifications: [],
-      sendInvitation: false,
+      sendInvitation: true,
       environmentAccess: 'dashboard',
       availability: {
         monday: { start: '09:00', end: '17:00', available: true },
@@ -138,7 +138,7 @@ export function PersonnelCreateView({
           notes: '',
           skills: [],
           certifications: [],
-          sendInvitation: false,
+          sendInvitation: true,
           environmentAccess: 'dashboard',
           availability: {
             monday: { start: '09:00', end: '17:00', available: true },
@@ -470,17 +470,6 @@ export function PersonnelCreateView({
               )}
             />
 
-            <Controller
-              name="sendInvitation"
-              control={control}
-              render={({ field }) => (
-                <FormControlLabel
-                  control={<Checkbox checked={field.value} onChange={field.onChange} />}
-                  label="Send email invitation to personnel"
-                />
-              )}
-            />
-
             <Divider sx={{ my: 1 }} />
             <Typography variant="subtitle2">Availability</Typography>
             {(
@@ -517,7 +506,16 @@ export function PersonnelCreateView({
             <Divider sx={{ my: 1 }} />
             <Typography variant="subtitle2">Address</Typography>
             <RHFTextField name="location.address" label="Address" />
-
+            <Controller
+              name="sendInvitation"
+              control={control}
+              render={({ field }) => (
+                <FormControlLabel
+                  control={<Checkbox checked={field.value} onChange={field.onChange} />}
+                  label="Send email invitation to personnel"
+                />
+              )}
+            />
             <Stack direction="row" spacing={1} justifyContent="flex-end">
               <Button color="inherit" onClick={onClose}>
                 {t('personnel.cancel')}

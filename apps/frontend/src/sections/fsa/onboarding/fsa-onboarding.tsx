@@ -7,6 +7,8 @@ import { Box, Card, Stack, Button, Typography, CardContent } from '@mui/material
 
 import { paths } from 'src/routes/paths';
 
+import { safeDisplayText } from 'src/utils/html-utils';
+
 import { useTranslate } from 'src/locales/use-locales';
 
 import { Iconify } from 'src/components/iconify';
@@ -67,7 +69,7 @@ export function FsaOnboarding({ tenantName }: Props) {
                 'onboarding.subtitle',
                 'Let’s set up the basics so you can make the most of your workspace.'
               )}
-              {tenantName ? ` — ${tenantName}` : ''}
+              {tenantName ? ` — ${safeDisplayText(tenantName)}` : ''}
             </Typography>
           </Box>
 

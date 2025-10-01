@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { authenticate } from "../middleware/auth";
 import { User } from "../models";
-import { subscriptionMiddleware, updateUsageAfterAction } from "../middleware/subscription-enforcement";
-import { SubscriptionPlansService } from "../services/subscription-plans-service";
+import EnhancedSubscriptionMiddleware from "../middleware/enhanced-subscription-middleware";
+import { EnvSubscriptionService } from "../services/env-subscription-service";
 import { FileTrackingService } from "../services/file-tracking-service";
 import path from "node:path";
 import fs from "node:fs/promises";
@@ -96,7 +96,7 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
       }
 
       // Check if the upload would exceed storage limits
-      const storageCheck = SubscriptionPlansService.canPerformAction(tenant, 'upload_file', totalUploadSize);
+      const storageCheck = EnvSubscriptionService.canPerformAction(tenant, 'upload_file', totalUploadSize);
       if (!storageCheck.allowed) {
         return reply.code(413).send({
           success: false,
@@ -254,7 +254,17 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
 
       // Track storage usage after successful upload
       const totalSizeGB = totalUploadSize / (1024 * 1024 * 1024);
-      await updateUsageAfterAction(tenantId, 'upload_file', totalSizeGB);
+      await EnhancedSubscriptionMiddleware.trackCreation(
+        tenantId,
+        'file',
+        totalUploadSize, // Pass bytes directly, middleware will handle conversion
+        {
+          filesCount: saved.length,
+          filenames: saved.map(f => f.name),
+          totalSizeBytes: totalUploadSize
+        },
+        (request as any).id
+      );
 
       fastify.log.info(
         {

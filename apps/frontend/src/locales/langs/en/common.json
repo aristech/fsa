@@ -331,7 +331,7 @@
   },
   "onboarding": {
     "title": "Welcome to Field Service App",
-    "subtitle": "Let’s set up the basics so you can make the most of your workspace.",
+    "subtitle": "Let's set up the basics so you can make the most of your workspace.",
     "step_personnel_title": "Add your first technician",
     "step_personnel_desc": "Create a personnel record so you can assign work orders and track time.",
     "action_add_personnel": "Add personnel",
@@ -342,5 +342,74 @@
     "step_work_order_desc": "Plan the work, assign personnel, and start tracking progress.",
     "action_create_work_order": "Create work order",
     "cta_primary": "Skip and create work order"
+  },
+  "error": {
+    "generic": "An error occurred",
+    "network": "Network connection error",
+    "timeout": "Request timed out",
+    "unauthorized": "Unauthorized access",
+    "forbidden": "Access denied",
+    "notFound": "Resource not found",
+    "validation": "Validation failed",
+    "server": "Server error occurred"
+  },
+  "success": {
+    "generic": "Operation completed successfully",
+    "saved": "Data saved successfully",
+    "updated": "Updated successfully",
+    "deleted": "Deleted successfully",
+    "created": "Created successfully"
+  },
+  "warning": {
+    "generic": "Warning",
+    "unsavedChanges": "You have unsaved changes",
+    "limitApproaching": "Approaching limit"
+  },
+  "info": {
+    "generic": "Information",
+    "loading": "Loading...",
+    "processing": "Processing..."
+  },
+  "validation": {
+    "error": {
+      "generic": "Validation failed",
+      "multiple": "Validation failed for: {{fields}}"
+    }
+  },
+  "business": {
+    "subscription_limit_exceeded": "Subscription limit exceeded",
+    "user_limit_exceeded": "User limit exceeded. Current: {{current}}, Limit: {{limit}}",
+    "storage_limit_exceeded": "Storage limit exceeded",
+    "api_limit_exceeded": "API rate limit exceeded",
+    "feature_not_available": "Feature not available in your current plan",
+    "tenant_owner_required": "Only the company owner can perform this action",
+    "insufficient_permissions": "You don't have permission to perform this action",
+    "resource_not_found": "The requested resource was not found",
+    "invalid_request": "Invalid request data provided",
+    "conflict": "This action conflicts with existing data",
+    "payment_required": "Payment required to access this feature"
+  },
+  "errors": {
+    "network": "Network error occurred. Please check your connection.",
+    "server": "Server error occurred. Please try again.",
+    "validation": "Please check your input and try again.",
+    "unauthorized": "You are not authorized to perform this action.",
+    "forbidden": "Access denied. Please contact support.",
+    "notFound": "The requested resource was not found.",
+    "timeout": "Request timed out. Please try again.",
+    "rateLimit": "Too many requests. Please wait and try again.",
+    "TENANT_OWNER_REQUIRED": "Only the company owner can update company information",
+    "INSUFFICIENT_PERMISSIONS": "You don't have permission to perform this action",
+    "VALIDATION_ERROR": "Please check your input and try again",
+    "RESOURCE_NOT_FOUND": "The requested resource was not found",
+    "DUPLICATE_ENTRY": "This entry already exists",
+    "PAYMENT_REQUIRED": "Payment required to access this feature",
+    "QUOTA_EXCEEDED": "You have exceeded your quota for this resource",
+    "INVALID_CREDENTIALS": "Invalid username or password",
+    "ACCOUNT_LOCKED": "Your account has been temporarily locked",
+    "EMAIL_NOT_VERIFIED": "Please verify your email address first",
+    "TOKEN_EXPIRED": "Your session has expired. Please log in again.",
+    "MAINTENANCE_MODE": "System is under maintenance. Please try again later.",
+    "FEATURE_DISABLED": "This feature is currently disabled"
   }
 }

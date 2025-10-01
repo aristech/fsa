@@ -7,6 +7,8 @@ import { Container, Typography } from '@mui/material';
 
 import { useTenant } from 'src/hooks/use-tenant';
 
+import { safeDisplayText } from 'src/utils/html-utils';
+
 import { ApiClient } from 'src/lib/api-client';
 import { useTranslate } from 'src/locales/use-locales';
 
@@ -73,7 +75,7 @@ export function FsaDashboardView() {
   return (
     <Container maxWidth="xl">
       <Typography variant="h4" sx={{ mb: 5 }}>
-        {t('dashboard.title', { tenant: tenantName })}
+        {t('dashboard.title', { tenant: safeDisplayText(tenantName) })}
       </Typography>
 
       <Grid container spacing={3}>

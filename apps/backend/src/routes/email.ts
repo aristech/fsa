@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import * as nodemailer from "nodemailer";
+import { emailLogger, EmailLogUtils } from "../utils/email-logger";
 
 // Email configuration interface
 interface EmailConfig {
@@ -21,7 +22,14 @@ function getEmailConfig(): EmailConfig {
     from: process.env.SMTP_FROM || "noreply@example.com",
   };
 
-
+  // Log configuration status (without sensitive data)
+  emailLogger.debug('Email configuration loaded', {
+    host: config.host,
+    port: config.port,
+    hasUser: !!config.user,
+    hasPass: !!config.pass,
+    from: config.from
+  });
 
   return config;
 }
@@ -29,7 +37,9 @@ function getEmailConfig(): EmailConfig {
 // Create email transporter
 export async function createEmailTransporter() {
   const config = getEmailConfig();
-  const requestId = Math.random().toString(36).substr(2, 9);
+  const requestId = EmailLogUtils.generateRequestId();
+
+  emailLogger.info('Creating email transporter', { requestId });
 
 
   const transporter = nodemailer.createTransport({
@@ -49,13 +59,18 @@ export async function createEmailTransporter() {
  
 
   // Verify connection configuration
+  const startTime = Date.now();
   try {
-    const startTime = Date.now();
     await transporter.verify();
     const duration = Date.now() - startTime;
 
+    EmailLogUtils.logSmtpConnectionTest(requestId, true, duration);
   } catch (error: any) {
-    console.error(`❌ [${requestId}] Email server connection failed:`, {
+    const duration = Date.now() - startTime;
+    EmailLogUtils.logSmtpConnectionTest(requestId, false, duration, error);
+
+    emailLogger.error('Email server connection failed', {
+      requestId,
       error: error.message,
       code: error.code,
       command: error.command,
@@ -107,9 +122,15 @@ export async function sendPersonnelInvitation(
   data: PersonnelInvitationEmailData,
 ) {
   const startTime = Date.now();
-  const requestId = Math.random().toString(36).substr(2, 9);
+  const requestId = EmailLogUtils.generateRequestId();
 
- 
+  EmailLogUtils.logEmailAttempt(requestId, {
+    to: data.to,
+    subject: `Welcome to ${data.companyName} - Field Service Automation Platform`,
+    type: 'personnel_invitation'
+  });
+
+
 
   // Validate required fields
   const requiredFields = {
@@ -126,7 +147,7 @@ export async function sendPersonnelInvitation(
 
   if (missingFields.length > 0) {
     const error = `Missing required fields: ${missingFields.join(", ")}`;
-
+    EmailLogUtils.logValidationError(requestId, 'missing_fields', { missingFields });
     return { success: false, error };
   }
 
@@ -134,7 +155,7 @@ export async function sendPersonnelInvitation(
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(data.to)) {
     const error = `Invalid email format: ${data.to}`;
-
+    EmailLogUtils.logValidationError(requestId, 'invalid_email_format', { email: data.to });
     return { success: false, error };
   }
 
@@ -241,6 +262,13 @@ export async function sendPersonnelInvitation(
     const result = await transporter.sendMail(mailOptions);
     const duration = Date.now() - startTime;
 
+    EmailLogUtils.logEmailSuccess(requestId, {
+      messageId: result.messageId,
+      response: result.response,
+      duration,
+      recipient: data.to,
+      emailType: 'personnel_invitation'
+    });
 
     return {
       success: true,
@@ -250,7 +278,6 @@ export async function sendPersonnelInvitation(
     };
   } catch (error: any) {
     const duration = Date.now() - startTime;
-   
 
     // Enhanced error handling
     let errorMessage = error.message;
@@ -265,6 +292,17 @@ export async function sendPersonnelInvitation(
         "SMTP connection timed out. Please check your network connection.";
     }
 
+    EmailLogUtils.logEmailFailure(requestId, {
+      message: errorMessage,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      responseCode: error.responseCode,
+      duration,
+      recipient: data.to,
+      emailType: 'personnel_invitation'
+    });
+
     return {
       success: false,
       error: errorMessage,
@@ -277,8 +315,13 @@ export async function sendPersonnelInvitation(
 // Send personnel invitation with magic link
 export async function sendPersonnelMagicLink(data: MagicLinkEmailData) {
   const startTime = Date.now();
-  const requestId = Math.random().toString(36).substr(2, 9);
+  const requestId = EmailLogUtils.generateRequestId();
 
+  EmailLogUtils.logEmailAttempt(requestId, {
+    to: data.to,
+    subject: `Welcome to ${data.companyName} - Complete Your Account Setup`,
+    type: 'personnel_magic_link'
+  });
 
   // Validate required fields
   const requiredFields = {
@@ -294,6 +337,7 @@ export async function sendPersonnelMagicLink(data: MagicLinkEmailData) {
 
   if (missingFields.length > 0) {
     const error = `Missing required fields: ${missingFields.join(", ")}`;
+    EmailLogUtils.logValidationError(requestId, 'missing_fields', { missingFields });
     return { success: false, error };
   }
 
@@ -301,6 +345,7 @@ export async function sendPersonnelMagicLink(data: MagicLinkEmailData) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(data.to)) {
     const error = `Invalid email format: ${data.to}`;
+    EmailLogUtils.logValidationError(requestId, 'invalid_email_format', { email: data.to });
     return { success: false, error };
   }
 
@@ -387,6 +432,13 @@ export async function sendPersonnelMagicLink(data: MagicLinkEmailData) {
     const result = await transporter.sendMail(mailOptions);
     const duration = Date.now() - startTime;
 
+    EmailLogUtils.logEmailSuccess(requestId, {
+      messageId: result.messageId,
+      response: result.response,
+      duration,
+      recipient: data.to,
+      emailType: 'personnel_magic_link'
+    });
 
     return {
       success: true,
@@ -396,7 +448,6 @@ export async function sendPersonnelMagicLink(data: MagicLinkEmailData) {
     };
   } catch (error: any) {
     const duration = Date.now() - startTime;
-   
 
     let errorMessage = error.message;
     if (error.code === "EAUTH") {
@@ -409,6 +460,17 @@ export async function sendPersonnelMagicLink(data: MagicLinkEmailData) {
       errorMessage =
         "SMTP connection timed out. Please check your network connection.";
     }
+
+    EmailLogUtils.logEmailFailure(requestId, {
+      message: errorMessage,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      responseCode: error.responseCode,
+      duration,
+      recipient: data.to,
+      emailType: 'personnel_magic_link'
+    });
 
     return {
       success: false,
@@ -725,8 +787,24 @@ export async function sendTenantActivationMagicLink(
 
 // Check email service health
 export async function checkEmailServiceHealth() {
+  const requestId = EmailLogUtils.generateRequestId();
+
+  emailLogger.info('Email service health check initiated', { requestId });
+
   try {
     const transporter = await createEmailTransporter();
+
+    emailLogger.info('Email service health check successful', {
+      requestId,
+      config: {
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        hasUser: !!process.env.SMTP_USER,
+        hasPass: !!process.env.SMTP_PASS,
+        from: process.env.SMTP_FROM,
+      }
+    });
+
     return {
       success: true,
       message: "Email service is healthy",
@@ -738,6 +816,18 @@ export async function checkEmailServiceHealth() {
       },
     };
   } catch (error: any) {
+    emailLogger.error('Email service health check failed', {
+      requestId,
+      error: error.message,
+      config: {
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        hasUser: !!process.env.SMTP_USER,
+        hasPass: !!process.env.SMTP_PASS,
+        from: process.env.SMTP_FROM,
+      }
+    });
+
     return {
       success: false,
       error: error.message,
@@ -753,6 +843,15 @@ export async function checkEmailServiceHealth() {
 
 // Send test email
 export async function sendTestEmail(to: string) {
+  const startTime = Date.now();
+  const requestId = EmailLogUtils.generateRequestId();
+
+  EmailLogUtils.logEmailAttempt(requestId, {
+    to,
+    subject: "Test Email - Field Service Automation",
+    type: 'test_email'
+  });
+
   try {
     const transporter = await createEmailTransporter();
     const config = getEmailConfig();
@@ -779,12 +878,35 @@ export async function sendTestEmail(to: string) {
     };
 
     const result = await transporter.sendMail(mailOptions);
+    const duration = Date.now() - startTime;
+
+    EmailLogUtils.logEmailSuccess(requestId, {
+      messageId: result.messageId,
+      response: result.response,
+      duration,
+      recipient: to,
+      emailType: 'test_email'
+    });
+
     return {
       success: true,
       messageId: result.messageId,
       response: result.response,
     };
   } catch (error: any) {
+    const duration = Date.now() - startTime;
+
+    EmailLogUtils.logEmailFailure(requestId, {
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      responseCode: error.responseCode,
+      duration,
+      recipient: to,
+      emailType: 'test_email'
+    });
+
     return {
       success: false,
       error: error.message,

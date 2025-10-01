@@ -1,5 +1,5 @@
 import { Role, Tenant, User, Status } from "../models";
-import { SubscriptionPlansService } from "./subscription-plans-service";
+import { EnvSubscriptionService } from "./env-subscription-service";
 import { StripeService } from "./stripe-service";
 
 // ----------------------------------------------------------------------
@@ -215,7 +215,7 @@ export class TenantSetupService {
       const planName = tenantData.subscriptionPlan || "free";
 
       // Apply plan limits and settings
-      const subscriptionConfig = SubscriptionPlansService.applyPlanLimits(planName);
+      const subscriptionConfig = EnvSubscriptionService.applyPlanLimits(planName);
 
       // Create Stripe customer for the tenant
       let stripeCustomerId = undefined;

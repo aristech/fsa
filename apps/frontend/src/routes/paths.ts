@@ -120,6 +120,7 @@ export const paths = {
       apiKeys: `${ROOTS.DASHBOARD}/settings/api-keys`,
       smsReminders: `${ROOTS.DASHBOARD}/settings/sms-reminders`,
       company: `${ROOTS.DASHBOARD}/settings/company`,
+      support: `${ROOTS.DASHBOARD}/settings/support`,
     },
   },
 };

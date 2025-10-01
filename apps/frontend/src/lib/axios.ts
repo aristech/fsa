@@ -1,8 +1,114 @@
 import type { AxiosRequestConfig } from 'axios';
 
+// Extend AxiosRequestConfig to include our custom skipErrorToast option
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    skipErrorToast?: boolean;
+  }
+}
+
 import axios from 'axios';
 
 import { CONFIG } from 'src/global-config';
+
+import { toast } from 'src/components/snackbar';
+
+// ----------------------------------------------------------------------
+
+/**
+ * Extracts and formats error message for user display
+ */
+function getErrorMessage(error: any): string {
+  // Check for structured error response from backend
+  if (error?.response?.data) {
+    const errorData = error.response.data;
+
+    // If backend provides a user-friendly message, use it
+    if (errorData.message) {
+      return errorData.message;
+    }
+
+    // If backend provides an error code, we could translate it
+    if (errorData.code) {
+      // For now, convert error codes to human-readable messages
+      switch (errorData.code) {
+        case 'TENANT_OWNER_REQUIRED':
+          return 'Only the company owner can update company information';
+        case 'INSUFFICIENT_PERMISSIONS':
+          return 'You don\'t have permission to perform this action';
+        case 'VALIDATION_ERROR':
+          return 'Please check your input and try again';
+        case 'RESOURCE_NOT_FOUND':
+          return 'The requested resource was not found';
+        case 'DUPLICATE_ENTRY':
+          return 'This entry already exists';
+        case 'PAYMENT_REQUIRED':
+          return 'Payment required to access this feature';
+        case 'QUOTA_EXCEEDED':
+          return 'You have exceeded your quota for this resource';
+        case 'INVALID_CREDENTIALS':
+          return 'Invalid username or password';
+        case 'ACCOUNT_LOCKED':
+          return 'Your account has been temporarily locked';
+        case 'EMAIL_NOT_VERIFIED':
+          return 'Please verify your email address first';
+        case 'TOKEN_EXPIRED':
+          return 'Your session has expired. Please log in again.';
+        case 'MAINTENANCE_MODE':
+          return 'System is under maintenance. Please try again later.';
+        case 'FEATURE_DISABLED':
+          return 'This feature is currently disabled';
+        default:
+          return errorData.code.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c: string) => c.toUpperCase());
+      }
+    }
+
+    // Fallback to generic error message
+    if (errorData.error) {
+      return errorData.error;
+    }
+  }
+
+  // Handle HTTP status codes
+  if (error?.response?.status) {
+    switch (error.response.status) {
+      case 400:
+        return 'Invalid request. Please check your input.';
+      case 401:
+        return 'You need to log in to access this resource.';
+      case 403:
+        return 'You don\'t have permission to perform this action.';
+      case 404:
+        return 'The requested resource was not found.';
+      case 409:
+        return 'This action conflicts with existing data.';
+      case 422:
+        return 'The data you provided could not be processed.';
+      case 429:
+        return 'Too many requests. Please wait and try again.';
+      case 500:
+        return 'Server error occurred. Please try again later.';
+      case 502:
+        return 'Service temporarily unavailable. Please try again.';
+      case 503:
+        return 'Service is currently down for maintenance.';
+      default:
+        return `Request failed with status ${error.response.status}`;
+    }
+  }
+
+  // Handle network errors
+  if (error?.code === 'NETWORK_ERROR' || error?.message?.includes('Network Error')) {
+    return 'Network error. Please check your internet connection.';
+  }
+
+  if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
+    return 'Request timed out. Please try again.';
+  }
+
+  // Fallback to error message or generic message
+  return error?.message || 'An unexpected error occurred. Please try again.';
+}
 
 // ----------------------------------------------------------------------
 
@@ -29,7 +135,8 @@ axiosInstance.interceptors.request.use((config) => {
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    let message = error?.response?.data?.message || error?.message || 'Something went wrong!';
+    // Get user-friendly error message
+    const userMessage = getErrorMessage(error);
 
     // Check if we got HTML instead of JSON (common when server returns error page)
     if (
@@ -37,7 +144,6 @@ axiosInstance.interceptors.response.use(
       typeof error.response.data === 'string' &&
       error.response.data.includes('<!DOCTYPE')
     ) {
-      message = `Server returned HTML instead of JSON. This usually indicates an authentication issue or the API endpoint doesn't exist. Status: ${error?.response?.status || 'unknown'}`;
       console.error('🚨 HTML Response Error:', {
         url: error?.config?.url,
         method: error?.config?.method,
@@ -51,18 +157,94 @@ axiosInstance.interceptors.response.use(
     // Don't log 401 errors as they're expected for authentication checks
     if (error?.response?.status !== 401) {
       // Don't log Socket.IO transport negotiation errors as they're normal
-      if (message === 'Transport unknown' || message?.includes('Transport unknown')) {
+      if (userMessage === 'Transport unknown' || userMessage?.includes('Transport unknown')) {
         console.debug('🔌 Socket.IO transport negotiation in progress...');
       } else {
-        console.error('Axios error:', message);
+        console.error('Axios error:', {
+          message: userMessage,
+          url: error?.config?.url,
+          method: error?.config?.method,
+          status: error?.response?.status,
+          code: error?.response?.data?.code,
+          debug: error?.response?.data?.debug,
+        });
       }
     }
 
-    return Promise.reject(new Error(message));
+    // Show toast notification for errors (except auth-related ones)
+    // Skip showing toast for 401 (unauthorized) as these are handled by auth flow
+    // Skip showing toast for HTML responses as they indicate system errors
+    // Allow components to opt-out of automatic error toasts by setting skipErrorToast: true in request config
+    const shouldShowToast =
+      error?.response?.status !== 401 &&
+      !(error?.response?.data && typeof error.response.data === 'string' && error.response.data.includes('<!DOCTYPE')) &&
+      !userMessage?.includes('Transport unknown') &&
+      !error?.config?.skipErrorToast;
+
+    if (shouldShowToast && typeof window !== 'undefined') {
+      // Determine toast type based on status code
+      const status = error?.response?.status;
+      if (status >= 400 && status < 500) {
+        // Client errors (validation, permissions, etc.) - show as warning
+        toast.error(userMessage);
+      } else if (status >= 500) {
+        // Server errors - show as error
+        toast.error(userMessage);
+      } else {
+        // Network or other errors - show as error
+        toast.error(userMessage);
+      }
+    }
+
+    return Promise.reject(new Error(userMessage));
   }
 );
 
 export default axiosInstance;
+
+// ----------------------------------------------------------------------
+
+/**
+ * Helper function to make API calls with automatic error toast handling
+ * Use this when you want to automatically show error toasts to users
+ */
+export const apiCall = {
+  get: <T = any>(url: string, config?: AxiosRequestConfig) =>
+    axiosInstance.get<T>(url, config),
+
+  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
+    axiosInstance.post<T>(url, data, config),
+
+  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
+    axiosInstance.put<T>(url, data, config),
+
+  patch: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
+    axiosInstance.patch<T>(url, data, config),
+
+  delete: <T = any>(url: string, config?: AxiosRequestConfig) =>
+    axiosInstance.delete<T>(url, config),
+};
+
+/**
+ * Helper function to make API calls WITHOUT automatic error toast handling
+ * Use this when you want to handle errors manually in your component
+ */
+export const apiCallSilent = {
+  get: <T = any>(url: string, config?: AxiosRequestConfig) =>
+    axiosInstance.get<T>(url, { ...config, skipErrorToast: true }),
+
+  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
+    axiosInstance.post<T>(url, data, { ...config, skipErrorToast: true }),
+
+  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
+    axiosInstance.put<T>(url, data, { ...config, skipErrorToast: true }),
+
+  patch: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
+    axiosInstance.patch<T>(url, data, { ...config, skipErrorToast: true }),
+
+  delete: <T = any>(url: string, config?: AxiosRequestConfig) =>
+    axiosInstance.delete<T>(url, { ...config, skipErrorToast: true }),
+};
 
 // ----------------------------------------------------------------------
 

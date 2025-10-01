@@ -11,7 +11,7 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import LoadingButton from '@mui/lab/LoadingButton';
 
-import axiosInstance from 'src/lib/axios';
+import { apiCall, apiCallSilent } from 'src/lib/axios';
 
 import { Iconify } from 'src/components/iconify';
 import { Form, RHFTextField, RHFPhoneInput } from 'src/components/hook-form';
@@ -68,7 +68,8 @@ export function CompanyInfoForm({ onSuccess, onError }: Props) {
   useEffect(() => {
     const loadCompanyInfo = async () => {
       try {
-        const response = await axiosInstance.get('/api/v1/company-info');
+        // Use apiCallSilent for loading data - we don't want to show error toasts during initial load
+        const response = await apiCallSilent.get('/api/v1/company-info');
         const { companyInfo } = response.data;
 
         methods.reset({
@@ -87,19 +88,25 @@ export function CompanyInfoForm({ onSuccess, onError }: Props) {
         });
       } catch (error) {
         console.error('Error loading company info:', error);
+        // We can optionally show a specific error message for loading failures
+        onError('Failed to load company information. Please refresh the page.');
       }
     };
 
     loadCompanyInfo();
-  }, [methods]);
+  }, [methods, onError]);
 
   const onSubmit = async (data: CompanyInfoFormData) => {
     try {
-      await axiosInstance.put('/api/v1/company-info', data);
+      // Use apiCall for update operations - automatic error toasts will be shown for errors
+      await apiCall.put('/api/v1/company-info', data);
       onSuccess('Company information updated successfully!');
     } catch (error) {
       console.error('Error updating company info:', error);
-      onError('Failed to update company information. Please try again.');
+      // The automatic error handling will show the appropriate toast message
+      // based on the error code (e.g., "Only the company owner can update company information")
+      // We can still provide a fallback generic message for the UI state
+      onError('Update failed. Please see the error message above.');
     }
   };
 

@@ -30,6 +30,7 @@ import { subscriptionRoutes } from "./subscription";
 import { stripeWebhookRoutes } from "./stripe-webhook";
 import brandingRoutes from "./branding";
 import { usageMonitoringRoutes } from "./usage-monitoring";
+import supportRoutes from "./support";
 
 export async function registerRoutes(fastify: FastifyInstance) {
   // Health check
@@ -69,10 +70,11 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(subscriptionRoutes, { prefix: "/api/v1/subscription" });
   await fastify.register(stripeWebhookRoutes, { prefix: "/api/v1/stripe" });
 
-  // Authenticated routes - Branding and Usage Monitoring
+  // Authenticated routes - Branding, Usage Monitoring, and Support
   await fastify.register(async function (fastify) {
     await fastify.addHook('preHandler', authenticate);
     await fastify.register(brandingRoutes, { prefix: "/api/v1" });
     await fastify.register(usageMonitoringRoutes, { prefix: "/api/v1/usage" });
+    await fastify.register(supportRoutes, { prefix: "/api/v1/support" });
   });
 }

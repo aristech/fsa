@@ -1,6 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { ReminderService } from "../services/reminder-service";
 import { RecurringTaskService } from "../services/recurring-task-service";
+import { TimezoneAwareReminderService } from "../services/timezone-aware-reminder-service";
+import { TimezoneAwareRecurringTaskService } from "../services/timezone-aware-recurring-task-service";
 import { Task } from "../models/Task";
 
 // Reminder routes
@@ -10,7 +12,8 @@ export async function reminderRoutes(fastify: FastifyInstance) {
     "/process",
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const result = await ReminderService.processPendingReminders();
+        // Use timezone-aware service for better timing
+        const result = await TimezoneAwareReminderService.processPendingReminders();
 
         return reply.send({
           success: true,
@@ -34,7 +37,7 @@ export async function reminderRoutes(fastify: FastifyInstance) {
     "/pending",
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const tasks = await ReminderService.getTasksNeedingReminders();
+        const tasks = await TimezoneAwareReminderService.getTasksNeedingReminders();
 
         return reply.send({
           success: true,
@@ -81,7 +84,7 @@ export async function reminderRoutes(fastify: FastifyInstance) {
       try {
         const { taskId } = request.params;
 
-        await ReminderService.updateTaskReminder(taskId);
+        await TimezoneAwareReminderService.updateTaskReminder(taskId);
 
         return reply.send({
           success: true,
@@ -102,8 +105,9 @@ export async function reminderRoutes(fastify: FastifyInstance) {
     "/process-recurring",
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
+        // Use timezone-aware service for better timing
         const result =
-          await RecurringTaskService.processPendingRecurringTasks();
+          await TimezoneAwareRecurringTaskService.processPendingRecurringTasks();
 
         return reply.send({
           success: true,
@@ -127,7 +131,7 @@ export async function reminderRoutes(fastify: FastifyInstance) {
     "/pending-recurring",
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const tasks = await RecurringTaskService.getTasksNeedingRecurrence();
+        const tasks = await TimezoneAwareRecurringTaskService.getTasksNeedingRecurrence();
 
         return reply.send({
           success: true,
@@ -174,7 +178,7 @@ export async function reminderRoutes(fastify: FastifyInstance) {
       try {
         const { taskId } = request.params;
 
-        await RecurringTaskService.updateTaskRecurrence(taskId);
+        await TimezoneAwareRecurringTaskService.updateTaskRecurrence(taskId);
 
         return reply.send({
           success: true,
@@ -352,7 +356,7 @@ export async function reminderRoutes(fastify: FastifyInstance) {
           });
         }
 
-        const emails = await ReminderService.getTaskNotificationEmails(task);
+        const emails = await TimezoneAwareReminderService.getTaskNotificationEmails(task);
 
         // Debug: Get detailed assignee info
         const { Personnel } = await import("../models/Personnel");

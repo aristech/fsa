@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import Stripe from 'stripe';
 import { StripeService } from "../services/stripe-service";
 import { Tenant } from "../models/Tenant";
-import { SubscriptionPlansService } from "../services/subscription-plans-service";
+import { EnvSubscriptionService } from "../services/env-subscription-service";
 
 interface StripeWebhookRequest extends FastifyRequest {
   rawBody?: Buffer;
@@ -165,7 +165,7 @@ async function handleCheckoutSessionCompleted(
     }
 
     // Apply the plan limits and update tenant immediately
-    const planConfig = SubscriptionPlansService.applyPlanLimits(planId);
+    const planConfig = EnvSubscriptionService.applyPlanLimits(planId);
 
     // Get subscription info if available
     let subscriptionId = null;
@@ -267,7 +267,7 @@ async function handleSubscriptionCreated(
     }
 
     // Apply the plan limits and update tenant
-    const planConfig = SubscriptionPlansService.applyPlanLimits(planId);
+    const planConfig = EnvSubscriptionService.applyPlanLimits(planId);
 
     await Tenant.findByIdAndUpdate(tenant._id, {
       'subscription.plan': planId,
@@ -364,7 +364,7 @@ async function handleSubscriptionUpdated(
 
     // If plan changed, update limits
     if (planId && planId !== tenant.subscription.plan) {
-      const planConfig = SubscriptionPlansService.applyPlanLimits(planId);
+      const planConfig = EnvSubscriptionService.applyPlanLimits(planId);
       updateData['subscription.plan'] = planId;
       updateData['subscription.limits'] = planConfig.limits;
       updateData['settings.sms.enabled'] = planConfig.limits.features.smsReminders;
@@ -413,7 +413,7 @@ async function handleSubscriptionDeleted(
     }
 
     // Downgrade to free plan
-    const freeConfig = SubscriptionPlansService.applyPlanLimits('free');
+    const freeConfig = EnvSubscriptionService.applyPlanLimits('free');
 
     await Tenant.findByIdAndUpdate(tenant._id, {
       'subscription.plan': 'free',

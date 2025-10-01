@@ -21,6 +21,8 @@ import InputAdornment from '@mui/material/InputAdornment';
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 
+import { safeDisplayText } from 'src/utils/html-utils';
+
 import axios from 'src/lib/axios';
 
 import { Iconify } from 'src/components/iconify';
@@ -209,9 +211,9 @@ export function JwtVerifyAccountView() {
   const getWelcomeMessage = () => {
     switch (accountInfo?.type) {
       case 'personnel_invitation':
-        return `Welcome to ${accountInfo.companyName}! Complete your account setup to join the team.`;
+        return `Welcome to ${safeDisplayText(accountInfo.companyName)}! Complete your account setup to join the team.`;
       case 'tenant_activation':
-        return `Welcome! Set up your password to activate your ${accountInfo.companyName} account.`;
+        return `Welcome! Set up your password to activate your ${safeDisplayText(accountInfo.companyName)} account.`;
       default:
         return 'Complete your account setup by creating a secure password.';
     }

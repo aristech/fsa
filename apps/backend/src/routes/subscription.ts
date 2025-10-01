@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import { authenticate } from "../middleware/auth";
 import { Tenant } from "../models/Tenant";
-import { SubscriptionPlansService } from "../services/subscription-plans-service";
+import { EnvSubscriptionService } from "../services/env-subscription-service";
 import { getSubscriptionStatus } from "../middleware/subscription-enforcement";
 import { StripeService } from "../services/stripe-service";
 import { TenantSetupService } from "../services/tenant-setup";
@@ -30,7 +30,7 @@ const changePlanSchema = z.object({
     .string()
     .min(1, "Plan ID is required")
     .refine(
-      (planId) => SubscriptionPlansService.getPlan(planId) !== null,
+      (planId) => EnvSubscriptionService.getPlan(planId) !== null,
       "Invalid subscription plan"
     ),
   billingCycle: z.enum(["monthly", "yearly"]).default("monthly"),
@@ -42,7 +42,7 @@ const checkoutSessionSchema = z.object({
     .string()
     .min(1, "Plan ID is required")
     .refine(
-      (planId) => SubscriptionPlansService.getPlan(planId) !== null,
+      (planId) => EnvSubscriptionService.getPlan(planId) !== null,
       "Invalid subscription plan"
     ),
   billingCycle: z.enum(["monthly", "yearly"]).default("monthly"),
@@ -72,7 +72,7 @@ export async function subscriptionRoutes(fastify: FastifyInstance) {
     // GET /api/v1/subscription/plans - Get all available subscription plans (public endpoint)
     publicRoutes.get("/plans", async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const pricingInfo = SubscriptionPlansService.getPricingInfo();
+        const pricingInfo = EnvSubscriptionService.getPricingInfo();
 
         return sendSuccess(
           reply,
@@ -323,7 +323,7 @@ export async function subscriptionRoutes(fastify: FastifyInstance) {
           );
         }
 
-        const newPlan = SubscriptionPlansService.getPlan(validatedData.planId);
+        const newPlan = EnvSubscriptionService.getPlan(validatedData.planId);
         if (!newPlan) {
           return sendBadRequest(
             reply,
@@ -400,7 +400,7 @@ export async function subscriptionRoutes(fastify: FastifyInstance) {
         }
 
         // Apply new plan configuration
-        const newSubscriptionConfig = SubscriptionPlansService.applyPlanLimits(validatedData.planId);
+        const newSubscriptionConfig = EnvSubscriptionService.applyPlanLimits(validatedData.planId);
 
         // Update tenant subscription in database
         const updatedData: any = {
@@ -480,7 +480,7 @@ export async function subscriptionRoutes(fastify: FastifyInstance) {
           );
         }
 
-        await SubscriptionPlansService.updateUsage(
+        await EnvSubscriptionService.updateUsage(
           tenantId,
           validatedData.action,
           validatedData.count
@@ -546,7 +546,7 @@ export async function subscriptionRoutes(fastify: FastifyInstance) {
           );
         }
 
-        const currentPlan = SubscriptionPlansService.getPlan(tenant.subscription.plan);
+        const currentPlan = EnvSubscriptionService.getPlan(tenant.subscription.plan);
         if (!currentPlan) {
           return sendBadRequest(
             reply,
@@ -838,7 +838,7 @@ export async function subscriptionRoutes(fastify: FastifyInstance) {
       let trialPeriodDays = validatedData.trialPeriodDays;
       if (!trialPeriodDays && tenant.subscription.status !== 'active') {
         // Give trial period for new users or users not on active paid plans
-        const plan = SubscriptionPlansService.getPlan(validatedData.planId);
+        const plan = EnvSubscriptionService.getPlan(validatedData.planId);
         trialPeriodDays = plan?.trialDays || 14;
       }
 

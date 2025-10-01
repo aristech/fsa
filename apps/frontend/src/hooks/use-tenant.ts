@@ -2,6 +2,8 @@
 
 import { useCallback } from 'react';
 
+import { safeDisplayText } from 'src/utils/html-utils';
+
 import { useAuthContext } from 'src/auth/hooks';
 
 // ----------------------------------------------------------------------
@@ -13,7 +15,7 @@ export function useTenant() {
     tenant,
     tenantId: tenant?._id || user?.tenantId || null,
     tenantSlug: tenant?.slug || null,
-    tenantName: tenant?.name || null,
+    tenantName: safeDisplayText(tenant?.name) || null,
     isAuthenticated: !!user,
     user,
   };

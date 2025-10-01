@@ -7,7 +7,9 @@ import { authenticate } from "../middleware/auth";
 import { AuthenticatedRequest } from "../types";
 import { MagicLinkService } from "../services/magic-link-service";
 import { UserCleanupService } from "../services/user-cleanup-service";
-import { subscriptionMiddleware, updateUsageAfterAction } from "../middleware/subscription-enforcement";
+import EnhancedSubscriptionMiddleware from "../middleware/enhanced-subscription-middleware";
+import { HttpErrorLogUtils } from "../utils/http-error-logger";
+import { ErrorHelpers } from "../middleware/http-error-middleware";
 
 // Personnel creation schema
 const createPersonnelSchema = z.object({
@@ -447,7 +449,7 @@ export async function personnelRoutes(fastify: FastifyInstance) {
 
   // POST /api/v1/personnel - Create new personnel
   fastify.post("/", {
-    preHandler: [subscriptionMiddleware.checkUserLimit()]
+    preHandler: [EnhancedSubscriptionMiddleware.checkUserLimit()]
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const req = request as AuthenticatedRequest;
@@ -458,6 +460,20 @@ export async function personnelRoutes(fastify: FastifyInstance) {
       let userId = validatedData.userId;
       if (!userId) {
         if (!validatedData.name || !validatedData.email) {
+          const context = HttpErrorLogUtils.createContextFromRequest(request, {
+            entity: 'personnel',
+            model: 'Personnel',
+            service: 'PersonnelService',
+            operation: 'create',
+            validationErrors: { missing: ['name', 'email'] }
+          });
+
+          HttpErrorLogUtils.log400Error(
+            context,
+            "Name and email are required when userId is not provided",
+            { missing: ['name', 'email'] }
+          );
+
           return reply.status(400).send({
             success: false,
             message: "Name and email are required when userId is not provided",
@@ -501,19 +517,46 @@ export async function personnelRoutes(fastify: FastifyInstance) {
             });
 
             // Track user creation in usage statistics
-            await updateUsageAfterAction(tenant._id.toString(), 'create_user', 1);
+            await EnhancedSubscriptionMiddleware.trackCreation(
+              tenant._id.toString(),
+              'user',
+              1,
+              {
+                entityId: user._id.toString(),
+                email: validatedData.email,
+                name: `${firstName} ${lastName}`.trim()
+              },
+              (request as any).id
+            );
           } catch (err: any) {
+            const context = HttpErrorLogUtils.createContextFromRequest(request, {
+              entity: 'personnel',
+              model: 'User',
+              service: 'PersonnelService',
+              operation: 'create_user',
+              entityId: validatedData.email
+            });
+
             const isDup =
               err?.code === 11000 ||
               (typeof err?.message === "string" &&
                 err.message.includes("E11000"));
             if (isDup) {
-              return reply.status(400).send({
+              HttpErrorLogUtils.log409Error(
+                context,
+                "User email already exists in the database",
+                "unique_email_constraint"
+              );
+
+              return reply.status(409).send({
                 success: false,
                 message: "User email exists in the database",
                 email: validatedData.email,
               });
             }
+
+            // Log unexpected database error
+            HttpErrorLogUtils.logDatabaseError(context, err, 'create_user');
             throw err;
           }
         }
@@ -521,7 +564,20 @@ export async function personnelRoutes(fastify: FastifyInstance) {
       } else {
         const user = await User.findOne({ _id: userId, tenantId: tenant._id });
         if (!user) {
-          return reply.status(400).send({
+          const context = HttpErrorLogUtils.createContextFromRequest(request, {
+            entity: 'personnel',
+            model: 'User',
+            service: 'PersonnelService',
+            operation: 'find_user',
+            entityId: userId
+          });
+
+          HttpErrorLogUtils.log404Error(
+            context,
+            "User not found or access denied"
+          );
+
+          return reply.status(404).send({
             success: false,
             message: "User not found or access denied",
           });
@@ -721,13 +777,33 @@ export async function personnelRoutes(fastify: FastifyInstance) {
         message: "Personnel created successfully",
       });
     } catch (error) {
+      const context = HttpErrorLogUtils.createContextFromRequest(request, {
+        entity: 'personnel',
+        model: 'Personnel',
+        service: 'PersonnelService',
+        operation: 'create'
+      });
+
       if (error instanceof z.ZodError) {
-        return reply.status(400).send({
+        HttpErrorLogUtils.log422Error(
+          context,
+          "Personnel creation validation failed",
+          error.issues
+        );
+
+        return reply.status(422).send({
           success: false,
           message: "Validation error",
           errors: error.issues,
         });
       }
+
+      // Log unexpected server error
+      HttpErrorLogUtils.log500Error(
+        context,
+        error as Error,
+        "Failed to create personnel - unexpected error"
+      );
 
       fastify.log.error(error as Error, "Error creating personnel");
       console.error("Detailed error:", error);
@@ -937,6 +1013,15 @@ export async function personnelRoutes(fastify: FastifyInstance) {
           });
         }
 
+        // Get user details before deletion for usage tracking
+        const user = await User.findById(personnel.userId);
+        const userDetails = {
+          entityId: personnel._id.toString(),
+          userId: personnel.userId?.toString(),
+          name: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : undefined,
+          email: user?.email
+        };
+
         // Get the associated user ID
         const userId = personnel.userId;
 
@@ -971,6 +1056,15 @@ export async function personnelRoutes(fastify: FastifyInstance) {
 
         // Log cleanup details
         fastify.log.info(cleanupResult.details, `🧹 User cleanup completed`);
+
+        // Track user deletion to decrease usage count
+        await EnhancedSubscriptionMiddleware.trackDeletion(
+          tenant._id.toString(),
+          'user',
+          1,
+          userDetails,
+          (request as any).id
+        );
 
         return reply.send({
           success: true,

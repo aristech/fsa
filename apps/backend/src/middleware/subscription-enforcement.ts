@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { Tenant } from "../models/Tenant";
-import { SubscriptionPlansService } from "../services/subscription-plans-service";
+import { EnvSubscriptionService } from "../services/env-subscription-service";
 import { sendBadRequest, sendForbidden } from "../utils/error-handler";
 import { BUSINESS_MESSAGES } from "../constants/error-messages";
 
@@ -58,7 +58,7 @@ export function checkSubscriptionLimit(action: string, count: number = 1) {
       }
 
       // Check subscription limits
-      const limitCheck = SubscriptionPlansService.canPerformAction(tenant, action, count);
+      const limitCheck = EnvSubscriptionService.canPerformAction(tenant, action, count);
 
       if (!limitCheck.allowed) {
         return sendForbidden(
@@ -106,7 +106,7 @@ export function requireFeature(featureName: string) {
         );
       }
 
-      const featureCheck = SubscriptionPlansService.canPerformAction(tenant, `use_${featureName}`);
+      const featureCheck = EnvSubscriptionService.canPerformAction(tenant, `use_${featureName}`);
 
       if (!featureCheck.allowed) {
         return sendForbidden(
@@ -132,7 +132,7 @@ export function requireFeature(featureName: string) {
  * Get list of plans that include a specific feature
  */
 function getPlansWithFeature(featureName: string): string[] {
-  const plans = SubscriptionPlansService.getAllPlans();
+  const plans = EnvSubscriptionService.getAllPlans();
   const availablePlans: string[] = [];
 
   Object.entries(plans).forEach(([planId, plan]) => {
@@ -175,7 +175,7 @@ export async function updateUsageAfterAction(
       return; // No usage tracking for this action
   }
 
-  await SubscriptionPlansService.updateUsage(tenantId, usageAction, count);
+  await EnvSubscriptionService.updateUsage(tenantId, usageAction, count);
 }
 
 /**
@@ -221,7 +221,7 @@ export async function getSubscriptionStatus(request: FastifyRequest): Promise<an
     return null;
   }
 
-  const plan = SubscriptionPlansService.getPlan(tenant.subscription.plan);
+  const plan = EnvSubscriptionService.getPlan(tenant.subscription.plan);
 
   return {
     plan: tenant.subscription.plan,

@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { Tenant } from "../models/Tenant";
-import { SubscriptionPlansService } from "../services/subscription-plans-service";
+import { EnvSubscriptionService } from "../services/env-subscription-service";
 import { FileTrackingService } from "../services/file-tracking-service";
 import { sendForbidden, sendBadRequest } from "../utils/error-handler";
 import { BUSINESS_MESSAGES } from "../constants/error-messages";
@@ -59,8 +59,8 @@ export function enforceResourceLimits(resourceType: keyof ResourceLimits, count:
         );
       }
 
-      // Check specific resource limit
-      const limitCheck = await checkResourceLimit(tenant, resourceType, count);
+      // Check specific resource limit using environment-based service
+      const limitCheck = checkResourceLimitWithEnv(tenant, resourceType, count);
 
       if (!limitCheck.allowed) {
         return sendForbidden(
@@ -72,7 +72,7 @@ export function enforceResourceLimits(resourceType: keyof ResourceLimits, count:
 
       // Add tenant to request for use in route handlers
       request.tenant = tenant;
-      request.resourceLimits = await getResourceLimitsStatus(tenant);
+      request.resourceLimits = getResourceLimitsStatus(tenant);
 
     } catch (error) {
       console.error("Resource limit enforcement error:", error);
@@ -275,88 +275,41 @@ function isSubscriptionActive(tenant: any): boolean {
 /**
  * Check specific resource limit
  */
-async function checkResourceLimit(
+function checkResourceLimitWithEnv(
   tenant: any,
   resourceType: keyof ResourceLimits,
   count: number
-): Promise<{ allowed: boolean; reason?: string; currentUsage?: number; limit?: number }> {
+): { allowed: boolean; reason?: string; currentUsage?: number; limit?: number } {
 
-  const limits = tenant.subscription.limits;
-  const usage = tenant.subscription.usage;
+  // Map resource types to EnvSubscriptionService action names
+  const actionMap = {
+    'users': 'create_user',
+    'clients': 'create_client',
+    'workOrders': 'create_work_order',
+    'sms': 'send_sms',
+    'storage': 'upload_file',
+    'files': 'upload_file'
+  };
 
-  switch (resourceType) {
-    case 'users':
-      if (limits.maxUsers === -1) return { allowed: true };
-      const canCreateUser = (usage.currentUsers + count) <= limits.maxUsers;
-      return {
-        allowed: canCreateUser,
-        reason: canCreateUser ? undefined : `User limit exceeded. Current: ${usage.currentUsers}, Limit: ${limits.maxUsers}`,
-        currentUsage: usage.currentUsers,
-        limit: limits.maxUsers,
-      };
-
-    case 'clients':
-      if (limits.maxClients === -1) return { allowed: true };
-      const canCreateClient = (usage.currentClients + count) <= limits.maxClients;
-      return {
-        allowed: canCreateClient,
-        reason: canCreateClient ? undefined : `Client limit exceeded. Current: ${usage.currentClients}, Limit: ${limits.maxClients}`,
-        currentUsage: usage.currentClients,
-        limit: limits.maxClients,
-      };
-
-    case 'workOrders':
-      if (limits.maxWorkOrdersPerMonth === -1) return { allowed: true };
-      const canCreateWorkOrder = (usage.workOrdersThisMonth + count) <= limits.maxWorkOrdersPerMonth;
-      return {
-        allowed: canCreateWorkOrder,
-        reason: canCreateWorkOrder ? undefined : `Monthly work order limit exceeded. Current: ${usage.workOrdersThisMonth}, Limit: ${limits.maxWorkOrdersPerMonth}`,
-        currentUsage: usage.workOrdersThisMonth,
-        limit: limits.maxWorkOrdersPerMonth,
-      };
-
-    case 'sms':
-      if (limits.maxSmsPerMonth === -1) return { allowed: true };
-      if (limits.maxSmsPerMonth === 0) return {
-        allowed: false,
-        reason: "SMS feature not available in current plan",
-        currentUsage: usage.smsThisMonth,
-        limit: limits.maxSmsPerMonth,
-      };
-      const canSendSms = (usage.smsThisMonth + count) <= limits.maxSmsPerMonth;
-      return {
-        allowed: canSendSms,
-        reason: canSendSms ? undefined : `Monthly SMS limit exceeded. Current: ${usage.smsThisMonth}, Limit: ${limits.maxSmsPerMonth}`,
-        currentUsage: usage.smsThisMonth,
-        limit: limits.maxSmsPerMonth,
-      };
-
-    case 'storage':
-      // This should be handled by FileTrackingService
-      return { allowed: true };
-
-    case 'files':
-      // For now, we don't have a specific file count limit, but we could add one
-      return { allowed: true };
-
-    default:
-      return { allowed: true };
+  const actionName = actionMap[resourceType];
+  if (!actionName) {
+    return { allowed: true };
   }
+
+  // Use EnvSubscriptionService to check limits
+  return EnvSubscriptionService.canPerformAction(tenant, actionName, count);
 }
 
 /**
- * Get current resource limits status for a tenant
+ * Get current resource limits status for a tenant using environment service
  */
-async function getResourceLimitsStatus(tenant: any): Promise<ResourceLimits> {
-  const limits = tenant.subscription.limits;
-  const usage = tenant.subscription.usage;
-
+function getResourceLimitsStatus(tenant: any): ResourceLimits {
   return {
-    users: limits.maxUsers === -1 || usage.currentUsers < limits.maxUsers,
-    clients: limits.maxClients === -1 || usage.currentClients < limits.maxClients,
-    workOrders: limits.maxWorkOrdersPerMonth === -1 || usage.workOrdersThisMonth < limits.maxWorkOrdersPerMonth,
-    sms: limits.maxSmsPerMonth === -1 || (limits.maxSmsPerMonth > 0 && usage.smsThisMonth < limits.maxSmsPerMonth),
-    storage: limits.maxStorageGB === -1 || usage.storageUsedGB < limits.maxStorageGB,
+    users: EnvSubscriptionService.canPerformAction(tenant, 'create_user', 1).allowed,
+    clients: EnvSubscriptionService.canPerformAction(tenant, 'create_client', 1).allowed,
+    workOrders: EnvSubscriptionService.canPerformAction(tenant, 'create_work_order', 1).allowed,
+    sms: EnvSubscriptionService.canPerformAction(tenant, 'send_sms', 1).allowed,
+    storage: EnvSubscriptionService.canPerformAction(tenant, 'upload_file', 1024 * 1024).allowed, // 1MB test
     files: true, // No specific file count limit for now
   };
 }

@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { SubscriptionPlansService, SUBSCRIPTION_PLANS } from './subscription-plans-service';
+import { EnvSubscriptionService } from './env-subscription-service';
 
 export class StripeService {
   private static stripe: Stripe;
@@ -77,7 +77,7 @@ export class StripeService {
     metadata?: Record<string, string>;
   }): Promise<Stripe.Subscription> {
     const stripe = this.getInstance();
-    const plan = SubscriptionPlansService.getPlan(params.planId);
+    const plan = EnvSubscriptionService.getPlan(params.planId);
 
     if (!plan) {
       throw new Error(`Invalid plan ID: ${params.planId}`);
@@ -275,7 +275,7 @@ export class StripeService {
     metadata?: Record<string, string>;
   }): Promise<Stripe.Checkout.Session> {
     const stripe = this.getInstance();
-    const plan = SubscriptionPlansService.getPlan(params.planId);
+    const plan = EnvSubscriptionService.getPlan(params.planId);
 
     if (!plan) {
       throw new Error(`Invalid plan ID: ${params.planId}`);
@@ -419,7 +419,7 @@ export class StripeService {
   static async createStripeProducts(): Promise<void> {
     const stripe = this.getInstance();
 
-    for (const [planId, plan] of Object.entries(SUBSCRIPTION_PLANS)) {
+    for (const [planId, plan] of Object.entries(EnvSubscriptionService.getAllPlans())) {
       if (planId === 'free') continue; // Skip free plan
 
       // Create product

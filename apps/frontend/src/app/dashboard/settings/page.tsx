@@ -17,6 +17,7 @@ export default function SettingsLandingPage() {
       apiKeysHref={paths.dashboard.settings.apiKeys}
       smsRemindersHref={paths.dashboard.settings.smsReminders}
       companyHref={paths.dashboard.settings.company}
+      supportHref={paths.dashboard.settings.support}
     />
   );
 }

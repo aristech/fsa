@@ -16,7 +16,7 @@ import { WorkOrderAssignmentService } from "../services/work-order-assignment-se
 import { WorkOrderTimelineService } from "../services/work-order-timeline-service";
 import { WebhookService } from "../services/webhook-service";
 import { WorkOrderSmsService } from "../services/work-order-sms-service";
-import { subscriptionMiddleware, updateUsageAfterAction } from "../middleware/subscription-enforcement";
+import EnhancedSubscriptionMiddleware from "../middleware/enhanced-subscription-middleware";
 
 export async function workOrderRoutes(fastify: FastifyInstance) {
   // Apply authentication middleware to all routes
@@ -411,7 +411,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
   // POST /api/v1/work-orders - Create work order
   fastify.post(
     "/",
-    { preHandler: [requirePermission("workOrders.create"), subscriptionMiddleware.checkWorkOrderLimit()] },
+    { preHandler: [requirePermission("workOrders.create"), EnhancedSubscriptionMiddleware.checkWorkOrderLimit()] },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const req = request as AuthenticatedRequest;
@@ -503,7 +503,18 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         await workOrder.save();
 
         // Track work order creation in usage statistics
-        await updateUsageAfterAction(tenant._id.toString(), 'create_work_order', 1);
+        await EnhancedSubscriptionMiddleware.trackCreation(
+          tenant._id.toString(),
+          'workOrder',
+          1,
+          {
+            entityId: workOrder._id.toString(),
+            workOrderNumber: workOrder.workOrderNumber,
+            title: workOrder.title,
+            clientId: workOrder.clientId
+          },
+          (request as any).id
+        );
 
         // Add timeline entry for work order creation
         try {
@@ -1015,7 +1026,7 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         // Parse cascade deletion option
         const cascadeDelete = cascade === "true";
 
-        // Check if work order exists before cleanup
+        // Check if work order exists and get details for usage tracking
         const workOrder = await WorkOrder.findOne({
           _id: id,
           tenantId: tenant._id,
@@ -1027,6 +1038,13 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
             error: "Work order not found",
           });
         }
+
+        const workOrderDetails = {
+          entityId: workOrder._id.toString(),
+          workOrderNumber: workOrder.workOrderNumber,
+          title: workOrder.title,
+          clientId: workOrder.clientId
+        };
 
         fastify.log.info(
           {
@@ -1064,6 +1082,15 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         // Log cleanup details
         fastify.log.info(
           `🧹 Work order cleanup completed: ${JSON.stringify(cleanupResult.details)}`,
+        );
+
+        // Track work order deletion to decrease usage count
+        await EnhancedSubscriptionMiddleware.trackDeletion(
+          tenant._id.toString(),
+          'workOrder',
+          1,
+          workOrderDetails,
+          (request as any).id
         );
 
         return reply.send({

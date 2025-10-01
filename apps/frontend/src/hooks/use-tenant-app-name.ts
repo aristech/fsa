@@ -1,5 +1,7 @@
 'use client';
 
+import { safeDisplayText } from 'src/utils/html-utils';
+
 import { CONFIG } from 'src/global-config';
 
 import { useAuthContext } from 'src/auth/hooks/use-auth-context';
@@ -14,7 +16,7 @@ export function useTenantAppName(): string {
   const { tenant } = useAuthContext();
 
   // Use tenant company name if available, otherwise fall back to default app name
-  return tenant?.name || CONFIG.appName;
+  return safeDisplayText(tenant?.name) || CONFIG.appName;
 }
 
 /**
@@ -24,7 +26,7 @@ export function useTenantBranding() {
   const { tenant } = useAuthContext();
 
   return {
-    appName: tenant?.name || CONFIG.appName,
+    appName: safeDisplayText(tenant?.name) || CONFIG.appName,
     logoUrl: tenant?.branding?.logoUrl,
     hasCustomLogo: Boolean(tenant?.branding?.logoUrl),
     companyInfo: tenant?.branding?.companyInfo,

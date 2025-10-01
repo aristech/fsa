@@ -11,10 +11,15 @@ import Button from '@mui/material/Button';
 import CardHeader from '@mui/material/CardHeader';
 import ButtonBase from '@mui/material/ButtonBase';
 
+import { useEnvironmentAccess } from 'src/hooks/use-environment-access';
+import { PERMISSIONS, usePermissions } from 'src/hooks/use-permissions';
+
 import { PlanFreeIcon, PlanPremiumIcon, PlanStarterIcon } from 'src/assets/icons';
 
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
+
+import { useAuthContext } from 'src/auth/hooks';
 
 import { PaymentCardListDialog } from '../payment/payment-card-list-dialog';
 
@@ -31,9 +36,20 @@ type Props = {
 };
 
 export function AccountBillingPlan({ cardList, addressBook, plans }: Props) {
-  const openAddress = useBoolean();
+  const { user } = useAuthContext();
+  const { isFieldOnly } = useEnvironmentAccess();
+  const { hasPermission } = usePermissions();
 
+  const openAddress = useBoolean();
   const openCards = useBoolean();
+
+  // Check if user can manage subscription
+  const canManageSubscription =
+    user?.isTenantOwner ||
+    hasPermission(PERMISSIONS.TENANT_MANAGE);
+
+  // Hide upgrade functionality for personnel (field-only users) or users without subscription management permissions
+  const shouldShowSubscriptionControls = !isFieldOnly && canManageSubscription;
 
   const primaryCard = cardList.find((card) => card.primary) || null;
   const primaryAddress = addressBook.find((address) => address.primary) || null;
@@ -63,15 +79,16 @@ export function AccountBillingPlan({ cardList, addressBook, plans }: Props) {
       <Grid key={plan.subscription} size={{ xs: 12, md: 4 }}>
         <Paper
           variant="outlined"
-          onClick={() => handleSelectPlan(plan.subscription)}
+          onClick={shouldShowSubscriptionControls ? () => handleSelectPlan(plan.subscription) : undefined}
           sx={[
             (theme) => ({
               p: 2.5,
               borderRadius: 1.5,
-              cursor: 'pointer',
+              cursor: shouldShowSubscriptionControls ? 'pointer' : 'default',
               position: 'relative',
               ...(plan.primary && { opacity: 0.48, cursor: 'default' }),
-              ...(plan.subscription === selectedPlan && {
+              ...(!shouldShowSubscriptionControls && { opacity: 0.7, cursor: 'default' }),
+              ...(plan.subscription === selectedPlan && shouldShowSubscriptionControls && {
                 boxShadow: `0 0 0 2px ${theme.vars?.palette.text.primary}`,
               }),
             }),
@@ -174,20 +191,26 @@ export function AccountBillingPlan({ cardList, addressBook, plans }: Props) {
     </Box>
   );
 
-  const renderFooter = () => (
-    <Box
-      sx={(theme) => ({
-        p: 3,
-        gap: 1.5,
-        display: 'flex',
-        justifyContent: 'flex-end',
-        borderTop: `dashed 1px ${theme.vars?.palette.divider}`,
-      })}
-    >
-      <Button variant="outlined">Cancel plan</Button>
-      <Button variant="contained">Upgrade plan</Button>
-    </Box>
-  );
+  const renderFooter = () => {
+    if (!shouldShowSubscriptionControls) {
+      return null;
+    }
+
+    return (
+      <Box
+        sx={(theme) => ({
+          p: 3,
+          gap: 1.5,
+          display: 'flex',
+          justifyContent: 'flex-end',
+          borderTop: `dashed 1px ${theme.vars?.palette.divider}`,
+        })}
+      >
+        <Button variant="outlined">Cancel plan</Button>
+        <Button variant="contained">Upgrade plan</Button>
+      </Box>
+    );
+  };
 
   const renderCardListDialog = () => (
     <PaymentCardListDialog

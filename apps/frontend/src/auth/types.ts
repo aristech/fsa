@@ -36,7 +36,8 @@ export type TenantType = {
 } | null;
 
 export type UserType = {
-  _id: string;
+  id?: string;
+  _id?: string;
   email: string;
   firstName: string;
   lastName: string;

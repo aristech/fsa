@@ -10,6 +10,8 @@ import { styled } from '@mui/material/styles';
 
 import { RouterLink } from 'src/routes/components';
 
+import { safeDisplayText } from 'src/utils/html-utils';
+
 import { useAuthContext } from 'src/auth/hooks/use-auth-context';
 
 import { Logo } from './logo';
@@ -55,7 +57,7 @@ export function TenantLogo({
       >
         <Avatar
           src={tenant.branding?.logoUrl}
-          alt={`${tenant?.name || 'Company'} Logo`}
+          alt={`${safeDisplayText(tenant?.name) || 'Company'} Logo`}
           sx={{
             width: '100%',
             height: '100%',

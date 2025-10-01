@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { authenticate } from "../middleware/auth";
-import { subscriptionMiddleware, updateUsageAfterAction } from "../middleware/subscription-enforcement";
+import EnhancedSubscriptionMiddleware from "../middleware/enhanced-subscription-middleware";
 import { UnifiedSmsService } from "../services/unified-sms-service";
 import { MessageTemplateService } from "../services/message-template-service";
 import { YubotoService, YUBOTO_STATUS_MAP, YubotoMessageStatus } from "../services/yuboto-service";
@@ -202,7 +202,7 @@ export async function smsReminderRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/test",
     {
-      preHandler: [authenticate, subscriptionMiddleware.checkSmsLimit(1), subscriptionMiddleware.requireSmsReminders()],
+      preHandler: [authenticate, EnhancedSubscriptionMiddleware.checkSmsLimit(1), EnhancedSubscriptionMiddleware.requireSmsReminders()],
       schema: {
         body: {
           type: "object",
@@ -254,7 +254,16 @@ export async function smsReminderRoutes(fastify: FastifyInstance) {
         if (result.success) {
           const user = (request as any).user;
           if (user?.tenantId) {
-            await updateUsageAfterAction(user.tenantId, 'send_sms', 1);
+            await EnhancedSubscriptionMiddleware.trackCreation(
+              user.tenantId,
+              'sms',
+              1,
+              {
+                recipientPhone: phoneNumber || 'unknown',
+                reminderType: 'sms_reminder'
+              },
+              (request as any).id
+            );
           }
         }
 
@@ -742,7 +751,7 @@ export async function smsReminderRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/send-test",
     {
-      preHandler: [authenticate, subscriptionMiddleware.checkSmsLimit(1), subscriptionMiddleware.requireSmsReminders()],
+      preHandler: [authenticate, EnhancedSubscriptionMiddleware.checkSmsLimit(1), EnhancedSubscriptionMiddleware.requireSmsReminders()],
       schema: {
         body: {
           type: "object",
@@ -802,7 +811,16 @@ export async function smsReminderRoutes(fastify: FastifyInstance) {
           // Track SMS usage after successful send
           const user = (request as any).user;
           if (user?.tenantId) {
-            await updateUsageAfterAction(user.tenantId, 'send_sms', 1);
+            await EnhancedSubscriptionMiddleware.trackCreation(
+              user.tenantId,
+              'sms',
+              1,
+              {
+                recipientPhone: phoneNumber || 'unknown',
+                reminderType: 'sms_reminder'
+              },
+              (request as any).id
+            );
           }
 
           return reply.send({
@@ -939,7 +957,7 @@ export async function smsReminderRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/unified-test",
     {
-      preHandler: [authenticate, subscriptionMiddleware.checkSmsLimit(1), subscriptionMiddleware.requireSmsReminders()],
+      preHandler: [authenticate, EnhancedSubscriptionMiddleware.checkSmsLimit(1), EnhancedSubscriptionMiddleware.requireSmsReminders()],
       schema: {
         body: {
           type: "object",
@@ -1017,7 +1035,16 @@ export async function smsReminderRoutes(fastify: FastifyInstance) {
         if (result.success) {
           const user = (request as any).user;
           if (user?.tenantId) {
-            await updateUsageAfterAction(user.tenantId, 'send_sms', 1);
+            await EnhancedSubscriptionMiddleware.trackCreation(
+              user.tenantId,
+              'sms',
+              1,
+              {
+                recipientPhone: phoneNumber || 'unknown',
+                reminderType: 'sms_reminder'
+              },
+              (request as any).id
+            );
           }
         }
 

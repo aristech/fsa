@@ -2,6 +2,8 @@ import type { NextRequest } from 'next/server';
 
 import { NextResponse } from 'next/server';
 
+import { safeDisplayText } from 'src/utils/html-utils';
+
 import connectDB from 'src/lib/db';
 import { User, Tenant } from 'src/lib/models';
 import { verifyToken } from 'src/lib/auth/jwt';
@@ -135,7 +137,7 @@ export function withRequestContext(
         tenant: tenant
           ? {
               _id: tenant._id.toString(),
-              name: tenant.name,
+              name: safeDisplayText(tenant.name),
               slug: tenant.slug,
               isActive: tenant.isActive,
             }

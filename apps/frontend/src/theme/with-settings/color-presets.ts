@@ -22,14 +22,6 @@ export const primaryColorPresets: Record<ThemeColorPreset, PaletteColorNoChannel
     contrastText: primary.contrastText,
   },
   preset1: {
-    lighter: '#CCF4FE',
-    light: '#68CDF9',
-    main: '#078DEE',
-    dark: '#0351AB',
-    darker: '#012972',
-    contrastText: '#FFFFFF',
-  },
-  preset2: {
     lighter: '#EBD6FD',
     light: '#B985F4',
     main: '#7635dc',
@@ -37,6 +29,15 @@ export const primaryColorPresets: Record<ThemeColorPreset, PaletteColorNoChannel
     darker: '#200A69',
     contrastText: '#FFFFFF',
   },
+  preset2: {
+    lighter: '#CCF4FE',
+    light: '#68CDF9',
+    main: '#078DEE',
+    dark: '#0351AB',
+    darker: '#012972',
+    contrastText: '#FFFFFF',
+  },
+
   preset3: {
     lighter: '#CDE9FD',
     light: '#6BB1F8',

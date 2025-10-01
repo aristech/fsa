@@ -570,20 +570,21 @@ async function handleCreateTask(
     }
   }
 
-  // Update reminder settings if task has reminder enabled
+  // Update reminder settings if task has reminder enabled (timezone-aware)
   if (newTask.reminder?.enabled && newTask.dueDate) {
     try {
-      await ReminderService.updateTaskReminder(newTask._id.toString());
+      const { TimezoneAwareReminderService } = await import('../services/timezone-aware-reminder-service');
+      await TimezoneAwareReminderService.updateTaskReminder(newTask._id.toString());
     } catch (error) {
       console.error("Error updating task reminder:", error);
     }
   }
 
-  // Update recurring task settings if task has repeat enabled
+  // Update recurring task settings if task has repeat enabled (timezone-aware)
   if (newTask.repeat?.enabled && newTask.dueDate) {
     try {
-      const { RecurringTaskService } = await import('../services/recurring-task-service');
-      await RecurringTaskService.updateTaskRecurrence(newTask._id.toString());
+      const { TimezoneAwareRecurringTaskService } = await import('../services/timezone-aware-recurring-task-service');
+      await TimezoneAwareRecurringTaskService.updateTaskRecurrence(newTask._id.toString());
     } catch (error) {
       console.error("Error updating task recurrence:", error);
     }
@@ -1145,20 +1146,21 @@ async function handleUpdateTask(
     );
   }
 
-  // Update reminder settings if reminder was changed and task has due date
+  // Update reminder settings if reminder was changed and task has due date (timezone-aware)
   if (changes.includes("reminder") && updatedTask.reminder?.enabled && updatedTask.dueDate) {
     try {
-      await ReminderService.updateTaskReminder(updatedTask._id.toString());
+      const { TimezoneAwareReminderService } = await import('../services/timezone-aware-reminder-service');
+      await TimezoneAwareReminderService.updateTaskReminder(updatedTask._id.toString());
     } catch (error) {
       console.error("Error updating task reminder:", error);
     }
   }
 
-  // Update recurring task settings if repeat was changed and task has due date
+  // Update recurring task settings if repeat was changed and task has due date (timezone-aware)
   if (changes.includes("repeat") && updatedTask.repeat?.enabled && updatedTask.dueDate) {
     try {
-      const { RecurringTaskService } = await import('../services/recurring-task-service');
-      await RecurringTaskService.updateTaskRecurrence(updatedTask._id.toString());
+      const { TimezoneAwareRecurringTaskService } = await import('../services/timezone-aware-recurring-task-service');
+      await TimezoneAwareRecurringTaskService.updateTaskRecurrence(updatedTask._id.toString());
     } catch (error) {
       console.error("Error updating task recurrence:", error);
     }

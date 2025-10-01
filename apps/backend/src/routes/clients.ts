@@ -4,7 +4,7 @@ import { requirePermission } from "../middleware/permission-guard";
 import { Client } from "../models";
 import { AuthenticatedRequest } from "../types";
 import { EntityCleanupService } from "../services/entity-cleanup-service";
-import { subscriptionMiddleware, updateUsageAfterAction } from "../middleware/subscription-enforcement";
+import EnhancedSubscriptionMiddleware from "../middleware/enhanced-subscription-middleware";
 
 export async function clientRoutes(fastify: FastifyInstance) {
   // Apply authentication middleware to all routes
@@ -99,7 +99,7 @@ export async function clientRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/",
     {
-      preHandler: [requirePermission("clients.create"), subscriptionMiddleware.checkClientLimit()],
+      preHandler: [requirePermission("clients.create"), EnhancedSubscriptionMiddleware.checkClientLimit()],
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
@@ -115,7 +115,18 @@ export async function clientRoutes(fastify: FastifyInstance) {
         await newClient.save();
 
         // Track client creation in usage statistics
-        await updateUsageAfterAction(tenant._id.toString(), 'create_client', 1);
+        await EnhancedSubscriptionMiddleware.trackCreation(
+          tenant._id.toString(),
+          'client',
+          1,
+          {
+            entityId: newClient._id.toString(),
+            name: clientData.name,
+            company: clientData.company,
+            email: clientData.email
+          },
+          (request as any).id
+        );
 
         return reply.code(201).send({
           success: true,
@@ -352,7 +363,7 @@ export async function clientRoutes(fastify: FastifyInstance) {
         // Parse cascade deletion option
         const cascadeDelete = cascade === 'true';
 
-        // Check if client exists
+        // Check if client exists and get details for usage tracking
         const client = await Client.findOne({
           _id: id,
           tenantId: tenant._id,
@@ -364,6 +375,13 @@ export async function clientRoutes(fastify: FastifyInstance) {
             error: "Client not found",
           });
         }
+
+        const clientDetails = {
+          entityId: client._id.toString(),
+          name: client.name,
+          company: client.company,
+          email: client.email
+        };
 
         fastify.log.info({
           clientId: id,
@@ -406,6 +424,15 @@ export async function clientRoutes(fastify: FastifyInstance) {
           },
         }, "Client cleanup completed successfully");
 
+        // Track client deletion to decrease usage count
+        await EnhancedSubscriptionMiddleware.trackDeletion(
+          tenant._id.toString(),
+          'client',
+          1,
+          clientDetails,
+          (request as any).id
+        );
+
         return reply.send({
           success: true,
           message: cascadeDelete
@@ -436,7 +463,7 @@ export async function clientRoutes(fastify: FastifyInstance) {
         const { id } = request.params as { id: string };
         const { cascadeDelete = false } = request.query as { cascadeDelete?: boolean };
 
-        // Check if client exists
+        // Check if client exists and get details for usage tracking
         const client = await Client.findOne({
           _id: id,
           tenantId: tenant._id,
@@ -448,6 +475,13 @@ export async function clientRoutes(fastify: FastifyInstance) {
             error: "Client not found",
           });
         }
+
+        const clientDetails = {
+          entityId: client._id.toString(),
+          name: client.name,
+          company: client.company,
+          email: client.email
+        };
 
         // Perform comprehensive cleanup
         const cleanupResult = await EntityCleanupService.cleanupClient(
@@ -471,6 +505,15 @@ export async function clientRoutes(fastify: FastifyInstance) {
 
         // Log cleanup details
         fastify.log.info(cleanupResult.details, `🧹 Client cleanup completed`);
+
+        // Track client deletion to decrease usage count
+        await EnhancedSubscriptionMiddleware.trackDeletion(
+          tenant._id.toString(),
+          'client',
+          1,
+          clientDetails,
+          (request as any).id
+        );
 
         return reply.send({
           success: true,

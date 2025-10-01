@@ -67,5 +67,36 @@
 
   "sections.title": "Transparent",
   "sections.subtitle": "plans",
-  "sections.description": "Choose from flexible pricing options designed to fit your business needs and budget with no hidden fees."
+  "sections.description": "Choose from flexible pricing options designed to fit your business needs and budget with no hidden fees.",
+
+  "messages": {
+    "limitExceeded": "You've reached your plan limit",
+    "upgradeRequired": "Upgrade your plan to continue",
+    "upgradeToUnlock": "Upgrade to unlock this feature",
+    "planLimitReached": "Your {{plan}} plan limit has been reached",
+    "contactSupport": "Contact support for assistance"
+  },
+
+  "limits": {
+    "users": "Users",
+    "clients": "Clients",
+    "workOrders": "Work Orders",
+    "storage": "Storage",
+    "sms": "SMS Messages",
+    "apiCalls": "API Calls"
+  },
+
+  "errors": {
+    "userLimitExceeded": "User limit exceeded for your current plan",
+    "clientLimitExceeded": "Client limit exceeded for your current plan",
+    "workOrderLimitExceeded": "Work order limit exceeded for your current plan",
+    "storageLimitExceeded": "Storage limit exceeded for your current plan",
+    "smsLimitExceeded": "SMS limit exceeded for your current plan",
+    "apiLimitExceeded": "API rate limit exceeded for your current plan"
+  },
+
+  "upgrade": "Upgrade",
+  "upgradeNow": "Upgrade Now",
+  "viewPlans": "View Plans",
+  "manageBilling": "Manage Billing"
 }

@@ -10,6 +10,9 @@ import Typography from '@mui/material/Typography';
 
 import { paths } from 'src/routes/paths';
 
+import { useEnvironmentAccess } from 'src/hooks/use-environment-access';
+import { PERMISSIONS, usePermissions } from 'src/hooks/use-permissions';
+
 import { CONFIG } from 'src/global-config';
 
 import { Label } from 'src/components/label';
@@ -20,10 +23,20 @@ import { useAuthContext } from 'src/auth/hooks';
 
 export function NavUpgrade({ sx, ...other }: BoxProps) {
   const { user, tenant } = useAuthContext();
+  const { isFieldOnly } = useEnvironmentAccess();
+  const { hasPermission } = usePermissions();
 
   // Get subscription data
   const subscription = tenant?.subscription;
   const currentPlan = subscription?.plan || 'free';
+
+  // Check if user can manage subscription
+  const canManageSubscription =
+    user?.isTenantOwner ||
+    hasPermission(PERMISSIONS.TENANT_MANAGE);
+
+  // Hide upgrade buttons for personnel (field-only users) or users without subscription management permissions
+  const shouldShowUpgradeButtons = !isFieldOnly && canManageSubscription;
 
   // Plan label configuration
   const getPlanLabel = () => {
@@ -90,13 +103,13 @@ export function NavUpgrade({ sx, ...other }: BoxProps) {
           </Typography>
         </Box>
 
-        {currentPlan === 'free' && (
+        {shouldShowUpgradeButtons && currentPlan === 'free' && (
           <Button variant="contained" href={paths.upgradePlan}>
             Upgrade Plan
           </Button>
         )}
 
-        {currentPlan !== 'free' && (
+        {shouldShowUpgradeButtons && currentPlan !== 'free' && (
           <Button variant="outlined" href={paths.upgradePlan}>
             Manage Plan
           </Button>
@@ -109,6 +122,22 @@ export function NavUpgrade({ sx, ...other }: BoxProps) {
 // ----------------------------------------------------------------------
 
 export function UpgradeBlock({ sx, ...other }: BoxProps) {
+  const { user } = useAuthContext();
+  const { isFieldOnly } = useEnvironmentAccess();
+  const { hasPermission } = usePermissions();
+
+  // Check if user can manage subscription
+  const canManageSubscription =
+    user?.isTenantOwner ||
+    hasPermission(PERMISSIONS.TENANT_MANAGE);
+
+  // Hide upgrade blocks for personnel (field-only users) or users without subscription management permissions
+  const shouldShowUpgradeBlock = !isFieldOnly && canManageSubscription;
+
+  if (!shouldShowUpgradeBlock) {
+    return null;
+  }
+
   return (
     <Box
       sx={[

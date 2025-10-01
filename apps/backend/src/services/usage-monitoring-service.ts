@@ -1,5 +1,5 @@
 import { Tenant } from '../models/Tenant';
-import { SubscriptionPlansService } from './subscription-plans-service';
+import { EnvSubscriptionService } from './env-subscription-service';
 import { FileTrackingService } from './file-tracking-service';
 
 // ----------------------------------------------------------------------
