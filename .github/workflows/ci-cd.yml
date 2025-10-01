@@ -166,7 +166,13 @@ jobs:
           # Backup current deployment (app directory, not runner)
           if [ -d "/var/www/progressnet.io-app" ]; then
             sudo cp -r /var/www/progressnet.io-app $BACKUP_DIR/
-            echo "Backup created at $BACKUP_DIR"
+            echo "📦 Backup created at $BACKUP_DIR"
+
+            # Special backup of uploads directory with extra safety
+            if [ -d "/var/www/progressnet.io-app/apps/backend/uploads" ]; then
+              sudo cp -r /var/www/progressnet.io-app/apps/backend/uploads $BACKUP_DIR/uploads-only
+              echo "🔒 Extra uploads backup created at $BACKUP_DIR/uploads-only"
+            fi
           fi
 
           # Keep only last 5 backups
@@ -183,6 +189,30 @@ jobs:
           rm -rf /var/www/progressnet.io-app-new/node_modules
           rm -rf /var/www/progressnet.io-app-new/.git
           rm -rf /var/www/progressnet.io-app-new/.next/cache
+
+          # 🔒 SETUP PERSISTENT FILE STORAGE
+          PERSISTENT_STORAGE="/var/lib/fsa-uploads"
+
+          # Ensure persistent storage directory exists
+          sudo mkdir -p "$PERSISTENT_STORAGE"
+          sudo chown -R $USER:www-data "$PERSISTENT_STORAGE"
+          sudo chmod -R 755 "$PERSISTENT_STORAGE"
+
+          # Handle uploads directory - check if it's already a symlink or needs migration
+          if [ -L "/var/www/progressnet.io-app/apps/backend/uploads" ]; then
+            echo "📁 Uploads directory is already symlinked to persistent storage - perfect!"
+          elif [ -d "/var/www/progressnet.io-app/apps/backend/uploads" ]; then
+            echo "📁 Migrating existing uploads to persistent storage..."
+            sudo cp -r /var/www/progressnet.io-app/apps/backend/uploads/* "$PERSISTENT_STORAGE/" 2>/dev/null || true
+            echo "✅ Existing uploads migrated to persistent storage"
+          else
+            echo "📁 No existing uploads found - persistent storage is ready"
+          fi
+
+          # Create symlink in new deployment to persistent storage
+          mkdir -p /var/www/progressnet.io-app-new/apps/backend
+          ln -sf "$PERSISTENT_STORAGE" /var/www/progressnet.io-app-new/apps/backend/uploads
+          echo "✅ Uploads symlinked to persistent storage: /var/www/progressnet.io-app-new/apps/backend/uploads -> $PERSISTENT_STORAGE"
 
       - name: Install dependencies and setup
         run: |
@@ -309,7 +339,7 @@ jobs:
       - name: Rollback on failure
         if: failure()
         run: |
-          echo "Rolling back deployment..."
+          echo "🔄 Rolling back deployment..."
 
           # Restore from previous version if available
           if [ -d "/var/www/progressnet.io-app-old" ]; then
@@ -320,11 +350,19 @@ jobs:
             cd /var/www/progressnet.io-app
             pm2 restart progressnet-backend
             pm2 restart progressnet-frontend
-            echo "Rollback completed using previous version"
+            echo "✅ Rollback completed using previous version"
           else
-            echo "No previous version available for rollback"
-          fi
+            echo "⚠️  No previous version available for rollback"
 
+            # Try to restore uploads from latest backup if no previous version
+            LATEST_BACKUP=$(sudo find /var/backups -name "fsa-*" -type d | sort -r | head -n 1)
+            if [ -n "$LATEST_BACKUP" ] && [ -d "$LATEST_BACKUP/uploads-only" ]; then
+              echo "🔒 Restoring uploads from backup: $LATEST_BACKUP"
+              sudo mkdir -p /var/www/progressnet.io-app/apps/backend/uploads
+              sudo cp -r $LATEST_BACKUP/uploads-only/* /var/www/progressnet.io-app/apps/backend/uploads/
+              echo "✅ Uploads restored from backup"
+            fi
+          fi
 
           # Clean up failed deployment
           sudo rm -rf /var/www/progressnet.io-app-new
