@@ -11,7 +11,14 @@
     "setup": "node setup-initial-data.js",
     "migrate:personnel": "node migrate-personnel.js",
     "migrate:statuses": "node migrate-statuses.js",
-    "seed:personnel": "tsx temp-personnel-seed.ts"
+    "seed:personnel": "tsx temp-personnel-seed.ts",
+    "db:optimize": "node ../../scripts/optimize-database-indexes.js",
+    "db:monitor": "node ../../scripts/monitor-database-scaling.js",
+    "db:capacity": "node ../../scripts/calculate-database-capacity.js",
+    "db:health": "node ../../scripts/monitor-database-health.js",
+    "db:analyze": "npm run db:monitor && npm run db:optimize",
+    "db:full-analysis": "npm run db:capacity && npm run db:monitor && npm run db:optimize",
+    "db:check": "npm run db:health"
   },
   "keywords": [],
   "author": "",
