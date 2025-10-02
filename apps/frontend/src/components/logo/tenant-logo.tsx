@@ -73,7 +73,16 @@ export function TenantLogo({
   }
 
   // Fall back to default logo
-  return <Logo sx={sx} disabled={disabled} className={className} href={href} isSingle={isSingle} {...other} />;
+  return (
+    <Logo
+      sx={sx}
+      disabled={disabled}
+      className={className}
+      href={href}
+      isSingle={isSingle}
+      {...other}
+    />
+  );
 }
 
 // ----------------------------------------------------------------------

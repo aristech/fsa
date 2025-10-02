@@ -11,7 +11,8 @@ import { useEnhancedToast } from 'src/hooks/useEnhancedToast';
  * This shows how to migrate from old toast.* calls to the new enhanced system
  */
 export function EnhancedToastExamples() {
-  const { handleApiResponse, success, error, warning, info, test, subscriptionLimit } = useEnhancedToast();
+  const { handleApiResponse, success, error, warning, info, test, subscriptionLimit } =
+    useEnhancedToast();
 
   // Example server responses
   const mockResponses = {
@@ -67,7 +68,8 @@ export function EnhancedToastExamples() {
       </Typography>
 
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        These examples show how the enhanced toast system works with different server response formats.
+        These examples show how the enhanced toast system works with different server response
+        formats.
       </Typography>
 
       <Stack spacing={2}>
@@ -76,13 +78,21 @@ export function EnhancedToastExamples() {
             Basic Toast Messages
           </Typography>
           <Stack direction="row" spacing={1} flexWrap="wrap">
-            <Button variant="outlined" color="success" onClick={() => success('Simple success message')}>
+            <Button
+              variant="outlined"
+              color="success"
+              onClick={() => success('Simple success message')}
+            >
               Success Toast
             </Button>
             <Button variant="outlined" color="error" onClick={() => error('Simple error message')}>
               Error Toast
             </Button>
-            <Button variant="outlined" color="warning" onClick={() => warning('Simple warning message')}>
+            <Button
+              variant="outlined"
+              color="warning"
+              onClick={() => warning('Simple warning message')}
+            >
               Warning Toast
             </Button>
             <Button variant="outlined" color="info" onClick={() => info('Simple info message')}>
@@ -99,7 +109,11 @@ export function EnhancedToastExamples() {
             <Button
               variant="contained"
               color="error"
-              onClick={() => handleApiResponse(mockResponses.subscriptionLimitError, { upgradeAction: handleUpgrade })}
+              onClick={() =>
+                handleApiResponse(mockResponses.subscriptionLimitError, {
+                  upgradeAction: handleUpgrade,
+                })
+              }
             >
               Subscription Limit (with upgrade)
             </Button>
@@ -172,7 +186,9 @@ export function EnhancedToastExamples() {
             <br />
             <strong>After (enhanced way):</strong>
             <br />
-            <code>handleApiResponse(response, {'{ errorFallback: "Failed to create personnel" }'});</code>
+            <code>
+              handleApiResponse(response, {'{ errorFallback: "Failed to create personnel" }'});
+            </code>
             <br />
             <br />
             <strong>Benefits:</strong>

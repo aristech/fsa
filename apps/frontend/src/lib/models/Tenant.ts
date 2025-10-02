@@ -187,19 +187,21 @@ const TenantSchema = new Schema<ITenant>(
         industry: String,
       },
     },
-    fileMetadata: [{
-      filename: String,
-      originalName: String,
-      mimeType: String,
-      size: Number,
-      category: {
-        type: String,
-        enum: ['logo', 'workorder_attachment', 'client_document', 'material_image', 'other'],
-        default: 'other'
+    fileMetadata: [
+      {
+        filename: String,
+        originalName: String,
+        mimeType: String,
+        size: Number,
+        category: {
+          type: String,
+          enum: ['logo', 'workorder_attachment', 'client_document', 'material_image', 'other'],
+          default: 'other',
+        },
+        uploadDate: { type: Date, default: Date.now },
+        filePath: String,
       },
-      uploadDate: { type: Date, default: Date.now },
-      filePath: String,
-    }],
+    ],
     isActive: {
       type: Boolean,
       default: true,

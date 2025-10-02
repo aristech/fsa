@@ -396,7 +396,6 @@ export function FsaRecentWorkOrders() {
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <Stack spacing={1}>
-
                       <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
                         <Iconify icon="eva:people-fill" width={14} />
                         <Typography

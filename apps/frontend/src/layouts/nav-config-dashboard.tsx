@@ -165,7 +165,10 @@ export function useNavData(): NavSectionProps['data'] {
           icon: ICONS.gear,
           children: [
             { title: t('company.title'), path: paths.dashboard.settings.company },
-            { title: t('support.title', { defaultValue: 'Support & Feedback' }), path: paths.dashboard.settings.support },
+            {
+              title: t('support.title', { defaultValue: 'Support & Feedback' }),
+              path: paths.dashboard.settings.support,
+            },
             { title: 'Webhooks', path: paths.dashboard.settings.webhooks },
             { title: 'API Keys', path: paths.dashboard.settings.apiKeys },
           ],

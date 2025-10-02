@@ -89,7 +89,8 @@ export function SubtaskAttachments({
 
   const isImage = (mimetype: string): boolean => mimetype.startsWith('image/');
 
-  const getImagePreviewUrl = (filename: string): string => `${CONFIG.serverUrl}/uploads/subtask-attachments/${filename}`;
+  const getImagePreviewUrl = (filename: string): string =>
+    `${CONFIG.serverUrl}/uploads/subtask-attachments/${filename}`;
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
@@ -150,16 +151,21 @@ export function SubtaskAttachments({
       {/* Attachments List */}
       {attachments.length > 0 && (
         <Box sx={{ mt: 2, width: '100%' }}>
-          <Typography variant="caption" sx={{ mb: 1, fontWeight: 'medium', color: 'text.secondary' }}>
+          <Typography
+            variant="caption"
+            sx={{ mb: 1, fontWeight: 'medium', color: 'text.secondary' }}
+          >
             {attachments.length} attachment{attachments.length === 1 ? '' : 's'}
           </Typography>
-          <Box sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1,
-            width: '100%',
-            maxWidth: '100%'
-          }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+              width: '100%',
+              maxWidth: '100%',
+            }}
+          >
             {attachments.map((attachment) => (
               <Box
                 key={attachment._id}
@@ -202,7 +208,7 @@ export function SubtaskAttachments({
                             transform: 'scale(1.05)',
                             '&::after': {
                               opacity: 1,
-                            }
+                            },
                           },
                           '&::after': {
                             content: '""',
@@ -211,7 +217,8 @@ export function SubtaskAttachments({
                             left: 0,
                             right: 0,
                             bottom: 0,
-                            background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%)',
+                            background:
+                              'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%)',
                             opacity: 0,
                             transition: 'opacity 0.3s ease',
                             pointerEvents: 'none',
@@ -312,7 +319,17 @@ export function SubtaskAttachments({
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                     {formatFileSize(attachment.size)}
-                    <Box component="span" sx={{ ml: 1, fontWeight: 'medium', color: 'primary.main', display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box
+                      component="span"
+                      sx={{
+                        ml: 1,
+                        fontWeight: 'medium',
+                        color: 'primary.main',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                      }}
+                    >
                       • Click to open
                       <Iconify icon="eva:external-link-fill" width={10} />
                     </Box>
@@ -323,12 +340,14 @@ export function SubtaskAttachments({
                 </Box>
 
                 {/* Action Buttons */}
-                <Box sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 0.5,
-                  flexShrink: 0
-                }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0.5,
+                    flexShrink: 0,
+                  }}
+                >
                   <Tooltip title="Download">
                     <IconButton
                       size="small"
@@ -359,7 +378,6 @@ export function SubtaskAttachments({
           </Box>
         </Box>
       )}
-
     </Box>
   );
 }

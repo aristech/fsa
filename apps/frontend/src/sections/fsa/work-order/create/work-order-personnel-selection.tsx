@@ -47,7 +47,6 @@ type DialogPersonnel = {
   };
 };
 
-
 // ----------------------------------------------------------------------
 
 type Props = {
@@ -74,8 +73,6 @@ export function WorkOrderPersonnelSelection({ value = [], onChange, disabled = f
 
   return (
     <Box sx={{ display: 'flex' }}>
-
-
       <Box sx={{ gap: 1, display: 'flex', flexWrap: 'wrap' }}>
         {error ? (
           <Typography variant="body2" sx={{ color: 'error.main', lineHeight: '40px' }}>
@@ -121,7 +118,7 @@ export function WorkOrderPersonnelSelection({ value = [], onChange, disabled = f
                     border: `dashed 1px ${theme.vars?.palette?.divider || theme.palette.divider}`,
                     bgcolor: varAlpha(
                       theme.vars?.palette?.grey?.['500Channel'] ||
-                      theme.palette.grey[500] + 'Channel',
+                        theme.palette.grey[500] + 'Channel',
                       0.08
                     ),
                     width: 32,

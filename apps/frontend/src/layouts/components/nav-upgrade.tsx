@@ -31,9 +31,7 @@ export function NavUpgrade({ sx, ...other }: BoxProps) {
   const currentPlan = subscription?.plan || 'free';
 
   // Check if user can manage subscription
-  const canManageSubscription =
-    user?.isTenantOwner ||
-    hasPermission(PERMISSIONS.TENANT_MANAGE);
+  const canManageSubscription = user?.isTenantOwner || hasPermission(PERMISSIONS.TENANT_MANAGE);
 
   // Hide upgrade buttons for personnel (field-only users) or users without subscription management permissions
   const shouldShowUpgradeButtons = !isFieldOnly && canManageSubscription;
@@ -127,9 +125,7 @@ export function UpgradeBlock({ sx, ...other }: BoxProps) {
   const { hasPermission } = usePermissions();
 
   // Check if user can manage subscription
-  const canManageSubscription =
-    user?.isTenantOwner ||
-    hasPermission(PERMISSIONS.TENANT_MANAGE);
+  const canManageSubscription = user?.isTenantOwner || hasPermission(PERMISSIONS.TENANT_MANAGE);
 
   // Hide upgrade blocks for personnel (field-only users) or users without subscription management permissions
   const shouldShowUpgradeBlock = !isFieldOnly && canManageSubscription;

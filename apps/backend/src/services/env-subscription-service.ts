@@ -245,31 +245,43 @@ export class EnvSubscriptionService {
     switch (action) {
       case 'create_user':
         if (limits.maxUsers === -1) return { allowed: true };
-        const canCreateUser = usage.currentUsers + additionalCount <= limits.maxUsers;
+        // Safeguard: Ensure usage is a valid number
+        const currentUsers = typeof usage.currentUsers === 'number' && isFinite(usage.currentUsers)
+          ? Math.max(0, usage.currentUsers)
+          : 0;
+        const canCreateUser = currentUsers + additionalCount <= limits.maxUsers;
         return {
           allowed: canCreateUser,
-          reason: canCreateUser ? undefined : `User limit exceeded. Current: ${usage.currentUsers}, Limit: ${limits.maxUsers}`,
-          currentUsage: usage.currentUsers,
+          reason: canCreateUser ? undefined : `User limit exceeded. Current: ${currentUsers}, Limit: ${limits.maxUsers}`,
+          currentUsage: currentUsers,
           limit: limits.maxUsers,
         };
 
       case 'create_client':
         if (limits.maxClients === -1) return { allowed: true };
-        const canCreateClient = usage.currentClients + additionalCount <= limits.maxClients;
+        // Safeguard: Ensure usage is a valid number
+        const currentClients = typeof usage.currentClients === 'number' && isFinite(usage.currentClients)
+          ? Math.max(0, usage.currentClients)
+          : 0;
+        const canCreateClient = currentClients + additionalCount <= limits.maxClients;
         return {
           allowed: canCreateClient,
-          reason: canCreateClient ? undefined : `Client limit exceeded. Current: ${usage.currentClients}, Limit: ${limits.maxClients}`,
-          currentUsage: usage.currentClients,
+          reason: canCreateClient ? undefined : `Client limit exceeded. Current: ${currentClients}, Limit: ${limits.maxClients}`,
+          currentUsage: currentClients,
           limit: limits.maxClients,
         };
 
       case 'create_work_order':
         if (limits.maxWorkOrdersPerMonth === -1) return { allowed: true };
-        const canCreateWorkOrder = usage.workOrdersThisMonth + additionalCount <= limits.maxWorkOrdersPerMonth;
+        // Safeguard: Ensure usage is a valid number
+        const currentWorkOrders = typeof usage.workOrdersThisMonth === 'number' && isFinite(usage.workOrdersThisMonth)
+          ? Math.max(0, usage.workOrdersThisMonth)
+          : 0;
+        const canCreateWorkOrder = currentWorkOrders + additionalCount <= limits.maxWorkOrdersPerMonth;
         return {
           allowed: canCreateWorkOrder,
-          reason: canCreateWorkOrder ? undefined : `Monthly work order limit exceeded. Current: ${usage.workOrdersThisMonth}, Limit: ${limits.maxWorkOrdersPerMonth}`,
-          currentUsage: usage.workOrdersThisMonth,
+          reason: canCreateWorkOrder ? undefined : `Monthly work order limit exceeded. Current: ${currentWorkOrders}, Limit: ${limits.maxWorkOrdersPerMonth}`,
+          currentUsage: currentWorkOrders,
           limit: limits.maxWorkOrdersPerMonth,
         };
 
@@ -278,25 +290,35 @@ export class EnvSubscriptionService {
         if (limits.maxSmsPerMonth === 0) return {
           allowed: false,
           reason: "SMS feature not available in current plan",
-          currentUsage: usage.smsThisMonth,
+          currentUsage: 0,
           limit: limits.maxSmsPerMonth,
         };
-        const canSendSms = usage.smsThisMonth + additionalCount <= limits.maxSmsPerMonth;
+        // Safeguard: Ensure usage is a valid number
+        const currentSms = typeof usage.smsThisMonth === 'number' && isFinite(usage.smsThisMonth)
+          ? Math.max(0, usage.smsThisMonth)
+          : 0;
+        const canSendSms = currentSms + additionalCount <= limits.maxSmsPerMonth;
         return {
           allowed: canSendSms,
-          reason: canSendSms ? undefined : `Monthly SMS limit exceeded. Current: ${usage.smsThisMonth}, Limit: ${limits.maxSmsPerMonth}`,
-          currentUsage: usage.smsThisMonth,
+          reason: canSendSms ? undefined : `Monthly SMS limit exceeded. Current: ${currentSms}, Limit: ${limits.maxSmsPerMonth}`,
+          currentUsage: currentSms,
           limit: limits.maxSmsPerMonth,
         };
 
       case 'upload_file':
         if (limits.maxStorageGB === -1) return { allowed: true };
         const fileSizeGB = additionalCount / (1024 * 1024 * 1024); // Convert bytes to GB
-        const canUploadFile = usage.storageUsedGB + fileSizeGB <= limits.maxStorageGB;
+
+        // Safeguard: Ensure storage usage is a valid number
+        const currentStorageGB = typeof usage.storageUsedGB === 'number' && isFinite(usage.storageUsedGB)
+          ? Math.max(0, usage.storageUsedGB)
+          : 0;
+
+        const canUploadFile = currentStorageGB + fileSizeGB <= limits.maxStorageGB;
         return {
           allowed: canUploadFile,
-          reason: canUploadFile ? undefined : `Storage limit exceeded. Current: ${usage.storageUsedGB.toFixed(2)}GB, Limit: ${limits.maxStorageGB}GB`,
-          currentUsage: usage.storageUsedGB,
+          reason: canUploadFile ? undefined : `Storage limit exceeded. Current: ${currentStorageGB.toFixed(2)}GB, Limit: ${limits.maxStorageGB}GB`,
+          currentUsage: currentStorageGB,
           limit: limits.maxStorageGB,
         };
 

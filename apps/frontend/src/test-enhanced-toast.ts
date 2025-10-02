@@ -28,37 +28,36 @@ EnhancedToast.initialize(mockTranslationFunction as any);
 
 // Test data - server responses in various formats
 export const testServerResponses = {
-
   // Test Case 1: Server message takes priority over messageKey
   subscriptionLimit: {
     success: false,
     message: 'User limit exceeded. Current: 2, Limit: 2',
-    messageKey: 'business.subscription_limit_exceeded'
+    messageKey: 'business.subscription_limit_exceeded',
   },
 
   // Test Case 2: Only messageKey provided - should be translated
   storageLimit: {
     success: false,
-    messageKey: 'business.subscription_limit_exceeded'
+    messageKey: 'business.subscription_limit_exceeded',
   },
 
   // Test Case 3: Only server message provided
   validationError: {
     success: false,
-    message: 'Name and email are required when userId is not provided'
+    message: 'Name and email are required when userId is not provided',
   },
 
   // Test Case 4: Success with both message and messageKey
   personnelCreated: {
     success: true,
     message: 'Personnel created successfully',
-    messageKey: 'common.success.created'
+    messageKey: 'common.success.created',
   },
 
   // Test Case 5: Success with only messageKey
   dataUpdated: {
     success: true,
-    messageKey: 'common.success.updated'
+    messageKey: 'common.success.updated',
   },
 
   // Test Case 6: Validation error with details
@@ -68,30 +67,30 @@ export const testServerResponses = {
     messageKey: 'validation.error.generic',
     details: [
       { field: 'email', message: 'Invalid email format' },
-      { field: 'hourlyRate', message: 'Must be a positive number' }
-    ]
+      { field: 'hourlyRate', message: 'Must be a positive number' },
+    ],
   },
 
   // Test Case 7: Error response with error field (legacy API)
   legacyError: {
     success: false,
     error: 'Database connection timeout',
-    messageKey: 'errors.server'
+    messageKey: 'errors.server',
   },
 
   // Test Case 8: No message or messageKey - should use fallback
   emptyError: {
-    success: false
+    success: false,
   },
 
   // Test Case 9: Non-existent messageKey - should use fallback
   unknownKey: {
     success: false,
-    messageKey: 'non.existent.key'
+    messageKey: 'non.existent.key',
   },
 
   // Test Case 10: String response
-  stringMessage: 'Simple string message'
+  stringMessage: 'Simple string message',
 };
 
 // Test functions

@@ -229,7 +229,11 @@ export function ClientEditForm({ client }: Props) {
                   </Grid>
 
                   <Grid size={{ xs: 12, md: 6, lg: 4 }}>
-                    <RHFTextField name="email" label={`${t('clients.form.email')} *`} type="email" />
+                    <RHFTextField
+                      name="email"
+                      label={`${t('clients.form.email')} *`}
+                      type="email"
+                    />
                   </Grid>
 
                   <Grid size={{ xs: 12, md: 6, lg: 4 }}>
@@ -240,7 +244,6 @@ export function ClientEditForm({ client }: Props) {
                       }}
                       label={`${t('clients.form.phone')} (${t('clients.optional')})`}
                     />
-
                   </Grid>
                 </Grid>
               </Stack>
@@ -344,7 +347,6 @@ export function ClientEditForm({ client }: Props) {
                       onChange={(value) => {
                         methods.setValue('contactPerson.phone', value);
                       }}
-
                       label={`${t('clients.form.contactPhone')} (${t('clients.optional')})`}
                     />
                   </Grid>
@@ -383,6 +385,5 @@ export function ClientEditForm({ client }: Props) {
         </Card>
       </Form>
     </Container>
-
   );
 }

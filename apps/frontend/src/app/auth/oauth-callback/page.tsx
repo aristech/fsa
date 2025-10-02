@@ -111,7 +111,6 @@ export default function OAuthCallbackPage() {
           const errorMsg = data.message || data.error || 'Authentication failed';
           throw new Error(errorMsg);
         }
-
       } catch (error) {
         console.error('OAuth callback error:', error);
         setStatus('error');

@@ -21,7 +21,13 @@ type Props = {
   supportHref?: string;
 };
 
-export function SettingsView({ webhooksHref, apiKeysHref, smsRemindersHref, companyHref, supportHref }: Props) {
+export function SettingsView({
+  webhooksHref,
+  apiKeysHref,
+  smsRemindersHref,
+  companyHref,
+  supportHref,
+}: Props) {
   const { t } = useTranslate('dashboard');
 
   return (
@@ -121,11 +127,16 @@ export function SettingsView({ webhooksHref, apiKeysHref, smsRemindersHref, comp
           <Card>
             <CardHeader
               title={t('settings.support.title', { defaultValue: 'Support & Feedback' })}
-              subheader={t('settings.support.subtitle', { defaultValue: 'Report bugs and request features' })}
+              subheader={t('settings.support.subtitle', {
+                defaultValue: 'Report bugs and request features',
+              })}
             />
             <CardContent>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {t('settings.support.description', { defaultValue: 'Help us improve by reporting bugs or requesting new features. Your feedback is important to us.' })}
+                {t('settings.support.description', {
+                  defaultValue:
+                    'Help us improve by reporting bugs or requesting new features. Your feedback is important to us.',
+                })}
               </Typography>
               <Button
                 component={Link}

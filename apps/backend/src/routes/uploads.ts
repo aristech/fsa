@@ -252,24 +252,13 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
         }
       }
 
-      // Track storage usage after successful upload
-      const totalSizeGB = totalUploadSize / (1024 * 1024 * 1024);
-      await EnhancedSubscriptionMiddleware.trackCreation(
-        tenantId,
-        'file',
-        totalUploadSize, // Pass bytes directly, middleware will handle conversion
-        {
-          filesCount: saved.length,
-          filenames: saved.map(f => f.name),
-          totalSizeBytes: totalUploadSize
-        },
-        (request as any).id
-      );
+      // NOTE: Storage usage is already tracked by FileTrackingService.trackFileUpload() above
+      // DO NOT track storage again here to avoid double-counting
 
       fastify.log.info(
         {
           savedCount: saved.length,
-          totalSizeGB: totalSizeGB.toFixed(4),
+          totalSizeGB: (totalUploadSize / (1024 * 1024 * 1024)).toFixed(4),
           tenantId
         },
         "uploads: completed successfully with storage tracking",

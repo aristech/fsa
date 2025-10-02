@@ -180,9 +180,7 @@ export function JwtCreatePasswordView() {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
-                    <Iconify
-                      icon={showPassword ? 'solar:eye-bold' : 'solar:eye-closed-bold'}
-                    />
+                    <Iconify icon={showPassword ? 'solar:eye-bold' : 'solar:eye-closed-bold'} />
                   </IconButton>
                 </InputAdornment>
               ),
@@ -200,7 +198,10 @@ export function JwtCreatePasswordView() {
             input: {
               endAdornment: (
                 <InputAdornment position="end">
-                  <IconButton onClick={() => setShowConfirmPassword(!showConfirmPassword)} edge="end">
+                  <IconButton
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    edge="end"
+                  >
                     <Iconify
                       icon={showConfirmPassword ? 'solar:eye-bold' : 'solar:eye-closed-bold'}
                     />

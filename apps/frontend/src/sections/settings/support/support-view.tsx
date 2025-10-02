@@ -33,8 +33,14 @@ import { useAuthContext } from 'src/auth/hooks';
 
 const SupportSchema = zod.object({
   type: zod.enum(['bug', 'feature', 'other']),
-  title: zod.string().min(1, 'Title is required').max(100, 'Title must be less than 100 characters'),
-  description: zod.string().min(10, 'Description must be at least 10 characters').max(1000, 'Description must be less than 1000 characters'),
+  title: zod
+    .string()
+    .min(1, 'Title is required')
+    .max(100, 'Title must be less than 100 characters'),
+  description: zod
+    .string()
+    .min(10, 'Description must be at least 10 characters')
+    .max(1000, 'Description must be less than 1000 characters'),
   email: zod.string().email('Invalid email').optional(),
 });
 
@@ -93,7 +99,9 @@ export function SupportView() {
 
       // Validate required user data
       if ((!user?.id && !user?._id) || !user?.email) {
-        setSubmitError('User information is missing. Please try refreshing the page and logging in again.');
+        setSubmitError(
+          'User information is missing. Please try refreshing the page and logging in again.'
+        );
         return;
       }
 
@@ -125,8 +133,7 @@ export function SupportView() {
     } catch (error: any) {
       console.error('Error submitting support request:', error);
       setSubmitError(
-        error.response?.data?.message ||
-        'Failed to submit support request. Please try again later.'
+        error.response?.data?.message || 'Failed to submit support request. Please try again later.'
       );
     } finally {
       setIsSubmitting(false);
@@ -150,15 +157,15 @@ export function SupportView() {
     switch (type) {
       case 'bug':
         return t('settings.support.bugDescription', {
-          defaultValue: 'Report issues, errors, or unexpected behavior'
+          defaultValue: 'Report issues, errors, or unexpected behavior',
         });
       case 'feature':
         return t('settings.support.featureDescription', {
-          defaultValue: 'Suggest new features or improvements'
+          defaultValue: 'Suggest new features or improvements',
         });
       case 'other':
         return t('settings.support.otherDescription', {
-          defaultValue: 'General feedback or questions'
+          defaultValue: 'General feedback or questions',
         });
       default:
         return '';
@@ -177,14 +184,15 @@ export function SupportView() {
               </Box>
             }
             subheader={t('settings.support.subtitle', {
-              defaultValue: 'Help us improve by reporting bugs or requesting new features'
+              defaultValue: 'Help us improve by reporting bugs or requesting new features',
             })}
           />
           <CardContent>
             {submitSuccess && (
               <Alert severity="success" sx={{ mb: 3 }}>
                 {t('settings.support.submitSuccess', {
-                  defaultValue: 'Your support request has been submitted successfully. We will review it and get back to you if needed.'
+                  defaultValue:
+                    'Your support request has been submitted successfully. We will review it and get back to you if needed.',
                 })}
               </Alert>
             )}
@@ -263,10 +271,16 @@ export function SupportView() {
                     label={t('settings.support.titleLabel', { defaultValue: 'Title' })}
                     placeholder={
                       watchType === 'bug'
-                        ? t('settings.support.bugTitlePlaceholder', { defaultValue: 'e.g., "Button not working on work orders page"' })
+                        ? t('settings.support.bugTitlePlaceholder', {
+                            defaultValue: 'e.g., "Button not working on work orders page"',
+                          })
                         : watchType === 'feature'
-                        ? t('settings.support.featureTitlePlaceholder', { defaultValue: 'e.g., "Add bulk export for reports"' })
-                        : t('settings.support.otherTitlePlaceholder', { defaultValue: 'Brief description of your request' })
+                          ? t('settings.support.featureTitlePlaceholder', {
+                              defaultValue: 'e.g., "Add bulk export for reports"',
+                            })
+                          : t('settings.support.otherTitlePlaceholder', {
+                              defaultValue: 'Brief description of your request',
+                            })
                     }
                     {...register('title')}
                     error={!!errors.title}
@@ -283,15 +297,17 @@ export function SupportView() {
                     placeholder={
                       watchType === 'bug'
                         ? t('settings.support.bugDescriptionPlaceholder', {
-                          defaultValue: 'Please describe the issue in detail:\n\n1. What you were trying to do\n2. What happened instead\n3. Steps to reproduce the issue\n4. Any error messages you saw'
-                        })
+                            defaultValue:
+                              'Please describe the issue in detail:\n\n1. What you were trying to do\n2. What happened instead\n3. Steps to reproduce the issue\n4. Any error messages you saw',
+                          })
                         : watchType === 'feature'
-                        ? t('settings.support.featureDescriptionPlaceholder', {
-                          defaultValue: 'Please describe your feature request:\n\n1. What problem would this solve?\n2. How would you like it to work?\n3. Any specific requirements or examples'
-                        })
-                        : t('settings.support.otherDescriptionPlaceholder', {
-                          defaultValue: 'Please provide details about your request or feedback'
-                        })
+                          ? t('settings.support.featureDescriptionPlaceholder', {
+                              defaultValue:
+                                'Please describe your feature request:\n\n1. What problem would this solve?\n2. How would you like it to work?\n3. Any specific requirements or examples',
+                            })
+                          : t('settings.support.otherDescriptionPlaceholder', {
+                              defaultValue: 'Please provide details about your request or feedback',
+                            })
                     }
                     {...register('description')}
                     error={!!errors.description}
@@ -302,14 +318,18 @@ export function SupportView() {
                 <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
                     fullWidth
-                    label={t('settings.support.emailLabel', { defaultValue: 'Contact Email (Optional)' })}
-                    placeholder={t('settings.support.emailPlaceholder', { defaultValue: 'Leave blank to use your account email' })}
+                    label={t('settings.support.emailLabel', {
+                      defaultValue: 'Contact Email (Optional)',
+                    })}
+                    placeholder={t('settings.support.emailPlaceholder', {
+                      defaultValue: 'Leave blank to use your account email',
+                    })}
                     {...register('email')}
                     error={!!errors.email}
                     helperText={
                       errors.email?.message ||
                       t('settings.support.emailHelp', {
-                        defaultValue: 'We will only contact you if we need more information'
+                        defaultValue: 'We will only contact you if we need more information',
                       })
                     }
                   />
@@ -329,12 +349,17 @@ export function SupportView() {
                       type="submit"
                       variant="contained"
                       disabled={isSubmitting}
-                      startIcon={isSubmitting ? <Iconify icon="eos-icons:loading" /> : <Iconify icon="solar:arrow-right-bold" />}
+                      startIcon={
+                        isSubmitting ? (
+                          <Iconify icon="eos-icons:loading" />
+                        ) : (
+                          <Iconify icon="solar:arrow-right-bold" />
+                        )
+                      }
                     >
                       {isSubmitting
                         ? t('settings.support.submitting', { defaultValue: 'Submitting...' })
-                        : t('settings.support.submitButton', { defaultValue: 'Submit Request' })
-                      }
+                        : t('settings.support.submitButton', { defaultValue: 'Submit Request' })}
                     </Button>
                   </Box>
                 </Grid>
@@ -349,27 +374,34 @@ export function SupportView() {
         <Card>
           <CardHeader
             title={t('settings.support.userInfo', { defaultValue: 'Your Information' })}
-            subheader={t('settings.support.userInfoSubtitle', { defaultValue: 'This information will be included with your request' })}
+            subheader={t('settings.support.userInfoSubtitle', {
+              defaultValue: 'This information will be included with your request',
+            })}
           />
           <CardContent>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               <Typography variant="body2">
-                <strong>{t('common.name', { defaultValue: 'Name' })}:</strong> {user?.firstName} {user?.lastName}
+                <strong>{t('common.name', { defaultValue: 'Name' })}:</strong> {user?.firstName}{' '}
+                {user?.lastName}
               </Typography>
               <Typography variant="body2">
                 <strong>{t('common.email', { defaultValue: 'Email' })}:</strong> {user?.email}
               </Typography>
               <Typography variant="body2">
-                <strong>{t('common.role', { defaultValue: 'Role' })}:</strong> {getRoleName(user?.role || '')}
+                <strong>{t('common.role', { defaultValue: 'Role' })}:</strong>{' '}
+                {getRoleName(user?.role || '')}
               </Typography>
               <Typography variant="body2">
-                <strong>{t('common.company', { defaultValue: 'Company' })}:</strong> {safeDisplayText(tenant?.name)}
+                <strong>{t('common.company', { defaultValue: 'Company' })}:</strong>{' '}
+                {safeDisplayText(tenant?.name)}
               </Typography>
               <Typography variant="body2">
-                <strong>{t('common.plan', { defaultValue: 'Plan' })}:</strong> {tenant?.subscription?.plan || 'Free'}
+                <strong>{t('common.plan', { defaultValue: 'Plan' })}:</strong>{' '}
+                {tenant?.subscription?.plan || 'Free'}
               </Typography>
               <Typography variant="body2">
-                <strong>{t('common.userId', { defaultValue: 'User ID' })}:</strong> {user?.id || user?._id}
+                <strong>{t('common.userId', { defaultValue: 'User ID' })}:</strong>{' '}
+                {user?.id || user?._id}
               </Typography>
             </Box>
           </CardContent>
@@ -381,7 +413,9 @@ export function SupportView() {
         <Card>
           <CardHeader
             title={t('settings.support.guidelines', { defaultValue: 'Support Guidelines' })}
-            subheader={t('settings.support.guidelinesSubtitle', { defaultValue: 'Help us help you better' })}
+            subheader={t('settings.support.guidelinesSubtitle', {
+              defaultValue: 'Help us help you better',
+            })}
           />
           <CardContent>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -391,17 +425,21 @@ export function SupportView() {
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {t('settings.support.bugTips', {
-                    defaultValue: 'Include specific steps to reproduce the issue and any error messages you see.'
+                    defaultValue:
+                      'Include specific steps to reproduce the issue and any error messages you see.',
                   })}
                 </Typography>
               </Box>
               <Box>
                 <Typography variant="subtitle2" color="primary" gutterBottom>
-                  {t('settings.support.featureRequestTips', { defaultValue: 'For Feature Requests:' })}
+                  {t('settings.support.featureRequestTips', {
+                    defaultValue: 'For Feature Requests:',
+                  })}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {t('settings.support.featureTips', {
-                    defaultValue: 'Explain the problem you\'re trying to solve and how the feature would help.'
+                    defaultValue:
+                      "Explain the problem you're trying to solve and how the feature would help.",
                   })}
                 </Typography>
               </Box>
@@ -411,7 +449,7 @@ export function SupportView() {
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {t('settings.support.responseTimeText', {
-                    defaultValue: 'We typically respond within 1-2 business days.'
+                    defaultValue: 'We typically respond within 1-2 business days.',
                   })}
                 </Typography>
               </Box>

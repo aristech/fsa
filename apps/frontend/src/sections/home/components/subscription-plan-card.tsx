@@ -223,14 +223,14 @@ export function SubscriptionPlanCard({
             // Authenticated user - show appropriate action based on plan status
             <Button
               fullWidth
-              variant={isCurrentPlan ? 'contained' : (isPopular ? 'contained' : 'outlined')}
+              variant={isCurrentPlan ? 'contained' : isPopular ? 'contained' : 'outlined'}
               color={isCurrentPlan ? 'primary' : 'inherit'}
               size="large"
               disabled={isCurrentPlan || loading}
               onClick={!isCurrentPlan ? handleSelectPlan : undefined}
               loading={loading}
             >
-              {isCurrentPlan ? t.currentPlan : (isPlanActive ? t.upgrade : t.getStarted)}
+              {isCurrentPlan ? t.currentPlan : isPlanActive ? t.upgrade : t.getStarted}
             </Button>
           ) : (
             // Unauthenticated user - show get started button

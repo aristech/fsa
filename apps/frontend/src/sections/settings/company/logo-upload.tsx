@@ -187,9 +187,7 @@ export function LogoUpload({ onSuccess, onError }: Props) {
             startIcon={<Iconify icon="solar:cloud-upload-bold" />}
             sx={{ minWidth: 140 }}
           >
-            {logoUrl
-              ? 'Change Logo'
-              : 'Upload Logo'}
+            {logoUrl ? 'Change Logo' : 'Upload Logo'}
           </LoadingButton>
         </label>
       </Box>

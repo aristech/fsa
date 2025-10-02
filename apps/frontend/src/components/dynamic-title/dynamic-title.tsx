@@ -16,9 +16,7 @@ export function DynamicTitle({ title, suffix = true }: DynamicTitleProps) {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const documentTitle = title
-        ? (suffix ? `${title} - ${appName}` : title)
-        : appName;
+      const documentTitle = title ? (suffix ? `${title} - ${appName}` : title) : appName;
 
       document.title = documentTitle;
     }

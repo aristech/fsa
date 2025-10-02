@@ -68,7 +68,12 @@ export function CascadeDeleteDialog({
     handleClose();
   };
 
-  const hasRelatedData = info.tasksCount > 0 || info.filesCount > 0 || info.commentsCount > 0 || info.assignmentsCount > 0 || (info.workOrdersCount && info.workOrdersCount > 0);
+  const hasRelatedData =
+    info.tasksCount > 0 ||
+    info.filesCount > 0 ||
+    info.commentsCount > 0 ||
+    info.assignmentsCount > 0 ||
+    (info.workOrdersCount && info.workOrdersCount > 0);
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
@@ -85,7 +90,8 @@ export function CascadeDeleteDialog({
             ⚠️ Critical Action: Deleting &ldquo;{entityName}&rdquo;
           </Typography>
           <Typography variant="body2">
-            This action is permanent and cannot be undone. Please review the information below carefully.
+            This action is permanent and cannot be undone. Please review the information below
+            carefully.
           </Typography>
         </Alert>
 
@@ -115,7 +121,11 @@ export function CascadeDeleteDialog({
                   </ListItemIcon>
                   <ListItemText
                     primary={`${info.tasksCount} Tasks`}
-                    secondary={entityType === 'work-order' ? 'Tasks assigned to this work order' : 'All tasks related to this client\'s work orders'}
+                    secondary={
+                      entityType === 'work-order'
+                        ? 'Tasks assigned to this work order'
+                        : "All tasks related to this client's work orders"
+                    }
                   />
                 </ListItem>
               )}
@@ -159,7 +169,10 @@ export function CascadeDeleteDialog({
               {info.assignmentsCount > 0 && (
                 <ListItem>
                   <ListItemIcon>
-                    <Iconify icon="solar:users-group-two-rounded-bold" sx={{ color: 'success.main' }} />
+                    <Iconify
+                      icon="solar:users-group-two-rounded-bold"
+                      sx={{ color: 'success.main' }}
+                    />
                   </ListItemIcon>
                   <ListItemText
                     primary={`${info.assignmentsCount} Assignments`}
@@ -188,8 +201,7 @@ export function CascadeDeleteDialog({
                     <Typography variant="body2" color="text.secondary">
                       {entityType === 'work-order'
                         ? 'This will permanently delete all tasks, files, comments, and assignments related to this work order.'
-                        : 'This will permanently delete all work orders, tasks, files, comments, and assignments related to this client.'
-                      }
+                        : 'This will permanently delete all work orders, tasks, files, comments, and assignments related to this client.'}
                     </Typography>
                   </Box>
                 }
@@ -199,7 +211,8 @@ export function CascadeDeleteDialog({
             {!cascadeDelete && (
               <Alert severity="info" sx={{ mb: 2 }}>
                 <Typography variant="body2">
-                  If you don&apos;t select cascade delete, the {entityType} will be removed but related data will be preserved:
+                  If you don&apos;t select cascade delete, the {entityType} will be removed but
+                  related data will be preserved:
                 </Typography>
                 <Box component="ul" sx={{ mt: 1, mb: 0 }}>
                   {entityType === 'work-order' && (
@@ -257,7 +270,9 @@ export function CascadeDeleteDialog({
           size="large"
           startIcon={loading ? undefined : <Iconify icon="solar:trash-bin-trash-bold" />}
         >
-          {loading ? 'Deleting...' : `Delete ${cascadeDelete ? 'All' : entityType === 'work-order' ? 'Work Order' : 'Client'}`}
+          {loading
+            ? 'Deleting...'
+            : `Delete ${cascadeDelete ? 'All' : entityType === 'work-order' ? 'Work Order' : 'Client'}`}
         </Button>
       </DialogActions>
     </Dialog>

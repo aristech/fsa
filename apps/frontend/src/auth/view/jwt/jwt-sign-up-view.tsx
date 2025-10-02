@@ -146,7 +146,11 @@ export function JwtSignUpView() {
 
       <Field.Text name="email" label="Email address" slotProps={{ inputLabel: { shrink: true } }} />
 
-      <Field.Text name="companyName" label="Company name" slotProps={{ inputLabel: { shrink: true } }} />
+      <Field.Text
+        name="companyName"
+        label="Company name"
+        slotProps={{ inputLabel: { shrink: true } }}
+      />
 
       <Field.Text
         name="password"

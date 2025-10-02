@@ -40,9 +40,9 @@ export function PhoneInput({
 
   const normalizedValue = value
     ? value
-      .trim()
-      .replace(/[\s-]+/g, '')
-      .replace(/^00/, '+')
+        .trim()
+        .replace(/[\s-]+/g, '')
+        .replace(/^00/, '+')
     : undefined;
 
   const valueForInput = normalizedValue ?? '';
@@ -187,9 +187,9 @@ function CustomInput({ ref, ...other }: TextFieldProps) {
 function parseCountryFromPhone(inputValue?: PhoneInputProps['value']): PhoneCountry | undefined {
   const normalized = inputValue
     ? inputValue
-      .trim()
-      .replace(/[\s-]+/g, '')
-      .replace(/^00/, '+')
+        .trim()
+        .replace(/[\s-]+/g, '')
+        .replace(/^00/, '+')
     : undefined;
   const parsed = normalized ? parsePhoneNumber(normalized) : undefined;
   return parsed?.country ?? undefined;

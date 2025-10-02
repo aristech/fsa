@@ -25,46 +25,52 @@ const ReportService = {
   deleteReport: async (id: string) => ({ success: true, message: 'Report deleted' }),
   createReport: async (data: any) => ({ success: true, message: 'Report created' }),
   checkLimits: async () => ({ success: true, message: 'Limits checked' }),
-  validateReport: async (data: any) => ({ success: true, message: 'Report validated' })
+  validateReport: async (data: any) => ({ success: true, message: 'Report validated' }),
 };
 
 export function ReportsViewOld() {
   const { t } = useTranslate('dashboard');
 
-  const _handleDeleteReport = useCallback(async (reportId: string) => {
-    try {
-      const response = await ReportService.deleteReport(reportId);
+  const _handleDeleteReport = useCallback(
+    async (reportId: string) => {
+      try {
+        const response = await ReportService.deleteReport(reportId);
 
-      // ❌ Old way - manually checking success and using fallback
-      if (response.success) {
-        toast.success(t('reports.reportDeleted'));
-      } else {
-        // ❌ Manual server message handling with fallback
-        toast.error(response.message || t('reports.failedToDelete'));
+        // ❌ Old way - manually checking success and using fallback
+        if (response.success) {
+          toast.success(t('reports.reportDeleted'));
+        } else {
+          // ❌ Manual server message handling with fallback
+          toast.error(response.message || t('reports.failedToDelete'));
+        }
+      } catch (error) {
+        console.error('Error deleting report:', error);
+        // ❌ Generic error handling without server response context
+        toast.error(t('reports.failedToDelete'));
       }
-    } catch (error) {
-      console.error('Error deleting report:', error);
-      // ❌ Generic error handling without server response context
-      toast.error(t('reports.failedToDelete'));
-    }
-  }, [t]);
+    },
+    [t]
+  );
 
   // Other examples of old patterns:
 
-  const _handleCreateReport = useCallback(async (data: any) => {
-    try {
-      const response = await ReportService.createReport(data);
+  const _handleCreateReport = useCallback(
+    async (data: any) => {
+      try {
+        const response = await ReportService.createReport(data);
 
-      // ❌ Old way - no messageKey support
-      if (response.success) {
-        toast.success(response.message || t('reports.reportCreated'));
-      } else {
-        toast.error(response.message || t('reports.failedToCreate'));
+        // ❌ Old way - no messageKey support
+        if (response.success) {
+          toast.success(response.message || t('reports.reportCreated'));
+        } else {
+          toast.error(response.message || t('reports.failedToCreate'));
+        }
+      } catch (error) {
+        toast.error(t('reports.failedToCreate'));
       }
-    } catch (error) {
-      toast.error(t('reports.failedToCreate'));
-    }
-  }, [t]);
+    },
+    [t]
+  );
 
   const handleSubscriptionLimit = useCallback(async () => {
     try {
@@ -87,72 +93,80 @@ export function ReportsViewOld() {
 // ✅ Replace old import with enhanced hook
 import { useEnhancedToast } from 'src/hooks/useEnhancedToast';
 
-
 export function ReportsViewNew() {
   const { t } = useTranslate('dashboard');
   // ✅ Use the enhanced toast hook
-  const { handleApiResponse, handleNetworkError, success: _success, error: _error } = useEnhancedToast();
+  const {
+    handleApiResponse,
+    handleNetworkError,
+    success: _success,
+    error: _error,
+  } = useEnhancedToast();
 
-  const _handleDeleteReport = useCallback(async (reportId: string) => {
-    try {
-      const response = await ReportService.deleteReport(reportId);
+  const _handleDeleteReport = useCallback(
+    async (reportId: string) => {
+      try {
+        const response = await ReportService.deleteReport(reportId);
 
-      // ✅ Enhanced way - automatic handling with messageKey support
-      handleApiResponse(response, {
-        successFallback: t('reports.reportDeleted'),
-        errorFallback: t('reports.failedToDelete')
-      });
+        // ✅ Enhanced way - automatic handling with messageKey support
+        handleApiResponse(response, {
+          successFallback: t('reports.reportDeleted'),
+          errorFallback: t('reports.failedToDelete'),
+        });
 
-      /*
-       * Server response examples that will be handled automatically:
-       *
-       * Success with messageKey:
-       * {
-       *   success: true,
-       *   message: "Report deleted successfully",
-       *   messageKey: "reports.deleted"
-       * }
-       *
-       * Error with messageKey:
-       * {
-       *   success: false,
-       *   message: "Report not found",
-       *   messageKey: "errors.notFound"
-       * }
-       *
-       * Error with only message:
-       * {
-       *   success: false,
-       *   message: "Report is associated with active work orders"
-       * }
-       *
-       * The system will:
-       * 1. Use server message if provided
-       * 2. Fall back to translated messageKey if message is not provided
-       * 3. Use the fallback parameter as last resort
-       */
+        /*
+         * Server response examples that will be handled automatically:
+         *
+         * Success with messageKey:
+         * {
+         *   success: true,
+         *   message: "Report deleted successfully",
+         *   messageKey: "reports.deleted"
+         * }
+         *
+         * Error with messageKey:
+         * {
+         *   success: false,
+         *   message: "Report not found",
+         *   messageKey: "errors.notFound"
+         * }
+         *
+         * Error with only message:
+         * {
+         *   success: false,
+         *   message: "Report is associated with active work orders"
+         * }
+         *
+         * The system will:
+         * 1. Use server message if provided
+         * 2. Fall back to translated messageKey if message is not provided
+         * 3. Use the fallback parameter as last resort
+         */
+      } catch (err) {
+        console.error('Error deleting report:', err);
+        // ✅ Enhanced network error handling
+        handleNetworkError(err, t('reports.failedToDelete'));
+      }
+    },
+    [handleApiResponse, handleNetworkError, t]
+  );
 
-    } catch (err) {
-      console.error('Error deleting report:', err);
-      // ✅ Enhanced network error handling
-      handleNetworkError(err, t('reports.failedToDelete'));
-    }
-  }, [handleApiResponse, handleNetworkError, t]);
+  const _handleCreateReport = useCallback(
+    async (data: any) => {
+      try {
+        const response = await ReportService.createReport(data);
 
-  const _handleCreateReport = useCallback(async (data: any) => {
-    try {
-      const response = await ReportService.createReport(data);
-
-      // ✅ Simple one-liner with automatic translation support
-      handleApiResponse(response, {
-        successFallback: t('reports.reportCreated'),
-        errorFallback: t('reports.failedToCreate')
-      });
-
-    } catch (err) {
-      handleNetworkError(err, t('reports.failedToCreate'));
-    }
-  }, [handleApiResponse, handleNetworkError, t]);
+        // ✅ Simple one-liner with automatic translation support
+        handleApiResponse(response, {
+          successFallback: t('reports.reportCreated'),
+          errorFallback: t('reports.failedToCreate'),
+        });
+      } catch (err) {
+        handleNetworkError(err, t('reports.failedToCreate'));
+      }
+    },
+    [handleApiResponse, handleNetworkError, t]
+  );
 
   const _handleSubscriptionLimit = useCallback(async () => {
     try {
@@ -160,7 +174,7 @@ export function ReportsViewNew() {
 
       // ✅ Automatic subscription limit handling with upgrade prompts
       handleApiResponse(response, {
-        upgradeAction: () => window.open('/subscription', '_blank')
+        upgradeAction: () => window.open('/subscription', '_blank'),
       });
 
       /*
@@ -177,7 +191,6 @@ export function ReportsViewNew() {
        * 3. Use longer duration for visibility
        * 4. Handle the translation properly
        */
-
     } catch (err) {
       handleNetworkError(err, 'Error checking limits');
     }
@@ -185,32 +198,34 @@ export function ReportsViewNew() {
 
   // ✅ Other enhanced patterns:
 
-  const _handleValidationError = useCallback(async (data: any) => {
-    try {
-      const response = await ReportService.validateReport(data);
+  const _handleValidationError = useCallback(
+    async (data: any) => {
+      try {
+        const response = await ReportService.validateReport(data);
 
-      // Validation errors with details are automatically handled
-      handleApiResponse(response);
+        // Validation errors with details are automatically handled
+        handleApiResponse(response);
 
-      /*
-       * Server response with validation details:
-       * {
-       *   success: false,
-       *   message: "Validation failed",
-       *   messageKey: "validation.error.generic",
-       *   details: [
-       *     { field: "title", message: "Title is required" },
-       *     { field: "date", message: "Invalid date format" }
-       *   ]
-       * }
-       *
-       * Will automatically show structured validation error toast
-       */
-
-    } catch (err) {
-      handleNetworkError(err);
-    }
-  }, [handleApiResponse, handleNetworkError]);
+        /*
+         * Server response with validation details:
+         * {
+         *   success: false,
+         *   message: "Validation failed",
+         *   messageKey: "validation.error.generic",
+         *   details: [
+         *     { field: "title", message: "Title is required" },
+         *     { field: "date", message: "Invalid date format" }
+         *   ]
+         * }
+         *
+         * Will automatically show structured validation error toast
+         */
+      } catch (err) {
+        handleNetworkError(err);
+      }
+    },
+    [handleApiResponse, handleNetworkError]
+  );
 
   return null; // Component JSX...
 }

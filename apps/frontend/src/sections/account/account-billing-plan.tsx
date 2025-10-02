@@ -44,9 +44,7 @@ export function AccountBillingPlan({ cardList, addressBook, plans }: Props) {
   const openCards = useBoolean();
 
   // Check if user can manage subscription
-  const canManageSubscription =
-    user?.isTenantOwner ||
-    hasPermission(PERMISSIONS.TENANT_MANAGE);
+  const canManageSubscription = user?.isTenantOwner || hasPermission(PERMISSIONS.TENANT_MANAGE);
 
   // Hide upgrade functionality for personnel (field-only users) or users without subscription management permissions
   const shouldShowSubscriptionControls = !isFieldOnly && canManageSubscription;
@@ -79,7 +77,9 @@ export function AccountBillingPlan({ cardList, addressBook, plans }: Props) {
       <Grid key={plan.subscription} size={{ xs: 12, md: 4 }}>
         <Paper
           variant="outlined"
-          onClick={shouldShowSubscriptionControls ? () => handleSelectPlan(plan.subscription) : undefined}
+          onClick={
+            shouldShowSubscriptionControls ? () => handleSelectPlan(plan.subscription) : undefined
+          }
           sx={[
             (theme) => ({
               p: 2.5,
@@ -88,9 +88,10 @@ export function AccountBillingPlan({ cardList, addressBook, plans }: Props) {
               position: 'relative',
               ...(plan.primary && { opacity: 0.48, cursor: 'default' }),
               ...(!shouldShowSubscriptionControls && { opacity: 0.7, cursor: 'default' }),
-              ...(plan.subscription === selectedPlan && shouldShowSubscriptionControls && {
-                boxShadow: `0 0 0 2px ${theme.vars?.palette.text.primary}`,
-              }),
+              ...(plan.subscription === selectedPlan &&
+                shouldShowSubscriptionControls && {
+                  boxShadow: `0 0 0 2px ${theme.vars?.palette.text.primary}`,
+                }),
             }),
           ]}
         >

@@ -17,7 +17,13 @@ export interface ServerResponse {
 
 export interface EnhancedToastOptions {
   duration?: number;
-  position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'top-center' | 'bottom-center';
+  position?:
+    | 'top-left'
+    | 'top-right'
+    | 'bottom-left'
+    | 'bottom-right'
+    | 'top-center'
+    | 'bottom-center';
   dismissible?: boolean;
   action?: {
     label: string;
@@ -244,7 +250,10 @@ export class EnhancedToast {
   ): void {
     const message = EnhancedToast.extractMessage(
       response,
-      EnhancedToast.getTranslation('business.subscription_limit_exceeded', 'Subscription limit exceeded'),
+      EnhancedToast.getTranslation(
+        'business.subscription_limit_exceeded',
+        'Subscription limit exceeded'
+      ),
       'Subscription limit exceeded'
     );
 
@@ -306,7 +315,8 @@ export class EnhancedToast {
     fallbackMessage?: string,
     options?: EnhancedToastOptions
   ): void {
-    let message = fallbackMessage || EnhancedToast.getTranslation('errors.network', 'Network error occurred');
+    let message =
+      fallbackMessage || EnhancedToast.getTranslation('errors.network', 'Network error occurred');
 
     // Try to extract message from error object
     if (error && typeof error === 'object') {
@@ -348,10 +358,13 @@ export class EnhancedToast {
     });
 
     // Test fallback
-    EnhancedToast.warning({
-      success: false,
-      messageKey: 'non.existent.key',
-    }, 'Fallback warning message');
+    EnhancedToast.warning(
+      {
+        success: false,
+        messageKey: 'non.existent.key',
+      },
+      'Fallback warning message'
+    );
   }
 }
 

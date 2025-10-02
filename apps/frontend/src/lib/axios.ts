@@ -35,7 +35,7 @@ function getErrorMessage(error: any): string {
         case 'TENANT_OWNER_REQUIRED':
           return 'Only the company owner can update company information';
         case 'INSUFFICIENT_PERMISSIONS':
-          return 'You don\'t have permission to perform this action';
+          return "You don't have permission to perform this action";
         case 'VALIDATION_ERROR':
           return 'Please check your input and try again';
         case 'RESOURCE_NOT_FOUND':
@@ -59,7 +59,10 @@ function getErrorMessage(error: any): string {
         case 'FEATURE_DISABLED':
           return 'This feature is currently disabled';
         default:
-          return errorData.code.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c: string) => c.toUpperCase());
+          return errorData.code
+            .replace(/_/g, ' ')
+            .toLowerCase()
+            .replace(/^\w/, (c: string) => c.toUpperCase());
       }
     }
 
@@ -77,7 +80,7 @@ function getErrorMessage(error: any): string {
       case 401:
         return 'You need to log in to access this resource.';
       case 403:
-        return 'You don\'t have permission to perform this action.';
+        return "You don't have permission to perform this action.";
       case 404:
         return 'The requested resource was not found.';
       case 409:
@@ -177,7 +180,11 @@ axiosInstance.interceptors.response.use(
     // Allow components to opt-out of automatic error toasts by setting skipErrorToast: true in request config
     const shouldShowToast =
       error?.response?.status !== 401 &&
-      !(error?.response?.data && typeof error.response.data === 'string' && error.response.data.includes('<!DOCTYPE')) &&
+      !(
+        error?.response?.data &&
+        typeof error.response.data === 'string' &&
+        error.response.data.includes('<!DOCTYPE')
+      ) &&
       !userMessage?.includes('Transport unknown') &&
       !error?.config?.skipErrorToast;
 
@@ -209,8 +216,7 @@ export default axiosInstance;
  * Use this when you want to automatically show error toasts to users
  */
 export const apiCall = {
-  get: <T = any>(url: string, config?: AxiosRequestConfig) =>
-    axiosInstance.get<T>(url, config),
+  get: <T = any>(url: string, config?: AxiosRequestConfig) => axiosInstance.get<T>(url, config),
 
   post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
     axiosInstance.post<T>(url, data, config),

@@ -59,7 +59,7 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
   const [date, setDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [notes, setNotes] = useState<string>('');
 
-  const canSubmit = !!date && (!!hours);
+  const canSubmit = !!date && !!hours;
 
   const handleCreate = async () => {
     try {
@@ -103,14 +103,13 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems="center">
           <TextField
             label="Date"
-            placeholder={dayjs().format("DD-MM-YYYY")}
+            placeholder={dayjs().format('DD-MM-YYYY')}
             type="date"
             size="small"
             sx={{ width: 320, '& .MuiInputBase-input': { fontSize: 12 } }}
             value={date}
             onChange={(e) => setDate(e.target.value)}
             slotProps={{ inputLabel: { shrink: true } as any, input: { sx: { fontSize: 12 } } }}
-
           />
           <TextField
             label="Hours"

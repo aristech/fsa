@@ -193,26 +193,40 @@ jobs:
           # 🔒 SETUP PERSISTENT FILE STORAGE
           PERSISTENT_STORAGE="/var/lib/fsa-uploads"
 
-          # Ensure persistent storage directory exists
+          # Ensure persistent storage directory exists with proper permissions
           sudo mkdir -p "$PERSISTENT_STORAGE"
           sudo chown -R $USER:www-data "$PERSISTENT_STORAGE"
-          sudo chmod -R 755 "$PERSISTENT_STORAGE"
+          sudo chmod -R 775 "$PERSISTENT_STORAGE"
 
-          # Handle uploads directory - check if it's already a symlink or needs migration
-          if [ -L "/var/www/progressnet.io-app/apps/backend/uploads" ]; then
-            echo "📁 Uploads directory is already symlinked to persistent storage - perfect!"
-          elif [ -d "/var/www/progressnet.io-app/apps/backend/uploads" ]; then
-            echo "📁 Migrating existing uploads to persistent storage..."
-            sudo cp -r /var/www/progressnet.io-app/apps/backend/uploads/* "$PERSISTENT_STORAGE/" 2>/dev/null || true
-            echo "✅ Existing uploads migrated to persistent storage"
-          else
-            echo "📁 No existing uploads found - persistent storage is ready"
+          echo "📁 Setting up persistent uploads storage..."
+
+          # ONE-TIME MIGRATION: Move uploads from old deployment to persistent storage if needed
+          if [ -d "/var/www/progressnet.io-app/apps/backend/uploads" ] && [ ! -L "/var/www/progressnet.io-app/apps/backend/uploads" ]; then
+            echo "🔄 Found old uploads directory (not a symlink) - migrating to persistent storage..."
+            sudo cp -rn /var/www/progressnet.io-app/apps/backend/uploads/* "$PERSISTENT_STORAGE/" 2>/dev/null || true
+            echo "✅ Old uploads migrated to persistent storage"
           fi
+
+          # Count files in persistent storage for verification
+          UPLOAD_COUNT=$(sudo find "$PERSISTENT_STORAGE" -type f 2>/dev/null | wc -l)
+          echo "📊 Persistent storage contains $UPLOAD_COUNT files"
+
+          # Remove any uploads directory that was copied from git repo
+          rm -rf /var/www/progressnet.io-app-new/apps/backend/uploads
 
           # Create symlink in new deployment to persistent storage
           mkdir -p /var/www/progressnet.io-app-new/apps/backend
           ln -sf "$PERSISTENT_STORAGE" /var/www/progressnet.io-app-new/apps/backend/uploads
-          echo "✅ Uploads symlinked to persistent storage: /var/www/progressnet.io-app-new/apps/backend/uploads -> $PERSISTENT_STORAGE"
+          echo "✅ Uploads symlinked: /var/www/progressnet.io-app-new/apps/backend/uploads -> $PERSISTENT_STORAGE"
+
+          # Verify symlink
+          if [ -L "/var/www/progressnet.io-app-new/apps/backend/uploads" ]; then
+            echo "✅ Symlink verified successfully"
+            ls -lah /var/www/progressnet.io-app-new/apps/backend/uploads
+          else
+            echo "❌ ERROR: Symlink creation failed!"
+            exit 1
+          fi
 
       - name: Install dependencies and setup
         run: |
@@ -354,13 +368,23 @@ jobs:
           else
             echo "⚠️  No previous version available for rollback"
 
-            # Try to restore uploads from latest backup if no previous version
-            LATEST_BACKUP=$(sudo find /var/backups -name "fsa-*" -type d | sort -r | head -n 1)
-            if [ -n "$LATEST_BACKUP" ] && [ -d "$LATEST_BACKUP/uploads-only" ]; then
-              echo "🔒 Restoring uploads from backup: $LATEST_BACKUP"
-              sudo mkdir -p /var/www/progressnet.io-app/apps/backend/uploads
-              sudo cp -r $LATEST_BACKUP/uploads-only/* /var/www/progressnet.io-app/apps/backend/uploads/
-              echo "✅ Uploads restored from backup"
+            # NOTE: Uploads are in persistent storage (/var/lib/fsa-uploads) and are not affected by deployment
+            # They should already be intact, but verify they're accessible
+            PERSISTENT_STORAGE="/var/lib/fsa-uploads"
+            if [ -d "$PERSISTENT_STORAGE" ]; then
+              UPLOAD_COUNT=$(sudo find "$PERSISTENT_STORAGE" -type f 2>/dev/null | wc -l)
+              echo "✅ Persistent uploads storage intact with $UPLOAD_COUNT files"
+            else
+              echo "⚠️ Persistent storage not found - attempting restore from backup"
+              LATEST_BACKUP=$(sudo find /var/backups -name "fsa-*" -type d | sort -r | head -n 1)
+              if [ -n "$LATEST_BACKUP" ] && [ -d "$LATEST_BACKUP/uploads-only" ]; then
+                echo "🔒 Restoring uploads from backup: $LATEST_BACKUP"
+                sudo mkdir -p "$PERSISTENT_STORAGE"
+                sudo cp -r $LATEST_BACKUP/uploads-only/* "$PERSISTENT_STORAGE/"
+                sudo chown -R $USER:www-data "$PERSISTENT_STORAGE"
+                sudo chmod -R 775 "$PERSISTENT_STORAGE"
+                echo "✅ Uploads restored from backup to persistent storage"
+              fi
             fi
           fi
 

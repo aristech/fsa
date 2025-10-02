@@ -127,13 +127,15 @@ export function SubtaskItem({
         ...dropIndicatorStyles,
       }}
     >
-      <Box sx={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 1,
-        width: '100%',
-        minHeight: 40
-      }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 1,
+          width: '100%',
+          minHeight: 40,
+        }}
+      >
         <Box
           ref={dragHandleRef}
           sx={{
@@ -159,11 +161,13 @@ export function SubtaskItem({
           />
         </Box>
 
-        <Box sx={{
-          flexGrow: 1,
-          minWidth: 0, // This is crucial for text wrapping
-          width: '100%'
-        }}>
+        <Box
+          sx={{
+            flexGrow: 1,
+            minWidth: 0, // This is crucial for text wrapping
+            width: '100%',
+          }}
+        >
           {isEditing ? (
             <TextField
               value={editingTitle}
@@ -212,31 +216,39 @@ export function SubtaskItem({
           )}
         </Box>
 
-        <Box sx={{
-          display: 'flex',
-          alignItems: 'center',
-          flexShrink: 0,
-          gap: 0.5,
-          mt: 0.25
-        }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            flexShrink: 0,
+            gap: 0.5,
+            mt: 0.25,
+          }}
+        >
           {/* Attachment button */}
           <Tooltip title="Manage attachments">
             <IconButton
               size="small"
               onClick={() => setShowAttachments(!showAttachments)}
               sx={{
-                color: subtask.attachments && subtask.attachments.length > 0 ? 'primary.main' : 'text.secondary',
+                color:
+                  subtask.attachments && subtask.attachments.length > 0
+                    ? 'primary.main'
+                    : 'text.secondary',
                 minWidth: 32,
                 height: 32,
               }}
             >
               <Iconify icon="eva:attach-fill" width={16} />
               {subtask.attachments && subtask.attachments.length > 0 && (
-                <Box component="span" sx={{
-                  ml: 0.5,
-                  fontSize: '0.75rem',
-                  minWidth: 'auto'
-                }}>
+                <Box
+                  component="span"
+                  sx={{
+                    ml: 0.5,
+                    fontSize: '0.75rem',
+                    minWidth: 'auto',
+                  }}
+                >
                   {subtask.attachments.length}
                 </Box>
               )}
@@ -249,7 +261,7 @@ export function SubtaskItem({
             onClick={() => onDelete(subtask._id)}
             sx={{
               minWidth: 32,
-              height: 32
+              height: 32,
             }}
           >
             <Iconify icon="mingcute:delete-2-line" width={18} />
@@ -259,14 +271,16 @@ export function SubtaskItem({
 
       {/* Attachments Section */}
       <Collapse in={showAttachments}>
-        <Box sx={{
-          mt: 2,
-          ml: 4,
-          mr: 1,
-          width: 'calc(100% - 40px)', // Account for left margin
-          maxWidth: '100%',
-          overflow: 'hidden'
-        }}>
+        <Box
+          sx={{
+            mt: 2,
+            ml: 4,
+            mr: 1,
+            width: 'calc(100% - 40px)', // Account for left margin
+            maxWidth: '100%',
+            overflow: 'hidden',
+          }}
+        >
           <SubtaskAttachments
             attachments={subtask.attachments}
             onUpload={handleUpload}

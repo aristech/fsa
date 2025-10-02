@@ -23,7 +23,11 @@ const schema = zod.object({
 
 export type ApiKeyFormData = zod.infer<typeof schema>;
 
-export type ApiKey = Partial<ApiKeyFormData> & { _id: string; personnelId?: string; userId?: string };
+export type ApiKey = Partial<ApiKeyFormData> & {
+  _id: string;
+  personnelId?: string;
+  userId?: string;
+};
 
 import { type Personnel, personnelService } from 'src/lib/services/personnel-service';
 
@@ -127,7 +131,9 @@ export function ApiKeyFormDialog({ open, apiKey, onClose, onSubmit }: Props) {
                     {...params}
                     label="Personnel"
                     error={!!errors.personnelId}
-                    helperText={errors.personnelId?.message || 'Select the personnel for this API key'}
+                    helperText={
+                      errors.personnelId?.message || 'Select the personnel for this API key'
+                    }
                     sx={{ mt: 2 }}
                   />
                 )}

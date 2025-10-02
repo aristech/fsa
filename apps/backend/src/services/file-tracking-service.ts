@@ -40,6 +40,11 @@ export class FileTrackingService {
     filePath: string
   ): Promise<void> {
     try {
+      // Validate size is a valid number
+      if (typeof size !== 'number' || !isFinite(size) || size < 0) {
+        throw new Error(`Invalid file size: ${size}`);
+      }
+
       // Convert size to GB
       const sizeGB = size / (1024 * 1024 * 1024);
 

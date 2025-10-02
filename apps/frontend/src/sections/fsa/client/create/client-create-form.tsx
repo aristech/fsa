@@ -151,8 +151,6 @@ export function ClientCreateForm() {
                   />
                 </Grid>
 
-
-
                 <Grid size={{ xs: 12, md: 6, lg: 4 }}>
                   <RHFTextField name="email" label={`${t('clients.form.email')} *`} type="email" />
                 </Grid>
@@ -165,7 +163,6 @@ export function ClientCreateForm() {
                     }}
                     label={`${t('clients.form.phone')} (${t('clients.optional')})`}
                   />
-
                 </Grid>
                 <Grid size={{ xs: 12, md: 6, lg: 4 }}>
                   <RHFTextField
