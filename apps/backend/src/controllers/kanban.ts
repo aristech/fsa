@@ -161,7 +161,7 @@ export async function getKanbanData(
         (project) => project.clientId?.toString() === clientId,
       );
 
-      // Filter tasks by client OR tasks linked to a work order whose client matches
+      // Get all work orders for this client to check task associations
       const workOrdersForClient = await WorkOrder.find(
         { tenantId: tenant._id, clientId: clientId },
         { _id: 1 },
@@ -171,11 +171,12 @@ export async function getKanbanData(
       );
 
       filteredTasks = tasks.filter((task: any) => {
-        const matchesByClient = task.clientId?.toString() === clientId;
-        const matchesByWO =
-          task.workOrderId &&
-          workOrderIdsForClient.has(task.workOrderId.toString());
-        return matchesByClient || matchesByWO;
+        // If task is linked to a work order, use the work order's client as the source of truth
+        if (task.workOrderId) {
+          return workOrderIdsForClient.has(task.workOrderId.toString());
+        }
+        // Otherwise, check the task's direct client association
+        return task.clientId?.toString() === clientId;
       });
     }
 

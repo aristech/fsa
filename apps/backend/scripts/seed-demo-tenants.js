@@ -10,9 +10,11 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const { TenantSetupService } = require('../dist/services/tenant-setup');
+const path = require('path');
 
-// Load environment variables
-require('dotenv').config();
+// Load environment variables from the backend directory
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+require('dotenv').config({ path: path.join(__dirname, '..', '.env.production.local') });
 
 // Demo tenant data with different subscription plans
 const DEMO_TENANTS = [

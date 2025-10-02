@@ -12,11 +12,30 @@
 
 import { connect } from 'mongoose';
 import { Tenant } from '../models/Tenant';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 
 async function fixStorageUsage() {
   try {
+    // Load environment variables from .env file
+    const envPath = path.join(__dirname, '..', '.env');
+    dotenv.config({ path: envPath });
+
+    // Also try .env.production.local for production
+    const envProdPath = path.join(__dirname, '..', '.env.production.local');
+    dotenv.config({ path: envProdPath });
+
     // Connect to MongoDB
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/fsa';
+    const mongoUri = process.env.MONGODB_URI;
+
+    if (!mongoUri) {
+      console.error('❌ MONGODB_URI not found in environment variables');
+      console.error('   Tried loading from:');
+      console.error(`   - ${envPath}`);
+      console.error(`   - ${envProdPath}`);
+      process.exit(1);
+    }
+
     console.log('Connecting to MongoDB...');
     await connect(mongoUri);
     console.log('✅ Connected to MongoDB\n');

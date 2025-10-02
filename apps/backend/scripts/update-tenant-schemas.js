@@ -9,9 +9,11 @@
 
 const mongoose = require('mongoose');
 const { SubscriptionPlansService } = require('../dist/services/subscription-plans-service');
+const path = require('path');
 
-// Load environment variables
-require('dotenv').config();
+// Load environment variables from the backend directory
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+require('dotenv').config({ path: path.join(__dirname, '..', '.env.production.local') });
 
 /**
  * Connect to MongoDB
