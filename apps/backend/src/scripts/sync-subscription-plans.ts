@@ -1,6 +1,8 @@
 import { connect } from "mongoose";
 import { Tenant } from "../models/Tenant";
 import { EnvSubscriptionService } from "../services/env-subscription-service";
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 
 /**
  * Sync Subscription Plans Script
@@ -29,9 +31,21 @@ async function syncSubscriptionPlans() {
   console.log('🚀 Starting subscription plans synchronization...\n');
 
   try {
+    // Load environment variables
+    // __dirname is in dist/scripts when compiled, so go up two levels to reach apps/backend
+    const envPath = path.join(__dirname, '..', '..', '.env');
+    dotenv.config({ path: envPath });
+
+    const envProdPath = path.join(__dirname, '..', '..', '.env.production.local');
+    dotenv.config({ path: envProdPath });
+
     // Connect to MongoDB
     const mongoUri = process.env.MONGODB_URI;
     if (!mongoUri) {
+      console.error('❌ MONGODB_URI not found in environment variables');
+      console.error('   Tried loading from:');
+      console.error(`   - ${envPath}`);
+      console.error(`   - ${envProdPath}`);
       throw new Error('MONGODB_URI environment variable is required');
     }
 

@@ -12,12 +12,15 @@ All backend scripts now properly load environment variables from production `.en
 
 1. **`fix-storage-usage.ts`** - Recalculate storage usage
 2. **`validate-all-limits.ts`** - Validate subscription limits
+3. **`fix-task-client-associations.ts`** - Fix task-client associations
+4. **`migrate-existing-reminders.ts`** - Migrate reminder settings
+5. **`sync-subscription-plans.ts`** - Sync subscription plans
 
 ### JavaScript Scripts (in `apps/backend/scripts/`)
 
-3. **`seed-demo-tenants.js`** - Seed demo tenant data
-4. **`setup-stripe-products.js`** - Setup Stripe products/prices
-5. **`update-tenant-schemas.js`** - Update tenant schemas
+6. **`seed-demo-tenants.js`** - Seed demo tenant data
+7. **`setup-stripe-products.js`** - Setup Stripe products/prices
+8. **`update-tenant-schemas.js`** - Update tenant schemas
 
 ---
 
@@ -56,9 +59,12 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env.production.loc
 ```bash
 cd /var/www/progressnet.io-app
 
-# TypeScript scripts
+# TypeScript scripts - All now work on production!
 npx tsx apps/backend/src/scripts/fix-storage-usage.ts
 npx tsx apps/backend/src/scripts/validate-all-limits.ts
+npx tsx apps/backend/src/scripts/fix-task-client-associations.ts
+npx tsx apps/backend/src/scripts/migrate-existing-reminders.ts
+npx tsx apps/backend/src/scripts/sync-subscription-plans.ts
 
 # JavaScript scripts
 node apps/backend/scripts/seed-demo-tenants.js
