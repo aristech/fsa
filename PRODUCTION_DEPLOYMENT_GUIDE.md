@@ -15,7 +15,9 @@ All scripts now properly load environment variables from your `.env` or `.env.pr
 
 ## Method 1: Run Scripts (Recommended)
 
-The scripts will automatically find and load your `.env` file from `apps/backend/.env`:
+The scripts will automatically find and load your `.env` file from `apps/backend/.env`.
+
+**Important:** When running TypeScript scripts with `tsx`, they execute from the source directory (`src/scripts/`), so the path resolution is different than compiled scripts.
 
 ```bash
 # Navigate to app directory

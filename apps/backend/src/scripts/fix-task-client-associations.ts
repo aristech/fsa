@@ -18,10 +18,11 @@ import * as path from 'path';
 async function fixTaskClientAssociations() {
   try {
     // Load environment variables
-    const envPath = path.join(__dirname, '..', '.env');
+    // __dirname is in dist/scripts when compiled, so go up two levels to reach apps/backend
+    const envPath = path.join(__dirname, '..', '..', '.env');
     dotenv.config({ path: envPath });
 
-    const envProdPath = path.join(__dirname, '..', '.env.production.local');
+    const envProdPath = path.join(__dirname, '..', '..', '.env.production.local');
     dotenv.config({ path: envProdPath });
 
     const mongoUri = process.env.MONGODB_URI;
