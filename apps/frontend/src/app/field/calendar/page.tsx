@@ -118,8 +118,8 @@ export default function FieldCalendarPage() {
   const taskDetailsDialog = useBoolean();
   const taskCreateDialog = useBoolean();
 
-  // Get kanban data
-  const { board, boardLoading, boardError, refreshBoard } = useGetFieldBoard();
+  // Get kanban data (filtered to user's assigned tasks in field environment)
+  const { board, boardLoading, boardError, refreshBoard } = useGetFieldBoard(true);
 
   // Transform kanban tasks to calendar tasks
   const calendarTasks = useMemo(() => {

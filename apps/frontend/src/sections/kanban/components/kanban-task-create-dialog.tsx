@@ -14,6 +14,7 @@ import { useMemo, useState, useEffect, useCallback } from 'react';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
+import { Tooltip } from '@mui/material';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import Drawer from '@mui/material/Drawer';
@@ -23,6 +24,7 @@ import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import InputLabel from '@mui/material/InputLabel';
 import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
 import LoadingButton from '@mui/lab/LoadingButton';
 import FormControl from '@mui/material/FormControl';
 import Autocomplete from '@mui/material/Autocomplete';
@@ -48,6 +50,7 @@ const TaskSchema = zod.object({
   clientId: zod.string().optional(),
   assignees: zod.array(zod.string()).optional(),
   labels: zod.array(zod.string()).optional(),
+  isPrivate: zod.boolean().optional(),
 });
 
 type TaskFormData = zod.infer<typeof TaskSchema>;
@@ -167,17 +170,23 @@ export function KanbanTaskCreateDialog({
       clientId: '',
       assignees: [],
       labels: [],
+      isPrivate: false,
     },
   });
 
   const watchedWorkOrderId = watch('workOrderId');
   const watchedClientId = watch('clientId');
+  const watchedIsPrivate = watch('isPrivate');
 
-  // Auto-populate assignees when work order is selected
+  // Auto-populate assignees when work order is selected (unless private)
   useEffect(() => {
     if (watchedWorkOrderId) {
       const selectedWorkOrder = workOrders.find((wo: any) => wo._id === watchedWorkOrderId);
-      if (selectedWorkOrder?.personnelIds && Array.isArray(selectedWorkOrder.personnelIds)) {
+      if (
+        selectedWorkOrder?.personnelIds &&
+        Array.isArray(selectedWorkOrder.personnelIds) &&
+        !watchedIsPrivate
+      ) {
         // Extract just the _id values from personnel objects
         const personnelIds = selectedWorkOrder.personnelIds
           .map((person: any) =>
@@ -195,7 +204,7 @@ export function KanbanTaskCreateDialog({
         setValue('clientId', derivedClientId, { shouldDirty: true, shouldValidate: true });
       }
     }
-  }, [watchedWorkOrderId, watchedClientId, workOrders, setValue]);
+  }, [watchedWorkOrderId, watchedClientId, watchedIsPrivate, workOrders, setValue]);
 
   // Pre-populate form with initial values when dialog opens
   useEffect(() => {
@@ -217,7 +226,10 @@ export function KanbanTaskCreateDialog({
         const selectedWorkOrder = workOrders.find((wo: any) => wo._id === data.workOrderId);
         const selectedClientFromForm = clients.find((client: any) => client._id === data.clientId);
 
-        const assigneeIds: string[] = Array.from(new Set(data.assignees || []));
+        // If private, ensure no assignees
+        const assigneeIds: string[] = data.isPrivate
+          ? []
+          : Array.from(new Set(data.assignees || []));
         const taskData = {
           name: data.name,
           description: data.description,
@@ -229,6 +241,8 @@ export function KanbanTaskCreateDialog({
           workOrderId: data.workOrderId || undefined,
           workOrderNumber: selectedWorkOrder?.workOrderNumber || undefined,
           workOrderTitle: selectedWorkOrder?.title || undefined,
+          // Include isPrivate flag
+          isPrivate: data.isPrivate || false,
           // Persist explicit start/due dates so time is saved (in UTC)
           ...(rangePicker.startDate && { startDate: rangePicker.startDate.utc().toISOString() }),
           ...(rangePicker.endDate && { dueDate: rangePicker.endDate.utc().toISOString() }),
@@ -330,7 +344,28 @@ export function KanbanTaskCreateDialog({
           justifyContent="space-between"
           sx={{ px: 2.5, py: 2 }}
         >
-          <Typography variant="h6">Create New Task</Typography>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Typography variant="h6">Create New Task</Typography>
+            <Tooltip title="Make task private">
+              <IconButton
+                onClick={() => {
+                  const newPrivateValue = !watchedIsPrivate;
+                  setValue('isPrivate', newPrivateValue);
+                  // Clear assignees when going private
+                  if (newPrivateValue) {
+                    setValue('assignees', []);
+                  }
+                }}
+                color={watchedIsPrivate ? 'error' : 'default'}
+                size="small"
+              >
+                <Iconify
+                  icon={watchedIsPrivate ? 'solar:lock-bold' : 'solar:lock-unlocked-bold'}
+                  width={20}
+                />
+              </IconButton>
+            </Tooltip>
+          </Stack>
           <Button color="inherit" onClick={handleClose}>
             Close
           </Button>
@@ -438,57 +473,59 @@ export function KanbanTaskCreateDialog({
               )}
             />
 
-            {/* Assignees (consistent with KanbanDetails) */}
-            <Controller
-              name="assignees"
-              control={control}
-              render={({ field }) => {
-                const selectedIds: string[] = field.value || [];
-                const selectedPeople = personnel.filter((p: any) => selectedIds.includes(p._id));
-                return (
-                  <Box>
-                    <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary' }}>
-                      Assignees
-                    </Typography>
-                    <Box sx={{ gap: 1, display: 'flex', flexWrap: 'wrap' }}>
-                      {selectedPeople.length > 0 ? (
-                        selectedPeople.map((user: any) => (
-                          <Avatar key={user._id}>
-                            {user.name
-                              ?.split(' ')
-                              .map((n: string) => n.charAt(0))
-                              .join('')
-                              .toUpperCase() || 'A'}
-                          </Avatar>
-                        ))
-                      ) : (
-                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                          No assignees
-                        </Typography>
-                      )}
-                      <Button
-                        onClick={contactsDialog.onTrue}
-                        startIcon={<Iconify icon="mingcute:add-line" />}
-                        variant="outlined"
-                        size="small"
-                        sx={{ ml: 0.5 }}
-                      >
-                        Add
-                      </Button>
+            {/* Assignees (consistent with KanbanDetails) - hidden when private */}
+            {!watchedIsPrivate && (
+              <Controller
+                name="assignees"
+                control={control}
+                render={({ field }) => {
+                  const selectedIds: string[] = field.value || [];
+                  const selectedPeople = personnel.filter((p: any) => selectedIds.includes(p._id));
+                  return (
+                    <Box>
+                      <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary' }}>
+                        Assignees
+                      </Typography>
+                      <Box sx={{ gap: 1, display: 'flex', flexWrap: 'wrap' }}>
+                        {selectedPeople.length > 0 ? (
+                          selectedPeople.map((user: any) => (
+                            <Avatar key={user._id}>
+                              {user.name
+                                ?.split(' ')
+                                .map((n: string) => n.charAt(0))
+                                .join('')
+                                .toUpperCase() || 'A'}
+                            </Avatar>
+                          ))
+                        ) : (
+                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                            No assignees
+                          </Typography>
+                        )}
+                        <Button
+                          onClick={contactsDialog.onTrue}
+                          startIcon={<Iconify icon="mingcute:add-line" />}
+                          variant="outlined"
+                          size="small"
+                          sx={{ ml: 0.5 }}
+                        >
+                          Add
+                        </Button>
+                      </Box>
+                      <KanbanContactsDialog
+                        assignee={selectedPeople.map((p: any) => ({ id: p._id, name: p.name }))}
+                        open={contactsDialog.value}
+                        onClose={contactsDialog.onFalse}
+                        onAssign={(list) => {
+                          const ids = list.map((p) => p.id);
+                          field.onChange(ids);
+                        }}
+                      />
                     </Box>
-                    <KanbanContactsDialog
-                      assignee={selectedPeople.map((p: any) => ({ id: p._id, name: p.name }))}
-                      open={contactsDialog.value}
-                      onClose={contactsDialog.onFalse}
-                      onAssign={(list) => {
-                        const ids = list.map((p) => p.id);
-                        field.onChange(ids);
-                      }}
-                    />
-                  </Box>
-                );
-              }}
-            />
+                  );
+                }}
+              />
+            )}
 
             {/* Date Range */}
             <Box>

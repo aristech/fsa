@@ -156,9 +156,13 @@ const getStatusColor = (status: string) => {
 
 // ----------------------------------------------------------------------
 
-export function KanbanTableView() {
+type KanbanTableViewProps = {
+  myTasksOnly?: boolean;
+};
+
+export function KanbanTableView({ myTasksOnly = false }: KanbanTableViewProps) {
   // Get data from SWR hook for automatic updates
-  const { board, boardLoading, boardError } = useGetBoard();
+  const { board, boardLoading, boardError } = useGetBoard(myTasksOnly);
   const { t } = useTranslate('common');
 
   // Listen for kanban refresh events from AI

@@ -3,7 +3,9 @@
 import type { IReport, CreateReportData } from 'src/lib/models/Report';
 
 import useSWR from 'swr';
-import dayjs from 'dayjs';
+import { z as zod } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useMemo, useState, useEffect, useCallback } from 'react';
 
 import {
@@ -12,6 +14,7 @@ import {
   alpha,
   styled,
   Drawer,
+  Button,
   useTheme,
   TextField,
   Typography,
@@ -29,12 +32,11 @@ import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 import { SignatureCollector, type SignatureData } from 'src/components/signature';
 import {
-  MobileInput,
-  MobileButton,
-  MobileSelect,
-  MobileDatePicker,
-  MobileTimePicker,
-} from 'src/components/mobile';
+  Form,
+  RHFSelect,
+  RHFTextField,
+  RHFDateTimePicker,
+} from 'src/components/hook-form';
 
 import { useAuthContext } from 'src/auth/hooks';
 
@@ -141,6 +143,24 @@ const reportTypes = [
   { value: 'safety', label: 'Safety Report', icon: 'eva:shield-fill', color: 'error' },
 ];
 
+// ----------------------------------------------------------------------
+
+// Validation schema
+const reportSchema = zod.object({
+  type: zod.enum(['daily', 'weekly', 'monthly', 'incident', 'maintenance', 'inspection', 'completion', 'safety']),
+  reportDate: zod.union([zod.string(), zod.date()]),
+  priority: zod.enum(['low', 'medium', 'high', 'urgent']).optional(),
+  clientId: zod.string().min(1, 'Client is required'),
+  workOrderId: zod.string().optional(),
+  taskIds: zod.array(zod.string()).optional(),
+  location: zod.string().min(1, 'Location is required'),
+  weather: zod.string().optional(),
+});
+
+type ReportFormValues = zod.infer<typeof reportSchema>;
+
+// ----------------------------------------------------------------------
+
 interface ReportCreateDrawerProps {
   open: boolean;
   onClose: () => void;
@@ -157,21 +177,24 @@ export function ReportCreateDrawer({
   const theme = useTheme();
   const { user } = useAuthContext();
 
-  // Form state
-  const [formData, setFormData] = useState<CreateReportData>({
-    type: 'daily',
-    location: '',
-    weather: '',
-    reportDate: new Date(),
-    priority: 'medium',
-    clientId: '',
-    workOrderId: '',
-    taskIds: [],
-    customFields: {},
-    ...(initialData ? (typeof initialData === 'function' ? initialData() : initialData) : {}),
+  // Form setup with React Hook Form
+  const methods = useForm<ReportFormValues>({
+    resolver: zodResolver(reportSchema),
+    defaultValues: {
+      type: 'daily',
+      reportDate: new Date(),
+      priority: 'medium',
+      clientId: '',
+      workOrderId: '',
+      taskIds: [],
+      location: '',
+      weather: '',
+    },
   });
 
-  const [loading, setLoading] = useState(false);
+  const { reset, handleSubmit, watch, setValue } = methods;
+
+  // Additional state (not in form)
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedMaterials, setSelectedMaterials] = useState<any[]>([]);
   const [reportNotes, setReportNotes] = useState('');
@@ -180,6 +203,12 @@ export function ReportCreateDrawer({
   const [reportStatus, setReportStatus] = useState<'draft' | 'submitted'>('draft');
   const [previewUrls, setPreviewUrls] = useState<Map<number, string>>(new Map());
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Watch form values for auto-fill
+  const watchedClientId = watch('clientId');
+  const watchedWorkOrderId = watch('workOrderId');
+  const watchedTaskIds = watch('taskIds');
 
   // Monitor network status
   useEffect(() => {
@@ -360,17 +389,17 @@ export function ReportCreateDrawer({
     }
 
     // Then filter by selected client (if a client is selected)
-    if (!formData.clientId) {
+    if (!watchedClientId) {
       return userAssignedTasks;
     }
 
     const filteredTasks = userAssignedTasks.filter((task) => {
-      const matches = task.clientId === formData.clientId;
+      const matches = task.clientId === watchedClientId;
       return matches;
     });
 
     return filteredTasks;
-  }, [allTasks, formData.clientId, personnelData, user]);
+  }, [allTasks, watchedClientId, personnelData, user]);
 
   const materials = useMemo(() => {
     const data = materialsData?.data?.materials || materialsData?.data || materialsData?.materials;
@@ -390,9 +419,9 @@ export function ReportCreateDrawer({
 
   // Auto-fill from client selection
   useEffect(() => {
-    if (formData.clientId) {
-      const selectedClient = clients.find((c) => c.value === formData.clientId)?.client;
-      if (selectedClient && !formData.location) {
+    if (watchedClientId) {
+      const selectedClient = clients.find((c) => c.value === watchedClientId)?.client;
+      if (selectedClient && !watch('location')) {
         // Ensure we get a string value for location
         const clientLocation =
           typeof selectedClient.address === 'string'
@@ -405,19 +434,18 @@ export function ReportCreateDrawer({
                 selectedClient.location?.full ||
                 '';
 
-        setFormData((prev) => ({
-          ...prev,
-          location: clientLocation,
-        }));
+        if (clientLocation) {
+          setValue('location', clientLocation);
+        }
       }
     }
-  }, [formData.clientId, clients, formData.location]);
+  }, [watchedClientId, clients, watch, setValue]);
 
   // Auto-fill from work order selection
   useEffect(() => {
-    if (formData.workOrderId) {
+    if (watchedWorkOrderId) {
       const selectedWorkOrder = workOrders.find(
-        (wo: any) => wo.value === formData.workOrderId
+        (wo: any) => wo.value === watchedWorkOrderId
       )?.workOrder;
       if (selectedWorkOrder) {
         // Ensure we get a string value for location
@@ -448,23 +476,20 @@ export function ReportCreateDrawer({
           typeof workOrderClientId === 'string' &&
           workOrderClientId.trim() !== ''
             ? workOrderClientId
-            : formData.clientId; // Keep current client if work order doesn't have one
+            : watchedClientId; // Keep current client if work order doesn't have one
 
-        setFormData((prev) => ({
-          ...prev,
-          // Only update clientId if work order has a valid clientId, otherwise preserve existing selection
-          clientId: newClientId,
-          location: workOrderLocation || prev.location,
-          priority: selectedWorkOrder.priority || prev.priority,
-        }));
+        // Only update clientId if work order has a valid clientId, otherwise preserve existing selection
+        if (newClientId) setValue('clientId', newClientId);
+        if (workOrderLocation) setValue('location', workOrderLocation);
+        if (selectedWorkOrder.priority) setValue('priority', selectedWorkOrder.priority);
       }
     }
-  }, [formData.workOrderId, formData.clientId, workOrders]);
+  }, [watchedWorkOrderId, watchedClientId, workOrders, setValue]);
 
   // Auto-fill from task selection
   useEffect(() => {
-    if (formData.taskIds?.[0]) {
-      const selectedTask = allTasks.find((t) => t.value === formData.taskIds?.[0]);
+    if (watchedTaskIds?.[0]) {
+      const selectedTask = allTasks.find((t) => t.value === watchedTaskIds?.[0]);
       if (selectedTask) {
         // Ensure we get a string value for location
         const taskLocation =
@@ -478,36 +503,31 @@ export function ReportCreateDrawer({
           selectedTask.task?.workOrder?._id ||
           selectedTask.task?.workOrder?.id;
 
-        setFormData((prev) => ({
-          ...prev,
-          // Only update clientId if task has a valid clientId, otherwise preserve existing selection
-          clientId:
-            selectedTask.clientId &&
+        // Only update clientId if task has a valid clientId, otherwise preserve existing selection
+        if (selectedTask.clientId &&
             typeof selectedTask.clientId === 'string' &&
-            selectedTask.clientId.trim() !== ''
-              ? selectedTask.clientId
-              : prev.clientId,
-          // Auto-populate work order if task has one, otherwise preserve existing selection
-          workOrderId:
-            taskWorkOrderId && typeof taskWorkOrderId === 'string' && taskWorkOrderId.trim() !== ''
-              ? taskWorkOrderId
-              : prev.workOrderId,
-          location: taskLocation || prev.location,
-          priority: selectedTask.task?.priority || prev.priority,
-        }));
+            selectedTask.clientId.trim() !== '') {
+          setValue('clientId', selectedTask.clientId);
+        }
+        // Auto-populate work order if task has one, otherwise preserve existing selection
+        if (taskWorkOrderId && typeof taskWorkOrderId === 'string' && taskWorkOrderId.trim() !== '') {
+          setValue('workOrderId', taskWorkOrderId);
+        }
+        if (taskLocation) setValue('location', taskLocation);
+        if (selectedTask.task?.priority) setValue('priority', selectedTask.task.priority);
       }
     }
-  }, [formData.taskIds, allTasks]);
+  }, [watchedTaskIds, allTasks, setValue]);
 
   // Auto-populate materials from selected task
   useEffect(() => {
     const fetchTaskMaterials = async () => {
-      if (formData.taskIds?.[0]) {
+      if (watchedTaskIds?.[0]) {
         if (materials.length === 0) {
           return;
         }
         try {
-          const taskId = formData.taskIds[0];
+          const taskId = watchedTaskIds[0];
           const response = await axiosInstance.get(endpoints.fsa.tasks.materials.list(taskId));
           const taskMaterials = response.data?.data || response.data || [];
 
@@ -551,7 +571,7 @@ export function ReportCreateDrawer({
           console.error('Error fetching task materials:', error);
 
           // Fallback: check if the task itself has materials embedded
-          const selectedTask = allTasks.find((t) => t.value === formData.taskIds?.[0]);
+          const selectedTask = allTasks.find((t) => t.value === watchedTaskIds?.[0]);
           if (selectedTask?.task?.materials) {
             const embeddedMaterials = Array.isArray(selectedTask.task.materials)
               ? selectedTask.task.materials
@@ -590,45 +610,35 @@ export function ReportCreateDrawer({
     };
 
     fetchTaskMaterials();
-  }, [formData.taskIds, materials, allTasks]);
+  }, [watchedTaskIds, materials, allTasks]);
 
-  // Set report date with current time when drawer opens
-  useEffect(() => {
-    if (open) {
-      setFormData((prev) => ({
-        ...prev,
-        reportDate: new Date(), // Always set to current date/time
-      }));
-    }
-  }, [open]);
+  // Report date is now set in the reset() call below - no need for separate effect
 
   // Reset form when drawer opens/closes
   useEffect(() => {
     if (open) {
-      setCurrentStep(1);
-      setFormData({
+      const initial = initialData ? (typeof initialData === 'function' ? initialData() : initialData) : {};
+      reset({
         type: 'daily',
-        location: '',
-        weather: '',
         reportDate: new Date(),
         priority: 'medium',
         clientId: '',
         workOrderId: '',
         taskIds: [],
-        customFields: {},
-        ...(initialData ? (typeof initialData === 'function' ? initialData() : initialData) : {}),
+        location: '',
+        weather: '',
+        ...initial,
       });
+      setCurrentStep(1);
       setSelectedMaterials([]);
       setReportNotes('');
       setAttachments([]);
       setSignatures([]);
       setReportStatus('draft');
     }
-  }, [open, initialData]);
+  }, [open, initialData, reset]);
 
-  const handleFieldChange = useCallback((field: keyof CreateReportData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  }, []);
+  // No longer need handleFieldChange with RHF - form state is managed by react-hook-form
 
   const handleAddMaterial = useCallback(
     (materialId: string) => {
@@ -765,9 +775,9 @@ export function ReportCreateDrawer({
         };
       }
 
-      if (type === 'client' && formData.clientId && clientsData?.data?.clients) {
+      if (type === 'client' && watchedClientId && clientsData?.data?.clients) {
         const selectedClient = clientsData.data.clients.find(
-          (client: any) => client._id === formData.clientId
+          (client: any) => client._id === watchedClientId
         );
 
         if (selectedClient?.contactPerson?.name) {
@@ -782,15 +792,55 @@ export function ReportCreateDrawer({
 
       return undefined;
     },
-    [user, formData.clientId, clientsData]
+    [user, watchedClientId, clientsData]
   );
 
   const handleCameraCapture = useCallback(() => {
     // Check if getUserMedia is supported (for desktop/laptop cameras)
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      // Try to open camera directly
-      navigator.mediaDevices
-        .getUserMedia({ video: true })
+      // State for camera and flash (using let to allow reassignment)
+      let currentStream: MediaStream | null = null;
+      let currentFacingMode: 'user' | 'environment' = 'environment'; // Default to rear camera
+      let flashEnabled = false;
+      let videoTrack: MediaStreamTrack | null = null;
+
+      // Function to start camera with specific facing mode
+      const startCamera = async (facingMode: 'user' | 'environment') => {
+        // Stop previous stream if exists
+        if (currentStream) {
+          currentStream.getTracks().forEach((track) => track.stop());
+        }
+
+        try {
+          const constraints: MediaStreamConstraints = {
+            video: {
+              facingMode: { ideal: facingMode },
+            },
+          };
+
+          currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+          // Get the video track for flash control
+          const tracks = currentStream.getVideoTracks();
+          if (tracks.length > 0) {
+            videoTrack = tracks[0];
+          }
+
+          return currentStream;
+        } catch (error) {
+          console.error('Error accessing camera:', error);
+          // Fallback to basic video if specific facing mode fails
+          currentStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          const tracks = currentStream.getVideoTracks();
+          if (tracks.length > 0) {
+            videoTrack = tracks[0];
+          }
+          return currentStream;
+        }
+      };
+
+      // Start with rear camera
+      startCamera(currentFacingMode)
         .then((stream) => {
           // Create a video element to show camera feed
           const video = document.createElement('video');
@@ -800,6 +850,7 @@ export function ReportCreateDrawer({
           video.style.borderRadius = '8px';
           video.autoplay = true;
           video.muted = true;
+          video.setAttribute('playsinline', 'true'); // Important for iOS 
 
           // Create a modal-like overlay
           const overlay = document.createElement('div');
@@ -854,6 +905,31 @@ export function ReportCreateDrawer({
           cancelBtn.style.cursor = 'pointer';
           cancelBtn.style.fontSize = '16px';
 
+          // Switch camera button
+          const switchCameraBtn = document.createElement('button');
+          switchCameraBtn.textContent = '🔄';
+          switchCameraBtn.title = 'Switch Camera';
+          switchCameraBtn.style.padding = '12px 16px';
+          switchCameraBtn.style.backgroundColor = '#9c27b0';
+          switchCameraBtn.style.color = 'white';
+          switchCameraBtn.style.border = 'none';
+          switchCameraBtn.style.borderRadius = '8px';
+          switchCameraBtn.style.cursor = 'pointer';
+          switchCameraBtn.style.fontSize = '20px';
+
+          // Flash/torch button
+          const flashBtn = document.createElement('button');
+          flashBtn.textContent = '🔦';
+          flashBtn.title = 'Toggle Flash';
+          flashBtn.style.padding = '12px 16px';
+          flashBtn.style.backgroundColor = '#ff9800';
+          flashBtn.style.color = 'white';
+          flashBtn.style.border = 'none';
+          flashBtn.style.borderRadius = '8px';
+          flashBtn.style.cursor = 'pointer';
+          flashBtn.style.fontSize = '20px';
+          flashBtn.style.opacity = '0.5';
+
           // Title
           const title = document.createElement('h3');
           title.textContent = 'Take Photo';
@@ -864,7 +940,7 @@ export function ReportCreateDrawer({
           // Instructions
           const instructions = document.createElement('p');
           instructions.textContent =
-            'Position yourself in the camera view and click "Capture Photo"';
+            'Use 🔄 to switch cameras, 🔦 for flash, then click "Capture Photo"';
           instructions.style.margin = '0 0 16px 0';
           instructions.style.textAlign = 'center';
           instructions.style.color = '#666';
@@ -874,11 +950,59 @@ export function ReportCreateDrawer({
           container.appendChild(title);
           container.appendChild(instructions);
           container.appendChild(video);
+          controls.appendChild(switchCameraBtn);
+          controls.appendChild(flashBtn);
           controls.appendChild(captureBtn);
           controls.appendChild(cancelBtn);
           container.appendChild(controls);
           overlay.appendChild(container);
           document.body.appendChild(overlay);
+
+          // Switch camera handler
+          const switchCamera = async () => {
+            currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+            try {
+              const newStream = await startCamera(currentFacingMode);
+              video.srcObject = newStream;
+              toast.info(`Switched to ${currentFacingMode === 'user' ? 'front' : 'rear'} camera`);
+            } catch (error) {
+              console.error('Error switching camera:', error);
+              toast.error('Failed to switch camera');
+            }
+          };
+
+          // Toggle flash handler
+          const toggleFlash = async () => {
+            if (!videoTrack) {
+              toast.warning('Flash not available on this device');
+              return;
+            }
+
+            try {
+              // Check if torch is supported
+              const capabilities = videoTrack.getCapabilities();
+              // @ts-expect-error - torch is not in official types yet
+              if (!capabilities.torch) {
+                toast.warning('Flash not supported on this camera');
+                return;
+              }
+
+              flashEnabled = !flashEnabled;
+
+              // Apply torch setting
+              await videoTrack.applyConstraints({
+                // @ts-expect-error - torch is not in official types yet
+                advanced: [{ torch: flashEnabled }],
+              });
+
+              // Update button appearance
+              flashBtn.style.opacity = flashEnabled ? '1' : '0.5';
+              toast.success(`Flash ${flashEnabled ? 'on' : 'off'}`);
+            } catch (error) {
+              console.error('Error toggling flash:', error);
+              toast.error('Failed to toggle flash');
+            }
+          };
 
           // Capture photo function
           const capturePhoto = () => {
@@ -915,18 +1039,24 @@ export function ReportCreateDrawer({
             }
 
             // Clean up
-            stream.getTracks().forEach((track) => track.stop());
+            if (currentStream) {
+              currentStream.getTracks().forEach((track) => track.stop());
+            }
             document.body.removeChild(overlay);
           };
 
           // Cancel function
           const cancelCapture = () => {
-            stream.getTracks().forEach((track) => track.stop());
+            if (currentStream) {
+              currentStream.getTracks().forEach((track) => track.stop());
+            }
             document.body.removeChild(overlay);
           };
 
           captureBtn.onclick = capturePhoto;
           cancelBtn.onclick = cancelCapture;
+          switchCameraBtn.onclick = switchCamera;
+          flashBtn.onclick = toggleFlash;
 
           // Close on overlay click
           overlay.onclick = (e) => {
@@ -978,13 +1108,14 @@ export function ReportCreateDrawer({
 
   const validateStep = useCallback(
     (step: number) => {
+      const formValues = watch();
       switch (step) {
         case 1:
           return !!(
-            formData.type &&
-            formData.clientId &&
-            formData.location &&
-            String(formData.location).trim()
+            formValues.type &&
+            formValues.clientId &&
+            formValues.location &&
+            String(formValues.location).trim()
           );
         case 2:
         case 3:
@@ -993,7 +1124,7 @@ export function ReportCreateDrawer({
           return false;
       }
     },
-    [formData]
+    [watch]
   );
 
   const handleNext = useCallback(() => {
@@ -1203,17 +1334,14 @@ export function ReportCreateDrawer({
     [attachments, signatures, user]
   );
 
-  const handleSubmit = useCallback(async () => {
-    if (!validateStep(1)) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    setLoading(true);
+  const onFormSubmit = handleSubmit(async (data) => {
+    setIsSubmitting(true);
 
     // Prepare the complete report data
     const reportData = {
-      ...formData,
+      ...data,
+      // Ensure reportDate is a Date object
+      reportDate: data.reportDate ? new Date(data.reportDate) : new Date(),
       status: reportStatus,
       notes: reportNotes,
       materialsUsed: selectedMaterials.map((m) => ({
@@ -1283,20 +1411,9 @@ export function ReportCreateDrawer({
         toast.error(error.message || 'Failed to create report');
       }
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
-  }, [
-    formData,
-    reportStatus,
-    reportNotes,
-    selectedMaterials,
-    signatures,
-    validateStep,
-    onSuccess,
-    onClose,
-    saveOfflineDraft,
-    handleFileUploads,
-  ]);
+  });
 
   const renderHeader = () => (
     <Box
@@ -1338,12 +1455,14 @@ export function ReportCreateDrawer({
           Step {currentStep} of 3
         </Typography>
       </Box>
-      <MobileButton
-        variant="outline"
+      <Button
+        variant="outlined"
         size="small"
         onClick={onClose}
-        icon={<Iconify icon="eva:close-fill" width={20} />}
-      />
+        sx={{ minWidth: 40, width: 40, height: 40, p: 0 }}
+      >
+        <Iconify icon="eva:close-fill" width={20} />
+      </Button>
     </Box>
   );
 
@@ -1374,70 +1493,45 @@ export function ReportCreateDrawer({
   );
 
   const renderStep1 = () => (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4, px: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, px: 3 }}>
       <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'primary.main' }}>
         Report Details
       </Typography>
 
-      <MobileSelect
-        label="Report Type *"
-        value={formData.type}
-        onChange={(value) => handleFieldChange('type', value)}
-        options={reportTypes}
-        required
+      <RHFSelect name="type" label="Report Type *">
+        {reportTypes.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </RHFSelect>
+
+      <RHFDateTimePicker
+        name="reportDate"
+        label="Report Date & Time *"
+        slotProps={{
+          textField: {
+            fullWidth: true,
+            helperText: 'Date and time when the work was performed',
+          },
+        }}
       />
 
-      <Box>
-        <MobileDatePicker
-          label="Report Date *"
-          value={formData.reportDate ? dayjs(formData.reportDate) : dayjs()}
-          onChange={(date) => {
-            if (date) {
-              const currentTime = formData.reportDate ? dayjs(formData.reportDate) : dayjs();
-              const newDateTime = date
-                .hour(currentTime.hour())
-                .minute(currentTime.minute())
-                .second(currentTime.second());
-              handleFieldChange('reportDate', newDateTime.toDate());
-            }
-          }}
-          required
-          helperText="Date when the work was performed"
-        />
-
-        <MobileTimePicker
-          label="Report Time *"
-          value={formData.reportDate ? dayjs(formData.reportDate) : dayjs()}
-          onChange={(time) => {
-            if (time) {
-              const currentDate = formData.reportDate ? dayjs(formData.reportDate) : dayjs();
-              const newDateTime = currentDate
-                .hour(time.hour())
-                .minute(time.minute())
-                .second(time.second());
-              handleFieldChange('reportDate', newDateTime.toDate());
-            }
-          }}
-          required
-          helperText="Time when the work was performed"
-        />
-      </Box>
-
-      <MobileSelect
-        label="Client"
-        value={formData.clientId}
-        onChange={(value) => handleFieldChange('clientId', value)}
-        options={[{ value: '', label: 'Select Client...' }, ...clients]}
-        helperText="Select the client for this report"
-        required
-      />
+      <RHFSelect name="clientId" label="Client *">
+        <option value="">Select Client...</option>
+        {clients.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </RHFSelect>
 
       <Autocomplete
         options={workOrders}
         getOptionLabel={(option) => option?.label || ''}
-        value={workOrders.find((wo: any) => wo.value === formData.workOrderId) || null}
-        onChange={(event, newValue) => {
-          handleFieldChange('workOrderId', newValue?.value || '');
+        value={workOrders.find((wo: any) => wo.value === watchedWorkOrderId) || null}
+        onChange={(_event, newValue) => {
+          setValue('workOrderId', newValue?.value || '');
         }}
         renderInput={(params) => (
           <TextField
@@ -1446,18 +1540,6 @@ export function ReportCreateDrawer({
             placeholder="Type to search work orders..."
             helperText={`Optional: Link to a specific work order (${workOrders.length} available)`}
             fullWidth
-            sx={{
-              mb: 2,
-              height: 60,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '12px',
-                height: 60,
-                '& .MuiInputBase-input': {
-                  fontSize: '16px',
-                  padding: '16px 14px',
-                },
-              },
-            }}
           />
         )}
         filterOptions={(options, { inputValue }) => {
@@ -1470,13 +1552,11 @@ export function ReportCreateDrawer({
           );
         }}
         noOptionsText={
-          workOrdersError
-            ? 'Error loading work orders'
-            : !workOrdersData
-              ? 'Loading work orders...'
-              : workOrders.length === 0
-                ? 'No work orders available'
-                : 'No matching work orders found'
+          !workOrdersData
+            ? 'Loading work orders...'
+            : workOrders.length === 0
+              ? 'No work orders available'
+              : 'No matching work orders found'
         }
         clearOnEscape
         openOnFocus
@@ -1490,9 +1570,9 @@ export function ReportCreateDrawer({
         getOptionLabel={(option) => option?.label || ''}
         getOptionKey={(option) => option?.value || option?.id || Math.random().toString()}
         isOptionEqualToValue={(option, value) => option?.value === value?.value}
-        value={tasks.find((task) => task.value === formData.taskIds?.[0]) || null}
-        onChange={(event, newValue) => {
-          handleFieldChange('taskIds', newValue ? [newValue.value] : []);
+        value={tasks.find((task) => task.value === watchedTaskIds?.[0]) || null}
+        onChange={(_event, newValue) => {
+          setValue('taskIds', newValue ? [newValue.value] : []);
         }}
         renderInput={(params) => (
           <TextField
@@ -1502,7 +1582,7 @@ export function ReportCreateDrawer({
             helperText={
               !personnelData
                 ? 'Loading tasks...'
-                : formData.clientId
+                : watchedClientId
                   ? `Showing tasks for selected client (${tasks.length} available)`
                   : `Showing all tasks (${tasks.length} available) - select a client to filter further`
             }
@@ -1616,7 +1696,7 @@ export function ReportCreateDrawer({
               : allTasks.length === 0
                 ? 'No tasks available'
                 : tasks.length === 0
-                  ? formData.clientId
+                  ? watchedClientId
                     ? 'No tasks found for this client'
                     : 'No tasks found'
                   : 'No matching tasks found'
@@ -1629,10 +1709,9 @@ export function ReportCreateDrawer({
         clearOnBlur
       />
 
-      <MobileInput
-        label="Location"
-        value={formData.location}
-        onChange={(e) => handleFieldChange('location', e.target.value)}
+      <RHFTextField
+        name="location"
+        label="Location *"
         placeholder="Work site address or location..."
         InputProps={{
           startAdornment: (
@@ -1640,13 +1719,11 @@ export function ReportCreateDrawer({
           ),
         }}
         helperText="Auto-filled from client address when available"
-        required
       />
 
-      <MobileInput
+      <RHFTextField
+        name="weather"
         label="Weather Conditions"
-        value={formData.weather}
-        onChange={(e) => handleFieldChange('weather', e.target.value)}
         placeholder="Sunny, rainy, windy, temperature..."
         InputProps={{
           startAdornment: (
@@ -1674,7 +1751,7 @@ export function ReportCreateDrawer({
           options={materials}
           getOptionLabel={(option) => option?.label || ''}
           value={null}
-          onChange={(event, newValue) => {
+          onChange={(_event, newValue) => {
             if (newValue) {
               handleAddMaterial(newValue.value);
             }
@@ -1766,7 +1843,7 @@ export function ReportCreateDrawer({
                   </Typography>
                 </Box>
 
-                <MobileInput
+                <TextField
                   label="Qty"
                   type="number"
                   value={material.quantity}
@@ -1787,18 +1864,20 @@ export function ReportCreateDrawer({
                       handleMaterialQuantityChange(material.value, 0);
                     }
                   }}
-                  sx={{ width: 100, height: 60 }}
+                  sx={{ width: 100 }}
                   inputProps={{ min: 0, max: 100, step: 1 }}
                   helperText="Max: 100"
                 />
 
-                <MobileButton
-                  variant="outline"
+                <Button
+                  variant="outlined"
                   size="small"
                   onClick={() => handleRemoveMaterial(material.value)}
-                  icon={<Iconify icon="eva:trash-2-fill" width={16} />}
                   color="error"
-                />
+                  sx={{ minWidth: 40 }}
+                >
+                  <Iconify icon="eva:trash-2-fill" width={16} />
+                </Button>
               </Box>
             ))}
           </Box>
@@ -1811,21 +1890,21 @@ export function ReportCreateDrawer({
           Photos & Files
         </Typography>
 
-        <Box sx={{ display: 'flex', gap: 3, mb: 3 }}>
-          <MobileButton
-            variant="outline"
+        <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+          <Button
+            variant="outlined"
             startIcon={<Iconify icon="eva:camera-fill" width={16} />}
             onClick={handleCameraCapture}
-            sx={{ flex: 1, height: 60 }}
+            sx={{ flex: 1, height: 56 }}
           >
             Take Photo
-          </MobileButton>
+          </Button>
 
-          <MobileButton
-            variant="outline"
+          <Button
+            variant="outlined"
             component="label"
             startIcon={<Iconify icon="eva:attach-fill" width={16} />}
-            sx={{ flex: 1, height: 60 }}
+            sx={{ flex: 1, height: 56 }}
           >
             Upload Files
             <input
@@ -1835,7 +1914,7 @@ export function ReportCreateDrawer({
               accept="*/*"
               onChange={(e) => handleFileUpload(e.target.files)}
             />
-          </MobileButton>
+          </Button>
         </Box>
 
         {attachments.length > 0 && (
@@ -1948,19 +2027,21 @@ export function ReportCreateDrawer({
                   </Box>
 
                   {/* Remove Button */}
-                  <MobileButton
-                    variant="outline"
+                  <Button
+                    variant="outlined"
                     size="small"
                     onClick={() => handleRemoveFile(index)}
-                    icon={<Iconify icon="eva:close-fill" width={16} />}
+                    color="error"
                     sx={{
-                      height: 60,
-                      color: 'error.main',
+                      minWidth: 40,
+                      height: 40,
                       '&:hover': {
                         backgroundColor: 'error.lighter',
                       },
                     }}
-                  />
+                  >
+                    <Iconify icon="eva:close-fill" width={16} />
+                  </Button>
                 </Box>
               );
             })}
@@ -1994,17 +2075,18 @@ export function ReportCreateDrawer({
       </Typography>
 
       {/* Report Status */}
-      <MobileSelect
+      <TextField
+        select
         label="Report Status *"
         value={reportStatus}
-        onChange={(value) => setReportStatus(value)}
-        options={[
-          { value: 'draft', label: 'Save as Draft' },
-          { value: 'submitted', label: 'Submit for Review' },
-        ]}
+        onChange={(e) => setReportStatus(e.target.value as 'draft' | 'submitted')}
         required
+        fullWidth
         helperText="Choose whether to save as draft or submit for approval"
-      />
+      >
+        <option value="draft">Save as Draft</option>
+        <option value="submitted">Submit for Review</option>
+      </TextField>
 
       {/* Digital Signatures */}
       <SignatureCollector
@@ -2030,11 +2112,11 @@ export function ReportCreateDrawer({
           Report Summary
         </Typography>
         <Typography variant="body2" sx={{ mb: 1 }}>
-          • Type: {reportTypes.find((t) => t.value === formData.type)?.label}
+          • Type: {reportTypes.find((t) => t.value === watch('type'))?.label}
         </Typography>
         <Typography variant="body2" sx={{ mb: 1 }}>
           • Client:{' '}
-          {clients.find((c) => c.value === formData.clientId)?.client?.name || 'Not selected'}
+          {clients.find((c) => c.value === watch('clientId'))?.client?.name || 'Not selected'}
         </Typography>
         <Typography variant="body2" sx={{ mb: 1 }}>
           • Materials: {selectedMaterials.length} items
@@ -2072,37 +2154,36 @@ export function ReportCreateDrawer({
       }}
     >
       {currentStep > 1 && (
-        <MobileButton
-          variant="outline"
+        <Button
+          variant="outlined"
           onClick={handlePrevious}
           startIcon={<Iconify icon="eva:arrow-left-fill" width={16} />}
-          sx={{ height: 80 }}
+          sx={{ height: 56, minWidth: 120 }}
         >
           Previous
-        </MobileButton>
+        </Button>
       )}
 
       {currentStep < 3 ? (
-        <MobileButton
-          variant="primary"
+        <Button
+          variant="contained"
           onClick={handleNext}
           disabled={!validateStep(currentStep)}
           endIcon={<Iconify icon="eva:arrow-right-fill" width={16} />}
-          sx={{ flex: 1, height: 80 }}
+          sx={{ flex: 1, height: 56 }}
         >
           Next
-        </MobileButton>
+        </Button>
       ) : (
-        <MobileButton
-          variant="primary"
-          onClick={handleSubmit}
-          loading={loading}
-          disabled={!validateStep(1)}
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={isSubmitting || !validateStep(1)}
           startIcon={<Iconify icon="eva:save-fill" width={16} />}
-          sx={{ flex: 1, height: 80 }}
+          sx={{ flex: 1, height: 56 }}
         >
-          {reportStatus === 'draft' ? 'Save Draft' : 'Submit Report'}
-        </MobileButton>
+          {isSubmitting ? 'Submitting...' : reportStatus === 'draft' ? 'Save Draft' : 'Submit Report'}
+        </Button>
       )}
     </Box>
   );
@@ -2123,14 +2204,16 @@ export function ReportCreateDrawer({
         },
       }}
     >
-      {renderHeader()}
-      {renderStepIndicator()}
+      <Form methods={methods} onSubmit={onFormSubmit}>
+        {renderHeader()}
+        {renderStepIndicator()}
 
-      <Scrollbar fillContent sx={{ flex: 1, pb: 3 }}>
-        {renderStepContent()}
-      </Scrollbar>
+        <Scrollbar fillContent sx={{ flex: 1, pb: 3 }}>
+          {renderStepContent()}
+        </Scrollbar>
 
-      {renderActions()}
+        {renderActions()}
+      </Form>
     </Drawer>
   );
 }

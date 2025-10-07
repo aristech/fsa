@@ -44,10 +44,13 @@ import axiosInstance, { endpoints } from 'src/lib/axios';
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
+import { ConfirmDialog } from 'src/components/custom-dialog';
 import { KanbanCheckInOut } from 'src/components/kanban/kanban-check-in-out';
 import { useDateRangePicker, CustomDateRangePicker } from 'src/components/custom-date-range-picker';
 
 import { ReportCreateDrawer } from 'src/sections/field/reports/report-create-drawer';
+
+import { useAuthContext } from 'src/auth/hooks/use-auth-context';
 
 import { SubtaskItem } from '../components/subtask-item';
 import { KanbanDetailsTime } from './kanban-details-time';
@@ -117,9 +120,11 @@ type Props = {
 export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose }: Props) {
   const tabs = useTabs('overview');
   const { t } = useTranslate('common');
+  const { user } = useAuthContext();
 
   const contactsDialog = useBoolean();
   const reportCreateDrawer = useBoolean();
+  const confirmMakePublicDialog = useBoolean();
 
   // Function to map task data to report initial data
   const getReportInitialData = useCallback(
@@ -143,6 +148,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
   const [status, setStatus] = useState(task.columnId || task.status);
   const [taskDescription, setTaskDescription] = useState(task.description || '');
   const [tags, setTags] = useState<string[]>(task.tags || task.labels || []);
+  const [isPrivate, setIsPrivate] = useState((task as any).isPrivate || false);
   const [repeatData, setRepeatData] = useState<RepeatSettings | null>((task as any).repeat || null);
   const [reminderData, setReminderData] = useState<ReminderSettings | null>(
     (task as any).reminder || null
@@ -215,6 +221,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     setStatus(task.columnId || task.status);
     setTaskDescription(task.description || '');
     setTags(task.tags || task.labels || []);
+    setIsPrivate((task as any).isPrivate || false);
 
     // Handle repeat/reminder data - preserve existing local state if available
     const taskRepeat = (task as any).repeat;
@@ -444,6 +451,31 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     },
     [task, onUpdateTask, t]
   );
+
+  const handleConfirmMakePublic = useCallback(async () => {
+    try {
+      const taskData: any = {
+        id: task.id,
+        isPrivate: false,
+      };
+
+      await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, { taskData });
+
+      setIsPrivate(false);
+
+      // Update parent task
+      onUpdateTask({
+        ...task,
+        isPrivate: false,
+      } as any);
+
+      toast.success(t('taskMadePublic', { defaultValue: 'Task is now public' }));
+      confirmMakePublicDialog.onFalse();
+    } catch (error) {
+      console.error('Failed to make task public:', error);
+      toast.error(t('failedToUpdatePrivacy', { defaultValue: 'Failed to update privacy status' }));
+    }
+  }, [task, onUpdateTask, t, confirmMakePublicDialog]);
   // Persist date changes (start/end) with debounce to prevent conflicts during selection
   useEffect(() => {
     if (!rangePicker.startDate || !rangePicker.endDate) return undefined;
@@ -796,9 +828,11 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       }}
       onCloseDetails={onClose}
       onCreateReport={reportCreateDrawer.onTrue}
+      isPrivate={isPrivate}
+      isCreator={user?.id === task.reporter?.id}
+      onTogglePrivate={confirmMakePublicDialog.onTrue}
     />
   );
-
   const renderTabs = () => (
     <Tabs
       value={tabs.value}
@@ -880,15 +914,17 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         </BlockLabel>
 
         <Box sx={{ gap: 1, display: 'flex', flexWrap: 'wrap' }}>
-          {task.assignee && Array.isArray(task.assignee) && task.assignee.length > 0 ? (
-            task.assignee.map((user) => (
+          {task.assignee &&
+            Array.isArray(task.assignee) &&
+            task.assignee.length > 0 &&
+            task.assignee.map((assignee) => (
               <Tooltip
-                key={user.id}
-                title={`${user.name}${(user as any).email ? ` • ${(user as any).email}` : ''}`}
+                key={assignee.id}
+                title={`${assignee.name}${(assignee as any).email ? ` • ${(assignee as any).email}` : ''}`}
               >
                 <Avatar>
-                  {user.initials ||
-                    user.name
+                  {assignee.initials ||
+                    assignee.name
                       ?.split(' ')
                       .map((n) => n.charAt(0))
                       .join('')
@@ -896,12 +932,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
                     'A'}
                 </Avatar>
               </Tooltip>
-            ))
-          ) : (
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              {t('noAssignees', { defaultValue: 'No assignees' })}
-            </Typography>
-          )}
+            ))}
 
           <Tooltip title={t('addAssignee', { defaultValue: 'Add assignee' })}>
             <IconButton
@@ -1371,13 +1402,40 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       <ReportCreateDrawer
         open={reportCreateDrawer.value}
         onClose={reportCreateDrawer.onFalse}
-        onSuccess={(report) => {
+        onSuccess={() => {
           toast.success(
             t('reportCreatedSuccessfully', { defaultValue: 'Report created successfully' })
           );
           reportCreateDrawer.onFalse();
         }}
         initialData={getReportInitialData}
+      />
+
+      {/* Confirm Make Public Dialog */}
+      <ConfirmDialog
+        open={confirmMakePublicDialog.value}
+        onClose={confirmMakePublicDialog.onFalse}
+        title={t('makeTaskPublic', { defaultValue: 'Make Task Public?' })}
+        content={
+          <Box>
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              {t('makeTaskPublicWarning', {
+                defaultValue:
+                  'Are you sure you want to make this task public? This action is irreversible.',
+              })}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {t('makeTaskPublicInfo', {
+                defaultValue: 'Once public, you will not be able to make this task private again.',
+              })}
+            </Typography>
+          </Box>
+        }
+        action={
+          <Button variant="contained" color="error" onClick={handleConfirmMakePublic}>
+            {t('makePublic', { defaultValue: 'Make Public' })}
+          </Button>
+        }
       />
     </Drawer>
   );

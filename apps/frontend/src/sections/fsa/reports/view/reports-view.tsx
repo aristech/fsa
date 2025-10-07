@@ -4,17 +4,22 @@ import type { IReport, ReportSearchParams } from 'src/lib/models/Report';
 
 import { useBoolean } from 'minimal-shared/hooks';
 import { useState, useEffect, useCallback } from 'react';
+import { ReportCreateDrawer } from '@/sections/field/reports/report-create-drawer';
 
 import {
   Box,
   Card,
   Stack,
   Button,
+  Switch,
   Tooltip,
   Container,
   Typography,
   IconButton,
+  FormControlLabel,
 } from '@mui/material';
+
+import { formatDate, formatDateTime } from 'src/utils/format-date';
 
 import { useTranslate } from 'src/locales/use-locales';
 import { useClient } from 'src/contexts/client-context';
@@ -25,8 +30,6 @@ import { Iconify } from 'src/components/iconify';
 import { EmptyContent } from 'src/components/empty-content';
 import { LoadingScreen } from 'src/components/loading-screen';
 import { ConfirmationDialog } from 'src/components/confirmation-dialog';
-
-import { ReportCreateDrawer } from 'src/sections/field/reports/report-create-drawer';
 
 import { ReportsTable } from '../components/reports-table';
 import { ReportsFilters } from '../components/reports-filters';
@@ -39,6 +42,7 @@ export function ReportsView() {
   const { selectedClient } = useClient();
   const [reports, setReports] = useState<IReport[]>([]);
   const [loading, setLoading] = useState(true);
+  const [myReportsOnly, setMyReportsOnly] = useState(false);
   const [filters, setFilters] = useState<ReportSearchParams>({
     page: 1,
     limit: 20,
@@ -60,12 +64,14 @@ export function ReportsView() {
   const loadReports = useCallback(async () => {
     try {
       setLoading(true);
-      // Add client filter to the params if a client is selected
-      const filtersWithClient = selectedClient
-        ? { ...filters, clientId: selectedClient._id }
-        : filters;
+      // Add client filter and my reports filter to the params
+      const filtersWithClientAndUser = {
+        ...filters,
+        ...(selectedClient && { clientId: selectedClient._id }),
+        ...(myReportsOnly && { assignedToMe: true }),
+      };
 
-      const reportsResponse = await ReportService.getAllReports(filtersWithClient);
+      const reportsResponse = await ReportService.getAllReports(filtersWithClientAndUser);
 
       if (reportsResponse.success) {
         setReports(reportsResponse.data);
@@ -76,7 +82,7 @@ export function ReportsView() {
     } finally {
       setLoading(false);
     }
-  }, [filters, selectedClient, t]);
+  }, [filters, selectedClient, myReportsOnly, t]);
 
   // Load data on mount and when filters change
   useEffect(() => {
@@ -172,7 +178,7 @@ export function ReportsView() {
         report.status,
         report.priority,
         report.location || '',
-        new Date(report.reportDate).toLocaleDateString(),
+        formatDate(report.reportDate),
         report.createdBy?.name ||
           report.createdByData?.name ||
           report.createdBy?.email ||
@@ -184,8 +190,8 @@ export function ReportsView() {
         report.totalHours?.toFixed(2) || '0',
         report.materialsUsed.length.toString(),
         report.timeEntries.length.toString(),
-        new Date(report.createdAt).toLocaleString(),
-        new Date(report.updatedAt).toLocaleString(),
+        formatDateTime(report.createdAt),
+        formatDateTime(report.updatedAt),
       ]);
 
       return [headers, ...rows];
@@ -197,17 +203,22 @@ export function ReportsView() {
   const handleExportCSV = useCallback(async () => {
     try {
       // Get all reports for export (without pagination)
-      const exportFilters = selectedClient
-        ? { ...filters, limit: 1000, clientId: selectedClient._id }
-        : { ...filters, limit: 1000 };
+      const exportFilters = {
+        ...filters,
+        limit: 1000,
+        ...(selectedClient && { clientId: selectedClient._id }),
+        ...(myReportsOnly && { assignedToMe: true }),
+      };
 
       const response = await ReportService.getAllReports(exportFilters);
 
       if (response.success) {
         const csvData = convertReportsToCSV(response.data);
-        const filename = selectedClient
-          ? `reports-export-${selectedClient.name}.csv`
-          : 'reports-export.csv';
+        const filename = myReportsOnly
+          ? 'my-reports-export.csv'
+          : selectedClient
+            ? `reports-export-${selectedClient.name}.csv`
+            : 'reports-export.csv';
         downloadCSV(csvData, filename);
         toast.success(t('reports.reportExportSuccess'));
       }
@@ -215,7 +226,7 @@ export function ReportsView() {
       console.error('Error exporting reports:', error);
       toast.error(t('reports.failedToExport'));
     }
-  }, [filters, selectedClient, convertReportsToCSV, t]);
+  }, [filters, selectedClient, myReportsOnly, convertReportsToCSV, t]);
 
   // Download CSV file
   const downloadCSV = (data: string[][], filename: string) => {
@@ -250,7 +261,21 @@ export function ReportsView() {
             </Typography>
           </Box>
 
-          <Stack direction="row" spacing={2}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <FormControlLabel
+              label={t('reports.myReports', { defaultValue: 'My reports' })}
+              labelPlacement="start"
+              control={
+                <Switch
+                  checked={myReportsOnly}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setMyReportsOnly(event.target.checked);
+                  }}
+                  slotProps={{ input: { id: 'my-reports-switch' } }}
+                />
+              }
+            />
+
             <Tooltip title={t('reports.exportToCSV')}>
               <IconButton onClick={handleExportCSV} color="primary">
                 <Iconify icon="eva:download-fill" />

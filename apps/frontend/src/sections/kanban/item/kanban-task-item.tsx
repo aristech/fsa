@@ -146,6 +146,24 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
     >
       <ItemContent>
         <ItemStatus status={task.priority} completed={!!task.completeStatus} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <TimeTrackingIndicator
+            taskId={task.id}
+            variant="compact"
+            showPersonnel
+            showDuration={false}
+          />
+          {(task as any).isPrivate && (
+            <Iconify
+              icon="solar:lock-bold"
+              width={16}
+              sx={{
+                color: 'error.main',
+                opacity: 0.8,
+              }}
+            />
+          )}
+        </Box>
         <ItemName name={task.name} />
         {/* Client / Work order indicators */}
         {(task.clientName ||
@@ -153,9 +171,9 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
           (task as any).workOrderTitle ||
           (task as any).workOrderNumber ||
           (task as any).workOrderId) && (
-          <Box sx={{ mt: 0.5, mb: 0.5, display: 'flex', gap: 0.5, alignItems: 'flex-start' }}>
+          <Box sx={{ mt: 0.5, mb: 0.5, display: 'flex', gap: 0.5, alignItems: 'center' }}>
             {(task.clientName || task.clientId) && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'row', gap: 0.5 }}>
                 <Chip
                   size="small"
                   color="default"
@@ -187,7 +205,7 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
                       `WO: ${(task as any).workOrderId?.slice(-6) || 'Unknown'}`
                     }
                     sx={{
-                      maxWidth: 150,
+                      maxWidth: 140,
                       fontSize: '0.7rem',
                       height: 20,
                       '& .MuiChip-label': {
@@ -258,34 +276,13 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
             />
           )}
         </Box>
-        <Chip
-          size="small"
-          variant="outlined"
-          color="default"
-          icon={<Iconify icon="solar:folder-with-files-bold" width={14} />}
-          label={`${subtaskCount}`}
-          sx={{ height: 22, '& .MuiChip-label': { px: 0.75, fontSize: '0.72rem' } }}
+
+        <ItemInfo
+          subtaskCount={subtaskCount}
+          comments={task.comments}
+          assignee={task.assignee}
+          attachments={task.attachments}
         />
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-          }}
-        >
-          <ItemInfo
-            comments={task.comments}
-            assignee={task.assignee}
-            attachments={task.attachments}
-          />
-          <TimeTrackingIndicator
-            taskId={task.id}
-            variant="compact"
-            showPersonnel
-            showDuration={false}
-          />
-        </Box>
       </ItemContent>
     </ItemRoot>
   );

@@ -324,6 +324,7 @@ export interface ReportFilters {
   dateTo?: Date;
   search?: string;
   tags?: string[];
+  assignedToMe?: boolean;
 }
 
 export interface ReportSearchParams extends ReportFilters {

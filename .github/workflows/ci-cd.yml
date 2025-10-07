@@ -200,29 +200,37 @@ jobs:
 
           echo "📁 Setting up persistent uploads storage..."
 
-          # ONE-TIME MIGRATION: Move uploads from old deployment to persistent storage if needed
+          # ONE-TIME MIGRATION: Move uploads from old deployment locations to persistent storage if needed
+          # Check both old locations (apps/backend/uploads and root uploads)
+          if [ -d "/var/www/progressnet.io-app/uploads" ] && [ ! -L "/var/www/progressnet.io-app/uploads" ]; then
+            echo "🔄 Found old uploads directory at root (not a symlink) - migrating to persistent storage..."
+            sudo cp -rn /var/www/progressnet.io-app/uploads/* "$PERSISTENT_STORAGE/" 2>/dev/null || true
+            echo "✅ Old uploads from root migrated to persistent storage"
+          fi
+
           if [ -d "/var/www/progressnet.io-app/apps/backend/uploads" ] && [ ! -L "/var/www/progressnet.io-app/apps/backend/uploads" ]; then
-            echo "🔄 Found old uploads directory (not a symlink) - migrating to persistent storage..."
+            echo "🔄 Found old uploads directory at apps/backend (not a symlink) - migrating to persistent storage..."
             sudo cp -rn /var/www/progressnet.io-app/apps/backend/uploads/* "$PERSISTENT_STORAGE/" 2>/dev/null || true
-            echo "✅ Old uploads migrated to persistent storage"
+            echo "✅ Old uploads from apps/backend migrated to persistent storage"
           fi
 
           # Count files in persistent storage for verification
           UPLOAD_COUNT=$(sudo find "$PERSISTENT_STORAGE" -type f 2>/dev/null | wc -l)
           echo "📊 Persistent storage contains $UPLOAD_COUNT files"
 
-          # Remove any uploads directory that was copied from git repo
+          # Remove any uploads directories that were copied from git repo
           rm -rf /var/www/progressnet.io-app-new/apps/backend/uploads
+          rm -rf /var/www/progressnet.io-app-new/uploads
 
-          # Create symlink in new deployment to persistent storage
-          mkdir -p /var/www/progressnet.io-app-new/apps/backend
-          ln -sf "$PERSISTENT_STORAGE" /var/www/progressnet.io-app-new/apps/backend/uploads
-          echo "✅ Uploads symlinked: /var/www/progressnet.io-app-new/apps/backend/uploads -> $PERSISTENT_STORAGE"
+          # Create symlink at the correct location where the application writes
+          # The backend uses process.cwd() + "uploads", and PM2 cwd is /var/www/progressnet.io-app
+          ln -sf "$PERSISTENT_STORAGE" /var/www/progressnet.io-app-new/uploads
+          echo "✅ Uploads symlinked: /var/www/progressnet.io-app-new/uploads -> $PERSISTENT_STORAGE"
 
           # Verify symlink
-          if [ -L "/var/www/progressnet.io-app-new/apps/backend/uploads" ]; then
+          if [ -L "/var/www/progressnet.io-app-new/uploads" ]; then
             echo "✅ Symlink verified successfully"
-            ls -lah /var/www/progressnet.io-app-new/apps/backend/uploads
+            ls -lah /var/www/progressnet.io-app-new/uploads
           else
             echo "❌ ERROR: Symlink creation failed!"
             exit 1

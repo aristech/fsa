@@ -38,7 +38,7 @@ export default function FieldDashboard() {
     const load = async () => {
       try {
         const [kanbanRes, materialsRes] = await Promise.all([
-          axios.get(endpoints.kanban),
+          axios.get(`${endpoints.kanban}?assignedToMe=true`), // Filter to user's assigned tasks
           axios.get(endpoints.fsa.materials.list),
         ]);
         if (!active) return;

@@ -29,6 +29,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
         dateFrom,
         dateTo,
         search,
+        assignedToMe,
         sortBy = "createdAt",
         sortOrder = "desc",
       } = request.query as any;
@@ -52,6 +53,14 @@ export async function reportsRoutes(fastify: FastifyInstance) {
       if (clientId) baseFilter.clientId = clientId;
       if (workOrderId) baseFilter.workOrderId = workOrderId;
       if (createdBy) baseFilter.createdBy = createdBy;
+
+      // Filter by assignedToMe - show reports where user is either assignedTo or createdBy
+      if (assignedToMe === "true") {
+        baseFilter.$or = [
+          { assignedTo: user.id },
+          { createdBy: user.id },
+        ];
+      }
 
       if (dateFrom || dateTo) {
         baseFilter.reportDate = {};

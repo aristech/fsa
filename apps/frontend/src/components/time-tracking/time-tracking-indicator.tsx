@@ -64,7 +64,9 @@ export const TimeTrackingIndicator = memo(function TimeTrackingIndicator({
       >
         <Box
           sx={{
-            position: 'relative',
+            position: 'absolute',
+            top: 8,
+            right: 52,
             display: 'inline-flex',
             alignItems: 'center',
             gap: 0.5,

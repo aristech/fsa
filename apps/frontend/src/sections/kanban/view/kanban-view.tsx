@@ -40,7 +40,7 @@ const inputGlobalStyles = () => (
       body: {
         '--kanban-item-gap': '16px',
         '--kanban-item-radius': '12px',
-        '--kanban-column-gap': '24px',
+        '--kanban-column-gap': '12px',
         '--kanban-column-width': '336px',
         '--kanban-column-radius': '16px',
         '--kanban-column-pt': '20px',
@@ -58,16 +58,18 @@ type KanbanViewProps = {
 };
 
 export function KanbanView({ taskId }: KanbanViewProps = {}) {
-  const { board, boardLoading, boardEmpty } = useGetBoard();
-  const { boardRef } = useBoardDnd(board);
   const { t } = useTranslate('common');
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const [columnFixed, setColumnFixed] = useState(false);
   const [tableView, setTableView] = useState(false);
+  const [myTasksOnly, setMyTasksOnly] = useState(false);
   const [selectedTask, setSelectedTask] = useState<IKanbanTask | null>(null);
   const taskDetailsDialog = useBoolean();
+
+  const { board, boardLoading, boardEmpty } = useGetBoard(myTasksOnly);
+  const { boardRef } = useBoardDnd(board);
 
   // Find task by ID from all tasks in the board
   const findTaskById = useCallback(
@@ -152,7 +154,7 @@ export function KanbanView({ taskId }: KanbanViewProps = {}) {
 
   const renderList = () => {
     if (tableView) {
-      return <KanbanTableView />;
+      return <KanbanTableView myTasksOnly={myTasksOnly} />;
     }
 
     return (
@@ -180,6 +182,20 @@ export function KanbanView({ taskId }: KanbanViewProps = {}) {
       <Typography variant="h4">{t('kanban', { defaultValue: 'Kanban' })}</Typography>
 
       <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+        <FormControlLabel
+          label={t('myTasks', { defaultValue: 'My tasks' })}
+          labelPlacement="start"
+          control={
+            <Switch
+              checked={myTasksOnly}
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                setMyTasksOnly(event.target.checked);
+              }}
+              slotProps={{ input: { id: 'my-tasks-switch' } }}
+            />
+          }
+        />
+
         <FormControlLabel
           label={t('tableView', { defaultValue: 'Table view' })}
           labelPlacement="start"

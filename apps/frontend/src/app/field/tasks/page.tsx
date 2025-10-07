@@ -17,6 +17,7 @@ import {
   InputAdornment,
 } from '@mui/material';
 
+import { formatDate } from 'src/utils/format-date';
 import { searchTasks } from 'src/utils/search-utils';
 
 import { useTranslate } from 'src/locales/use-locales';
@@ -45,8 +46,8 @@ export default function FieldTasksPage() {
   const theme = useTheme();
   const { t } = useTranslate('common');
 
-  // Get kanban board data with real tasks
-  const { board, refreshBoard } = useGetFieldBoard();
+  // Get kanban board data with real tasks (filtered to user's assigned tasks in field environment)
+  const { board, refreshBoard } = useGetFieldBoard(true);
 
   // Generate status options from kanban columns
   const taskStatuses = useMemo(() => {
@@ -220,15 +221,6 @@ export default function FieldTasksPage() {
       default:
         return 'eva:info-fill';
     }
-  };
-
-  const formatDate = (date: Date | string) => {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
   };
 
   const getProgressPercentage = (task: IKanbanTask) => {

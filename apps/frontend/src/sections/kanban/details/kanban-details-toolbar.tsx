@@ -41,6 +41,9 @@ type Props = BoxProps & {
   completeStatus?: boolean;
   onToggleComplete?: (newValue: boolean) => void;
   onCreateReport?: () => void;
+  isPrivate?: boolean;
+  isCreator?: boolean;
+  onTogglePrivate?: () => void;
 };
 
 export function KanbanDetailsToolbar({
@@ -56,6 +59,9 @@ export function KanbanDetailsToolbar({
   completeStatus,
   onToggleComplete,
   onCreateReport,
+  isPrivate = false,
+  isCreator = false,
+  onTogglePrivate,
   ...other
 }: Props) {
   const smUp = useMediaQuery((theme) => theme.breakpoints.up('sm'));
@@ -214,6 +220,23 @@ export function KanbanDetailsToolbar({
             </IconButton>
           </Tooltip>
 
+          {/* Lock button - only show when task is private and user is creator */}
+          {isPrivate && (
+            <Tooltip title={t('makePublic', { defaultValue: 'Make task public' })}>
+              <IconButton onClick={onTogglePrivate} color="error">
+                <Iconify
+                  sx={{
+                    minWidth: 40,
+                    height: 40,
+                    fontWeight: 600,
+                    borderRadius: '50%',
+                  }}
+                  icon="solar:lock-bold"
+                />
+              </IconButton>
+            </Tooltip>
+          )}
+
           <Tooltip title="Create report from task">
             <IconButton onClick={onCreateReport} color="primary">
               <Iconify
@@ -256,8 +279,20 @@ export function KanbanDetailsToolbar({
             </IconButton>
           </Tooltip>
           <Tooltip title="Delete task">
-            <IconButton onClick={confirmDialog.onTrue}>
-              <Iconify icon="solar:trash-bin-trash-bold" />
+            <IconButton
+              sx={{
+                mt: 1,
+                minWidth: 30,
+                height: 40,
+              }}
+              onClick={confirmDialog.onTrue}
+            >
+              <Iconify
+                sx={{
+                  minWidth: 25,
+                }}
+                icon="solar:trash-bin-trash-bold"
+              />
             </IconButton>
           </Tooltip>
         </Box>

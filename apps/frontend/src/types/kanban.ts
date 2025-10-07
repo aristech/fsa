@@ -41,6 +41,7 @@ export type IKanbanTask = {
   startDate?: IDateValue;
   endDate?: IDateValue;
   completeStatus?: boolean;
+  subtaskCount?: number;
   reporter: {
     id: string;
     name: string;
@@ -51,6 +52,8 @@ export type IKanbanTask = {
   clientId?: string;
   clientName?: string;
   clientCompany?: string;
+  // Private task flag
+  isPrivate?: boolean;
   // Timestamps
   createdAt?: string;
   updatedAt?: string;

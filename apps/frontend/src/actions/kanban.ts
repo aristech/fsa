@@ -38,12 +38,20 @@ type BoardData = {
   };
 };
 
-export function useGetBoard() {
+export function useGetBoard(myTasksOnly = false) {
   const { selectedClient } = useClient();
 
-  // Build URL with client filter
-  const url = selectedClient
-    ? `${KANBAN_ENDPOINT}?clientId=${selectedClient._id}`
+  // Build URL with filters
+  const params = new URLSearchParams();
+  if (selectedClient) {
+    params.append('clientId', selectedClient._id);
+  }
+  if (myTasksOnly) {
+    params.append('assignedToMe', 'true');
+  }
+
+  const url = params.toString()
+    ? `${KANBAN_ENDPOINT}?${params.toString()}`
     : KANBAN_ENDPOINT;
 
   const { data, isLoading, error, isValidating } = useSWR<BoardData>(url, fetcher, {

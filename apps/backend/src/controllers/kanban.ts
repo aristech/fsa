@@ -30,7 +30,10 @@ export async function getKanbanData(
   try {
     const req = request as AuthenticatedRequest;
     const { tenant, user } = req.context!;
-    const { clientId } = request.query as { clientId?: string };
+    const { clientId, assignedToMe } = request.query as {
+      clientId?: string;
+      assignedToMe?: string;
+    };
 
     // Get user permissions to filter data appropriately
     const userPermissions = await PermissionService.getUserPermissions(
@@ -60,10 +63,18 @@ export async function getKanbanData(
     );
 
     // Get projects and tasks filtered by permissions
-    const [projects, tasks] = await Promise.all([
+    const [projects, allTasks] = await Promise.all([
       Project.find(projectFilter).sort({ createdAt: -1 }),
       Task.find(taskFilter).sort({ order: 1, createdAt: -1 }),
     ]);
+
+    // Filter private tasks - only show if user is the creator
+    const tasks = allTasks.filter((task: any) => {
+      if (task.isPrivate === true) {
+        return task.createdBy?.toString() === user.id.toString();
+      }
+      return true;
+    });
 
     // Build lookup maps for reporter (users) and assignees (personnel)
     const userIds = new Set<string>();
@@ -178,6 +189,40 @@ export async function getKanbanData(
         // Otherwise, check the task's direct client association
         return task.clientId?.toString() === clientId;
       });
+    }
+
+    // Filter by assignedToMe if specified
+    if (assignedToMe === "true") {
+      // Find the user's personnel record
+      const userPersonnel = await Personnel.findOne({
+        userId: user.id,
+        tenantId: tenant._id,
+      }).lean();
+
+      if (userPersonnel && !Array.isArray(userPersonnel)) {
+        const userPersonnelId = (userPersonnel as any)._id.toString();
+
+        // Filter tasks to only show those where the user is assigned or is the reporter
+        filteredTasks = filteredTasks.filter((task: any) => {
+          const assignees = (task.assignees || []) as string[];
+          const isAssignee = assignees.some(
+            (assigneeId) => assigneeId.toString() === userPersonnelId,
+          );
+          const isReporter = task.createdBy?.toString() === user.id.toString();
+          return isAssignee || isReporter;
+        });
+
+        // Filter projects to only show those where the user is assigned
+        filteredProjects = filteredProjects.filter((project: any) => {
+          const assignees = (project.assignees || []) as string[];
+          const isAssignee = assignees.some(
+            (assigneeId) => assigneeId.toString() === userPersonnelId,
+          );
+          const isReporter =
+            project.createdBy?.toString() === user.id.toString();
+          return isAssignee || isReporter;
+        });
+      }
     }
 
     // Load dynamic statuses for tenant (fallback to defaults)
@@ -418,6 +463,7 @@ async function handleCreateTask(
     estimatedHours,
     repeat,
     reminder,
+    isPrivate,
   } = taskData;
 
   // If clientId is provided, validate it belongs to the tenant
@@ -552,6 +598,8 @@ async function handleCreateTask(
     ...(repeat && { repeat }),
     // Add reminder information if provided
     ...(reminder && { reminder }),
+    // Add isPrivate flag if provided
+    ...(isPrivate !== undefined && { isPrivate }),
   });
 
   await newTask.save();
@@ -839,6 +887,7 @@ async function handleUpdateTask(
     workOrderTitle,
     repeat,
     reminder,
+    isPrivate,
   } = taskData;
 
   // Track what fields are being changed for notifications
@@ -1003,6 +1052,12 @@ async function handleUpdateTask(
   if (reminder !== undefined) {
     updateData.reminder = reminder;
     changes.push("reminder");
+  }
+
+  // Handle isPrivate flag
+  if (isPrivate !== undefined && isPrivate !== (existingTask as any).isPrivate) {
+    updateData.isPrivate = isPrivate;
+    changes.push("isPrivate");
   }
 
   const updatedTask = await Task.findOneAndUpdate(

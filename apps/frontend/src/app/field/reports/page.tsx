@@ -5,8 +5,11 @@ import type { IReport, ReportSearchParams } from 'src/lib/models/Report';
 import dayjs from 'dayjs';
 import useSWR, { mutate } from 'swr';
 import { useMemo, useState, useCallback } from 'react';
+import { ReportCreateDrawer } from '@/sections/field/reports/report-create-drawer';
 
 import { Box, Fab, Chip, alpha, useTheme, Typography, InputAdornment } from '@mui/material';
+
+import { formatDate } from 'src/utils/format-date';
 
 import { endpoints } from 'src/lib/axios';
 import { ReportService } from 'src/lib/services/report-service';
@@ -21,8 +24,7 @@ import {
   MobileDatePicker,
 } from 'src/components/mobile';
 
-import { ReportCreateDrawer } from '../../../sections/field/reports/report-create-drawer';
-import { ReportDetailsDrawer } from '../../../sections/field/reports/report-details-drawer';
+import { ReportDetailsDrawer } from 'src/sections/fsa/reports/components/report-details-drawer';
 
 // ----------------------------------------------------------------------
 
@@ -57,7 +59,7 @@ export default function FieldReportsPage() {
   const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Filter states
+  // Filter states (default to showing only user's assigned reports in field environment)
   const [filters, setFilters] = useState<ReportSearchParams>({
     page: 1,
     limit: 20,
@@ -68,6 +70,7 @@ export default function FieldReportsPage() {
     dateTo: undefined,
     sortBy: 'createdAt',
     sortOrder: 'desc',
+    assignedToMe: true, // Field technicians should only see their assigned reports
   });
 
   // Data fetching
@@ -106,6 +109,7 @@ export default function FieldReportsPage() {
       dateTo: undefined,
       sortBy: 'createdAt',
       sortOrder: 'desc',
+      assignedToMe: true, // Keep assignedToMe enabled in field environment
     });
   }, []);
 
@@ -165,13 +169,6 @@ export default function FieldReportsPage() {
     const typeConfig = reportTypes.find((t) => t.value === type);
     return typeConfig?.icon || 'eva:file-text-fill';
   };
-
-  const formatDate = (date: string | Date) =>
-    new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
 
   const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
 

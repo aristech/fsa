@@ -47,6 +47,7 @@ export interface IKanbanTask {
     lastSent?: string;
     nextReminder?: string;
   };
+  isPrivate?: boolean;
 }
 
 export function transformProjectToKanbanTask(
@@ -206,5 +207,6 @@ export function transformTaskToKanbanTask(
     updatedAt: task.updatedAt?.toISOString(),
     ...((task as any).repeat && { repeat: (task as any).repeat }),
     ...((task as any).reminder && { reminder: (task as any).reminder }),
+    ...((task as any).isPrivate !== undefined && { isPrivate: (task as any).isPrivate }),
   };
 }

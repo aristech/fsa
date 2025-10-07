@@ -24,9 +24,9 @@ type BoardData = {
   };
 };
 
-export function useGetFieldBoard() {
-  // Use the kanban endpoint without client filtering for field environment
-  const url = KANBAN_ENDPOINT;
+export function useGetFieldBoard(myTasksOnly = false) {
+  // Use the kanban endpoint with optional "my tasks" filtering for field environment
+  const url = myTasksOnly ? `${KANBAN_ENDPOINT}?assignedToMe=true` : KANBAN_ENDPOINT;
 
   const { data, isLoading, error, isValidating, mutate } = useSWR<BoardData>(url, fetcher, {
     ...swrOptions,

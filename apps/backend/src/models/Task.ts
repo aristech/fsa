@@ -51,6 +51,8 @@ export interface ITask extends Document {
   };
   // Reference to original recurring task (for instances created from recurring tasks)
   originalRecurringTaskId?: string;
+  // Private task flag - only creator can see it
+  isPrivate?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -222,6 +224,12 @@ const TaskSchema = new Schema<ITask>(
       type: String,
       ref: 'Task',
     },
+    // Private task flag - only creator can see it
+    isPrivate: {
+      type: Boolean,
+      default: false,
+      index: true, // Index for efficient filtering of private tasks
+    },
   },
   {
     timestamps: true,
@@ -236,6 +244,7 @@ TaskSchema.index({ tenantId: 1, columnId: 1 }); // Primary index for column-base
 TaskSchema.index({ tenantId: 1, status: 1 }); // Keep for migration compatibility
 TaskSchema.index({ tenantId: 1, priority: 1 });
 TaskSchema.index({ tenantId: 1, clientId: 1 });
+TaskSchema.index({ tenantId: 1, isPrivate: 1, createdBy: 1 }); // For private task filtering
 
 export const Task =
   mongoose.models.Task || mongoose.model<ITask>("Task", TaskSchema);

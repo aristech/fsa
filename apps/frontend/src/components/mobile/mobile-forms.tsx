@@ -245,42 +245,40 @@ export function MobileDatePicker({
   helperText?: string;
 }) {
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <DatePicker
-        label={label}
-        value={value}
-        onChange={onChange}
-        minDate={minDate}
-        maxDate={maxDate}
-        disabled={disabled}
-        slotProps={{
-          textField: {
-            fullWidth: true,
-            required,
-            error,
-            helperText,
-            InputProps: {
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton edge="end" disabled={disabled}>
-                    <Iconify icon="eva:calendar-fill" width={20} />
-                  </IconButton>
-                </InputAdornment>
-              ),
-            },
-            sx: {
-              '& .MuiInputBase-input': {
-                fontSize: '16px', // Prevent zoom on iOS
-                padding: '16px 14px',
-              },
+    <DatePicker
+      label={label}
+      value={value}
+      onChange={onChange}
+      minDate={minDate}
+      maxDate={maxDate}
+      disabled={disabled}
+      slotProps={{
+        textField: {
+          fullWidth: true,
+          required,
+          error,
+          helperText,
+          InputProps: {
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton edge="end" disabled={disabled}>
+                  <Iconify icon="eva:calendar-fill" width={20} />
+                </IconButton>
+              </InputAdornment>
+            ),
+          },
+          sx: {
+            '& .MuiInputBase-input': {
+              fontSize: '16px', // Prevent zoom on iOS
+              padding: '16px 14px',
             },
           },
-          actionBar: {
-            actions: ['clear', 'today', 'cancel', 'accept'],
-          },
-        }}
-      />
-    </LocalizationProvider>
+        },
+        actionBar: {
+          actions: ['clear', 'today', 'cancel', 'accept'],
+        },
+      }}
+    />
   );
 }
 

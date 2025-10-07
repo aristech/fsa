@@ -6,6 +6,7 @@ import type { IconifyName, IconifyProps } from 'src/components/iconify';
 import { m } from 'framer-motion';
 
 import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
 import Avatar from '@mui/material/Avatar';
 import { styled } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
@@ -74,7 +75,7 @@ export const ItemRoot = styled(m.li)(({ theme }) => {
 
 export const ItemContent = styled('div')(({ theme }) => ({
   position: 'relative',
-  padding: theme.spacing(2.5, 2),
+  padding: theme.spacing(0.5, 1),
 }));
 
 // ----------------------------------------------------------------------
@@ -178,9 +179,17 @@ export function ItemStatus({ sx, status, completed, ...other }: ItemStatusProps)
 
 // ----------------------------------------------------------------------
 
-export type ItemInfoProps = BoxProps & Pick<IKanbanTask, 'assignee' | 'comments' | 'attachments'>;
+export type ItemInfoProps = BoxProps &
+  Pick<IKanbanTask, 'assignee' | 'comments' | 'attachments' | 'subtaskCount'>;
 
-export function ItemInfo({ sx, assignee, comments, attachments, ...other }: ItemInfoProps) {
+export function ItemInfo({
+  sx,
+  assignee,
+  comments,
+  attachments,
+  subtaskCount,
+  ...other
+}: ItemInfoProps) {
   const hasComments = !!comments?.length;
   const hasAssignee = !!assignee?.length;
   const hasAttachments = !!attachments?.length;
@@ -206,7 +215,8 @@ export function ItemInfo({ sx, assignee, comments, attachments, ...other }: Item
     <Box
       sx={[
         {
-          mt: 2,
+          gap: 1,
+          mt: 1,
           display: 'flex',
           alignItems: 'center',
           pointerEvents: 'none',
@@ -218,6 +228,14 @@ export function ItemInfo({ sx, assignee, comments, attachments, ...other }: Item
       {(hasComments || hasAttachments) && (
         <Box sx={{ gap: 1, display: 'flex', alignItems: 'center' }}>
           {hasComments && renderInfo('solar:chat-round-dots-bold', comments.length)}
+          <Chip
+            size="small"
+            variant="outlined"
+            color="default"
+            icon={<Iconify icon="solar:folder-with-files-bold" width={14} />}
+            label={`${subtaskCount}`}
+            sx={{ height: 22, '& .MuiChip-label': { px: 0.75, fontSize: '0.72rem' } }}
+          />
           {hasAttachments && renderInfo('eva:attach-2-fill', attachments.length)}
         </Box>
       )}

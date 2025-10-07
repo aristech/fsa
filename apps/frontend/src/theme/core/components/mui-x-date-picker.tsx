@@ -102,6 +102,8 @@ const defaultProps = {
       textField: { fullWidth: true } satisfies Partial<TextFieldProps>,
     },
   },
+  dateFormat: 'DD/MM/YYYY',
+  dateTimeFormat: 'DD/MM/YYYY HH:mm',
 };
 
 /* **********************************************************************
@@ -254,11 +256,11 @@ const toolbarComponents: any = {
  * - https://mui.com/x/react-date-pickers/date-picker/
  */
 const datePickerComponents: any = {
-  MuiDateField: { defaultProps: { ...defaultProps.baseField } },
-  MuiDatePicker: { defaultProps: { slots: { ...defaultProps.dateSlots } } },
-  MuiDesktopDatePicker: { defaultProps: { slots: { ...defaultProps.dateSlots } } },
-  MuiMobileDatePicker: { defaultProps: { slots: { ...defaultProps.dateSlots } } },
-  MuiStaticDatePicker: { defaultProps: { slots: { ...defaultProps.dateSlots } } },
+  MuiDateField: { defaultProps: { ...defaultProps.baseField, format: defaultProps.dateFormat } },
+  MuiDatePicker: { defaultProps: { slots: { ...defaultProps.dateSlots }, format: defaultProps.dateFormat } },
+  MuiDesktopDatePicker: { defaultProps: { slots: { ...defaultProps.dateSlots }, format: defaultProps.dateFormat } },
+  MuiMobileDatePicker: { defaultProps: { slots: { ...defaultProps.dateSlots }, format: defaultProps.dateFormat } },
+  MuiStaticDatePicker: { defaultProps: { slots: { ...defaultProps.dateSlots }, format: defaultProps.dateFormat } },
 };
 
 /**
@@ -278,11 +280,11 @@ const timePickerComponents: any = {
  * - https://mui.com/x/react-date-pickers/date-time-picker/
  */
 const dateTimePickerComponents: any = {
-  MuiDateTimeField: { defaultProps: { ...defaultProps.baseField } },
-  MuiDateTimePicker: { defaultProps: { slots: { ...defaultProps.dateSlots } } },
-  MuiDesktopDateTimePicker: { defaultProps: { slots: { ...defaultProps.dateSlots } } },
-  MuiMobileDateTimePicker: { defaultProps: { slots: { ...defaultProps.dateSlots } } },
-  MuiStaticDateTimePicker: { defaultProps: { slots: { ...defaultProps.dateSlots } } },
+  MuiDateTimeField: { defaultProps: { ...defaultProps.baseField, format: defaultProps.dateTimeFormat } },
+  MuiDateTimePicker: { defaultProps: { slots: { ...defaultProps.dateSlots }, format: defaultProps.dateTimeFormat } },
+  MuiDesktopDateTimePicker: { defaultProps: { slots: { ...defaultProps.dateSlots }, format: defaultProps.dateTimeFormat } },
+  MuiMobileDateTimePicker: { defaultProps: { slots: { ...defaultProps.dateSlots }, format: defaultProps.dateTimeFormat } },
+  MuiStaticDateTimePicker: { defaultProps: { slots: { ...defaultProps.dateSlots }, format: defaultProps.dateTimeFormat } },
 };
 
 /* **********************************************************************
