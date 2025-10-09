@@ -119,10 +119,7 @@ export function ReportCreateDrawer({
   const [currentStep, setCurrentStep] = useState(1);
 
   // Debug: Track currentStep changes
-  useEffect(() => {
-    console.log('[DEBUG] currentStep changed to:', currentStep);
-    console.trace('[DEBUG] currentStep change stack trace');
-  }, [currentStep]);
+
   const [selectedMaterials, setSelectedMaterials] = useState<any[]>([]);
   const [reportNotes, setReportNotes] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -549,11 +546,8 @@ export function ReportCreateDrawer({
 
   // Reset form when drawer opens (transitions from closed to open only)
   useEffect(() => {
-    console.log('[DEBUG] Reset effect triggered, open:', open, 'prevOpen:', prevOpenRef.current);
-
     // Only reset when transitioning from closed to open
     if (open && !prevOpenRef.current) {
-      console.log('[DEBUG] Drawer opening - resetting form to initial state');
       const initial = initialData
         ? typeof initialData === 'function'
           ? initialData()
@@ -607,41 +601,28 @@ export function ReportCreateDrawer({
     );
   }, []);
 
-  const handleFileUpload = useCallback(
-    (files: FileList | null) => {
-      console.log('[DEBUG] handleFileUpload called, currentStep:', currentStep);
+  const handleFileUpload = useCallback((files: FileList | null) => {
+    if (files) {
+      // Store current step to preserve it during file upload
 
-      if (files) {
-        console.log('[DEBUG] Files to upload:', files.length);
+      const fileArray = Array.from(files);
 
-        // Store current step to preserve it during file upload
-        const currentStepValue = currentStep;
-
-        const fileArray = Array.from(files);
-
-        // Validate file sizes (limit to 10MB per file)
-        const maxSize = 10 * 1024 * 1024; // 10MB
-        const validFiles = fileArray.filter((file) => {
-          if (file.size > maxSize) {
-            toast.error(`File "${file.name}" is too large. Maximum size is 10MB.`);
-            return false;
-          }
-          return true;
-        });
-
-        console.log('[DEBUG] Valid files:', validFiles.length, 'Step to preserve:', currentStepValue);
-
-        if (validFiles.length > 0) {
-          // Just add files directly without any animation frame tricks
-          setAttachments((prev) => {
-            console.log('[DEBUG] Adding files to attachments, previous count:', prev.length);
-            return [...prev, ...validFiles];
-          });
+      // Validate file sizes (limit to 10MB per file)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const validFiles = fileArray.filter((file) => {
+        if (file.size > maxSize) {
+          toast.error(`File "${file.name}" is too large. Maximum size is 10MB.`);
+          return false;
         }
+        return true;
+      });
+
+      if (validFiles.length > 0) {
+        // Just add files directly without any animation frame tricks
+        setAttachments((prev) => [...prev, ...validFiles]);
       }
-    },
-    [currentStep]
-  );
+    }
+  }, []);
 
   // Manage preview URLs for images
   useEffect(() => {
@@ -1078,12 +1059,6 @@ export function ReportCreateDrawer({
               formValues.location &&
               String(formValues.location).trim()
             );
-            console.log('[DEBUG] validateStep(1):', {
-              type: formValues.type,
-              clientId: formValues.clientId,
-              location: formValues.location,
-              valid,
-            });
             return valid;
           }
           case 2:
@@ -1099,10 +1074,7 @@ export function ReportCreateDrawer({
   );
 
   const handleNext = useCallback(() => {
-    console.log('[DEBUG] handleNext called, currentStep:', currentStep);
     if (validateStep(currentStep)) {
-      const newStep = Math.min(currentStep + 1, 3);
-      console.log('[DEBUG] Moving to step:', newStep);
       setCurrentStep((prev) => Math.min(prev + 1, 3));
     } else {
       toast.error('Please fill in all required fields');
@@ -1160,12 +1132,11 @@ export function ReportCreateDrawer({
             label: 'View Drafts',
             onClick: () => {
               // TODO: Navigate to drafts view
-              console.log('Navigate to drafts view');
+              // TODO: Navigate to drafts view
             },
           },
         });
 
-        console.log('[DEBUG] Offline draft saved, calling onSuccess and onClose');
         onSuccess({ _id: draftId, ...reportDataWithFiles, isOfflineDraft: true });
         onClose();
       } catch (error) {
@@ -1311,8 +1282,6 @@ export function ReportCreateDrawer({
 
   // React Hook Form submit handler
   const onFormSubmit = handleSubmit(async (data) => {
-    console.log('[DEBUG] onFormSubmit called (after validation), currentStep:', currentStep);
-
     setIsSubmitting(true);
 
     // Prepare the complete report data
@@ -1360,7 +1329,6 @@ export function ReportCreateDrawer({
           toast.success(
             reportStatus === 'draft' ? 'Report saved as draft' : 'Report submitted for review'
           );
-          console.log('[DEBUG] Report created successfully, calling onSuccess and onClose');
           onSuccess(response.data);
           onClose();
           return;
@@ -1368,7 +1336,7 @@ export function ReportCreateDrawer({
           throw new Error(response.message || 'Failed to create report');
         }
       } catch (serverError: any) {
-        console.warn('[DEBUG] Server save failed, saving locally:', serverError);
+        console.warn('Server save failed, saving locally:', serverError);
 
         // If server save fails, save locally as fallback
         await saveOfflineDraft(reportData);
@@ -1396,8 +1364,6 @@ export function ReportCreateDrawer({
 
   // Wrapper to ALWAYS prevent implicit form submission (Enter key, etc.)
   const handleFormSubmit = useCallback((event?: React.BaseSyntheticEvent) => {
-    console.log('[DEBUG] handleFormSubmit intercepted form submission, currentStep:', currentStep);
-
     // ALWAYS prevent default form submission
     if (event) {
       event.preventDefault();
@@ -1405,12 +1371,10 @@ export function ReportCreateDrawer({
     }
 
     // Never allow implicit form submission - user must click "Submit Report" button
-    console.log('[DEBUG] Blocked implicit form submission');
-  }, [currentStep]);
+  }, []);
 
   // Handler for explicit "Submit Report" button click
   const handleExplicitSubmit = useCallback(() => {
-    console.log('[DEBUG] handleExplicitSubmit called via button click');
     // Manually trigger React Hook Form validation and submission
     onFormSubmit();
   }, [onFormSubmit]);
