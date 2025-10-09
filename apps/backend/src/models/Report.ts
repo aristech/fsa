@@ -733,9 +733,9 @@ ReportSchema.pre("save", async function (this: IReport) {
             estimatedHours: workOrder.estimatedHours,
             actualHours: workOrder.actualHours,
             location: workOrder.location,
-            clientId: workOrder.clientId.toString(),
+            clientId: workOrder.clientId?.toString() || '',
             assignedTo: workOrder.assignedTo?.toString(),
-            createdBy: workOrder.createdBy.toString(),
+            createdBy: workOrder.createdBy?.toString() || '',
           };
         }
       } catch (error) {

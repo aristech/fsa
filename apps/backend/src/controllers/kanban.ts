@@ -264,6 +264,20 @@ export async function getKanbanData(
       {} as Record<string, number>,
     );
 
+    // Get time entries total hours for each task
+    const { TimeEntry } = await import("../models");
+    const timeEntriesTotals = await TimeEntry.aggregate([
+      { $match: { taskId: { $in: taskIds }, tenantId: req.user.tenantId } },
+      { $group: { _id: "$taskId", totalHours: { $sum: "$hours" } } },
+    ]);
+    const timeEntriesTotalById = timeEntriesTotals.reduce(
+      (acc, item) => {
+        acc[item._id.toString()] = item.totalHours;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
     const workOrderById: Record<
       string,
       { title?: string; workOrderNumber?: string }
@@ -305,6 +319,7 @@ export async function getKanbanData(
           personnelById,
           subtasksCount: subtasksCountById[task._id.toString()] || 0,
           commentsCount: commentsCountById[task._id.toString()] || 0,
+          timeEntriesTotalHours: timeEntriesTotalById[task._id.toString()] || 0,
           workOrderById,
           clientById,
           columnById,

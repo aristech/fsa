@@ -32,6 +32,9 @@ export interface IKanbanTask {
   workOrderTitle?: string;
   attachments?: any[];
   comments?: any[];
+  subtasksCount?: number;
+  commentsCount?: number;
+  timeEntriesTotalHours?: number;
   completeStatus?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -105,6 +108,7 @@ export function transformTaskToKanbanTask(
     >;
     subtasksCount?: number;
     commentsCount?: number;
+    timeEntriesTotalHours?: number;
     workOrderById?: Record<
       string,
       { title?: string; workOrderNumber?: string }
@@ -192,6 +196,9 @@ export function transformTaskToKanbanTask(
     })(),
     attachments: task.attachments || [],
     comments: [], // Comments not available in current Task model
+    subtasksCount: lookups?.subtasksCount ?? 0,
+    commentsCount: lookups?.commentsCount ?? 0,
+    timeEntriesTotalHours: lookups?.timeEntriesTotalHours ?? 0,
     ...(task.clientId && {
       clientId: task.clientId.toString(),
       clientName: task.clientName || client?.name,

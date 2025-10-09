@@ -10,13 +10,10 @@ import {
   Box,
   Card,
   Stack,
-  Button,
-  Switch,
   Tooltip,
   Container,
   Typography,
   IconButton,
-  FormControlLabel,
 } from '@mui/material';
 
 import { formatDate, formatDateTime } from 'src/utils/format-date';
@@ -42,7 +39,6 @@ export function ReportsView() {
   const { selectedClient } = useClient();
   const [reports, setReports] = useState<IReport[]>([]);
   const [loading, setLoading] = useState(true);
-  const [myReportsOnly, setMyReportsOnly] = useState(false);
   const [filters, setFilters] = useState<ReportSearchParams>({
     page: 1,
     limit: 20,
@@ -64,14 +60,13 @@ export function ReportsView() {
   const loadReports = useCallback(async () => {
     try {
       setLoading(true);
-      // Add client filter and my reports filter to the params
-      const filtersWithClientAndUser = {
+      // Add client filter to the params
+      const filtersWithClient = {
         ...filters,
         ...(selectedClient && { clientId: selectedClient._id }),
-        ...(myReportsOnly && { assignedToMe: true }),
       };
 
-      const reportsResponse = await ReportService.getAllReports(filtersWithClientAndUser);
+      const reportsResponse = await ReportService.getAllReports(filtersWithClient);
 
       if (reportsResponse.success) {
         setReports(reportsResponse.data);
@@ -82,7 +77,7 @@ export function ReportsView() {
     } finally {
       setLoading(false);
     }
-  }, [filters, selectedClient, myReportsOnly, t]);
+  }, [filters, selectedClient, t]);
 
   // Load data on mount and when filters change
   useEffect(() => {
@@ -207,18 +202,15 @@ export function ReportsView() {
         ...filters,
         limit: 1000,
         ...(selectedClient && { clientId: selectedClient._id }),
-        ...(myReportsOnly && { assignedToMe: true }),
       };
 
       const response = await ReportService.getAllReports(exportFilters);
 
       if (response.success) {
         const csvData = convertReportsToCSV(response.data);
-        const filename = myReportsOnly
-          ? 'my-reports-export.csv'
-          : selectedClient
-            ? `reports-export-${selectedClient.name}.csv`
-            : 'reports-export.csv';
+        const filename = selectedClient
+          ? `reports-export-${selectedClient.name}.csv`
+          : 'reports-export.csv';
         downloadCSV(csvData, filename);
         toast.success(t('reports.reportExportSuccess'));
       }
@@ -226,7 +218,7 @@ export function ReportsView() {
       console.error('Error exporting reports:', error);
       toast.error(t('reports.failedToExport'));
     }
-  }, [filters, selectedClient, myReportsOnly, convertReportsToCSV, t]);
+  }, [filters, selectedClient, convertReportsToCSV, t]);
 
   // Download CSV file
   const downloadCSV = (data: string[][], filename: string) => {
@@ -261,35 +253,11 @@ export function ReportsView() {
             </Typography>
           </Box>
 
-          <Stack direction="row" spacing={2} alignItems="center">
-            <FormControlLabel
-              label={t('reports.myReports', { defaultValue: 'My reports' })}
-              labelPlacement="start"
-              control={
-                <Switch
-                  checked={myReportsOnly}
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setMyReportsOnly(event.target.checked);
-                  }}
-                  slotProps={{ input: { id: 'my-reports-switch' } }}
-                />
-              }
-            />
-
-            <Tooltip title={t('reports.exportToCSV')}>
-              <IconButton onClick={handleExportCSV} color="primary">
-                <Iconify icon="eva:download-fill" />
-              </IconButton>
-            </Tooltip>
-
-            <Button
-              variant="contained"
-              startIcon={<Iconify icon="eva:plus-fill" />}
-              onClick={createDrawer.onTrue}
-            >
-              {t('reports.createReport')}
-            </Button>
-          </Stack>
+          <Tooltip title={t('reports.exportToCSV')}>
+            <IconButton onClick={handleExportCSV} color="primary">
+              <Iconify icon="eva:download-fill" />
+            </IconButton>
+          </Tooltip>
         </Box>
 
         {/* Stats Cards */}
@@ -312,15 +280,6 @@ export function ReportsView() {
             <EmptyContent
               title={t('reports.noReportsFound')}
               description={t('reports.noReportsDescription')}
-              action={
-                <Button
-                  variant="contained"
-                  startIcon={<Iconify icon="eva:plus-fill" />}
-                  onClick={createDrawer.onTrue}
-                >
-                  {t('reports.createReport')}
-                </Button>
-              }
             />
           )}
         </Card>

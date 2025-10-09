@@ -6,20 +6,9 @@ import useSWR from 'swr';
 import { z as zod } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 
-import {
-  Box,
-  Chip,
-  alpha,
-  styled,
-  Drawer,
-  Button,
-  useTheme,
-  TextField,
-  Typography,
-  Autocomplete,
-} from '@mui/material';
+import { Box, Drawer, Button, useTheme, TextField, Typography, Autocomplete } from '@mui/material';
 
 import axiosInstance, { endpoints } from 'src/lib/axios';
 import { offlineStorage } from 'src/lib/offline-storage';
@@ -31,91 +20,11 @@ import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 import { SignatureCollector, type SignatureData } from 'src/components/signature';
-import {
-  Form,
-  RHFSelect,
-  RHFTextField,
-  RHFDateTimePicker,
-} from 'src/components/hook-form';
+import { Form, RHFSelect, RHFTextField, RHFDateTimePicker } from 'src/components/hook-form';
 
 import { useAuthContext } from 'src/auth/hooks';
 
 // ----------------------------------------------------------------------
-
-// Styled components matching Task Details drawer patterns
-const PriorityChip = styled(Chip, {
-  shouldForwardProp: (prop) => !['priority'].includes(prop as string),
-})<{ priority: string }>(({ theme, priority }) => {
-  const priorityColors = {
-    low: theme.palette.success.main,
-    medium: theme.palette.warning.main,
-    high: theme.palette.error.main,
-    urgent: theme.palette.error.dark,
-  };
-
-  return {
-    backgroundColor: alpha(
-      priorityColors[priority as keyof typeof priorityColors] || theme.palette.grey[400],
-      0.1
-    ),
-    color: priorityColors[priority as keyof typeof priorityColors] || theme.palette.grey[600],
-  };
-});
-
-const StatusChip = styled(Chip, {
-  shouldForwardProp: (prop) => !['status'].includes(prop as string),
-})<{ status: string }>(({ theme, status }) => {
-  const statusColors = {
-    pending: theme.palette.warning.main,
-    'in-progress': theme.palette.info.main,
-    completed: theme.palette.success.main,
-    overdue: theme.palette.error.main,
-    cancelled: theme.palette.grey[600],
-  };
-
-  return {
-    backgroundColor: alpha(
-      statusColors[status as keyof typeof statusColors] || theme.palette.grey[400],
-      0.1
-    ),
-    color: statusColors[status as keyof typeof statusColors] || theme.palette.grey[600],
-    fontWeight: 600,
-    textTransform: 'capitalize',
-  };
-});
-
-// Helper functions matching Task Details drawer patterns
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case 'pending':
-      return 'eva:clock-fill';
-    case 'in-progress':
-      return 'eva:arrow-forward-fill';
-    case 'completed':
-      return 'eva:checkmark-circle-fill';
-    case 'overdue':
-      return 'eva:alert-circle-fill';
-    case 'cancelled':
-      return 'eva:close-circle-fill';
-    default:
-      return 'eva:info-fill';
-  }
-};
-
-const getPriorityIcon = (priority: string) => {
-  switch (priority) {
-    case 'low':
-      return 'eva:arrow-downward-fill';
-    case 'medium':
-      return 'eva:minus-fill';
-    case 'high':
-      return 'eva:arrow-upward-fill';
-    case 'urgent':
-      return 'eva:flash-fill';
-    default:
-      return 'eva:info-fill';
-  }
-};
 
 const reportTypes = [
   { value: 'daily', label: 'Daily Report', icon: 'eva:calendar-fill', color: 'primary' },
@@ -147,7 +56,16 @@ const reportTypes = [
 
 // Validation schema
 const reportSchema = zod.object({
-  type: zod.enum(['daily', 'weekly', 'monthly', 'incident', 'maintenance', 'inspection', 'completion', 'safety']),
+  type: zod.enum([
+    'daily',
+    'weekly',
+    'monthly',
+    'incident',
+    'maintenance',
+    'inspection',
+    'completion',
+    'safety',
+  ]),
   reportDate: zod.union([zod.string(), zod.date()]),
   priority: zod.enum(['low', 'medium', 'high', 'urgent']).optional(),
   clientId: zod.string().min(1, 'Client is required'),
@@ -177,6 +95,9 @@ export function ReportCreateDrawer({
   const theme = useTheme();
   const { user } = useAuthContext();
 
+  // Track if drawer was previously open to avoid unnecessary resets
+  const prevOpenRef = useRef(false);
+
   // Form setup with React Hook Form
   const methods = useForm<ReportFormValues>({
     resolver: zodResolver(reportSchema),
@@ -196,6 +117,12 @@ export function ReportCreateDrawer({
 
   // Additional state (not in form)
   const [currentStep, setCurrentStep] = useState(1);
+
+  // Debug: Track currentStep changes
+  useEffect(() => {
+    console.log('[DEBUG] currentStep changed to:', currentStep);
+    console.trace('[DEBUG] currentStep change stack trace');
+  }, [currentStep]);
   const [selectedMaterials, setSelectedMaterials] = useState<any[]>([]);
   const [reportNotes, setReportNotes] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -504,13 +431,19 @@ export function ReportCreateDrawer({
           selectedTask.task?.workOrder?.id;
 
         // Only update clientId if task has a valid clientId, otherwise preserve existing selection
-        if (selectedTask.clientId &&
-            typeof selectedTask.clientId === 'string' &&
-            selectedTask.clientId.trim() !== '') {
+        if (
+          selectedTask.clientId &&
+          typeof selectedTask.clientId === 'string' &&
+          selectedTask.clientId.trim() !== ''
+        ) {
           setValue('clientId', selectedTask.clientId);
         }
         // Auto-populate work order if task has one, otherwise preserve existing selection
-        if (taskWorkOrderId && typeof taskWorkOrderId === 'string' && taskWorkOrderId.trim() !== '') {
+        if (
+          taskWorkOrderId &&
+          typeof taskWorkOrderId === 'string' &&
+          taskWorkOrderId.trim() !== ''
+        ) {
           setValue('workOrderId', taskWorkOrderId);
         }
         if (taskLocation) setValue('location', taskLocation);
@@ -614,10 +547,19 @@ export function ReportCreateDrawer({
 
   // Report date is now set in the reset() call below - no need for separate effect
 
-  // Reset form when drawer opens/closes
+  // Reset form when drawer opens (transitions from closed to open only)
   useEffect(() => {
-    if (open) {
-      const initial = initialData ? (typeof initialData === 'function' ? initialData() : initialData) : {};
+    console.log('[DEBUG] Reset effect triggered, open:', open, 'prevOpen:', prevOpenRef.current);
+
+    // Only reset when transitioning from closed to open
+    if (open && !prevOpenRef.current) {
+      console.log('[DEBUG] Drawer opening - resetting form to initial state');
+      const initial = initialData
+        ? typeof initialData === 'function'
+          ? initialData()
+          : initialData
+        : {};
+
       reset({
         type: 'daily',
         reportDate: new Date(),
@@ -636,6 +578,9 @@ export function ReportCreateDrawer({
       setSignatures([]);
       setReportStatus('draft');
     }
+
+    // Update the ref to track current open state
+    prevOpenRef.current = open;
   }, [open, initialData, reset]);
 
   // No longer need handleFieldChange with RHF - form state is managed by react-hook-form
@@ -664,7 +609,11 @@ export function ReportCreateDrawer({
 
   const handleFileUpload = useCallback(
     (files: FileList | null) => {
+      console.log('[DEBUG] handleFileUpload called, currentStep:', currentStep);
+
       if (files) {
+        console.log('[DEBUG] Files to upload:', files.length);
+
         // Store current step to preserve it during file upload
         const currentStepValue = currentStep;
 
@@ -680,14 +629,13 @@ export function ReportCreateDrawer({
           return true;
         });
 
+        console.log('[DEBUG] Valid files:', validFiles.length, 'Step to preserve:', currentStepValue);
+
         if (validFiles.length > 0) {
-          // Use requestAnimationFrame to ensure it runs after current render cycle
-          requestAnimationFrame(() => {
-            setAttachments((prev) => [...prev, ...validFiles]);
-            // Restore the step if it was reset
-            setTimeout(() => {
-              setCurrentStep(currentStepValue);
-            }, 50);
+          // Just add files directly without any animation frame tricks
+          setAttachments((prev) => {
+            console.log('[DEBUG] Adding files to attachments, previous count:', prev.length);
+            return [...prev, ...validFiles];
           });
         }
       }
@@ -846,11 +794,12 @@ export function ReportCreateDrawer({
           const video = document.createElement('video');
           video.srcObject = stream;
           video.style.width = '100%';
+          video.style.maxWidth = '100%';
           video.style.height = 'auto';
           video.style.borderRadius = '8px';
           video.autoplay = true;
           video.muted = true;
-          video.setAttribute('playsinline', 'true'); // Important for iOS 
+          video.setAttribute('playsinline', 'true'); // Important for iOS
 
           // Create a modal-like overlay
           const overlay = document.createElement('div');
@@ -865,45 +814,53 @@ export function ReportCreateDrawer({
           overlay.style.alignItems = 'center';
           overlay.style.justifyContent = 'center';
           overlay.style.zIndex = '9999';
-          overlay.style.padding = '20px';
+          overlay.style.padding = '16px';
+          overlay.style.overflowY = 'auto';
 
           // Create container for video and controls
           const container = document.createElement('div');
           container.style.backgroundColor = 'white';
           container.style.borderRadius = '12px';
-          container.style.padding = '20px';
+          container.style.padding = '16px';
           container.style.maxWidth = '500px';
           container.style.width = '100%';
           container.style.position = 'relative';
+          container.style.boxSizing = 'border-box';
 
           // Create controls
           const controls = document.createElement('div');
           controls.style.display = 'flex';
-          controls.style.gap = '12px';
-          controls.style.marginTop = '16px';
+          controls.style.gap = '8px';
+          controls.style.marginTop = '12px';
           controls.style.justifyContent = 'center';
+          controls.style.flexWrap = 'wrap';
 
           // Capture button
           const captureBtn = document.createElement('button');
-          captureBtn.textContent = '📷 Capture Photo';
-          captureBtn.style.padding = '12px 24px';
+          captureBtn.textContent = 'Capture Photo';
+          captureBtn.style.padding = '12px 20px';
           captureBtn.style.backgroundColor = '#1976d2';
           captureBtn.style.color = 'white';
           captureBtn.style.border = 'none';
           captureBtn.style.borderRadius = '8px';
           captureBtn.style.cursor = 'pointer';
-          captureBtn.style.fontSize = '16px';
+          captureBtn.style.fontSize = '14px';
+          captureBtn.style.flex = '1 1 auto';
+          captureBtn.style.minWidth = '120px';
+          captureBtn.style.whiteSpace = 'nowrap';
 
           // Cancel button
           const cancelBtn = document.createElement('button');
-          cancelBtn.textContent = '❌ Cancel';
-          cancelBtn.style.padding = '12px 24px';
+          cancelBtn.textContent = 'Cancel';
+          cancelBtn.style.padding = '12px 20px';
           cancelBtn.style.backgroundColor = '#f44336';
           cancelBtn.style.color = 'white';
           cancelBtn.style.border = 'none';
           cancelBtn.style.borderRadius = '8px';
           cancelBtn.style.cursor = 'pointer';
-          cancelBtn.style.fontSize = '16px';
+          cancelBtn.style.fontSize = '14px';
+          cancelBtn.style.flex = '1 1 auto';
+          cancelBtn.style.minWidth = '100px';
 
           // Switch camera button
           const switchCameraBtn = document.createElement('button');
@@ -915,7 +872,8 @@ export function ReportCreateDrawer({
           switchCameraBtn.style.border = 'none';
           switchCameraBtn.style.borderRadius = '8px';
           switchCameraBtn.style.cursor = 'pointer';
-          switchCameraBtn.style.fontSize = '20px';
+          switchCameraBtn.style.fontSize = '18px';
+          switchCameraBtn.style.minWidth = '48px';
 
           // Flash/torch button
           const flashBtn = document.createElement('button');
@@ -927,24 +885,26 @@ export function ReportCreateDrawer({
           flashBtn.style.border = 'none';
           flashBtn.style.borderRadius = '8px';
           flashBtn.style.cursor = 'pointer';
-          flashBtn.style.fontSize = '20px';
+          flashBtn.style.fontSize = '18px';
           flashBtn.style.opacity = '0.5';
+          flashBtn.style.minWidth = '48px';
 
           // Title
           const title = document.createElement('h3');
           title.textContent = 'Take Photo';
-          title.style.margin = '0 0 16px 0';
+          title.style.margin = '0 0 12px 0';
           title.style.textAlign = 'center';
           title.style.color = '#333';
+          title.style.fontSize = '18px';
 
           // Instructions
           const instructions = document.createElement('p');
           instructions.textContent =
             'Use 🔄 to switch cameras, 🔦 for flash, then click "Capture Photo"';
-          instructions.style.margin = '0 0 16px 0';
+          instructions.style.margin = '0 0 12px 0';
           instructions.style.textAlign = 'center';
           instructions.style.color = '#666';
-          instructions.style.fontSize = '14px';
+          instructions.style.fontSize = '13px';
 
           // Assemble the modal
           container.appendChild(title);
@@ -1109,26 +1069,40 @@ export function ReportCreateDrawer({
   const validateStep = useCallback(
     (step: number) => {
       const formValues = watch();
-      switch (step) {
-        case 1:
-          return !!(
-            formValues.type &&
-            formValues.clientId &&
-            formValues.location &&
-            String(formValues.location).trim()
-          );
-        case 2:
-        case 3:
-          return true; // Optional fields
-        default:
-          return false;
-      }
+      const isValid = (() => {
+        switch (step) {
+          case 1: {
+            const valid = !!(
+              formValues.type &&
+              formValues.clientId &&
+              formValues.location &&
+              String(formValues.location).trim()
+            );
+            console.log('[DEBUG] validateStep(1):', {
+              type: formValues.type,
+              clientId: formValues.clientId,
+              location: formValues.location,
+              valid,
+            });
+            return valid;
+          }
+          case 2:
+          case 3:
+            return true; // Optional fields
+          default:
+            return false;
+        }
+      })();
+      return isValid;
     },
     [watch]
   );
 
   const handleNext = useCallback(() => {
+    console.log('[DEBUG] handleNext called, currentStep:', currentStep);
     if (validateStep(currentStep)) {
+      const newStep = Math.min(currentStep + 1, 3);
+      console.log('[DEBUG] Moving to step:', newStep);
       setCurrentStep((prev) => Math.min(prev + 1, 3));
     } else {
       toast.error('Please fill in all required fields');
@@ -1191,6 +1165,7 @@ export function ReportCreateDrawer({
           },
         });
 
+        console.log('[DEBUG] Offline draft saved, calling onSuccess and onClose');
         onSuccess({ _id: draftId, ...reportDataWithFiles, isOfflineDraft: true });
         onClose();
       } catch (error) {
@@ -1334,7 +1309,10 @@ export function ReportCreateDrawer({
     [attachments, signatures, user]
   );
 
+  // React Hook Form submit handler
   const onFormSubmit = handleSubmit(async (data) => {
+    console.log('[DEBUG] onFormSubmit called (after validation), currentStep:', currentStep);
+
     setIsSubmitting(true);
 
     // Prepare the complete report data
@@ -1382,6 +1360,7 @@ export function ReportCreateDrawer({
           toast.success(
             reportStatus === 'draft' ? 'Report saved as draft' : 'Report submitted for review'
           );
+          console.log('[DEBUG] Report created successfully, calling onSuccess and onClose');
           onSuccess(response.data);
           onClose();
           return;
@@ -1389,7 +1368,7 @@ export function ReportCreateDrawer({
           throw new Error(response.message || 'Failed to create report');
         }
       } catch (serverError: any) {
-        console.warn('Server save failed, saving locally:', serverError);
+        console.warn('[DEBUG] Server save failed, saving locally:', serverError);
 
         // If server save fails, save locally as fallback
         await saveOfflineDraft(reportData);
@@ -1415,20 +1394,45 @@ export function ReportCreateDrawer({
     }
   });
 
+  // Wrapper to ALWAYS prevent implicit form submission (Enter key, etc.)
+  const handleFormSubmit = useCallback((event?: React.BaseSyntheticEvent) => {
+    console.log('[DEBUG] handleFormSubmit intercepted form submission, currentStep:', currentStep);
+
+    // ALWAYS prevent default form submission
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    // Never allow implicit form submission - user must click "Submit Report" button
+    console.log('[DEBUG] Blocked implicit form submission');
+  }, [currentStep]);
+
+  // Handler for explicit "Submit Report" button click
+  const handleExplicitSubmit = useCallback(() => {
+    console.log('[DEBUG] handleExplicitSubmit called via button click');
+    // Manually trigger React Hook Form validation and submission
+    onFormSubmit();
+  }, [onFormSubmit]);
+
   const renderHeader = () => (
     <Box
       sx={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        p: 3,
+        p: { xs: 2, sm: 3 },
         borderBottom: 1,
         borderColor: 'divider',
+        gap: 2,
       }}
     >
-      <Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 0.5 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 600, fontSize: { xs: '1rem', sm: '1.25rem' } }}
+          >
             Create New Report
           </Typography>
           {isOffline && (
@@ -1437,7 +1441,7 @@ export function ReportCreateDrawer({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 0.5,
-                px: 1.5,
+                px: 1,
                 py: 0.5,
                 borderRadius: 1,
                 backgroundColor: theme.palette.warning.lighter,
@@ -1445,13 +1449,20 @@ export function ReportCreateDrawer({
               }}
             >
               <Iconify icon="eva:wifi-off-fill" width={14} />
-              <Typography variant="caption" sx={{ fontWeight: 500 }}>
-                Offline (will save locally if upload fails)
+              <Typography
+                variant="caption"
+                sx={{ fontWeight: 500, fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
+              >
+                Offline
               </Typography>
             </Box>
           )}
         </Box>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+        >
           Step {currentStep} of 3
         </Typography>
       </Box>
@@ -1459,7 +1470,13 @@ export function ReportCreateDrawer({
         variant="outlined"
         size="small"
         onClick={onClose}
-        sx={{ minWidth: 40, width: 40, height: 40, p: 0 }}
+        sx={{
+          minWidth: { xs: 36, sm: 40 },
+          width: { xs: 36, sm: 40 },
+          height: { xs: 36, sm: 40 },
+          p: 0,
+          flexShrink: 0,
+        }}
       >
         <Iconify icon="eva:close-fill" width={20} />
       </Button>
@@ -1467,22 +1484,22 @@ export function ReportCreateDrawer({
   );
 
   const renderStepIndicator = () => (
-    <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3, px: 3 }}>
+    <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3, px: 2 }}>
       {[1, 2, 3].map((step) => (
         <Box
           key={step}
           sx={{
-            width: 32,
-            height: 32,
+            width: { xs: 28, sm: 32 },
+            height: { xs: 28, sm: 32 },
             borderRadius: '50%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            mx: 1,
+            mx: { xs: 0.5, sm: 1 },
             backgroundColor: step <= currentStep ? 'primary.main' : 'grey.300',
             color: step <= currentStep ? 'white' : 'text.secondary',
             fontWeight: 600,
-            fontSize: '0.875rem',
+            fontSize: { xs: '0.8rem', sm: '0.875rem' },
             transition: 'all 0.3s ease',
           }}
         >
@@ -1493,12 +1510,16 @@ export function ReportCreateDrawer({
   );
 
   const renderStep1 = () => (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, px: 3 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'primary.main' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, px: { xs: 2, sm: 3 } }}>
+      <Typography
+        variant="subtitle1"
+        sx={{ fontWeight: 600, color: 'primary.main', fontSize: { xs: '0.95rem', sm: '1rem' } }}
+      >
         Report Details
       </Typography>
 
       <RHFSelect name="type" label="Report Type *">
+        <option value="">Select Report Type...</option>
         {reportTypes.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
@@ -1517,197 +1538,72 @@ export function ReportCreateDrawer({
         }}
       />
 
-      <RHFSelect name="clientId" label="Client *">
-        <option value="">Select Client...</option>
-        {clients.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </RHFSelect>
+      {watchedClientId ? (
+        <Box
+          sx={{
+            p: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 1,
+            backgroundColor: 'grey.50',
+          }}
+        >
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+            Client *
+          </Typography>
+          <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            {clients.find((c) => c.value === watchedClientId)?.label || 'Unknown Client'}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            Pre-filled from task
+          </Typography>
+        </Box>
+      ) : null}
 
-      <Autocomplete
-        options={workOrders}
-        getOptionLabel={(option) => option?.label || ''}
-        value={workOrders.find((wo: any) => wo.value === watchedWorkOrderId) || null}
-        onChange={(_event, newValue) => {
-          setValue('workOrderId', newValue?.value || '');
-        }}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            label="Work Order"
-            placeholder="Type to search work orders..."
-            helperText={`Optional: Link to a specific work order (${workOrders.length} available)`}
-            fullWidth
-          />
-        )}
-        filterOptions={(options, { inputValue }) => {
-          if (!inputValue) return options;
-          return options.filter(
-            (option) =>
-              option.label?.toLowerCase().includes(inputValue.toLowerCase()) ||
-              option.workOrder?.number?.toLowerCase().includes(inputValue.toLowerCase()) ||
-              option.workOrder?.title?.toLowerCase().includes(inputValue.toLowerCase())
-          );
-        }}
-        noOptionsText={
-          !workOrdersData
-            ? 'Loading work orders...'
-            : workOrders.length === 0
-              ? 'No work orders available'
-              : 'No matching work orders found'
-        }
-        clearOnEscape
-        openOnFocus
-        freeSolo={false}
-        blurOnSelect
-        clearOnBlur
-      />
+      {watchedWorkOrderId ? (
+        <Box
+          sx={{
+            p: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 1,
+            backgroundColor: 'grey.50',
+          }}
+        >
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+            Work Order
+          </Typography>
+          <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            {workOrders.find((wo: any) => wo.value === watchedWorkOrderId)?.label ||
+              'Unknown Work Order'}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            Pre-filled from task
+          </Typography>
+        </Box>
+      ) : null}
 
-      <Autocomplete
-        options={tasks}
-        getOptionLabel={(option) => option?.label || ''}
-        getOptionKey={(option) => option?.value || option?.id || Math.random().toString()}
-        isOptionEqualToValue={(option, value) => option?.value === value?.value}
-        value={tasks.find((task) => task.value === watchedTaskIds?.[0]) || null}
-        onChange={(_event, newValue) => {
-          setValue('taskIds', newValue ? [newValue.value] : []);
-        }}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            label="Task"
-            placeholder="Type to search tasks..."
-            helperText={
-              !personnelData
-                ? 'Loading tasks...'
-                : watchedClientId
-                  ? `Showing tasks for selected client (${tasks.length} available)`
-                  : `Showing all tasks (${tasks.length} available) - select a client to filter further`
-            }
-            fullWidth
-            sx={{
-              height: 60,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '12px',
-                height: 60,
-                '& .MuiInputBase-input': {
-                  fontSize: '16px',
-                  padding: '16px 14px',
-                },
-              },
-            }}
-          />
-        )}
-        renderOption={(props, option) => (
-          <Box component="li" {...props}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-              {/* Task Icon - using priority-based colors like Task Details */}
-
-              <Iconify
-                icon={
-                  option.task?.completeStatus === true
-                    ? 'eva:checkmark-circle-2-fill'
-                    : 'eva:radio-button-off-outline'
-                }
-                width={20}
-              />
-
-              {/* Task Details */}
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  {option.label}
-                </Typography>
-
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.5 }}>
-                  {/* Priority Chip - using Task Details pattern */}
-                  {option.task?.priority && (
-                    <PriorityChip
-                      priority={option.task.priority}
-                      icon={<Iconify icon={getPriorityIcon(option.task.priority)} width={20} />}
-                      size="small"
-                    />
-                  )}
-
-                  {/* Status Chip - using Task Details pattern */}
-                  {option.task?.status && (
-                    <StatusChip
-                      status={option.task.status}
-                      icon={<Iconify icon={getStatusIcon(option.task.status)} width={16} />}
-                      label={option.task.status}
-                      size="small"
-                    />
-                  )}
-
-                  {/* Type */}
-                  {option.task?.type && (
-                    <Chip label={option.task.type} size="small" variant="outlined" />
-                  )}
-                </Box>
-
-                {/* Assignees */}
-                {option.task?.assignee && option.task.assignee.length > 0 && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                    <Iconify icon="eva:person-fill" width={12} sx={{ color: 'text.secondary' }} />
-                    <Typography variant="caption" color="text.secondary">
-                      {option.task.assignee
-                        .map((assignee: any) => assignee.name || assignee.email)
-                        .join(', ')}
-                    </Typography>
-                  </Box>
-                )}
-
-                {/* Due Date */}
-                {option.task?.dueDate && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                    <Iconify icon="eva:calendar-fill" width={12} sx={{ color: 'text.secondary' }} />
-                    <Typography variant="caption" color="text.secondary">
-                      Due: {new Date(option.task.dueDate).toLocaleDateString()}
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-            </Box>
-          </Box>
-        )}
-        filterOptions={(options, { inputValue }) => {
-          if (!inputValue) return options;
-          return options.filter(
-            (option) =>
-              option.label?.toLowerCase().includes(inputValue.toLowerCase()) ||
-              option.task?.name?.toLowerCase().includes(inputValue.toLowerCase()) ||
-              option.task?.title?.toLowerCase().includes(inputValue.toLowerCase()) ||
-              option.task?.priority?.toLowerCase().includes(inputValue.toLowerCase()) ||
-              option.task?.status?.toLowerCase().includes(inputValue.toLowerCase()) ||
-              option.task?.type?.toLowerCase().includes(inputValue.toLowerCase()) ||
-              option.task?.assignee?.some(
-                (assignee: any) =>
-                  assignee.name?.toLowerCase().includes(inputValue.toLowerCase()) ||
-                  assignee.email?.toLowerCase().includes(inputValue.toLowerCase())
-              )
-          );
-        }}
-        noOptionsText={
-          tasksError
-            ? 'Error loading tasks'
-            : !tasksData
-              ? 'Loading tasks...'
-              : allTasks.length === 0
-                ? 'No tasks available'
-                : tasks.length === 0
-                  ? watchedClientId
-                    ? 'No tasks found for this client'
-                    : 'No tasks found'
-                  : 'No matching tasks found'
-        }
-        clearOnEscape
-        openOnFocus
-        disabled={false}
-        freeSolo={false}
-        blurOnSelect
-        clearOnBlur
-      />
+      {watchedTaskIds?.[0] ? (
+        <Box
+          sx={{
+            p: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 1,
+            backgroundColor: 'grey.50',
+          }}
+        >
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+            Task
+          </Typography>
+          <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            {tasks.find((task) => task.value === watchedTaskIds?.[0])?.label || 'Unknown Task'}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            Pre-filled from task
+          </Typography>
+        </Box>
+      ) : null}
 
       <RHFTextField
         name="location"
@@ -1736,14 +1632,20 @@ export function ReportCreateDrawer({
   );
 
   const renderStep2 = () => (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4, px: 3 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'primary.main' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, px: { xs: 2, sm: 3 } }}>
+      <Typography
+        variant="subtitle1"
+        sx={{ fontWeight: 600, color: 'primary.main', fontSize: { xs: '0.95rem', sm: '1rem' } }}
+      >
         Materials & Documentation
       </Typography>
 
       {/* Materials Section */}
       <Box>
-        <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+        <Typography
+          variant="subtitle2"
+          sx={{ mb: 2, fontWeight: 600, fontSize: { xs: '0.9rem', sm: '1rem' } }}
+        >
           Materials Used
         </Typography>
 
@@ -1763,30 +1665,48 @@ export function ReportCreateDrawer({
               placeholder="Search for materials..."
               helperText={`Select materials used in this report (${materials.length} available)`}
               fullWidth
-              sx={{ mb: 2, height: 60 }}
             />
           )}
           renderOption={(props, option) => {
             const { key, ...otherProps } = props;
             return (
-              <Box component="li" key={key} {...otherProps}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+              <Box component="li" key={key} {...otherProps} sx={{ display: 'block !important' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
                   <Box
                     sx={{
-                      width: 40,
-                      height: 40,
+                      width: 36,
+                      height: 36,
                       bgcolor: 'primary.light',
                       borderRadius: 1,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      flexShrink: 0,
                     }}
                   >
-                    <Iconify icon="solar:box-bold" width={20} />
+                    <Iconify icon="solar:box-bold" width={18} />
                   </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="subtitle2">{option.material?.name}</Typography>
-                    <Typography variant="caption" color="text.secondary">
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {option.material?.name}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        display: 'block',
+                      }}
+                    >
                       {option.material?.sku && `SKU: ${option.material.sku} • `}
                       {option.material?.unitCost?.toFixed(2) || '0.00'}€ per{' '}
                       {option.material?.unit || 'unit'}
@@ -1813,29 +1733,50 @@ export function ReportCreateDrawer({
           freeSolo={false}
           blurOnSelect
           clearOnBlur
+          slotProps={{
+            paper: {
+              sx: {
+                maxWidth: { xs: 'calc(100vw - 32px)', sm: '100%' },
+              },
+            },
+          }}
         />
 
         {selectedMaterials.length > 0 && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mb: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
             {selectedMaterials.map((material) => (
               <Box
                 key={material.value}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 3,
-                  p: 2,
+                  gap: { xs: 1.5, sm: 2 },
+                  p: { xs: 1.5, sm: 2 },
                   border: '1px solid',
                   borderColor: 'divider',
                   borderRadius: 1,
                   backgroundColor: 'background.paper',
+                  flexWrap: { xs: 'wrap', sm: 'nowrap' },
                 }}
               >
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                <Box sx={{ flex: 1, minWidth: { xs: '100%', sm: 0 } }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      fontWeight: 600,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      fontSize: { xs: '0.85rem', sm: '0.875rem' },
+                    }}
+                  >
                     {material.material?.name}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                  >
                     {material.material?.unitCost?.toFixed(2) ||
                       material.material?.unitPrice?.toFixed(2) ||
                       '0.00'}
@@ -1864,9 +1805,10 @@ export function ReportCreateDrawer({
                       handleMaterialQuantityChange(material.value, 0);
                     }
                   }}
-                  sx={{ width: 100 }}
+                  sx={{ width: { xs: 80, sm: 100 } }}
                   inputProps={{ min: 0, max: 100, step: 1 }}
                   helperText="Max: 100"
+                  size="small"
                 />
 
                 <Button
@@ -1874,7 +1816,7 @@ export function ReportCreateDrawer({
                   size="small"
                   onClick={() => handleRemoveMaterial(material.value)}
                   color="error"
-                  sx={{ minWidth: 40 }}
+                  sx={{ minWidth: { xs: 36, sm: 40 }, flexShrink: 0 }}
                 >
                   <Iconify icon="eva:trash-2-fill" width={16} />
                 </Button>
@@ -1886,16 +1828,19 @@ export function ReportCreateDrawer({
 
       {/* File Upload Section */}
       <Box>
-        <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+        <Typography
+          variant="subtitle2"
+          sx={{ mb: 2, fontWeight: 600, fontSize: { xs: '0.9rem', sm: '1rem' } }}
+        >
           Photos & Files
         </Typography>
 
-        <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+        <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: 'wrap' }}>
           <Button
             variant="outlined"
             startIcon={<Iconify icon="eva:camera-fill" width={16} />}
             onClick={handleCameraCapture}
-            sx={{ flex: 1, height: 56 }}
+            sx={{ flex: { xs: '1 1 100%', sm: 1 }, height: { xs: 48, sm: 56 }, minWidth: 0 }}
           >
             Take Photo
           </Button>
@@ -1904,7 +1849,7 @@ export function ReportCreateDrawer({
             variant="outlined"
             component="label"
             startIcon={<Iconify icon="eva:attach-fill" width={16} />}
-            sx={{ flex: 1, height: 56 }}
+            sx={{ flex: { xs: '1 1 100%', sm: 1 }, height: { xs: 48, sm: 56 }, minWidth: 0 }}
           >
             Upload Files
             <input
@@ -1918,7 +1863,7 @@ export function ReportCreateDrawer({
         </Box>
 
         {attachments.length > 0 && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mb: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
             {attachments.map((file, index) => {
               const isImage = file.type.startsWith('image/');
               const previewUrl = previewUrls.get(index);
@@ -1929,8 +1874,8 @@ export function ReportCreateDrawer({
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 3,
-                    p: 2,
+                    gap: { xs: 1.5, sm: 2 },
+                    p: { xs: 1.5, sm: 2 },
                     border: '1px solid',
                     borderColor: 'divider',
                     borderRadius: 2,
@@ -1942,8 +1887,8 @@ export function ReportCreateDrawer({
                   {isImage && previewUrl ? (
                     <Box
                       sx={{
-                        width: 60,
-                        height: 60,
+                        width: { xs: 50, sm: 60 },
+                        height: { xs: 50, sm: 60 },
                         borderRadius: 1,
                         overflow: 'hidden',
                         border: '1px solid',
@@ -1964,8 +1909,8 @@ export function ReportCreateDrawer({
                   ) : (
                     <Box
                       sx={{
-                        width: 60,
-                        height: 60,
+                        width: { xs: 50, sm: 60 },
+                        height: { xs: 50, sm: 60 },
                         borderRadius: 1,
                         border: '1px solid',
                         borderColor: 'divider',
@@ -2001,11 +1946,16 @@ export function ReportCreateDrawer({
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
+                        fontSize: { xs: '0.85rem', sm: '0.875rem' },
                       }}
                     >
                       {file.name}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                    >
                       {isImage
                         ? 'Image'
                         : file.type.startsWith('video/')
@@ -2019,9 +1969,13 @@ export function ReportCreateDrawer({
                       <Typography
                         variant="caption"
                         color="primary"
-                        sx={{ display: 'block', mt: 0.5 }}
+                        sx={{
+                          display: 'block',
+                          mt: 0.5,
+                          fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                        }}
                       >
-                        📷 Captured photo
+                        Captured photo
                       </Typography>
                     )}
                   </Box>
@@ -2033,8 +1987,9 @@ export function ReportCreateDrawer({
                     onClick={() => handleRemoveFile(index)}
                     color="error"
                     sx={{
-                      minWidth: 40,
-                      height: 40,
+                      minWidth: { xs: 36, sm: 40 },
+                      height: { xs: 36, sm: 40 },
+                      flexShrink: 0,
                       '&:hover': {
                         backgroundColor: 'error.lighter',
                       },
@@ -2069,8 +2024,11 @@ export function ReportCreateDrawer({
   );
 
   const renderStep3 = () => (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4, px: 3 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'primary.main' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, px: { xs: 2, sm: 3 } }}>
+      <Typography
+        variant="subtitle1"
+        sx={{ fontWeight: 600, color: 'primary.main', fontSize: { xs: '0.95rem', sm: '1rem' } }}
+      >
         Signatures & Status
       </Typography>
 
@@ -2101,30 +2059,35 @@ export function ReportCreateDrawer({
       {/* Summary */}
       <Box
         sx={{
-          p: 2,
+          p: { xs: 1.5, sm: 2 },
           border: '1px solid',
           borderColor: 'primary.light',
           borderRadius: 1,
           backgroundColor: 'primary.lighter',
         }}
       >
-        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+        <Typography
+          variant="subtitle2"
+          sx={{ fontWeight: 600, mb: 1, fontSize: { xs: '0.9rem', sm: '0.875rem' } }}
+        >
           Report Summary
         </Typography>
-        <Typography variant="body2" sx={{ mb: 1 }}>
+        <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
           • Type: {reportTypes.find((t) => t.value === watch('type'))?.label}
         </Typography>
-        <Typography variant="body2" sx={{ mb: 1 }}>
+        <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
           • Client:{' '}
           {clients.find((c) => c.value === watch('clientId'))?.client?.name || 'Not selected'}
         </Typography>
-        <Typography variant="body2" sx={{ mb: 1 }}>
+        <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
           • Materials: {selectedMaterials.length} items
         </Typography>
-        <Typography variant="body2" sx={{ mb: 1 }}>
+        <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
           • Files: {attachments.length} attachments
         </Typography>
-        <Typography variant="body2">• Signatures: {signatures.length} collected</Typography>
+        <Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+          • Signatures: {signatures.length} collected
+        </Typography>
       </Box>
     </Box>
   );
@@ -2146,19 +2109,25 @@ export function ReportCreateDrawer({
     <Box
       sx={{
         display: 'flex',
-        gap: 3,
-        p: 3,
+        gap: { xs: 1.5, sm: 2 },
+        p: { xs: 2, sm: 3 },
         borderTop: 1,
         borderColor: 'divider',
         backgroundColor: theme.palette.background.paper,
+        flexWrap: { xs: 'wrap', sm: 'nowrap' },
       }}
     >
       {currentStep > 1 && (
         <Button
+          type="button"
           variant="outlined"
           onClick={handlePrevious}
           startIcon={<Iconify icon="eva:arrow-left-fill" width={16} />}
-          sx={{ height: 56, minWidth: 120 }}
+          sx={{
+            height: { xs: 48, sm: 56 },
+            minWidth: { xs: '100%', sm: 120 },
+            order: { xs: 2, sm: 1 },
+          }}
         >
           Previous
         </Button>
@@ -2166,23 +2135,39 @@ export function ReportCreateDrawer({
 
       {currentStep < 3 ? (
         <Button
+          type="button"
           variant="contained"
           onClick={handleNext}
           disabled={!validateStep(currentStep)}
           endIcon={<Iconify icon="eva:arrow-right-fill" width={16} />}
-          sx={{ flex: 1, height: 56 }}
+          sx={{
+            flex: 1,
+            height: { xs: 48, sm: 56 },
+            order: { xs: 1, sm: 2 },
+            minWidth: 0,
+          }}
         >
           Next
         </Button>
       ) : (
         <Button
-          type="submit"
+          type="button"
           variant="contained"
+          onClick={handleExplicitSubmit}
           disabled={isSubmitting || !validateStep(1)}
           startIcon={<Iconify icon="eva:save-fill" width={16} />}
-          sx={{ flex: 1, height: 56 }}
+          sx={{
+            flex: 1,
+            height: { xs: 48, sm: 56 },
+            order: { xs: 1, sm: 2 },
+            minWidth: 0,
+          }}
         >
-          {isSubmitting ? 'Submitting...' : reportStatus === 'draft' ? 'Save Draft' : 'Submit Report'}
+          {isSubmitting
+            ? 'Submitting...'
+            : reportStatus === 'draft'
+              ? 'Save Draft'
+              : 'Submit Report'}
         </Button>
       )}
     </Box>
@@ -2198,13 +2183,26 @@ export function ReportCreateDrawer({
         paper: {
           sx: {
             width: { xs: '100%', sm: 480 },
-            display: 'flex',
-            flexDirection: 'column',
+            maxWidth: '100%',
+            position: 'fixed',
+            right: 0,
+            top: 0,
+            bottom: 0,
+            overflowX: 'hidden',
+            overflowY: 'auto',
           },
         },
       }}
+      sx={{
+        '& .MuiDrawer-root': {
+          position: 'fixed',
+        },
+        '& .MuiBackdrop-root': {
+          position: 'fixed',
+        },
+      }}
     >
-      <Form methods={methods} onSubmit={onFormSubmit}>
+      <Form methods={methods} onSubmit={handleFormSubmit}>
         {renderHeader()}
         {renderStepIndicator()}
 

@@ -3,26 +3,38 @@
 import type { BoxProps } from '@mui/material/Box';
 
 import useSWR from 'swr';
-import { useState } from 'react';
 import { useBoolean, usePopover } from 'minimal-shared/hooks';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
+import List from '@mui/material/List';
+import Menu from '@mui/material/Menu';
 import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
 import Tooltip from '@mui/material/Tooltip';
-import MenuList from '@mui/material/MenuList';
 import MenuItem from '@mui/material/MenuItem';
+import ListItem from '@mui/material/ListItem';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
+import DialogTitle from '@mui/material/DialogTitle';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import ListItemButton from '@mui/material/ListItemButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import CircularProgress from '@mui/material/CircularProgress';
 
 import { copyTaskShareUrl } from 'src/utils/task-sharing';
 
 import { useTranslate } from 'src/locales';
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
+import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { ConfirmDialog } from 'src/components/custom-dialog';
-import { CustomPopover } from 'src/components/custom-popover';
 import { RealtimeIndicator } from 'src/components/realtime-indicator';
 // Status dropdown has been removed; statuses remain static and used elsewhere
 
@@ -34,6 +46,8 @@ type Props = BoxProps & {
   taskId: string;
   workOrderId?: string;
   workOrderNumber?: string;
+  workOrderTitle?: string;
+  clientId?: string;
   onDelete: () => void;
   onCloseDetails: () => void;
   onChangeWorkOrder?: (workOrder: { id: string; number?: string; label: string } | null) => void;
@@ -54,6 +68,8 @@ export function KanbanDetailsToolbar({
   taskStatus,
   workOrderId,
   workOrderNumber,
+  workOrderTitle,
+  clientId,
   onCloseDetails,
   onChangeWorkOrder,
   completeStatus,
@@ -66,87 +82,460 @@ export function KanbanDetailsToolbar({
 }: Props) {
   const smUp = useMediaQuery((theme) => theme.breakpoints.up('sm'));
   const { t } = useTranslate('common');
-  const menuActions = usePopover();
+  const actionsMenu = usePopover();
+  const workOrderSearchDialog = useBoolean();
 
   const confirmDialog = useBoolean();
 
   const [completed, setCompleted] = useState<boolean>(!!completeStatus);
+  const [isUpdatingWorkOrder, setIsUpdatingWorkOrder] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchValue);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchValue]);
 
   const handleShareTask = async () => {
     await copyTaskShareUrl({ taskId });
+    actionsMenu.onClose();
   };
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<{
     id: string;
     number?: string;
+    title?: string;
     label: string;
   } | null>(
     workOrderId
-      ? { id: workOrderId, number: workOrderNumber, label: workOrderNumber || workOrderId }
+      ? {
+          id: workOrderId,
+          number: workOrderNumber,
+          title: workOrderTitle,
+          label: workOrderTitle || workOrderNumber || workOrderId,
+        }
       : null
   );
 
-  const axiosFetcher = (url: string) => axiosInstance.get(url).then((res) => res.data);
-  const { data: workOrdersResp } = useSWR(endpoints.fsa.workOrders.list, axiosFetcher);
-  const workOrders: Array<{ _id: string; number?: string; title?: string }> =
-    workOrdersResp?.data?.workOrders || [];
-
-  // When work orders load, hydrate selected label with title if available
-  if (selectedWorkOrder && workOrders.length) {
-    const match = workOrders.find((wo) => wo._id === selectedWorkOrder.id);
-    if (match) {
-      const newLabel = match.title || match.number || match._id;
-      if (newLabel !== selectedWorkOrder.label) {
-        setSelectedWorkOrder({ id: match._id, number: match.number, label: newLabel });
-      }
+  // Server-side search for work orders
+  const workOrderSearchUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    if (debouncedSearch) {
+      params.append('search', debouncedSearch);
     }
-  }
+    params.append('limit', '50'); // Fetch more results for search
+    return `${endpoints.fsa.workOrders.list}?${params.toString()}`;
+  }, [debouncedSearch]);
 
-  // No status change via toolbar
-
-  const renderMenuActions = () => (
-    <CustomPopover
-      open={menuActions.open}
-      anchorEl={menuActions.anchorEl}
-      onClose={menuActions.onClose}
-      slotProps={{ arrow: { placement: 'top-right' } }}
-    >
-      <MenuList>
-        <MenuItem
-          selected={!selectedWorkOrder}
-          onClick={() => {
-            setSelectedWorkOrder(null);
-            menuActions.onClose();
-            onChangeWorkOrder?.(null);
-          }}
-        >
-          {t('noWorkOrder', { defaultValue: 'No Work Order' })}
-        </MenuItem>
-        <Box
-          component="div"
-          sx={{ my: 0.5, borderTop: (theme) => `1px dashed ${theme.vars?.palette.divider}` }}
-        />
-        {workOrders.map((wo) => {
-          const label = wo.title || wo.number || wo._id;
-          return (
-            <MenuItem
-              key={wo._id}
-              selected={selectedWorkOrder?.id === wo._id}
-              onClick={() => {
-                const newSelection = { id: wo._id, number: wo.number, label };
-                setSelectedWorkOrder(newSelection);
-                menuActions.onClose();
-                onChangeWorkOrder?.(newSelection);
-              }}
-            >
-              {label}
-            </MenuItem>
-          );
-        })}
-      </MenuList>
-    </CustomPopover>
+  const axiosFetcher = (url: string) => axiosInstance.get(url).then((res) => res.data);
+  const { data: workOrdersResp, isLoading: isLoadingWorkOrders } = useSWR(
+    workOrderSearchDialog.value ? workOrderSearchUrl : null,
+    axiosFetcher
   );
 
-  // No status popover
+  // Memoize work orders array to prevent unnecessary re-renders
+  const workOrders = useMemo(
+    () => workOrdersResp?.data?.workOrders || [],
+    [workOrdersResp?.data?.workOrders]
+  );
+
+  // When work orders load, hydrate selected with title if available
+  useEffect(() => {
+    if (selectedWorkOrder && workOrders.length) {
+      const match = workOrders.find((wo: any) => wo._id === selectedWorkOrder.id);
+      if (match) {
+        const newLabel = match.title || match.number || match._id;
+        const newTitle = match.title;
+        if (newLabel !== selectedWorkOrder.label || newTitle !== selectedWorkOrder.title) {
+          setSelectedWorkOrder({
+            id: match._id,
+            number: match.number,
+            title: newTitle,
+            label: newLabel,
+          });
+        }
+      }
+    }
+  }, [selectedWorkOrder, workOrders]);
+
+  // Fetch clients for display purposes
+  const { data: clientsData } = useSWR(endpoints.fsa.clients.list, async (url) => {
+    const response = await axiosInstance.get(url, { params: { limit: 100 } });
+    return response.data;
+  });
+  const clients = useMemo(
+    () => (Array.isArray(clientsData?.data?.clients) ? clientsData.data.clients : []),
+    [clientsData?.data?.clients]
+  );
+
+  // Handler for work order selection with client auto-update
+  const handleSelectWorkOrder = useCallback(
+    async (
+      workOrder: {
+        id: string;
+        number?: string;
+        title?: string;
+        label: string;
+        clientId?: string;
+        client?: any;
+      } | null
+    ) => {
+      if (isUpdatingWorkOrder) return;
+
+      try {
+        setIsUpdatingWorkOrder(true);
+
+        if (!workOrder) {
+          // Clear work order
+          const taskData: any = {
+            id: taskId,
+            workOrderId: undefined,
+            workOrderNumber: undefined,
+            workOrderTitle: undefined,
+          };
+
+          await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, { taskData });
+
+          setSelectedWorkOrder(null);
+          onChangeWorkOrder?.(null);
+          workOrderSearchDialog.onFalse();
+
+          toast.success(t('workOrderCleared', { defaultValue: 'Work order cleared' }));
+          return;
+        }
+
+        // Fetch full work order details to get client info
+        let workOrderClientId = workOrder.clientId || workOrder.client?._id;
+        let workOrderClientName = workOrder.client?.name;
+        let workOrderClientCompany = workOrder.client?.company;
+
+        // If client data not in work order object, fetch it
+        if (!workOrderClientId) {
+          try {
+            const woDetails = await axiosInstance.get(
+              endpoints.fsa.workOrders.details(workOrder.id)
+            );
+            const woData = woDetails?.data?.data;
+            workOrderClientId = woData?.clientId || woData?.client?._id;
+            workOrderClientName = woData?.clientName || woData?.client?.name;
+            workOrderClientCompany = woData?.clientCompany || woData?.client?.company;
+          } catch (err) {
+            console.warn('Failed to fetch work order details:', err);
+          }
+        }
+
+        // Handle case where clientId is an object (populated client data)
+        if (
+          workOrderClientId &&
+          typeof workOrderClientId === 'object' &&
+          (workOrderClientId as any)._id
+        ) {
+          workOrderClientId = (workOrderClientId as any)._id;
+        }
+
+        // Build task update data
+        const taskData: any = {
+          id: taskId,
+          workOrderId: workOrder.id,
+          workOrderNumber: workOrder.number,
+          workOrderTitle: workOrder.label,
+        };
+
+        // Check if we need to update the client
+        const needsClientUpdate = workOrderClientId && workOrderClientId !== clientId;
+
+        if (needsClientUpdate) {
+          taskData.clientId = workOrderClientId;
+          if (workOrderClientName) taskData.clientName = workOrderClientName;
+          if (workOrderClientCompany) taskData.clientCompany = workOrderClientCompany;
+        }
+
+        // Single API call with all updates
+        await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, { taskData });
+
+        // Update local state
+        setSelectedWorkOrder(workOrder);
+        onChangeWorkOrder?.(workOrder);
+        workOrderSearchDialog.onFalse();
+
+        // Show appropriate success message
+        if (needsClientUpdate) {
+          const client = clients.find((c: any) => c._id === workOrderClientId);
+          const clientDisplayName = client?.name || workOrderClientName || 'new client';
+          toast.success(
+            t('workOrderAndClientUpdated', {
+              defaultValue: `Work order updated. Client automatically changed to ${clientDisplayName}`,
+            })
+          );
+        } else {
+          toast.success(t('workOrderUpdated', { defaultValue: 'Work order updated' }));
+        }
+      } catch (error) {
+        console.error('Failed to update work order:', error);
+        toast.error(t('failedToUpdateWorkOrder', { defaultValue: 'Failed to update work order' }));
+      } finally {
+        setIsUpdatingWorkOrder(false);
+      }
+    },
+    [taskId, isUpdatingWorkOrder, clientId, clients, t, onChangeWorkOrder, workOrderSearchDialog]
+  );
+
+  // Handler for clicking a work order in the list
+  const handleWorkOrderClick = useCallback(
+    (workOrder: any) => {
+      const woLabel = workOrder.title || workOrder.number || workOrder._id;
+      handleSelectWorkOrder({
+        id: workOrder._id,
+        number: workOrder.number,
+        title: workOrder.title,
+        label: woLabel,
+        clientId: workOrder.clientId,
+        client: workOrder.client,
+      });
+    },
+    [handleSelectWorkOrder]
+  );
+
+  const renderActionsMenu = () => (
+    <Menu
+      open={actionsMenu.open}
+      anchorEl={actionsMenu.anchorEl}
+      onClose={actionsMenu.onClose}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+    >
+      <MenuItem onClick={handleShareTask}>
+        <ListItemIcon>
+          <Iconify icon="solar:share-bold" />
+        </ListItemIcon>
+        <ListItemText primary={t('share', { defaultValue: 'Share' })} />
+      </MenuItem>
+
+      <MenuItem
+        onClick={() => {
+          actionsMenu.onClose();
+          workOrderSearchDialog.onTrue();
+        }}
+      >
+        <ListItemIcon>
+          <Iconify icon="solar:document-bold" />
+        </ListItemIcon>
+        <ListItemText primary={t('changeWorkOrder', { defaultValue: 'Change Work Order' })} />
+      </MenuItem>
+
+      <MenuItem
+        onClick={() => {
+          actionsMenu.onClose();
+          onCreateReport?.();
+        }}
+      >
+        <ListItemIcon>
+          <Iconify icon="eva:file-text-fill" />
+        </ListItemIcon>
+        <ListItemText primary={t('createReport', { defaultValue: 'Create Report' })} />
+      </MenuItem>
+
+      <MenuItem
+        onClick={() => {
+          actionsMenu.onClose();
+          confirmDialog.onTrue();
+        }}
+        sx={{ color: 'error.main' }}
+      >
+        <ListItemIcon>
+          <Iconify icon="solar:trash-bin-trash-bold" sx={{ color: 'error.main' }} />
+        </ListItemIcon>
+        <ListItemText primary={t('delete', { defaultValue: 'Delete' })} />
+      </MenuItem>
+    </Menu>
+  );
+
+  const renderWorkOrderSearchDialog = () => (
+    <Dialog
+      open={workOrderSearchDialog.value}
+      onClose={() => {
+        setSearchValue('');
+        workOrderSearchDialog.onFalse();
+      }}
+      maxWidth="sm"
+      fullWidth
+    >
+      <DialogTitle>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Iconify icon="solar:document-bold" width={24} />
+          {t('searchWorkOrders', { defaultValue: 'Search Work Orders' })}
+        </Box>
+      </DialogTitle>
+
+      <DialogContent sx={{ pt: 2 }}>
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {t('searchWorkOrderHint', {
+              defaultValue:
+                "Search by work order number, title, or client. If the work order belongs to a different client, the task's client will be automatically updated.",
+            })}
+          </Typography>
+        </Box>
+
+        <TextField
+          fullWidth
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          placeholder={t('searchWorkOrders', { defaultValue: 'Search work orders...' })}
+          disabled={isUpdatingWorkOrder}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
+              </InputAdornment>
+            ),
+            endAdornment: isUpdatingWorkOrder ? (
+              <InputAdornment position="end">
+                <CircularProgress size={20} />
+              </InputAdornment>
+            ) : null,
+          }}
+          sx={{ mb: 2 }}
+        />
+
+        {selectedWorkOrder && (
+          <Box sx={{ mb: 2, p: 2, bgcolor: 'background.neutral', borderRadius: 1 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+              {t('currentWorkOrder', { defaultValue: 'Current work order' })}
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {selectedWorkOrder.label}
+            </Typography>
+          </Box>
+        )}
+
+        {isLoadingWorkOrders ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : workOrders.length > 0 ? (
+          <List
+            sx={{
+              maxHeight: 400,
+              overflow: 'auto',
+              border: (theme) => `1px solid ${theme.palette.divider}`,
+              borderRadius: 1,
+            }}
+          >
+            {workOrders.map((workOrder: any) => {
+              const woLabel = workOrder.title || workOrder.number || workOrder._id;
+              let clientName = '';
+              let clientCompany = '';
+
+              if (workOrder.client?.name) {
+                clientName = workOrder.client.name;
+                clientCompany = workOrder.client.company || '';
+              } else if (workOrder.clientId) {
+                const client = clients.find((c: any) => c._id === workOrder.clientId);
+                clientName = client?.name || '';
+                clientCompany = client?.company || '';
+              }
+
+              const willUpdateClient = workOrder.clientId && workOrder.clientId !== clientId;
+
+              return (
+                <ListItem key={workOrder._id} disablePadding>
+                  <ListItemButton
+                    onClick={() => handleWorkOrderClick(workOrder)}
+                    disabled={isUpdatingWorkOrder}
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      py: 1.5,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                      <Iconify
+                        icon="solar:document-bold"
+                        width={20}
+                        sx={{ color: 'primary.main' }}
+                      />
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        {woLabel}
+                      </Typography>
+                    </Box>
+                    {clientName && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 3, mt: 0.5 }}>
+                        <Iconify
+                          icon="solar:user-bold"
+                          width={14}
+                          sx={{ color: 'text.secondary' }}
+                        />
+                        <Typography variant="caption" color="text.secondary">
+                          {clientName}
+                          {clientCompany && ` (${clientCompany})`}
+                        </Typography>
+                        {willUpdateClient && (
+                          <Tooltip
+                            title={t('clientWillBeUpdated', {
+                              defaultValue: 'Task client will be updated to match work order',
+                            })}
+                          >
+                            <Iconify
+                              icon="solar:info-circle-bold"
+                              width={14}
+                              sx={{ color: 'warning.main', ml: 0.5 }}
+                            />
+                          </Tooltip>
+                        )}
+                      </Box>
+                    )}
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
+          </List>
+        ) : searchValue ? (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="body2" color="text.secondary">
+              {t('noWorkOrdersFound', { defaultValue: 'No work orders found' })}
+            </Typography>
+          </Box>
+        ) : (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="body2" color="text.secondary">
+              {t('typeToSearch', { defaultValue: 'Type to search work orders...' })}
+            </Typography>
+          </Box>
+        )}
+      </DialogContent>
+
+      <DialogActions>
+        <Button
+          onClick={() => {
+            if (!isUpdatingWorkOrder && selectedWorkOrder) {
+              handleSelectWorkOrder(null);
+            }
+          }}
+          color="error"
+          variant="outlined"
+          disabled={isUpdatingWorkOrder || !selectedWorkOrder}
+        >
+          {t('clearWorkOrder', { defaultValue: 'Clear Work Order' })}
+        </Button>
+        <Button
+          onClick={() => {
+            setSearchValue('');
+            workOrderSearchDialog.onFalse();
+          }}
+          variant="contained"
+          disabled={isUpdatingWorkOrder}
+        >
+          {t('close', { defaultValue: 'Close' })}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 
   const renderConfirmDialog = () => (
     <ConfirmDialog
@@ -189,45 +578,30 @@ export function KanbanDetailsToolbar({
         )}
 
         <RealtimeIndicator variant="icon" sx={{ mr: 1 }} />
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1.5 } }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
             <Button
               size="small"
               variant="soft"
-              endIcon={<Iconify icon="eva:arrow-ios-downward-fill" width={16} sx={{ ml: -0.5 }} />}
-              onClick={menuActions.onOpen}
+              {...(selectedWorkOrder && { color: 'success' })}
+              endIcon={<Iconify icon="eva:search-fill" width={16} sx={{ ml: -0.5 }} />}
+              onClick={workOrderSearchDialog.onTrue}
+              sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' }, px: { xs: 1, sm: 1.5 } }}
             >
               {t('workOrder', { defaultValue: 'Work Order' })}
             </Button>
           </Box>
         </Box>
-
         <Box component="span" sx={{ flexGrow: 1 }} />
-
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Tooltip title="Share task">
-            <IconButton onClick={handleShareTask} color="primary">
-              <Iconify
-                sx={{
-                  minWidth: 40,
-                  height: 40,
-                  fontWeight: 600,
-                  borderRadius: '50%',
-                }}
-                icon="solar:share-bold"
-              />
-            </IconButton>
-          </Tooltip>
-
+        <Box sx={{ display: 'flex', gap: { xs: 0.5, sm: 1 } }}>
           {/* Lock button - only show when task is private and user is creator */}
           {isPrivate && (
             <Tooltip title={t('makePublic', { defaultValue: 'Make task public' })}>
-              <IconButton onClick={onTogglePrivate} color="error">
+              <IconButton onClick={onTogglePrivate} color="error" size="small">
                 <Iconify
                   sx={{
-                    minWidth: 40,
-                    height: 40,
+                    minWidth: { xs: 32, sm: 40 },
+                    height: { xs: 32, sm: 40 },
                     fontWeight: 600,
                     borderRadius: '50%',
                   }}
@@ -237,21 +611,6 @@ export function KanbanDetailsToolbar({
             </Tooltip>
           )}
 
-          <Tooltip title="Create report from task">
-            <IconButton onClick={onCreateReport} color="primary">
-              <Iconify
-                sx={{
-                  minWidth: 40,
-                  height: 40,
-                  fontWeight: 600,
-
-                  borderRadius: '50%',
-                }}
-                icon="eva:file-text-fill"
-              />
-            </IconButton>
-          </Tooltip>
-
           <Tooltip
             title={
               completed
@@ -260,6 +619,7 @@ export function KanbanDetailsToolbar({
             }
           >
             <IconButton
+              size="small"
               onClick={() => {
                 const next = !completed;
                 setCompleted(next);
@@ -268,8 +628,8 @@ export function KanbanDetailsToolbar({
             >
               <Iconify
                 sx={{
-                  minWidth: 40,
-                  height: 40,
+                  minWidth: { xs: 32, sm: 40 },
+                  height: { xs: 32, sm: 40 },
                   fontWeight: 600,
                   bgcolor: completed ? 'success.main' : '#fff',
                   borderRadius: '50%',
@@ -278,20 +638,18 @@ export function KanbanDetailsToolbar({
               />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Delete task">
-            <IconButton
-              sx={{
-                mt: 1,
-                minWidth: 30,
-                height: 40,
-              }}
-              onClick={confirmDialog.onTrue}
-            >
+
+          <Tooltip title={t('actions', { defaultValue: 'Actions' })}>
+            <IconButton onClick={actionsMenu.onOpen} size="small">
               <Iconify
                 sx={{
-                  minWidth: 25,
+                  minWidth: { xs: 32, sm: 40 },
+                  height: { xs: 32, sm: 40 },
+                  fontWeight: 600,
+
+                  borderRadius: '50%',
                 }}
-                icon="solar:trash-bin-trash-bold"
+                icon="eva:more-vertical-fill"
               />
             </IconButton>
           </Tooltip>
@@ -299,20 +657,67 @@ export function KanbanDetailsToolbar({
       </Box>
       <Box sx={{ display: 'flex' }}>
         {selectedWorkOrder && (
-          <Tooltip title={selectedWorkOrder.label} placement="top">
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              noWrap
-              sx={{ m: 0.8, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis' }}
+          <Tooltip
+            title={
+              selectedWorkOrder.number && selectedWorkOrder.title
+                ? `${selectedWorkOrder.number} - ${selectedWorkOrder.title}`
+                : selectedWorkOrder.label
+            }
+            placement="top"
+          >
+            <Box
+              sx={{
+                m: 0.8,
+                maxWidth: { xs: 180, sm: 300 },
+                overflow: 'hidden',
+              }}
             >
-              {selectedWorkOrder.label}
-            </Typography>
+              {selectedWorkOrder.number && selectedWorkOrder.title ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                  <Typography
+                    variant="caption"
+                    color="primary.main"
+                    sx={{
+                      fontWeight: 600,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {selectedWorkOrder.title}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {selectedWorkOrder.number}
+                  </Typography>
+                </Box>
+              ) : (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  noWrap
+                  sx={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {selectedWorkOrder.number}
+                </Typography>
+              )}
+            </Box>
           </Tooltip>
         )}
       </Box>
 
-      {renderMenuActions()}
+      {renderActionsMenu()}
+      {renderWorkOrderSearchDialog()}
       {renderConfirmDialog()}
     </>
   );

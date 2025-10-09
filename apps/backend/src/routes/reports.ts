@@ -9,9 +9,11 @@ import {
   WorkOrder,
   User,
   TimeEntry,
+  Personnel,
 } from "../models";
 import { AuthenticatedRequest } from "../types";
 import { PermissionService } from "../services/permission-service";
+import { PDFService } from "../services/pdf-service";
 
 export async function reportsRoutes(fastify: FastifyInstance) {
   // Get all reports with filtering and pagination
@@ -165,6 +167,73 @@ export async function reportsRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // Export report as PDF
+  fastify.get(
+    "/:id/export",
+    { preHandler: authenticate },
+    async (request, reply) => {
+      try {
+        const { id } = request.params as { id: string };
+        const user = (request as AuthenticatedRequest).user;
+        const { format = "pdf" } = request.query as { format?: string };
+
+        // Currently only PDF format is supported
+        if (format !== "pdf") {
+          return reply.code(400).send({
+            success: false,
+            message: `Export format "${format}" is not supported. Only PDF is currently available.`,
+          });
+        }
+
+        // Get user permissions to check access to specific report
+        const userPermissions = await PermissionService.getUserPermissions(
+          user.id,
+          user.tenantId,
+        );
+        if (!userPermissions) {
+          return reply.code(403).send({
+            success: false,
+            message: "Access denied: Unable to verify permissions",
+          });
+        }
+
+        // Build query with permission filtering
+        const reportFilter = PermissionService.getReportFilter(
+          userPermissions,
+          user.tenantId,
+          { _id: id },
+        );
+
+        // Fetch report - use lean() since we're using embedded data
+        const report = await Report.findOne(reportFilter).lean();
+
+        if (!report) {
+          return reply
+            .code(404)
+            .send({ success: false, message: "Report not found" });
+        }
+
+        // Generate PDF using the PDF service
+        const pdfDoc = await PDFService.generateReportPDF(report as any);
+
+        // Set response headers for PDF download
+        reply.type("application/pdf");
+        reply.header(
+          "Content-Disposition",
+          `attachment; filename="report-${id}.pdf"`,
+        );
+
+        // Stream the PDF document to the client
+        return reply.send(pdfDoc);
+      } catch (error) {
+        fastify.log.error({ error }, "Failed to export report as PDF");
+        return reply
+          .code(500)
+          .send({ success: false, message: "Internal server error" });
+      }
+    },
+  );
+
   // Create new report
   fastify.post("/", { preHandler: authenticate }, async (request, reply) => {
     try {
@@ -283,11 +352,32 @@ export async function reportsRoutes(fastify: FastifyInstance) {
           .send({ success: false, message: "Report not found" });
       }
 
+      // Check if user is assigned to any of the tasks in this report
+      let isTaskAssignee = false;
+      if (report.taskIds && report.taskIds.length > 0) {
+        // Get the personnel record for the current user
+        const personnel = await Personnel.findOne({
+          userId: user.id,
+          tenantId: user.tenantId,
+        });
+        const personnelId = personnel?._id?.toString();
+
+        const tasks = await Task.find({
+          _id: { $in: report.taskIds },
+          tenantId: user.tenantId,
+        });
+        isTaskAssignee = tasks.some((task) =>
+          task.assignees?.includes(personnelId)
+        );
+      }
+
       // Check if user can edit this report
       const canEdit =
         report.createdBy.toString() === user.id ||
         report.assignedTo?.toString() === user.id ||
-        user.role === "admin";
+        isTaskAssignee ||
+        user.role === "admin" ||
+        user.role === "supervisor";
 
       if (!canEdit) {
         return reply.code(403).send({
@@ -296,8 +386,8 @@ export async function reportsRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // Prevent editing of approved reports (unless admin)
-      if (report.status === "approved" && user.role !== "admin") {
+      // Prevent editing of approved reports (unless admin or supervisor)
+      if (report.status === "approved" && user.role !== "admin" && user.role !== "supervisor") {
         return reply
           .code(403)
           .send({ success: false, message: "Cannot edit approved reports" });
@@ -315,7 +405,8 @@ export async function reportsRoutes(fastify: FastifyInstance) {
         }
       });
 
-      await report.save();
+      // Save with validateModifiedOnly to avoid validating embedded schemas
+      await report.save({ validateModifiedOnly: true });
 
       // Populate updated report for response
       await report.populate("createdBy", "name email");
@@ -352,7 +443,9 @@ export async function reportsRoutes(fastify: FastifyInstance) {
 
         // Check if user can delete this report
         const canDelete =
-          report.createdBy.toString() === user.id || user.role === "admin";
+          report.createdBy.toString() === user.id ||
+          user.role === "admin" ||
+          user.role === "supervisor";
         if (!canDelete) {
           return reply.code(403).send({
             success: false,
@@ -360,8 +453,8 @@ export async function reportsRoutes(fastify: FastifyInstance) {
           });
         }
 
-        // Prevent deletion of approved reports (unless admin)
-        if (report.status === "approved" && user.role !== "admin") {
+        // Prevent deletion of approved reports (unless admin or supervisor)
+        if (report.status === "approved" && user.role !== "admin" && user.role !== "supervisor") {
           return reply.code(403).send({
             success: false,
             message: "Cannot delete approved reports",
@@ -408,10 +501,30 @@ export async function reportsRoutes(fastify: FastifyInstance) {
           });
         }
 
+        // Check if user is assigned to any of the tasks in this report
+        let isTaskAssignee = false;
+        if (report.taskIds && report.taskIds.length > 0) {
+          // Get the personnel record for the current user
+          const personnel = await Personnel.findOne({
+            userId: user.id,
+            tenantId: user.tenantId,
+          });
+          const personnelId = personnel?._id?.toString();
+
+          const tasks = await Task.find({
+            _id: { $in: report.taskIds },
+            tenantId: user.tenantId,
+          });
+          isTaskAssignee = tasks.some((task) =>
+            task.assignees?.includes(personnelId)
+          );
+        }
+
         // Check if user can submit this report
         const canSubmit =
           report.createdBy.toString() === user.id ||
-          report.assignedTo?.toString() === user.id;
+          report.assignedTo?.toString() === user.id ||
+          isTaskAssignee;
 
         if (!canSubmit) {
           return reply.code(403).send({
@@ -422,7 +535,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
 
         report.status = "submitted";
         report.submittedAt = new Date();
-        await report.save();
+        await report.save({ validateModifiedOnly: true });
 
         return reply.send({
           success: true,
@@ -475,7 +588,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
           report.clientApproval.comments = comments;
         }
 
-        await report.save();
+        await report.save({ validateModifiedOnly: true });
 
         return reply.send({
           success: true,
@@ -528,7 +641,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
         report.rejectedBy = user.id;
         report.rejectionReason = reason;
 
-        await report.save();
+        await report.save({ validateModifiedOnly: true });
 
         return reply.send({
           success: true,
@@ -591,7 +704,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
         };
 
         report.materialsUsed.push(materialUsage as any);
-        await report.save();
+        await report.save({ validateModifiedOnly: true });
 
         return reply.send({ success: true, data: materialUsage });
       } catch (error) {
@@ -646,7 +759,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
         };
 
         report.timeEntries.push(timeEntry as any);
-        await report.save();
+        await report.save({ validateModifiedOnly: true });
 
         return reply.send({ success: true, data: timeEntry });
       } catch (error) {

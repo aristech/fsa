@@ -365,21 +365,6 @@ export function ReportsTable({
         <MenuItem
           onClick={() => {
             if (selectedReport) {
-              // Handle edit action
-              onReportUpdate(selectedReport);
-            }
-            handleMenuClose();
-          }}
-        >
-          <ListItemIcon>
-            <Iconify icon="eva:edit-fill" />
-          </ListItemIcon>
-          <ListItemText>{t('reports.table.edit')}</ListItemText>
-        </MenuItem>
-
-        <MenuItem
-          onClick={() => {
-            if (selectedReport) {
               // Handle export action
               // This would trigger the export functionality
             }

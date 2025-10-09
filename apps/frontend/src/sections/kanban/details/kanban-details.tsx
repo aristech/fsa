@@ -101,10 +101,14 @@ interface ISubtask {
 
 const BlockLabel = styled('span')(({ theme }) => ({
   ...theme.typography.caption,
-  width: 100,
+  width: 90,
   flexShrink: 0,
   color: theme.vars?.palette.text.secondary,
   fontWeight: theme.typography.fontWeightSemiBold,
+  [theme.breakpoints.down('sm')]: {
+    width: 70,
+    fontSize: '0.65rem',
+  },
 }));
 
 // ----------------------------------------------------------------------
@@ -373,8 +377,14 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         taskData: { id: task.id, labels: newTags },
       });
       onUpdateTask({ ...task, labels: newTags, tags: newTags });
+
+      // Invalidate kanban cache to refresh the board view
+      await mutate((key) => typeof key === 'string' && key.includes(endpoints.kanban));
     } catch (e) {
       console.error('Failed to update tags', e);
+      toast.error(t('failedToUpdateTags', { defaultValue: 'Failed to update tags' }));
+      // Revert to original tags on error
+      setTags(task.tags || task.labels || []);
     }
   };
 
@@ -399,6 +409,10 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         clientName: selectedClient?.name || undefined,
         clientCompany: selectedClient?.company || undefined,
       });
+
+      // Invalidate kanban cache to refresh the board view
+      await mutate((key) => typeof key === 'string' && key.includes(endpoints.kanban));
+
       toast.success(
         t('clientUpdatedSuccessfully', { defaultValue: 'Client updated successfully!' })
       );
@@ -409,16 +423,27 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
   };
 
   const handleChangePriority = useCallback(
-    (newValue: string) => {
-      setPriority(newValue);
-      // Persist priority immediately
-      axiosInstance
-        .post(`${endpoints.kanban}?endpoint=update-task`, {
+    async (newValue: string) => {
+      try {
+        setPriority(newValue);
+        // Persist priority immediately
+        await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, {
           taskData: { id: task.id, priority: newValue },
-        })
-        .catch((e) => console.error('Failed to update priority', e));
+        });
+
+        // Update parent component state
+        onUpdateTask({ ...task, priority: newValue });
+
+        // Invalidate kanban cache to refresh the board view
+        await mutate((key) => typeof key === 'string' && key.includes(endpoints.kanban));
+      } catch (e) {
+        console.error('Failed to update priority', e);
+        toast.error(t('failedToUpdatePriority', { defaultValue: 'Failed to update priority' }));
+        // Revert to original priority on error
+        setPriority(task.priority);
+      }
     },
-    [task.id]
+    [task, onUpdateTask, t]
   );
 
   const handleChangeStatus = useCallback(
@@ -735,6 +760,8 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       taskStatus={task.status}
       workOrderId={(task as any)?.workOrderId}
       workOrderNumber={(task as any)?.workOrderNumber}
+      workOrderTitle={(task as any)?.workOrderTitle}
+      clientId={task.clientId}
       completeStatus={task.completeStatus}
       onToggleComplete={async (next) => {
         try {
@@ -837,9 +864,11 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     <Tabs
       value={tabs.value}
       onChange={tabs.onChange}
-      variant="fullWidth"
+      variant="scrollable"
+      scrollButtons="auto"
+      allowScrollButtonsMobile
       indicatorColor="custom"
-      sx={{ '--item-padding-x': 0 }}
+      sx={{ '--item-padding-x': { xs: 1, sm: 0 } }}
     >
       {[
         { value: 'overview', label: t('overview', { defaultValue: 'Overview' }) },
@@ -858,10 +887,11 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       ].map((tab) => (
         <Tab
           key={tab.value}
+          sx={{ mr: 2 }}
           value={tab.value}
           label={
             tab.count !== undefined ? (
-              <Box sx={{ display: 'absolute', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: 'absolute', alignItems: 'center', gap: 2, px: 2 }}>
                 <span>{tab.label}</span>
                 <Badge
                   badgeContent={tab.count}
@@ -1000,7 +1030,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       {/* Client */}
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <BlockLabel>{t('client', { defaultValue: 'Client' })}</BlockLabel>
-        <FormControl size="small" sx={{ minWidth: 200, maxWidth: 300 }}>
+        <FormControl size="small" sx={{ flexGrow: 1, maxWidth: { xs: '100%', sm: 300 } }}>
           <Select
             value={task.clientId || ''}
             onChange={(e) => handleChangeClient(e.target.value)}
@@ -1092,9 +1122,17 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
 
       {/* Repeat/Reminder indicators */}
       {(repeatData?.enabled === true || reminderData?.enabled === true) && (
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <BlockLabel>{t('schedule', { defaultValue: 'Schedule' })}</BlockLabel>
-          <Stack direction="row" spacing={1}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: { xs: 1, sm: 0 },
+          }}
+        >
+          <BlockLabel sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}>
+            {t('schedule', { defaultValue: 'Schedule' })}
+          </BlockLabel>
+          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
             {repeatData?.enabled && (
               <Chip
                 size="small"
@@ -1149,12 +1187,11 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       {/* Status */}
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <BlockLabel>{t('status', { defaultValue: 'Status' })}</BlockLabel>
-        <FormControl size="small" sx={{ minWidth: 120 }}>
+        <FormControl size="small" sx={{ flexGrow: 1, ml: 1 }}>
           <Select
             value={status || ''}
             onChange={(event) => handleChangeStatus(event.target.value)}
             displayEmpty
-            sx={{ ml: 1 }}
           >
             {statuses.map((statusOption: any) => (
               <MenuItem key={statusOption.id} value={statusOption.id}>
@@ -1175,8 +1212,12 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         </FormControl>
       </Box>
       {/* Description */}
-      <Box sx={{ display: 'flex' }}>
-        <BlockLabel>{t('description', { defaultValue: 'Description' })}</BlockLabel>
+      <Box
+        sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1, sm: 0 } }}
+      >
+        <BlockLabel sx={{ alignSelf: { xs: 'flex-start', sm: 'flex-start' } }}>
+          {t('description', { defaultValue: 'Description' })}
+        </BlockLabel>
         <TextField
           fullWidth
           multiline
@@ -1189,8 +1230,12 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         />
       </Box>
       {/* Attachments */}
-      <Box sx={{ display: 'flex' }}>
-        <BlockLabel>{t('attachments', { defaultValue: 'Attachments' })}</BlockLabel>
+      <Box
+        sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1, sm: 0 } }}
+      >
+        <BlockLabel sx={{ alignSelf: { xs: 'flex-start', sm: 'flex-start' } }}>
+          {t('attachments', { defaultValue: 'Attachments' })}
+        </BlockLabel>
         <KanbanDetailsAttachments
           attachments={task.attachments}
           taskId={task.id}
@@ -1357,13 +1402,32 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       anchor="right"
       slotProps={{
         backdrop: { invisible: true },
-        paper: { sx: { width: { xs: 1, sm: 480 } } },
+        paper: {
+          sx: {
+            width: { xs: '100%', sm: 480 },
+            maxWidth: '100%',
+            position: 'fixed',
+            right: 0,
+            top: 0,
+            bottom: 0,
+            overflowX: 'hidden',
+            overflowY: 'auto',
+          },
+        },
+      }}
+      sx={{
+        '& .MuiDrawer-root': {
+          position: 'fixed',
+        },
+        '& .MuiBackdrop-root': {
+          position: 'fixed',
+        },
       }}
     >
       {renderToolbar()}
 
       {/* CheckIn/CheckOut Header */}
-      <Box sx={{ px: 2.5, pt: 2 }}>
+      <Box sx={{ px: 1, pt: 0.5 }}>
         <KanbanCheckInOut
           taskId={task.id}
           workOrderId={(task as any)?.workOrderId}
@@ -1379,7 +1443,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
 
       {renderTabs()}
 
-      <Scrollbar fillContent sx={{ py: 3, px: 2.5 }}>
+      <Scrollbar fillContent sx={{ py: 3, px: 2.5, overflowX: 'hidden' }}>
         {tabs.value === 'overview' && renderTabOverview()}
         {tabs.value === 'time' && (
           <KanbanDetailsTime taskId={task.id} workOrderId={(task as any)?.workOrderId} />

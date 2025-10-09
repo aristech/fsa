@@ -42,6 +42,9 @@ export type IKanbanTask = {
   endDate?: IDateValue;
   completeStatus?: boolean;
   subtaskCount?: number;
+  subtasksCount?: number; // Backend uses this name
+  commentsCount?: number;
+  timeEntriesTotalHours?: number;
   reporter: {
     id: string;
     name: string;

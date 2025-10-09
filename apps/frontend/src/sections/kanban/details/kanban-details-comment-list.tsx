@@ -56,7 +56,9 @@ export function KanbanDetailsCommentList({ comments, sx, ...other }: Props) {
       >
         {comments.map((comment) => (
           <Box component="li" key={comment.id} sx={{ gap: 2, display: 'flex' }}>
-            <Avatar>{comment.initials || comment.name?.charAt(0)?.toUpperCase() || 'U'}</Avatar>
+            <Avatar sx={{ flexShrink: 0 }}>
+              {comment.initials || comment.name?.charAt(0)?.toUpperCase() || 'U'}
+            </Avatar>
 
             <Box
               sx={{
@@ -64,11 +66,14 @@ export function KanbanDetailsCommentList({ comments, sx, ...other }: Props) {
                 flex: '1 1 auto',
                 flexDirection: 'column',
                 gap: comment.messageType === 'image' ? 1 : 0.5,
+                minWidth: 0,
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="subtitle2"> {comment.name}</Typography>
-                <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                <Typography variant="subtitle2" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {comment.name}
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.disabled', flexShrink: 0, whiteSpace: 'nowrap' }}>
                   {fToNow(comment.createdAt)}
                 </Typography>
               </Box>
@@ -81,12 +86,16 @@ export function KanbanDetailsCommentList({ comments, sx, ...other }: Props) {
                   sx={(theme) => ({
                     borderRadius: 1.5,
                     cursor: 'pointer',
+                    maxWidth: '100%',
+                    height: 'auto',
                     transition: theme.transitions.create(['opacity']),
                     '&:hover': { opacity: 0.8 },
                   })}
                 />
               ) : (
-                <Typography variant="body2">{comment.message}</Typography>
+                <Typography variant="body2" sx={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                  {comment.message}
+                </Typography>
               )}
             </Box>
           </Box>

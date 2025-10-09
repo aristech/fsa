@@ -113,18 +113,18 @@ export function KanbanDetailsCommentInput({
     <Box
       sx={{
         py: 3,
-        gap: 2,
+        gap: { xs: 1, sm: 2 },
         px: 2.5,
         display: 'flex',
       }}
     >
-      <Avatar>
+      <Avatar sx={{ flexShrink: 0 }}>
         {user?.firstName && user?.lastName
           ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase()
           : user?.email?.charAt(0).toUpperCase() || 'U'}
       </Avatar>
 
-      <Paper variant="outlined" sx={{ p: 1, flexGrow: 1, bgcolor: 'transparent' }}>
+      <Paper variant="outlined" sx={{ p: 1, flexGrow: 1, minWidth: 0, bgcolor: 'transparent' }}>
         <InputBase
           fullWidth
           multiline
@@ -139,6 +139,7 @@ export function KanbanDetailsCommentInput({
 
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
           <Button
+            size="small"
             variant="contained"
             onClick={handleSubmitComment}
             disabled={!message.trim() || isSubmitting}

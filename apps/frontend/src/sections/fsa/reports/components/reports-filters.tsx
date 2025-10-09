@@ -3,7 +3,14 @@
 import type { ReportSearchParams } from 'src/lib/models/Report';
 
 import dayjs from 'dayjs';
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+
+// Simple type for the Created By filter options
+interface UserOption {
+  _id: string;
+  name: string;
+  email: string;
+}
 
 import {
   Box,
@@ -20,6 +27,7 @@ import {
 } from '@mui/material';
 
 import { useTranslate } from 'src/locales/use-locales';
+import { personnelService } from 'src/lib/services/personnel-service';
 
 import { MobileDatePicker } from 'src/components/mobile';
 
@@ -55,7 +63,7 @@ const getSortOptions = (t: any) => [
 
 export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps) {
   const { t } = useTranslate('dashboard');
-  // const [searchTerm, setSearchTerm] = useState(filters.search || '');
+  const [personnel, setPersonnel] = useState<UserOption[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>(filters.type ? [filters.type] : []);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(
     filters.status ? [filters.status] : []
@@ -63,6 +71,37 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>(
     filters.priority ? [filters.priority] : []
   );
+  const [selectedCreatedBy, setSelectedCreatedBy] = useState<UserOption | null>(null);
+
+  // Load personnel for Created By filter
+  useEffect(() => {
+    const loadPersonnel = async () => {
+      try {
+        const response = await personnelService.getPersonnel({ limit: 1000 });
+        if (response.success) {
+          // Map personnel to users format for the filter
+          const users: UserOption[] = response.data.map((p) => ({
+            _id: p.user?._id || p.userId,
+            name: p.user?.name || p.user?.email || 'Unknown',
+            email: p.user?.email || '',
+          }));
+
+          setPersonnel(users);
+
+          // If there's a createdBy filter, find and set the selected user
+          if (filters.createdBy) {
+            const user = users.find((u) => u._id === filters.createdBy);
+            if (user) {
+              setSelectedCreatedBy(user);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading personnel:', error);
+      }
+    };
+    loadPersonnel();
+  }, [filters.createdBy]);
 
   // Handle search change
   // const handleSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,6 +136,15 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
     (event: any, newValue: string[]) => {
       setSelectedPriorities(newValue);
       onFiltersChange({ priority: newValue.length === 1 ? newValue[0] : undefined });
+    },
+    [onFiltersChange]
+  );
+
+  // Handle created by change
+  const handleCreatedByChange = useCallback(
+    (event: any, newValue: UserOption | null) => {
+      setSelectedCreatedBy(newValue);
+      onFiltersChange({ createdBy: newValue?._id || undefined });
     },
     [onFiltersChange]
   );
@@ -287,6 +335,23 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
             />
           </Grid>
 
+          {/* Created By */}
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Autocomplete
+              options={personnel}
+              value={selectedCreatedBy}
+              onChange={handleCreatedByChange}
+              getOptionLabel={(option) => option.name || option.email}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label={t('reports.filters.createdBy', { defaultValue: 'Created By' })}
+                  placeholder={t('reports.filters.selectCreatedBy', { defaultValue: 'Select user' })}
+                />
+              )}
+            />
+          </Grid>
+
           {/* Sort Options */}
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Stack direction="row" spacing={1}>
@@ -379,6 +444,16 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
                   onDelete={() => {
                     setSelectedPriorities([]);
                     onFiltersChange({ priority: undefined });
+                  }}
+                  size="small"
+                />
+              )}
+              {filters.createdBy && selectedCreatedBy && (
+                <Chip
+                  label={`${t('reports.filters.createdBy', { defaultValue: 'Created By' })}: ${selectedCreatedBy.name || selectedCreatedBy.email}`}
+                  onDelete={() => {
+                    setSelectedCreatedBy(null);
+                    onFiltersChange({ createdBy: undefined });
                   }}
                   size="small"
                 />

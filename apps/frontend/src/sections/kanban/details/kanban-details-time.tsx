@@ -100,13 +100,16 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
         <Typography variant="subtitle2" sx={{ mb: 2 }}>
           Log time
         </Typography>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems="center">
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems="stretch">
           <TextField
             label="Date"
             placeholder={dayjs().format('DD-MM-YYYY')}
             type="date"
             size="small"
-            sx={{ width: 320, '& .MuiInputBase-input': { fontSize: 12 } }}
+            sx={{
+              width: { xs: '100%', sm: 180 },
+              '& .MuiInputBase-input': { fontSize: 12 }
+            }}
             value={date}
             onChange={(e) => setDate(e.target.value)}
             slotProps={{ inputLabel: { shrink: true } as any, input: { sx: { fontSize: 12 } } }}
@@ -115,6 +118,7 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
             label="Hours"
             type="number"
             size="small"
+            sx={{ width: { xs: '100%', sm: 100 } }}
             inputProps={{ step: 0.25, min: 0 }}
             value={hours}
             onChange={(e) => setHours(e.target.value)}
@@ -127,16 +131,27 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
           />
-          <Button variant="contained" disabled={!canSubmit} onClick={handleCreate}>
+          <Button
+            variant="contained"
+            disabled={!canSubmit}
+            onClick={handleCreate}
+            sx={{ flexShrink: 0 }}
+          >
             <Iconify icon="mingcute:add-line" />
           </Button>
         </Stack>
       </Paper>
 
       <Paper variant="outlined" sx={{ p: 2 }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          alignItems={{ xs: 'flex-start', sm: 'center' }}
+          justifyContent="space-between"
+          spacing={{ xs: 0.5, sm: 0 }}
+          sx={{ mb: 1 }}
+        >
           <Typography variant="subtitle2">Time entries</Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
             Total: {totals.hours.toFixed(2)}h • Cost: {totals.cost.toFixed(2)}€
           </Typography>
         </Stack>
@@ -157,23 +172,51 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 1,
+                  gap: { xs: 0.5, sm: 1 },
                   justifyContent: 'space-between',
+                  flexWrap: { xs: 'wrap', sm: 'nowrap' },
                 }}
               >
-                <Typography variant="body2" sx={{ minWidth: 80 }}>
+                <Typography
+                  variant="body2"
+                  sx={{ minWidth: { xs: 70, sm: 80 }, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                >
                   {fDate(e.date)}
                 </Typography>
-                <Typography variant="body2" sx={{ minWidth: 80 }}>
+                <Typography
+                  variant="body2"
+                  sx={{ minWidth: { xs: 50, sm: 80 }, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                >
                   {e.hours?.toFixed(2)}h
                 </Typography>
-                <Typography variant="body2" sx={{ flexGrow: 1 }} color="text.secondary">
+                <Typography
+                  variant="body2"
+                  sx={{
+                    flexGrow: 1,
+                    minWidth: { xs: '100%', sm: 'auto' },
+                    order: { xs: 3, sm: 0 },
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                  }}
+                  color="text.secondary"
+                >
                   {e.notes || ''}
                 </Typography>
-                <Typography variant="body2" sx={{ minWidth: 100, textAlign: 'right' }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    minWidth: { xs: 60, sm: 100 },
+                    textAlign: 'right',
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                  }}
+                >
                   {typeof e.cost === 'number' ? `${e.cost.toFixed(2)}€` : '-'}
                 </Typography>
-                <IconButton color="error" onClick={() => handleDelete(e._id)}>
+                <IconButton
+                  color="error"
+                  size="small"
+                  onClick={() => handleDelete(e._id)}
+                  sx={{ flexShrink: 0 }}
+                >
                   <Iconify icon="mingcute:delete-2-line" />
                 </IconButton>
               </Box>

@@ -48,8 +48,10 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           search?: string;
         };
 
-        // Build filter
-        const filter: any = { tenantId: tenant._id };
+        // Build filter - tenantId is stored as STRING in the database
+        const filter: any = {
+          tenantId: tenant._id.toString()
+        };
         if (status) filter.status = status;
         if (priority) filter.priority = priority;
         if (personnelId) filter.personnelIds = personnelId;
@@ -59,29 +61,22 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
         let aggregationPipeline: any[] = [];
 
         if (search && search.trim()) {
-          // Normalize search term for better Greek character matching
-          const normalizedSearch = search.trim().normalize('NFD');
-          // Create regex with Unicode support and case-insensitive matching
+          // Escape special regex characters to prevent regex injection
+          const escapeRegex = (str: string) =>
+            str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+          const trimmedSearch = search.trim();
+          const escapedSearch = escapeRegex(trimmedSearch);
+
+          // Create regex with case-insensitive matching
           const searchRegex = {
-            $regex: normalizedSearch,
-            $options: "iu" // 'i' for case-insensitive, 'u' for Unicode support
+            $regex: escapedSearch,
+            $options: "i" // case-insensitive
           };
 
           aggregationPipeline = [
-            // First, try MongoDB text search for direct work order fields
             {
-              $match: {
-                ...filter,
-                $or: [
-                  // Text search on indexed fields
-                  { $text: { $search: normalizedSearch } },
-                  // Fallback regex search for better Unicode support
-                  { title: searchRegex },
-                  { workOrderNumber: searchRegex },
-                  { details: searchRegex },
-                  { "location.address": searchRegex },
-                ]
-              }
+              $match: filter
             },
             {
               $lookup: {
@@ -118,25 +113,23 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
                     },
                   },
                 },
-                // Add text search score for sorting
-                textScore: { $meta: "textScore" }
               },
             },
-            // Additional filter for client and personnel search
+            // Search across work order fields, client fields (array), and personnel names (array)
             {
               $match: {
                 $or: [
-                  // Already matched by text search or regex above
-                  { textScore: { $gt: 0 } },
+                  // Work order fields
                   { title: searchRegex },
                   { workOrderNumber: searchRegex },
                   { details: searchRegex },
                   { "location.address": searchRegex },
-                  // Client and personnel searches
-                  { "client.name": searchRegex },
-                  { "client.company": searchRegex },
-                  { "client.email": searchRegex },
-                  { "client.phone": searchRegex },
+                  // Client searches (client is an array from $lookup, access first element)
+                  { "client.0.name": searchRegex },
+                  { "client.0.company": searchRegex },
+                  { "client.0.email": searchRegex },
+                  { "client.0.phone": searchRegex },
+                  // Personnel searches (personnelNames is an array)
                   { personnelNames: searchRegex },
                   // Material names
                   { "materials.name": searchRegex },
@@ -201,10 +194,9 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           // Use aggregation pipeline for search
           const pipeline = [
             ...aggregationPipeline,
-            // Sort by text search score when available, then by creation date
+            // Sort by creation date (latest first)
             {
               $sort: {
-                textScore: { $meta: "textScore" },
                 createdAt: -1
               }
             },
@@ -588,8 +580,6 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
             if (!smsResult.success) {
               console.warn('SMS reminders failed for work order:', smsResult.message);
               // Don't fail work order creation if SMS reminders fail
-            } else {
-              console.log('SMS reminders processed successfully:', smsResult.message);
             }
           } catch (error) {
             console.error('Error processing SMS reminders for work order:', error);
@@ -871,8 +861,6 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
             if (!smsResult.success) {
               console.warn('SMS reminders update failed for work order:', smsResult.message);
               // Don't fail work order update if SMS reminders fail
-            } else {
-              console.log('SMS reminders updated successfully:', smsResult.message);
             }
           } catch (error) {
             console.error('Error updating SMS reminders for work order:', error);

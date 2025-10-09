@@ -1,10 +1,9 @@
 import type { IKanbanTask } from 'src/types/kanban';
 import type { UseTaskItemDndReturn } from '../hooks/use-task-item-dnd';
 
-import useSWR from 'swr';
 import { toast } from 'sonner';
+import { useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useMemo, useCallback } from 'react';
 import { useBoolean } from 'minimal-shared/hooks';
 import { mergeClasses } from 'minimal-shared/utils';
 
@@ -13,7 +12,6 @@ import Chip from '@mui/material/Chip';
 
 import { fDateTime } from 'src/utils/format-time';
 
-import axiosInstance, { endpoints } from 'src/lib/axios';
 import { deleteTask, updateTask } from 'src/actions/kanban';
 
 import { Iconify } from 'src/components/iconify';
@@ -70,28 +68,9 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
   const taskDetailsDialog = useBoolean();
   const { taskRef, state } = useTaskItemDnd(task, columnId);
 
-  // Fetch time entries total hours for this task (lightweight)
-  const timeKey = useMemo(
-    () => [endpoints.fsa.timeEntries.list, { params: { taskId: task.id, limit: 100 } }] as const,
-    [task.id]
-  );
-  const { data: timeData } = useSWR<{ success: boolean; data: { hours?: number }[] }>(
-    timeKey,
-    ([url, cfg]: [string, any]) => axiosInstance.get(url, cfg).then((r) => r.data),
-    { revalidateOnFocus: false, dedupingInterval: 60_000 }
-  );
-  const totalHours = useMemo(
-    () => (timeData?.data || []).reduce((sum, e: any) => sum + (e.hours || 0), 0),
-    [timeData?.data]
-  );
-
-  // Fetch subtasks count
-  const { data: subtaskData } = useSWR<{ success: boolean; data: any[] }>(
-    `/api/v1/subtasks/${task.id}`,
-    (url) => axiosInstance.get(url).then((r) => r.data),
-    { revalidateOnFocus: false, dedupingInterval: 60_000 }
-  );
-  const subtaskCount = subtaskData?.data?.length || 0;
+  // Use pre-computed values from backend to avoid N+1 queries
+  const totalHours = (task as any).timeEntriesTotalHours ?? 0;
+  const subtaskCount = (task as any).subtasksCount ?? 0;
 
   // const attachmentsCount = task.attachments?.length || 0;
 
