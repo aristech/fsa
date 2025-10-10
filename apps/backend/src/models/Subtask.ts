@@ -11,6 +11,7 @@ export interface ISubtask extends Document {
     _id?: mongoose.Types.ObjectId;
     filename: string;
     originalName: string;
+    url?: string;
     size: number;
     mimetype: string;
     uploadedAt: Date;
@@ -58,6 +59,10 @@ const SubtaskSchema = new Schema<ISubtask>(
       originalName: {
         type: String,
         required: true,
+      },
+      url: {
+        type: String,
+        required: false,
       },
       size: {
         type: Number,

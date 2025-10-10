@@ -305,8 +305,7 @@ export function EnhancedAccountDrawer({ data = [], sx, ...other }: EnhancedAccou
                 sx={{ display: 'block', textAlign: 'left' }}
               />
             </Box>
-
-            <UpgradeBlock />
+            {user?.isTenantOwner && <UpgradeBlock />}
           </Box>
         </Scrollbar>
       </Drawer>

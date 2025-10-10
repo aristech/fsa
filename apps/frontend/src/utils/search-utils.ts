@@ -163,3 +163,67 @@ export function sortTasks(
 function getNestedValue(obj: any, path: string): any {
   return path.split('.').reduce((current, key) => current?.[key], obj) || '';
 }
+
+// ----------------------------------------------------------------------
+
+/**
+ * Client type for search
+ */
+export type Client = {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  vatNumber?: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+  contactPerson?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/**
+ * Comprehensive search function for clients
+ * @param clients - Array of clients to search
+ * @param searchTerm - Search term to look for
+ * @returns Filtered array of clients
+ */
+export function searchClients(clients: Client[], searchTerm: string): Client[] {
+  if (!searchTerm.trim()) return clients;
+
+  const lowerSearchTerm = searchTerm.toLowerCase();
+
+  return clients.filter((client) => {
+    const searchableFields = [
+      client.name,
+      client.email,
+      client.company,
+      client.vatNumber,
+      client.phone,
+      client.contactPerson?.name,
+      client.contactPerson?.email,
+      client.contactPerson?.phone,
+      client.address?.street,
+      client.address?.city,
+      client.address?.state,
+      client.address?.zipCode,
+      client.address?.country,
+      client.notes,
+    ];
+
+    return searchableFields
+      .filter(Boolean)
+      .some((field) => String(field).toLowerCase().includes(lowerSearchTerm));
+  });
+}

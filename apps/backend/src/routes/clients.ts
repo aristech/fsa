@@ -2,9 +2,11 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { authenticate } from "../middleware/auth";
 import { requirePermission } from "../middleware/permission-guard";
 import { Client } from "../models";
+import { Tenant } from "../models/Tenant";
 import { AuthenticatedRequest } from "../types";
 import { EntityCleanupService } from "../services/entity-cleanup-service";
 import EnhancedSubscriptionMiddleware from "../middleware/enhanced-subscription-middleware";
+import { EnvSubscriptionService } from "../services/env-subscription-service";
 
 export async function clientRoutes(fastify: FastifyInstance) {
   // Apply authentication middleware to all routes
@@ -442,6 +444,203 @@ export async function clientRoutes(fastify: FastifyInstance) {
         });
       } catch (error) {
         console.error("Error deleting client:", error);
+        return reply.code(500).send({
+          success: false,
+          error: "Internal server error",
+        });
+      }
+    }
+  );
+
+  // POST /api/v1/clients/bulk-import - Bulk import clients from Excel
+  fastify.post(
+    "/bulk-import",
+    {
+      preHandler: [requirePermission("clients.create")], // Remove automatic limit check, we'll check manually
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const req = request as AuthenticatedRequest;
+        const { tenant } = req.context!;
+        const { clients, primaryKey = 'vatNumber', skipEmptyPrimaryKey = true } = request.body as {
+          clients: any[];
+          primaryKey?: string;
+          skipEmptyPrimaryKey?: boolean;
+        };
+
+        if (!clients || !Array.isArray(clients) || clients.length === 0) {
+          return reply.code(400).send({
+            success: false,
+            error: "Invalid request: clients array is required",
+          });
+        }
+
+        // Get full tenant object for subscription check
+        const fullTenant = await Tenant.findById(tenant._id);
+        if (!fullTenant) {
+          return reply.code(400).send({
+            success: false,
+            error: "Tenant not found",
+          });
+        }
+
+        // Check subscription limits using EnvSubscriptionService
+        const limitCheck = EnvSubscriptionService.canPerformAction(fullTenant, 'create_client', 1);
+        const clientLimit = limitCheck.limit === -1 ? -1 : (limitCheck.limit || 0);
+        const currentClientCount = limitCheck.currentUsage || 0;
+        const availableSlots = clientLimit === -1 ? Infinity : Math.max(0, clientLimit - currentClientCount);
+
+        // Log subscription info for debugging
+        fastify.log.info({
+          clientLimit,
+          currentClientCount,
+          availableSlots,
+          totalToImport: clients.length,
+          tenantId: tenant._id.toString(),
+        }, 'Bulk import subscription check');
+
+        const results = {
+          success: 0,
+          failed: 0,
+          created: 0,
+          updated: 0,
+          skipped: 0,
+          limitReached: false,
+          availableSlots,
+          totalAttempted: clients.length,
+          errors: [] as string[],
+        };
+
+        // Helper function to get nested value
+        const getNestedValue = (obj: any, path: string): any => {
+          return path.split('.').reduce((current, key) => current?.[key], obj);
+        };
+
+        // Process each client
+        for (let i = 0; i < clients.length; i++) {
+          try {
+            const clientData = clients[i];
+
+            // Get primary key value
+            const primaryKeyValue = getNestedValue(clientData, primaryKey);
+
+            // Skip if primary key is empty and skipEmptyPrimaryKey is true
+            if (skipEmptyPrimaryKey && (!primaryKeyValue || String(primaryKeyValue).trim() === '')) {
+              results.skipped++;
+              continue;
+            }
+
+            // Validate required fields
+            if (!clientData.name && !clientData.company) {
+              results.failed++;
+              results.errors.push(`Row ${i + 1}: Either name or company is required`);
+              continue;
+            }
+
+            // Build query to find existing client based on primary key
+            const query: any = {
+              tenantId: tenant._id,
+              isActive: true,
+            };
+
+            // Set the primary key field in query
+            if (primaryKey.includes('.')) {
+              // Handle nested fields (e.g., address.city)
+              const parts = primaryKey.split('.');
+              let current = query;
+              for (let j = 0; j < parts.length - 1; j++) {
+                current[parts[j]] = current[parts[j]] || {};
+                current = current[parts[j]];
+              }
+              current[parts[parts.length - 1]] = primaryKeyValue;
+            } else {
+              query[primaryKey] = primaryKeyValue;
+            }
+
+            // Check if client exists
+            const existingClient = primaryKeyValue
+              ? await Client.findOne(query)
+              : null;
+
+            if (existingClient) {
+              // Update existing client (doesn't count against limit)
+              const updatedClient = await Client.findOneAndUpdate(
+                { _id: existingClient._id, tenantId: tenant._id },
+                { $set: clientData },
+                { new: true }
+              );
+
+              if (updatedClient) {
+                results.updated++;
+                results.success++;
+              } else {
+                results.failed++;
+                results.errors.push(`Row ${i + 1}: Failed to update existing client`);
+              }
+            } else {
+              // Check if we've reached the limit for NEW clients
+              if (results.created >= availableSlots) {
+                // Add error message only once when limit is first reached
+                if (!results.limitReached) {
+                  results.limitReached = true;
+                  const remaining = clients.length - i;
+                  results.errors.push(`Subscription limit reached: Your plan allows ${clientLimit} clients total. ${results.created} new clients imported, ${remaining} remaining entries will be skipped.`);
+                  fastify.log.warn({
+                    clientLimit,
+                    created: results.created,
+                    remaining,
+                    tenantId: tenant._id.toString(),
+                  }, 'Client import limit reached');
+                }
+                results.skipped++;
+                continue;
+              }
+
+              // Create new client
+              const newClient = new Client({
+                tenantId: tenant._id,
+                ...clientData,
+              });
+
+              await newClient.save();
+
+              // Track client creation in usage statistics (only for new clients)
+              await EnhancedSubscriptionMiddleware.trackCreation(
+                tenant._id.toString(),
+                'client',
+                1,
+                {
+                  entityId: newClient._id.toString(),
+                  name: clientData.name,
+                  company: clientData.company,
+                  email: clientData.email
+                },
+                (request as any).id
+              );
+
+              results.created++;
+              results.success++;
+            }
+          } catch (error: any) {
+            results.failed++;
+            results.errors.push(`Row ${i + 1}: ${error.message || 'Unknown error'}`);
+            console.error(`Error importing client at row ${i + 1}:`, error);
+          }
+        }
+
+        let message = `Imported ${results.success} out of ${clients.length} clients (${results.created} created, ${results.updated} updated, ${results.skipped} skipped)`;
+
+        if (results.limitReached) {
+          message += `. Subscription limit reached: Your plan allows ${clientLimit} clients total.`;
+        }
+
+        return reply.code(results.success > 0 ? 200 : 400).send({
+          success: results.success > 0,
+          message,
+          data: results,
+        });
+      } catch (error) {
+        console.error("Error bulk importing clients:", error);
         return reply.code(500).send({
           success: false,
           error: "Internal server error",

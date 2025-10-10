@@ -66,7 +66,7 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
           taskId,
           workOrderId,
           reportId,
-          finalScopeDir: scope === "workOrder" ? "work_orders" : scope === "report" ? "reports" : scope === "logo" ? "branding" : "tasks",
+          finalScopeDir: scope === "workOrder" ? "work_orders" : scope === "report" ? "reports" : scope === "logo" ? "branding" : scope === "subtasks" ? "subtasks" : "tasks",
           finalOwnerId: taskId || workOrderId || reportId || logoType || "misc",
         },
         "uploads: parsed multipart data",
@@ -115,6 +115,8 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
             ? "reports"
             : scope === "logo"
             ? "branding"
+            : scope === "subtasks"
+            ? "subtasks"
             : "tasks";
       const ownerId = taskId || workOrderId || reportId || logoType || "misc";
 
@@ -390,7 +392,7 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
         // No origin header (mobile apps, etc.)
         reply.header("Access-Control-Allow-Origin", "*");
       }
-      reply.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+      reply.header("Access-Control-Allow-Methods", "GET, OPTIONS, DELETE");
       reply.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
       return reply.send(createReadStream(filePath));
     },
@@ -424,10 +426,88 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
         // No origin header (mobile apps, etc.)
         reply.header("Access-Control-Allow-Origin", "*");
       }
-      reply.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+      reply.header("Access-Control-Allow-Methods", "GET, OPTIONS, DELETE");
       reply.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
       reply.header("Access-Control-Max-Age", "86400"); // 24 hours
       reply.code(200).send();
+    }
+  );
+
+  // DELETE /api/v1/uploads/:tenantId/:scope/:ownerId/:filename - Delete individual file
+  fastify.delete(
+    "/:tenantId/:scope/:ownerId/:filename",
+    { preHandler: authenticate },
+    async (request, reply) => {
+      const params = request.params as any;
+      const user: any = (request as any).user;
+
+      // Verify tenant access
+      if (String(user.tenantId) !== String(params.tenantId)) {
+        return reply.code(403).send({
+          success: false,
+          error: "Forbidden: You don't have access to this tenant's files"
+        });
+      }
+
+      const decodedFilename = decodeURIComponent(params.filename);
+      const filePath = path.join(
+        process.cwd(),
+        "uploads",
+        params.tenantId,
+        params.scope,
+        params.ownerId,
+        decodedFilename
+      );
+
+      fastify.log.info({
+        tenantId: params.tenantId,
+        scope: params.scope,
+        ownerId: params.ownerId,
+        filename: decodedFilename,
+        userId: user.id,
+      }, "File deletion requested");
+
+      try {
+        // Check if file exists
+        await fs.access(filePath);
+
+        // Track file deletion BEFORE deleting from disk
+        try {
+          await FileTrackingService.trackFileDeletion(params.tenantId, decodedFilename);
+          fastify.log.info({ filename: decodedFilename }, "✅ File deletion tracked successfully");
+        } catch (trackingError) {
+          fastify.log.error({ trackingError, filename: decodedFilename }, "Failed to track file deletion");
+          // Don't fail the deletion if tracking fails, but log it
+        }
+
+        // Delete file from disk
+        await fs.unlink(filePath);
+
+        fastify.log.info({
+          filename: decodedFilename,
+          filePath,
+        }, "File deleted successfully");
+
+        return reply.send({
+          success: true,
+          message: "File deleted successfully",
+          data: { filename: decodedFilename }
+        });
+      } catch (error) {
+        if ((error as any).code === 'ENOENT') {
+          fastify.log.warn({ filename: decodedFilename }, "File not found for deletion");
+          return reply.code(404).send({
+            success: false,
+            error: "File not found"
+          });
+        }
+
+        fastify.log.error({ error, filename: decodedFilename }, "Error deleting file");
+        return reply.code(500).send({
+          success: false,
+          error: "Failed to delete file"
+        });
+      }
     }
   );
 }

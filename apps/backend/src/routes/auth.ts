@@ -10,6 +10,7 @@ import { authenticate } from "../middleware/auth";
 import { MagicLinkService } from "../services/magic-link-service";
 import { TenantSetupService } from "../services/tenant-setup";
 import { GoogleOAuthService } from "../services/google-oauth-service";
+import { MonthlyUsageResetService } from "../services/monthly-usage-reset-service";
 import { sendPersonnelMagicLink, sendPasswordResetEmail } from "./email";
 
 const signInSchema = z.object({
@@ -171,6 +172,31 @@ export async function authRoutes(fastify: FastifyInstance) {
           success: false,
           message: "Invalid credentials",
         });
+      }
+
+      // Check and reset monthly usage if needed (non-superuser only)
+      if (!isSuperuser && tenant) {
+        try {
+          const resetResult = await MonthlyUsageResetService.checkAndResetIfNeeded(
+            tenant._id.toString()
+          );
+
+          if (resetResult.wasReset) {
+            fastify.log.info({
+              tenantId: tenant._id.toString(),
+              tenantName: tenant.name,
+              userEmail: user.email,
+              message: resetResult.message,
+            }, '🔄 Monthly usage reset performed on login');
+          }
+        } catch (error) {
+          // Don't fail login if reset check fails, just log it
+          fastify.log.error({
+            error,
+            tenantId: tenant._id.toString(),
+            userEmail: user.email,
+          }, '❌ Failed to check/reset monthly usage on login');
+        }
       }
 
       // Check if user is active (for technician/supervisor roles)

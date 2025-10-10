@@ -30,9 +30,10 @@ export async function getKanbanData(
   try {
     const req = request as AuthenticatedRequest;
     const { tenant, user } = req.context!;
-    const { clientId, assignedToMe } = request.query as {
+    const { clientId, assignedToMe, workOrderId } = request.query as {
       clientId?: string;
       assignedToMe?: string;
+      workOrderId?: string;
     };
 
     // Get user permissions to filter data appropriately
@@ -191,6 +192,16 @@ export async function getKanbanData(
       });
     }
 
+    // Filter by work order if specified
+    if (workOrderId) {
+      filteredTasks = filteredTasks.filter((task: any) => {
+        return task.workOrderId?.toString() === workOrderId;
+      });
+
+      // Projects typically aren't directly linked to work orders, so we don't filter them
+      // But if they are, you could add filtering logic here
+    }
+
     // Filter by assignedToMe if specified
     if (assignedToMe === "true") {
       // Find the user's personnel record
@@ -237,19 +248,26 @@ export async function getKanbanData(
         ? statusDocs.map((s) => s.name.toLowerCase().replace(/\s+/g, "-"))
         : ["todo", "in-progress", "review", "done"]; // default fallback
 
-    // Get subtasks count for each task
+    // Get subtasks for each task (with attachments)
     const taskIds = filteredTasks.map((task) => task._id);
-    const subtasksCounts = await Subtask.aggregate([
-      { $match: { taskId: { $in: taskIds }, tenantId: req.user.tenantId } },
-      { $group: { _id: "$taskId", count: { $sum: 1 } } },
-    ]);
-    const subtasksCountById = subtasksCounts.reduce(
-      (acc, item) => {
-        acc[item._id.toString()] = item.count;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
+    const allSubtasks = await Subtask.find({
+      taskId: { $in: taskIds },
+      tenantId: req.user.tenantId
+    }).lean();
+
+    // Group subtasks by task
+    const subtasksByTaskId: Record<string, any[]> = {};
+    const subtasksCountById: Record<string, number> = {};
+
+    allSubtasks.forEach((subtask: any) => {
+      const taskIdStr = subtask.taskId.toString();
+      if (!subtasksByTaskId[taskIdStr]) {
+        subtasksByTaskId[taskIdStr] = [];
+        subtasksCountById[taskIdStr] = 0;
+      }
+      subtasksByTaskId[taskIdStr].push(subtask);
+      subtasksCountById[taskIdStr]++;
+    });
 
     // Get comments count for each task
     const commentsCounts = await Comment.aggregate([
@@ -318,6 +336,7 @@ export async function getKanbanData(
           userById,
           personnelById,
           subtasksCount: subtasksCountById[task._id.toString()] || 0,
+          subtasks: subtasksByTaskId[task._id.toString()] || [],
           commentsCount: commentsCountById[task._id.toString()] || 0,
           timeEntriesTotalHours: timeEntriesTotalById[task._id.toString()] || 0,
           workOrderById,
@@ -1013,6 +1032,41 @@ async function handleUpdateTask(
         return String(item);
       });
       updateData.attachments = normalized;
+
+      // Track file deletions - find files that were removed
+      const oldAttachments = existingTask.attachments || [];
+      const newAttachments = normalized;
+      const removedFiles = oldAttachments.filter((oldFile: string) => !newAttachments.includes(oldFile));
+
+      if (removedFiles.length > 0) {
+        // Import FileTrackingService
+        const { FileTrackingService } = await import('../services/file-tracking-service');
+
+        for (const fileUrl of removedFiles) {
+          try {
+            // Extract filename from URL
+            // URL format: /api/v1/uploads/{tenantId}/{scope}/{ownerId}/{filename}
+            // or: http://localhost:3001/api/v1/uploads/{tenantId}/{scope}/{ownerId}/{filename}?token=...
+            const urlParts = fileUrl.split('/');
+            const filenameWithQuery = urlParts[urlParts.length - 1];
+            const filename = filenameWithQuery.split('?')[0]; // Remove query params
+            const decodedFilename = decodeURIComponent(filename);
+
+            if (filename && !filename.includes('http')) {
+              // Track file deletion
+              await FileTrackingService.trackFileDeletion(tenant._id.toString(), decodedFilename);
+              console.log(`✅ Tracked deletion of task file: ${decodedFilename}`);
+            }
+          } catch (error) {
+            console.error(`Failed to track file deletion for ${fileUrl}:`, error);
+            // Continue with other files even if one fails
+          }
+        }
+
+        if (removedFiles.length > 0) {
+          console.log(`🗑️  Tracked ${removedFiles.length} file deletion(s) from task ${taskData.id}`);
+        }
+      }
     } catch {
       updateData.attachments = [];
     }

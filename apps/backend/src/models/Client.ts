@@ -6,28 +6,28 @@ export interface IClient {
   _id: string;
   tenantId: string;
   name: string;
-  email: string;
+  email?: string;
   phone?: string;
   company?: string;
   vatNumber?: string;
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
   };
   billingAddress?: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
   };
   contactPerson?: {
-    name: string;
-    email: string;
-    phone: string;
+    name?: string;
+    email?: string;
+    phone?: string;
   };
   notes?: string;
   isActive: boolean;
@@ -51,7 +51,7 @@ const ClientSchema = new Schema<IClient>(
     },
     email: {
       type: String,
-      required: [true, "Email is required"],
+      required: false,
       lowercase: true,
       trim: true,
     },
@@ -68,11 +68,11 @@ const ClientSchema = new Schema<IClient>(
       trim: true,
     },
     address: {
-      street: { type: String, required: true, trim: true },
-      city: { type: String, required: true, trim: true },
-      state: { type: String, required: true, trim: true },
-      zipCode: { type: String, required: true, trim: true },
-      country: { type: String, default: "US", trim: true },
+      street: { type: String, required: false, trim: true },
+      city: { type: String, required: false, trim: true },
+      state: { type: String, required: false, trim: true },
+      zipCode: { type: String, required: false, trim: true },
+      country: { type: String, default: "GR", trim: true },
     },
     billingAddress: {
       street: { type: String, trim: true },

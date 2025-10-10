@@ -14,9 +14,8 @@ import { useTranslate } from 'src/locales/use-locales';
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
 import { toast } from 'src/components/snackbar';
-import { PhoneInput } from 'src/components/phone-input';
-import { Form, Field, RHFTextField } from 'src/components/hook-form';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
+import { Form, Field, RHFTextField, RHFPhoneInput } from 'src/components/hook-form';
 
 // ----------------------------------------------------------------------
 
@@ -156,13 +155,7 @@ export function ClientCreateForm() {
                 </Grid>
 
                 <Grid size={{ xs: 12, md: 6, lg: 4 }}>
-                  <PhoneInput
-                    value={methods.getValues('phone')}
-                    onChange={(value) => {
-                      methods.setValue('phone', value);
-                    }}
-                    label={`${t('clients.form.phone')} (${t('clients.optional')})`}
-                  />
+                  <RHFPhoneInput name="phone" label={t('clients.form.phone')} />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6, lg: 4 }}>
                   <RHFTextField
@@ -269,7 +262,7 @@ export function ClientCreateForm() {
                 </Grid>
 
                 <Grid size={{ xs: 12, md: 4 }}>
-                  <RHFTextField
+                  <RHFPhoneInput
                     name="contactPerson.phone"
                     label={`${t('clients.form.contactPhone')} (${t('clients.optional')})`}
                   />

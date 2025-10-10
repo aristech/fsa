@@ -1,7 +1,7 @@
 'use client';
 
 import useSWR from 'swr';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePopover } from 'minimal-shared/hooks';
 
@@ -18,13 +18,16 @@ import {
   TableBody,
   TableCell,
   TableHead,
+  TextField,
   IconButton,
   Typography,
+  InputAdornment,
   TablePagination,
   CircularProgress,
 } from '@mui/material';
 
 import { truncateText } from 'src/utils/text-truncate';
+import { searchClients } from 'src/utils/search-utils';
 
 import { useTranslate } from 'src/locales/use-locales';
 import axiosInstance, { fetcher, endpoints } from 'src/lib/axios';
@@ -35,6 +38,8 @@ import { Scrollbar } from 'src/components/scrollbar';
 import { CascadeDeleteDialog, type CascadeDeleteInfo } from 'src/components/cascade-delete-dialog';
 
 import { View403 } from 'src/sections/error';
+
+import { ClientImportDialog } from './client-import-dialog';
 
 // ----------------------------------------------------------------------
 
@@ -74,18 +79,33 @@ export function ClientList() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
-  // Fetch clients from API with pagination
+  // Fetch ALL clients from API (no pagination on server side for filtering)
   const { data, error, isLoading, mutate } = useSWR(
-    `${endpoints.fsa.clients.list}?limit=${rowsPerPage}&offset=${page * rowsPerPage}`,
+    endpoints.fsa.clients.list,
     fetcher<{
       success: boolean;
-      data: { clients: Client[]; total: number; limit: number; offset: number };
+      data: { clients: Client[]; total: number };
     }>
   );
 
   const clients = data?.data?.clients || [];
-  const total = data?.data?.total || 0;
+
+  // Client-side filtering using the search utility (like kanban)
+  const filteredClients = searchClients(clients, searchTerm);
+
+  // Client-side pagination
+  const paginatedClients = filteredClients.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setPage(0);
+  }, [searchTerm]);
 
   // Pagination handlers
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -169,14 +189,51 @@ export function ClientList() {
 
   return (
     <>
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
-        <Button
-          variant="contained"
-          startIcon={<Iconify icon="mingcute:add-line" />}
-          onClick={() => router.push('/dashboard/clients/new/')}
-        >
-          {t('clients.createNew', { defaultValue: 'Create New Client' })}
-        </Button>
+      <Box
+        sx={{
+          mb: 3,
+          display: 'flex',
+          gap: 2,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+        }}
+      >
+        <TextField
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder={t('clients.searchPlaceholder', {
+            defaultValue: 'Search clients...',
+          })}
+          sx={{ maxWidth: 360, width: '100%' }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Iconify icon="eva:search-fill" width={20} />
+              </InputAdornment>
+            ),
+          }}
+          helperText={t('clients.searchHelper', {
+            defaultValue:
+              'Search by name, email, company, VAT, phone, address, or contact person',
+          })}
+        />
+        <Box sx={{ ml: 'auto', display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<Iconify icon="eva:cloud-upload-fill" />}
+            onClick={() => setImportDialogOpen(true)}
+          >
+            {t('clients.import', { defaultValue: 'Import' })}
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<Iconify icon="mingcute:add-line" />}
+            onClick={() => router.push('/dashboard/clients/new/')}
+          >
+            {t('clients.createNew', { defaultValue: 'Create New Client' })}
+          </Button>
+        </Box>
       </Box>
 
       <Card>
@@ -194,7 +251,7 @@ export function ClientList() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {clients.map((client) => (
+              {paginatedClients.map((client) => (
                 <TableRow key={client._id} hover>
                   <TableCell>
                     <Stack direction="row" alignItems="center" spacing={2}>
@@ -260,7 +317,7 @@ export function ClientList() {
         <TablePagination
           rowsPerPageOptions={[5, 10, 25, 50]}
           component="div"
-          count={total}
+          count={filteredClients.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
@@ -313,6 +370,16 @@ export function ClientList() {
           loading={isDeleting}
         />
       )}
+
+      {/* Import Dialog */}
+      <ClientImportDialog
+        open={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        onSuccess={() => {
+          mutate(); // Refresh the client list
+          setImportDialogOpen(false);
+        }}
+      />
     </>
   );
 }

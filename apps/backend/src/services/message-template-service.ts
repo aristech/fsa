@@ -252,9 +252,9 @@ export class MessageTemplateService {
       workOrder,
       task,
       contactPerson: client.contactPerson ? {
-        name: client.contactPerson.name,
-        phone: client.contactPerson.phone,
-        email: client.contactPerson.email
+        name: client.contactPerson.name || '',
+        phone: client.contactPerson.phone || '',
+        email: client.contactPerson.email || ''
       } : undefined,
       service: serviceInfo,
       company: companyInfo || {

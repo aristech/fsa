@@ -17,6 +17,7 @@ import { WorkOrderTimelineService } from "../services/work-order-timeline-servic
 import { WebhookService } from "../services/webhook-service";
 import { WorkOrderSmsService } from "../services/work-order-sms-service";
 import EnhancedSubscriptionMiddleware from "../middleware/enhanced-subscription-middleware";
+import { FileTrackingService } from "../services/file-tracking-service";
 
 export async function workOrderRoutes(fastify: FastifyInstance) {
   // Apply authentication middleware to all routes
@@ -684,9 +685,22 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
           }
         }
 
+        // Get the current work order before updating for timeline comparison
+        const currentWorkOrder = await WorkOrder.findOne({
+          _id: id,
+          tenantId: tenant._id,
+        });
+
+        if (!currentWorkOrder) {
+          return reply.code(404).send({
+            success: false,
+            error: "Work order not found",
+          });
+        }
+
         // Handle attachments conversion if provided
         let processedBody = { ...body };
-        if (body.attachments && Array.isArray(body.attachments)) {
+        if (body.attachments !== undefined && Array.isArray(body.attachments)) {
           processedBody.attachments = body.attachments.map((att: any) => {
             if (typeof att === "string") {
               // Convert string URL to attachment object format
@@ -705,19 +719,46 @@ export async function workOrderRoutes(fastify: FastifyInstance) {
               size: att.size || 0,
             };
           });
-        }
 
-        // Get the current work order before updating for timeline comparison
-        const currentWorkOrder = await WorkOrder.findOne({
-          _id: id,
-          tenantId: tenant._id,
-        });
+          // Track file deletions - find attachments that were removed
+          const oldAttachments = currentWorkOrder.attachments || [];
+          const newAttachments = processedBody.attachments;
 
-        if (!currentWorkOrder) {
-          return reply.code(404).send({
-            success: false,
-            error: "Work order not found",
-          });
+          // Get URLs from old and new attachments
+          const oldUrls = oldAttachments.map((att: any) => att.url);
+          const newUrls = newAttachments.map((att: any) => att.url);
+
+          // Find removed URLs
+          const removedUrls = oldUrls.filter((oldUrl: string) => !newUrls.includes(oldUrl));
+
+          if (removedUrls.length > 0) {
+            const tenantId = tenant._id.toString();
+
+            for (const fileUrl of removedUrls) {
+              try {
+                // Extract filename from URL
+                // URL format: /api/v1/uploads/{tenantId}/{scope}/{ownerId}/{filename}
+                // or: http://...../api/v1/uploads/{tenantId}/{scope}/{ownerId}/{filename}?token=...
+                const urlParts = fileUrl.split('/');
+                const filenameWithQuery = urlParts[urlParts.length - 1];
+                const filename = filenameWithQuery.split('?')[0]; // Remove query params
+                const decodedFilename = decodeURIComponent(filename);
+
+                if (filename && !filename.includes('http')) {
+                  // Track file deletion
+                  await FileTrackingService.trackFileDeletion(tenantId, decodedFilename);
+                  console.log(`✅ Tracked deletion of work order file: ${decodedFilename}`);
+                }
+              } catch (error) {
+                console.error(`Failed to track file deletion for ${fileUrl}:`, error);
+                // Continue with other files even if one fails
+              }
+            }
+
+            if (removedUrls.length > 0) {
+              console.log(`🗑️  Tracked ${removedUrls.length} file deletion(s) from work order ${id}`);
+            }
+          }
         }
 
         const workOrder = await WorkOrder.findOneAndUpdate(

@@ -455,6 +455,31 @@ export function WorkOrderDetails({ id }: Props) {
                     </Grid>
                   </Grid>
                 </Stack>
+                {/* Attachments */}
+                <Card>
+                  <CardContent>
+                    <Stack spacing={2}>
+                      <Typography variant="h6">
+                        {t('attachmentsTitle', { defaultValue: 'Attachments' })}
+                      </Typography>
+                      <WorkOrderDetailsAttachments
+                        attachments={(workOrder as any)?.attachments || []}
+                        workOrderId={id}
+                        onChange={async (attachments) => {
+                          try {
+                            await axiosInstance.put(endpoints.fsa.workOrders.details(id), {
+                              attachments,
+                            });
+                            // Refresh the work order data to show updated attachments
+                            await mutate(endpoints.fsa.workOrders.details(id));
+                          } catch (error) {
+                            console.error('Failed to update work order attachments:', error);
+                          }
+                        }}
+                      />
+                    </Stack>
+                  </CardContent>
+                </Card>
 
                 <Divider />
 
@@ -518,32 +543,6 @@ export function WorkOrderDetails({ id }: Props) {
                         await mutate(endpoints.fsa.workOrders.details(id));
                       } catch (e) {
                         console.error('Failed to update assigned personnel', e);
-                      }
-                    }}
-                  />
-                </Stack>
-              </CardContent>
-            </Card>
-
-            {/* Attachments */}
-            <Card>
-              <CardContent>
-                <Stack spacing={2}>
-                  <Typography variant="h6">
-                    {t('attachmentsTitle', { defaultValue: 'Attachments' })}
-                  </Typography>
-                  <WorkOrderDetailsAttachments
-                    attachments={(workOrder as any)?.attachments || []}
-                    workOrderId={id}
-                    onChange={async (attachments) => {
-                      try {
-                        await axiosInstance.put(endpoints.fsa.workOrders.details(id), {
-                          attachments,
-                        });
-                        // Refresh the work order data to show updated attachments
-                        await mutate(endpoints.fsa.workOrders.details(id));
-                      } catch (error) {
-                        console.error('Failed to update work order attachments:', error);
                       }
                     }}
                   />

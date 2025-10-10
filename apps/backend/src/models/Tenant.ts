@@ -82,7 +82,7 @@ export interface ITenant {
     originalName: string;
     mimeType: string;
     size: number;
-    category: 'logo' | 'workorder_attachment' | 'client_document' | 'material_image' | 'other';
+    category: 'logo' | 'workorder_attachment' | 'client_document' | 'material_image' | 'subtask_attachment' | 'other';
     uploadDate: Date;
     filePath: string;
   }>;

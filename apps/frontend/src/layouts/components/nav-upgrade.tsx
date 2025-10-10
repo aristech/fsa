@@ -34,7 +34,7 @@ export function NavUpgrade({ sx, ...other }: BoxProps) {
   const canManageSubscription = user?.isTenantOwner || hasPermission(PERMISSIONS.TENANT_MANAGE);
 
   // Hide upgrade buttons for personnel (field-only users) or users without subscription management permissions
-  const shouldShowUpgradeButtons = !isFieldOnly && canManageSubscription;
+  const shouldShowUpgradeButtons = !isFieldOnly && canManageSubscription && user?.isTenantOwner;
 
   // Plan label configuration
   const getPlanLabel = () => {

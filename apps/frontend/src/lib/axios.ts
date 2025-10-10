@@ -326,6 +326,7 @@ export const endpoints = {
     clients: {
       list: '/api/v1/clients',
       details: (id: string) => `/api/v1/clients/${id}`,
+      bulkImport: '/api/v1/clients/bulk-import',
     },
     technicians: {
       list: '/api/v1/technicians',

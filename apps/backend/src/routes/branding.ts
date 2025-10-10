@@ -144,6 +144,37 @@ export default async function brandingRoutes(fastify: FastifyInstance) {
         );
         const logoUrlWithToken = `${logoUrl}?token=${token}`;
 
+        // Delete old logo if it exists
+        if (tenant.branding?.logoUrl) {
+          try {
+            // Extract old filename from URL
+            // URL format: http://.../api/v1/uploads/{tenantId}/branding/logo/{filename}?token=...
+            const oldLogoUrl = tenant.branding.logoUrl;
+            const urlParts = oldLogoUrl.split('/');
+            const filenameWithQuery = urlParts[urlParts.length - 1];
+            const oldFilename = filenameWithQuery.split('?')[0]; // Remove query params
+            const decodedOldFilename = decodeURIComponent(oldFilename);
+
+            if (oldFilename && !oldFilename.includes('http')) {
+              // Track old logo deletion
+              await FileTrackingService.trackFileDeletion(user.tenantId, decodedOldFilename);
+
+              // Delete old logo file from disk
+              const oldLogoPath = path.join(baseDir, decodedOldFilename);
+              try {
+                await fs.unlink(oldLogoPath);
+                fastify.log.info({ oldFilename: decodedOldFilename }, 'Old logo deleted successfully');
+              } catch (unlinkError) {
+                // File might not exist, log but don't fail
+                fastify.log.warn({ error: unlinkError, oldFilename: decodedOldFilename }, 'Old logo file not found on disk');
+              }
+            }
+          } catch (cleanupError) {
+            // Log error but don't fail the upload
+            fastify.log.error({ error: cleanupError }, 'Error cleaning up old logo');
+          }
+        }
+
         // Update tenant branding with new logo URL
         const updatedTenant = await Tenant.findByIdAndUpdate(
           user.tenantId,

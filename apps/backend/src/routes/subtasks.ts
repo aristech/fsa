@@ -3,6 +3,7 @@ import { authenticate } from "../middleware/auth";
 import { Subtask, Task, User } from "../models";
 import { AuthenticatedRequest } from "../types";
 import { WorkOrderTimelineService } from "../services/work-order-timeline-service";
+import { FileTrackingService } from "../services/file-tracking-service";
 import * as path from "path";
 import * as fs from "fs/promises";
 import { createWriteStream } from "fs";
@@ -221,8 +222,8 @@ export async function subtasksRoutes(fastify: FastifyInstance) {
         return reply.code(404).send({ success: false, message: 'Task not found' });
       }
 
-      // Find and delete subtask
-      const subtask = await Subtask.findOneAndDelete({
+      // Find subtask BEFORE deleting to get attachments
+      const subtask = await Subtask.findOne({
         _id: subtaskId,
         taskId,
         tenantId: user.tenantId,
@@ -231,6 +232,55 @@ export async function subtasksRoutes(fastify: FastifyInstance) {
       if (!subtask) {
         return reply.code(404).send({ success: false, message: 'Subtask not found' });
       }
+
+      // Clean up all attachments BEFORE deleting subtask
+      if (subtask.attachments && subtask.attachments.length > 0) {
+        const tenantId = user.tenantId.toString();
+        fastify.log.info({
+          subtaskId,
+          attachmentCount: subtask.attachments.length
+        }, 'Cleaning up subtask attachments before deletion');
+
+        for (const attachment of subtask.attachments) {
+          try {
+            // Track file deletion
+            await FileTrackingService.trackFileDeletion(tenantId, attachment.filename);
+            fastify.log.info({
+              tenantId,
+              subtaskId,
+              filename: attachment.filename
+            }, '✅ Subtask attachment deletion tracked');
+
+            // Delete file from disk
+            const filePath = path.join(process.cwd(), 'uploads', tenantId, 'subtasks', subtaskId, attachment.filename);
+            try {
+              await fs.unlink(filePath);
+              fastify.log.info({ path: filePath }, 'Attachment file deleted from disk');
+            } catch (fileError) {
+              fastify.log.warn({ error: fileError, filePath }, 'Failed to delete attachment file from disk');
+            }
+          } catch (trackingError) {
+            fastify.log.error({ trackingError, filename: attachment.filename }, 'Failed to track attachment deletion');
+            // Continue with other files even if one fails
+          }
+        }
+
+        // Try to remove the entire subtask directory
+        try {
+          const subtaskDir = path.join(process.cwd(), 'uploads', tenantId, 'subtasks', subtaskId);
+          await fs.rm(subtaskDir, { recursive: true, force: true });
+          fastify.log.info({ subtaskDir }, 'Subtask directory removed');
+        } catch (dirError) {
+          fastify.log.warn({ error: dirError }, 'Failed to remove subtask directory');
+        }
+      }
+
+      // Now delete the subtask from database
+      await Subtask.findOneAndDelete({
+        _id: subtaskId,
+        taskId,
+        tenantId: user.tenantId,
+      });
 
       // Log timeline entry if task is linked to a work order
       if (task.workOrderId) {
@@ -350,8 +400,9 @@ export async function subtasksRoutes(fastify: FastifyInstance) {
         return reply.code(400).send({ success: false, message: 'No file uploaded' });
       }
 
-      // Create uploads directory if it doesn't exist
-      const uploadsDir = path.join(process.cwd(), 'uploads', 'subtask-attachments');
+      // Create tenant-scoped uploads directory
+      const tenantId = user.tenantId.toString();
+      const uploadsDir = path.join(process.cwd(), 'uploads', tenantId, 'subtasks', subtaskId);
       await fs.mkdir(uploadsDir, { recursive: true });
 
       // Generate unique filename
@@ -362,11 +413,51 @@ export async function subtasksRoutes(fastify: FastifyInstance) {
       // Save file to disk
       await pipeline(data.file, createWriteStream(filePath));
 
+      // Get file size
+      const fileSize = (await fs.stat(filePath)).size;
+
+      // Track file upload in FileTrackingService
+      try {
+        await FileTrackingService.trackFileUpload(
+          tenantId,
+          uniqueFilename,
+          data.filename,
+          data.mimetype,
+          fileSize,
+          'subtask_attachment',
+          filePath
+        );
+        fastify.log.info({
+          tenantId,
+          subtaskId,
+          filename: uniqueFilename,
+          size: fileSize
+        }, '✅ Subtask file upload tracked successfully');
+      } catch (trackingError) {
+        fastify.log.error({ trackingError, filename: uniqueFilename }, 'Failed to track subtask file upload');
+        // Don't fail the upload if tracking fails, but log it
+      }
+
+      // Generate URL for the file
+      const encodedFilename = encodeURIComponent(uniqueFilename);
+      const fileUrl = `/api/v1/uploads/${tenantId}/subtasks/${subtaskId}/${encodedFilename}`;
+      const host = request.headers.host;
+      const protocol = (request.headers["x-forwarded-proto"] as string) || request.protocol;
+      const absoluteUrl = `${protocol}://${host}${fileUrl}`;
+
+      // Generate token for secure access
+      const token = (fastify as any).jwt.sign(
+        { tenantId, userId: user.id },
+        { expiresIn: "7d" }
+      );
+      const urlWithToken = `${absoluteUrl}?token=${token}`;
+
       // Add attachment to subtask
       const attachment = {
         filename: uniqueFilename,
         originalName: data.filename,
-        size: (await fs.stat(filePath)).size,
+        url: urlWithToken,
+        size: fileSize,
         mimetype: data.mimetype,
         uploadedAt: new Date(),
         uploadedBy: user.id,
@@ -417,12 +508,41 @@ export async function subtasksRoutes(fastify: FastifyInstance) {
       // Find the attachment to get filename
       const attachment = subtask.attachments?.find(att => att._id?.toString() === attachmentId);
       if (attachment) {
-        // Delete file from disk
-        const filePath = path.join(process.cwd(), 'uploads', 'subtask-attachments', attachment.filename);
+        const tenantId = user.tenantId.toString();
+
+        // Track file deletion BEFORE deleting from disk
         try {
-          await fs.unlink(filePath);
+          await FileTrackingService.trackFileDeletion(tenantId, attachment.filename);
+          fastify.log.info({
+            tenantId,
+            subtaskId,
+            filename: attachment.filename
+          }, '✅ Subtask file deletion tracked successfully');
+        } catch (trackingError) {
+          fastify.log.error({ trackingError, filename: attachment.filename }, 'Failed to track subtask file deletion');
+          // Continue with deletion even if tracking fails
+        }
+
+        // Delete file from disk (try both old and new paths for backward compatibility)
+        const newPath = path.join(process.cwd(), 'uploads', tenantId, 'subtasks', subtaskId, attachment.filename);
+        const oldPath = path.join(process.cwd(), 'uploads', 'subtask-attachments', attachment.filename);
+
+        try {
+          // Try new path first
+          await fs.unlink(newPath);
+          fastify.log.info({ path: newPath }, 'File deleted from new tenant-scoped path');
         } catch (fileError) {
-          fastify.log.warn({ error: fileError }, 'Failed to delete file from disk');
+          // If new path fails, try old path for backward compatibility
+          try {
+            await fs.unlink(oldPath);
+            fastify.log.info({ path: oldPath }, 'File deleted from old path (migration needed)');
+          } catch (oldPathError) {
+            fastify.log.warn({
+              error: oldPathError,
+              newPath,
+              oldPath
+            }, 'Failed to delete file from disk (file may not exist)');
+          }
         }
       }
 

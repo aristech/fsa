@@ -206,9 +206,11 @@ export function AccountDrawer({ data = [], sx, ...other }: AccountDrawerProps) {
 
           {renderList()}
 
-          <Box sx={{ px: 2.5, py: 3 }}>
-            <UpgradeBlock />
-          </Box>
+          {user?.isTenantOwner && (
+            <Box sx={{ px: 2.5, py: 3 }}>
+              <UpgradeBlock />
+            </Box>
+          )}
         </Scrollbar>
 
         <Box sx={{ p: 2.5 }}>

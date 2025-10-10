@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { Client, WorkOrder, Task, Comment, Subtask, Assignment } from '../models';
+import { FileTrackingService } from './file-tracking-service';
 
 export interface EntityCleanupOptions {
   deleteFiles?: boolean; // Default: true - remove associated files
@@ -258,10 +259,63 @@ export class EntityCleanupService {
         return result;
       }
 
-      // 1. Delete subtasks
+      // 1. Delete subtasks with file cleanup
       if (deleteSubtasks) {
-        const subtaskDeleteResult = await Subtask.deleteMany({ taskId, tenantId });
-        result.details.subtasksDeleted = subtaskDeleteResult.deletedCount;
+        const subtasks = await Subtask.find({ taskId, tenantId });
+        console.log(`🔍 Found ${subtasks.length} subtasks to delete for task ${taskId}`);
+
+        for (const subtask of subtasks) {
+          // Clean up all attachments for this subtask
+          if (subtask.attachments && subtask.attachments.length > 0) {
+            console.log(`🗑️  Cleaning up ${subtask.attachments.length} attachment(s) for subtask ${subtask._id}`);
+
+            for (const attachment of subtask.attachments) {
+              try {
+                // Track file deletion (decreases usage counters)
+                await FileTrackingService.trackFileDeletion(tenantId, attachment.filename);
+                console.log(`✅ Tracked deletion of subtask file: ${attachment.filename}`);
+
+                // Delete file from disk (try new tenant-scoped path first)
+                const newPath = path.join(process.cwd(), 'uploads', tenantId, 'subtasks', subtask._id.toString(), attachment.filename);
+                try {
+                  await fs.unlink(newPath);
+                  console.log(`✅ Deleted file from disk: ${attachment.filename}`);
+                } catch (newPathError) {
+                  // Fallback to old path for backward compatibility
+                  try {
+                    const oldPath = path.join(process.cwd(), 'uploads', 'subtask-attachments', attachment.filename);
+                    await fs.unlink(oldPath);
+                    console.log(`✅ Deleted file from old path: ${attachment.filename}`);
+                  } catch (oldPathError) {
+                    console.error(`⚠️  File not found (already deleted?): ${attachment.filename}`);
+                    result.details.errors.push(`File not found: ${attachment.filename}`);
+                  }
+                }
+
+                result.details.filesDeleted++;
+              } catch (error) {
+                console.error(`❌ Error cleaning up attachment ${attachment.filename}:`, error);
+                result.details.errors.push(`Failed to cleanup attachment: ${attachment.filename}`);
+                // Continue with other files even if one fails
+              }
+            }
+
+            // Try to remove the entire subtask directory
+            try {
+              const subtaskDir = path.join(process.cwd(), 'uploads', tenantId, 'subtasks', subtask._id.toString());
+              await fs.rm(subtaskDir, { recursive: true, force: true });
+              console.log(`✅ Removed subtask directory: ${subtask._id}`);
+            } catch (dirError) {
+              console.log(`📁 Subtask directory not found or already removed: ${subtask._id}`);
+            }
+          }
+
+          // Delete subtask from database
+          await Subtask.findByIdAndDelete(subtask._id);
+          result.details.subtasksDeleted++;
+        }
+
+        console.log(`✅ Deleted ${result.details.subtasksDeleted} subtasks with ${result.details.filesDeleted} files`);
       }
 
       // 2. Delete task files
@@ -306,12 +360,25 @@ export class EntityCleanupService {
     try {
       // Client files would typically be in: uploads/{tenantId}/clients/{clientId}/
       const clientFilesPath = path.join(process.cwd(), 'uploads', tenantId, 'clients', clientId);
-      
+
       try {
         const stats = await fs.stat(clientFilesPath);
         if (stats.isDirectory()) {
           const files = await fs.readdir(clientFilesPath);
           result.details.filesDeleted = files.length;
+
+          // Track each file deletion BEFORE deleting from disk
+          for (const filename of files) {
+            try {
+              await FileTrackingService.trackFileDeletion(tenantId, filename);
+              console.log(`✅ Tracked deletion of file: ${filename}`);
+            } catch (error) {
+              console.error(`Failed to track deletion of ${filename}:`, error);
+              result.details.errors.push(`Failed to track file deletion: ${filename}`);
+              // Continue with deletion even if tracking fails
+            }
+          }
+
           await fs.rm(clientFilesPath, { recursive: true, force: true });
         }
       } catch (error) {
@@ -335,12 +402,25 @@ export class EntityCleanupService {
     try {
       // Work order files would typically be in: uploads/{tenantId}/work-orders/{workOrderId}/
       const workOrderFilesPath = path.join(process.cwd(), 'uploads', tenantId, 'work-orders', workOrderId);
-      
+
       try {
         const stats = await fs.stat(workOrderFilesPath);
         if (stats.isDirectory()) {
           const files = await fs.readdir(workOrderFilesPath);
           result.details.filesDeleted = files.length;
+
+          // Track each file deletion BEFORE deleting from disk
+          for (const filename of files) {
+            try {
+              await FileTrackingService.trackFileDeletion(tenantId, filename);
+              console.log(`✅ Tracked deletion of file: ${filename}`);
+            } catch (error) {
+              console.error(`Failed to track deletion of ${filename}:`, error);
+              result.details.errors.push(`Failed to track file deletion: ${filename}`);
+              // Continue with deletion even if tracking fails
+            }
+          }
+
           await fs.rm(workOrderFilesPath, { recursive: true, force: true });
         }
       } catch (error) {
@@ -396,6 +476,19 @@ export class EntityCleanupService {
         if (stats.isDirectory()) {
           const files = await fs.readdir(dedicatedTaskPath);
           result.details.filesDeleted += files.length;
+
+          // Track each file deletion BEFORE deleting from disk
+          for (const filename of files) {
+            try {
+              await FileTrackingService.trackFileDeletion(tenantId, filename);
+              console.log(`✅ Tracked deletion of task file: ${filename}`);
+            } catch (error) {
+              console.error(`Failed to track deletion of ${filename}:`, error);
+              result.details.errors.push(`Failed to track file deletion: ${filename}`);
+              // Continue with deletion even if tracking fails
+            }
+          }
+
           await fs.rm(dedicatedTaskPath, { recursive: true, force: true });
         }
       } catch (error) {
