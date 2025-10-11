@@ -78,6 +78,7 @@ export function KanbanTaskCreateDialog({
 }: Props) {
   const { selectedClient } = useClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [workOrderInputValue, setWorkOrderInputValue] = useState('');
   const contactsDialog = useBoolean();
 
   // Fetch work orders for selection
@@ -217,6 +218,29 @@ export function KanbanTaskCreateDialog({
       }
     }
   }, [open, initialWorkOrderId, initialClientId, setValue]);
+
+  // Clear work order when client changes
+  useEffect(() => {
+    if (watchedClientId && watchedWorkOrderId) {
+      // Check if the current work order belongs to the selected client
+      const selectedWorkOrder = workOrders.find((wo: any) => wo._id === watchedWorkOrderId);
+      if (selectedWorkOrder) {
+        const woClientId =
+          typeof selectedWorkOrder.clientId === 'object'
+            ? selectedWorkOrder.clientId?._id
+            : selectedWorkOrder.clientId;
+        if (woClientId !== watchedClientId) {
+          // Clear work order if it doesn't belong to the selected client
+          setValue('workOrderId', '');
+          setWorkOrderInputValue('');
+        }
+      }
+    } else if (!watchedClientId && watchedWorkOrderId) {
+      // Clear work order if client is cleared
+      setValue('workOrderId', '');
+      setWorkOrderInputValue('');
+    }
+  }, [watchedClientId, watchedWorkOrderId, workOrders, setValue]);
 
   const onSubmit = handleSubmit(
     async (data) => {
@@ -404,56 +428,184 @@ export function KanbanTaskCreateDialog({
               </Box>
             )}
 
-            {/* Work Order */}
-            <Controller
-              name="workOrderId"
-              control={control}
-              render={({ field }) => (
-                <FormControl fullWidth>
-                  <InputLabel>Work Order (Optional)</InputLabel>
-                  <Select {...field} label="Work Order (Optional)">
-                    <MenuItem value="">
-                      <em>No Work Order</em>
-                    </MenuItem>
-                    {workOrders.map((workOrder: any) => {
-                      // Get client name from the work order
-                      const clientName =
-                        typeof workOrder.clientId === 'object'
-                          ? workOrder.clientId?.name
-                          : workOrder.clientName || 'Unknown Client';
-
-                      return (
-                        <MenuItem key={workOrder._id} value={workOrder._id}>
-                          {workOrder.workOrderNumber} - {workOrder.title} ({clientName})
-                        </MenuItem>
-                      );
-                    })}
-                  </Select>
-                </FormControl>
-              )}
-            />
-
             {/* Client */}
             <Controller
               name="clientId"
               control={control}
-              render={({ field }) => (
-                <FormControl fullWidth>
-                  <InputLabel>Client (Optional)</InputLabel>
-                  <Select {...field} label="Client (Optional)" disabled={!clientsData}>
-                    <MenuItem value="">
-                      <em>No Client</em>
-                    </MenuItem>
-                    {clients.map((client: any) => (
-                      <MenuItem key={client._id} value={client._id}>
-                        {client.name}
-                        {client.company && ` (${client.company})`}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              )}
+              render={({ field }) => {
+                const selectedClientData = clients.find((c: any) => c._id === field.value);
+                return (
+                  <Autocomplete
+                    value={selectedClientData || null}
+                    onChange={(_, newValue) => {
+                      field.onChange(newValue?._id || '');
+                    }}
+                    options={clients}
+                    getOptionLabel={(option: any) =>
+                      `${option.name}${option.company ? ` (${option.company})` : ''}`
+                    }
+                    isOptionEqualToValue={(option: any, value: any) => option._id === value._id}
+                    disabled={!clientsData}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Client (Optional)"
+                        placeholder="Search clients..."
+                      />
+                    )}
+                    renderOption={(props, option: any) => {
+                      const { key, ...otherProps } = props;
+                      return (
+                        <Box component="li" key={key} {...otherProps}>
+                          <Stack>
+                            <Typography variant="body2">{option.name}</Typography>
+                            {option.company && (
+                              <Typography variant="caption" color="text.secondary">
+                                {option.company}
+                              </Typography>
+                            )}
+                          </Stack>
+                        </Box>
+                      );
+                    }}
+                  />
+                );
+              }}
             />
+
+            {/* Work Order - Only show if client is selected */}
+            {watchedClientId && (
+              <Controller
+                name="workOrderId"
+                control={control}
+                render={({ field }) => {
+                  // Filter work orders by selected client
+                  const filteredWorkOrders = workOrders.filter((wo: any) => {
+                    const woClientId =
+                      typeof wo.clientId === 'object' ? wo.clientId?._id : wo.clientId;
+                    return woClientId === watchedClientId;
+                  });
+
+                  const selectedWorkOrder = filteredWorkOrders.find(
+                    (wo: any) => wo._id === field.value
+                  );
+
+                  return (
+                    <Autocomplete
+                      value={selectedWorkOrder || null}
+                      inputValue={workOrderInputValue}
+                      onInputChange={(_, newInputValue) => {
+                        setWorkOrderInputValue(newInputValue);
+                      }}
+                      onChange={async (_, newValue) => {
+                        // Handle "Add new work order" option
+                        if (
+                          newValue &&
+                          typeof newValue === 'object' &&
+                          (newValue as any).isAddNew
+                        ) {
+                          try {
+                            // Create new work order
+                            const selectedClientData = clients.find(
+                              (c: any) => c._id === watchedClientId
+                            );
+                            const response = await axiosInstance.post('/api/v1/work-orders', {
+                              title: workOrderInputValue || 'New Work Order',
+                              clientId: watchedClientId,
+                              clientName: selectedClientData?.name,
+                              clientCompany: selectedClientData?.company,
+                              status: 'created',
+                              priority: 'medium',
+                            });
+
+                            const newWorkOrder = response.data?.data;
+                            if (newWorkOrder?._id) {
+                              // Refresh work orders list
+                              await mutate('/api/v1/work-orders?limit=100');
+                              // Set the new work order as selected
+                              field.onChange(newWorkOrder._id);
+                              setWorkOrderInputValue('');
+                              toast.success('Work order created successfully!');
+                            }
+                          } catch (error) {
+                            console.error('Failed to create work order:', error);
+                            toast.error('Failed to create work order.');
+                          }
+                        } else {
+                          field.onChange(newValue?._id || '');
+                        }
+                      }}
+                      options={[
+                        ...(workOrderInputValue
+                          ? [{ isAddNew: true, title: workOrderInputValue, _id: 'add-new' }]
+                          : []),
+                        ...filteredWorkOrders,
+                      ]}
+                      getOptionLabel={(option: any) => {
+                        if (option.isAddNew) {
+                          return `Add new work order: "${option.title}"`;
+                        }
+                        return `${option.workOrderNumber || ''} - ${option.title}`;
+                      }}
+                      isOptionEqualToValue={(option: any, value: any) => option._id === value._id}
+                      filterOptions={(options, state) => {
+                        // Custom filtering to show existing work orders matching the input
+                        const filtered = options.filter((option: any) => {
+                          if (option.isAddNew) return true;
+                          const searchStr = state.inputValue.toLowerCase();
+                          return (
+                            option.title?.toLowerCase().includes(searchStr) ||
+                            option.workOrderNumber?.toLowerCase().includes(searchStr)
+                          );
+                        });
+                        return filtered;
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Work Order (Optional)"
+                          placeholder="Search or create work order..."
+                        />
+                      )}
+                      renderOption={(props, option: any) => {
+                        const { key, ...otherProps } = props;
+                        if (option.isAddNew) {
+                          return (
+                            <Box
+                              component="li"
+                              key={key}
+                              {...otherProps}
+                              sx={{ color: 'primary.main' }}
+                            >
+                              <Stack direction="row" alignItems="center" spacing={1}>
+                                <Iconify icon="mingcute:add-line" />
+                                <Typography variant="body2">
+                                  Add new work order: &quot;{option.title}&quot;
+                                </Typography>
+                              </Stack>
+                            </Box>
+                          );
+                        }
+                        return (
+                          <Box component="li" key={key} {...otherProps}>
+                            <Stack>
+                              <Typography variant="body2">
+                                {option.title} - {option.workOrderNumber}
+                              </Typography>
+                              {option.status && (
+                                <Typography variant="caption" color="text.secondary">
+                                  Status: {option.status}
+                                </Typography>
+                              )}
+                            </Stack>
+                          </Box>
+                        );
+                      }}
+                    />
+                  );
+                }}
+              />
+            )}
 
             {/* Priority */}
             <Controller

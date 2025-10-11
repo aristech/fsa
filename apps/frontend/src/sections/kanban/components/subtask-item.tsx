@@ -152,7 +152,7 @@ export function SubtaskItem({
           <Iconify icon="solar:hamburger-menu-bold" width={16} />
         </Box>
 
-        <Box sx={{ flexShrink: 0, mt: 0.25 }}>
+        <Box sx={{ flexShrink: 0, mt: -0.6 }}>
           <Checkbox
             disableRipple
             checked={subtask.completed}
@@ -204,11 +204,12 @@ export function SubtaskItem({
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',
                 overflowWrap: 'break-word',
-                minHeight: '1.5em',
+                minHeight: '1em',
                 width: '100%',
                 textDecoration: subtask.completed ? 'line-through' : 'none',
                 color: subtask.completed ? 'text.secondary' : 'text.primary',
                 py: 0.5,
+                fontSize: '0.9rem',
               }}
             >
               {subtask.title}
