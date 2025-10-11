@@ -11,6 +11,7 @@ import { MagicLinkService } from "../services/magic-link-service";
 import { TenantSetupService } from "../services/tenant-setup";
 import { GoogleOAuthService } from "../services/google-oauth-service";
 import { MonthlyUsageResetService } from "../services/monthly-usage-reset-service";
+import { FileTrackingService } from "../services/file-tracking-service";
 import { sendPersonnelMagicLink, sendPasswordResetEmail } from "./email";
 
 const signInSchema = z.object({
@@ -449,6 +450,26 @@ export async function authRoutes(fastify: FastifyInstance) {
         });
 
         permissions = role?.permissions || [];
+      }
+
+      // Trigger quota recalculation in background (non-blocking)
+      if (user.tenantId && !isSuperuser) {
+        setImmediate(async () => {
+          try {
+            const recalcResult = await FileTrackingService.recalculateUsage(
+              user.tenantId.toString(),
+              60 // 60 minute cooldown
+            );
+            if (recalcResult.recalculated) {
+              fastify.log.info({
+                tenantId: user.tenantId,
+                stats: recalcResult.stats,
+              }, '✅ Quota recalculated on user verification');
+            }
+          } catch (error) {
+            fastify.log.error({ error, tenantId: user.tenantId }, '❌ Failed to recalculate quota on verification');
+          }
+        });
       }
 
       return reply.send({

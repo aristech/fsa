@@ -65,6 +65,7 @@ export interface ITenant {
       storageUsedGB: number;
       totalFiles: number;
       lastResetDate: Date;
+      lastQuotaRecalculation?: Date; // Track when quota was last recalculated
     };
   };
   branding: {
@@ -191,6 +192,7 @@ const TenantSchema = new Schema<ITenant>(
         storageUsedGB: { type: Number, default: 0 },
         totalFiles: { type: Number, default: 0 },
         lastResetDate: { type: Date, default: Date.now },
+        lastQuotaRecalculation: Date, // Track when quota was last recalculated
       },
     },
     branding: {

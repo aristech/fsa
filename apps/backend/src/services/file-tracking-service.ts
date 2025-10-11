@@ -80,8 +80,9 @@ export class FileTrackingService {
 
   /**
    * Track file deletion and update tenant usage
+   * @throws Error if tenant not found or file not in metadata
    */
-  static async trackFileDeletion(tenantId: string, filename: string): Promise<void> {
+  static async trackFileDeletion(tenantId: string, filename: string): Promise<{ tracked: boolean; reason?: string }> {
     try {
       // Find the tenant and file metadata
       const tenant = await Tenant.findById(tenantId);
@@ -94,28 +95,35 @@ export class FileTrackingService {
         (file: FileMetadata) => file.filename === filename
       );
 
-      if (fileMetadata) {
-        const sizeGB = fileMetadata.size / (1024 * 1024 * 1024);
-
-        // Update tenant storage usage
-        await Tenant.findByIdAndUpdate(
-          tenantId,
-          {
-            $inc: {
-              'subscription.usage.storageUsedGB': -sizeGB,
-              'subscription.usage.totalFiles': -1,
-            },
-            $pull: {
-              'fileMetadata': { filename }
-            }
-          },
-          { new: true }
-        );
-
-        console.log(`File deletion tracked: ${filename}, Size: ${sizeGB.toFixed(6)}GB`);
+      if (!fileMetadata) {
+        // File not in metadata - could be from before tracking was implemented
+        // or manually added file. Log as warning but don't throw.
+        const warningMsg = `File ${filename} not found in tenant metadata. Cannot update quota. File may have been uploaded before tracking was implemented or manually added.`;
+        console.warn(`⚠️  ${warningMsg}`);
+        return { tracked: false, reason: 'File not found in metadata' };
       }
+
+      const sizeGB = fileMetadata.size / (1024 * 1024 * 1024);
+
+      // Update tenant storage usage
+      await Tenant.findByIdAndUpdate(
+        tenantId,
+        {
+          $inc: {
+            'subscription.usage.storageUsedGB': -sizeGB,
+            'subscription.usage.totalFiles': -1,
+          },
+          $pull: {
+            'fileMetadata': { filename }
+          }
+        },
+        { new: true }
+      );
+
+      console.log(`✅ File deletion tracked: ${filename}, Size: ${sizeGB.toFixed(6)}GB`);
+      return { tracked: true };
     } catch (error) {
-      console.error('Error tracking file deletion:', error);
+      console.error('❌ Error tracking file deletion:', error);
       throw error;
     }
   }
@@ -252,29 +260,56 @@ export class FileTrackingService {
 
   /**
    * Recalculate usage for a tenant (useful for fixing inconsistencies)
+   * @param tenantId - The tenant ID to recalculate usage for
+   * @param cooldownMinutes - Minimum minutes between recalculations (default: 60)
+   * @returns Object indicating if recalculation was performed and the results
    */
-  static async recalculateUsage(tenantId: string): Promise<void> {
+  static async recalculateUsage(
+    tenantId: string,
+    cooldownMinutes: number = 60
+  ): Promise<{ recalculated: boolean; reason?: string; stats?: UsageStats }> {
     try {
+      // Check if recalculation was recently run
+      const tenant = await Tenant.findById(tenantId);
+      if (!tenant) {
+        return { recalculated: false, reason: 'Tenant not found' };
+      }
+
+      const lastRecalc = (tenant as any).subscription?.usage?.lastQuotaRecalculation;
+      if (lastRecalc) {
+        const minutesSinceLastRecalc = (Date.now() - new Date(lastRecalc).getTime()) / (1000 * 60);
+        if (minutesSinceLastRecalc < cooldownMinutes) {
+          console.log(`⏭️  Skipping quota recalculation for tenant ${tenantId} (last run ${minutesSinceLastRecalc.toFixed(0)} minutes ago)`);
+          return {
+            recalculated: false,
+            reason: `Cooldown period active (${minutesSinceLastRecalc.toFixed(0)} minutes since last run)`,
+          };
+        }
+      }
+
+      // Get current stats from file metadata
       const stats = await this.getUsageStats(tenantId);
       if (!stats) {
         throw new Error('Could not get usage stats');
       }
 
-      // Update tenant with recalculated values
+      // Update tenant with recalculated values AND timestamp
       await Tenant.findByIdAndUpdate(
         tenantId,
         {
           $set: {
             'subscription.usage.storageUsedGB': stats.totalSizeGB,
             'subscription.usage.totalFiles': stats.totalFiles,
+            'subscription.usage.lastQuotaRecalculation': new Date(),
           }
         },
         { new: true }
       );
 
-      console.log(`Recalculated usage for tenant ${tenantId}: ${stats.totalFiles} files, ${stats.totalSizeGB.toFixed(2)}GB`);
+      console.log(`✅ Recalculated usage for tenant ${tenantId}: ${stats.totalFiles} files, ${stats.totalSizeGB.toFixed(2)}GB`);
+      return { recalculated: true, stats };
     } catch (error) {
-      console.error('Error recalculating usage:', error);
+      console.error('❌ Error recalculating usage:', error);
       throw error;
     }
   }

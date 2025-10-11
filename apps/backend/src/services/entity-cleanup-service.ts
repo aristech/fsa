@@ -270,32 +270,46 @@ export class EntityCleanupService {
             console.log(`🗑️  Cleaning up ${subtask.attachments.length} attachment(s) for subtask ${subtask._id}`);
 
             for (const attachment of subtask.attachments) {
+              let fileDeleted = false;
               try {
-                // Track file deletion (decreases usage counters)
-                await FileTrackingService.trackFileDeletion(tenantId, attachment.filename);
-                console.log(`✅ Tracked deletion of subtask file: ${attachment.filename}`);
-
-                // Delete file from disk (try new tenant-scoped path first)
+                // STEP 1: Delete file from disk FIRST (try new tenant-scoped path first)
                 const newPath = path.join(process.cwd(), 'uploads', tenantId, 'subtasks', subtask._id.toString(), attachment.filename);
                 try {
                   await fs.unlink(newPath);
                   console.log(`✅ Deleted file from disk: ${attachment.filename}`);
+                  fileDeleted = true;
                 } catch (newPathError) {
                   // Fallback to old path for backward compatibility
                   try {
                     const oldPath = path.join(process.cwd(), 'uploads', 'subtask-attachments', attachment.filename);
                     await fs.unlink(oldPath);
                     console.log(`✅ Deleted file from old path: ${attachment.filename}`);
+                    fileDeleted = true;
                   } catch (oldPathError) {
                     console.error(`⚠️  File not found (already deleted?): ${attachment.filename}`);
                     result.details.errors.push(`File not found: ${attachment.filename}`);
                   }
                 }
 
-                result.details.filesDeleted++;
+                // STEP 2: Track deletion AFTER file is deleted (update quota)
+                if (fileDeleted) {
+                  const trackResult = await FileTrackingService.trackFileDeletion(tenantId, attachment.filename);
+                  if (!trackResult.tracked) {
+                    // File was deleted but not in metadata - log warning
+                    console.warn(`⚠️  File ${attachment.filename} deleted but not tracked: ${trackResult.reason}`);
+                    result.details.errors.push(`Quota not updated for ${attachment.filename}: ${trackResult.reason}`);
+                  } else {
+                    console.log(`✅ Tracked deletion of subtask file: ${attachment.filename}`);
+                  }
+                  result.details.filesDeleted++;
+                }
               } catch (error) {
                 console.error(`❌ Error cleaning up attachment ${attachment.filename}:`, error);
                 result.details.errors.push(`Failed to cleanup attachment: ${attachment.filename}`);
+                // 🚨 CRITICAL: If file was deleted but tracking failed, log for manual review
+                if (fileDeleted) {
+                  console.error(`🚨 CRITICAL: File ${attachment.filename} deleted but quota tracking failed!`);
+                }
                 // Continue with other files even if one fails
               }
             }
@@ -365,21 +379,27 @@ export class EntityCleanupService {
         const stats = await fs.stat(clientFilesPath);
         if (stats.isDirectory()) {
           const files = await fs.readdir(clientFilesPath);
-          result.details.filesDeleted = files.length;
 
-          // Track each file deletion BEFORE deleting from disk
+          // STEP 1: Delete directory from disk FIRST
+          await fs.rm(clientFilesPath, { recursive: true, force: true });
+          console.log(`✅ Deleted ${files.length} client files from disk`);
+
+          // STEP 2: Track each file deletion AFTER files are deleted (update quota)
           for (const filename of files) {
             try {
-              await FileTrackingService.trackFileDeletion(tenantId, filename);
-              console.log(`✅ Tracked deletion of file: ${filename}`);
+              const trackResult = await FileTrackingService.trackFileDeletion(tenantId, filename);
+              if (!trackResult.tracked) {
+                console.warn(`⚠️  File ${filename} deleted but not tracked: ${trackResult.reason}`);
+                result.details.errors.push(`Quota not updated for ${filename}: ${trackResult.reason}`);
+              } else {
+                result.details.filesDeleted++;
+              }
             } catch (error) {
-              console.error(`Failed to track deletion of ${filename}:`, error);
+              console.error(`❌ Failed to track deletion of ${filename}:`, error);
               result.details.errors.push(`Failed to track file deletion: ${filename}`);
-              // Continue with deletion even if tracking fails
+              console.error(`🚨 CRITICAL: File ${filename} deleted but quota tracking failed!`);
             }
           }
-
-          await fs.rm(clientFilesPath, { recursive: true, force: true });
         }
       } catch (error) {
         // Directory doesn't exist, which is fine
@@ -407,21 +427,27 @@ export class EntityCleanupService {
         const stats = await fs.stat(workOrderFilesPath);
         if (stats.isDirectory()) {
           const files = await fs.readdir(workOrderFilesPath);
-          result.details.filesDeleted = files.length;
 
-          // Track each file deletion BEFORE deleting from disk
+          // STEP 1: Delete directory from disk FIRST
+          await fs.rm(workOrderFilesPath, { recursive: true, force: true });
+          console.log(`✅ Deleted ${files.length} work order files from disk`);
+
+          // STEP 2: Track each file deletion AFTER files are deleted (update quota)
           for (const filename of files) {
             try {
-              await FileTrackingService.trackFileDeletion(tenantId, filename);
-              console.log(`✅ Tracked deletion of file: ${filename}`);
+              const trackResult = await FileTrackingService.trackFileDeletion(tenantId, filename);
+              if (!trackResult.tracked) {
+                console.warn(`⚠️  File ${filename} deleted but not tracked: ${trackResult.reason}`);
+                result.details.errors.push(`Quota not updated for ${filename}: ${trackResult.reason}`);
+              } else {
+                result.details.filesDeleted++;
+              }
             } catch (error) {
-              console.error(`Failed to track deletion of ${filename}:`, error);
+              console.error(`❌ Failed to track deletion of ${filename}:`, error);
               result.details.errors.push(`Failed to track file deletion: ${filename}`);
-              // Continue with deletion even if tracking fails
+              console.error(`🚨 CRITICAL: File ${filename} deleted but quota tracking failed!`);
             }
           }
-
-          await fs.rm(workOrderFilesPath, { recursive: true, force: true });
         }
       } catch (error) {
         console.log(`📁 No work order files directory found: ${workOrderFilesPath}`);
@@ -475,21 +501,27 @@ export class EntityCleanupService {
         const stats = await fs.stat(dedicatedTaskPath);
         if (stats.isDirectory()) {
           const files = await fs.readdir(dedicatedTaskPath);
-          result.details.filesDeleted += files.length;
 
-          // Track each file deletion BEFORE deleting from disk
+          // STEP 1: Delete directory from disk FIRST
+          await fs.rm(dedicatedTaskPath, { recursive: true, force: true });
+          console.log(`✅ Deleted ${files.length} task files from disk`);
+
+          // STEP 2: Track each file deletion AFTER files are deleted (update quota)
           for (const filename of files) {
             try {
-              await FileTrackingService.trackFileDeletion(tenantId, filename);
-              console.log(`✅ Tracked deletion of task file: ${filename}`);
+              const trackResult = await FileTrackingService.trackFileDeletion(tenantId, filename);
+              if (!trackResult.tracked) {
+                console.warn(`⚠️  File ${filename} deleted but not tracked: ${trackResult.reason}`);
+                result.details.errors.push(`Quota not updated for ${filename}: ${trackResult.reason}`);
+              } else {
+                result.details.filesDeleted++;
+              }
             } catch (error) {
-              console.error(`Failed to track deletion of ${filename}:`, error);
+              console.error(`❌ Failed to track deletion of ${filename}:`, error);
               result.details.errors.push(`Failed to track file deletion: ${filename}`);
-              // Continue with deletion even if tracking fails
+              console.error(`🚨 CRITICAL: File ${filename} deleted but quota tracking failed!`);
             }
           }
-
-          await fs.rm(dedicatedTaskPath, { recursive: true, force: true });
         }
       } catch (error) {
         console.log(`📁 No dedicated task files directory found: ${taskId}`);

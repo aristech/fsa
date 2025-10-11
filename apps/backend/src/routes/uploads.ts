@@ -493,15 +493,25 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
         await fs.access(filePath);
 
         // Track file deletion BEFORE deleting from disk
+        // This MUST succeed to prevent quota inconsistencies
         try {
-          await FileTrackingService.trackFileDeletion(params.tenantId, decodedFilename);
-          fastify.log.info({ filename: decodedFilename }, "✅ File deletion tracked successfully");
+          const trackResult = await FileTrackingService.trackFileDeletion(params.tenantId, decodedFilename);
+          if (!trackResult.tracked) {
+            // File not in metadata - log warning but allow deletion to proceed
+            fastify.log.warn({ filename: decodedFilename, reason: trackResult.reason }, "⚠️  File not tracked in metadata, quota not updated");
+          } else {
+            fastify.log.info({ filename: decodedFilename }, "✅ File deletion tracked successfully");
+          }
         } catch (trackingError) {
-          fastify.log.error({ trackingError, filename: decodedFilename }, "Failed to track file deletion");
-          // Don't fail the deletion if tracking fails, but log it
+          fastify.log.error({ trackingError, filename: decodedFilename }, "❌ Failed to track file deletion - aborting file deletion");
+          // IMPORTANT: Fail the deletion if tracking fails to prevent quota inconsistencies
+          return reply.code(500).send({
+            success: false,
+            error: "Failed to update storage quota. Please try again.",
+          });
         }
 
-        // Delete file from disk
+        // Delete file from disk (only if tracking succeeded)
         await fs.unlink(filePath);
 
         fastify.log.info({
