@@ -29,6 +29,27 @@ import { getFileMeta, FileThumbnail } from '../../file-thumbnail';
 export type PreviewOrientation = 'horizontal' | 'vertical';
 
 /**
+ * Helper to add JWT token to uploads URLs for backward compatibility
+ */
+function addJwtTokenToUploadsUrl(url: string): string {
+  try {
+    // Check if it's an uploads route without a token
+    const isUploads = /\/api\/v1\/uploads\//.test(url);
+    const hasToken = /[?&]token=/.test(url);
+
+    if (isUploads && !hasToken && typeof window !== 'undefined') {
+      const token = window.sessionStorage.getItem('jwt_access_token');
+      if (token) {
+        return url + (url.includes('?') ? '&' : '?') + `token=${token}`;
+      }
+    }
+  } catch {
+    // Ignore errors
+  }
+  return url;
+}
+
+/**
  * Custom hook to handle file previews for FilesUploadType (includes FileMetadata)
  */
 function useFilesPreviewExtended(files: FilesUploadType) {
@@ -47,7 +68,9 @@ function useFilesPreviewExtended(files: FilesUploadType) {
         previewUrl = URL.createObjectURL(file);
       } else if (typeof file === 'string') {
         const isAbsolute = /^https?:\/\//i.test(file);
-        previewUrl = isAbsolute ? file : `${CONFIG.serverUrl}${file}`;
+        const url = isAbsolute ? file : `${CONFIG.serverUrl}${file}`;
+        // Add JWT token for backward compatibility with migrated URLs
+        previewUrl = addJwtTokenToUploadsUrl(url);
       } else if (file && typeof file === 'object') {
         // FileMetadata object
         const metadata = file as FileMetadata;
@@ -56,9 +79,11 @@ function useFilesPreviewExtended(files: FilesUploadType) {
             ? metadata.signedUrl
             : `${CONFIG.serverUrl}${metadata.signedUrl}`;
         } else if (metadata.url) {
-          previewUrl = metadata.url.startsWith('http')
+          const url = metadata.url.startsWith('http')
             ? metadata.url
             : `${CONFIG.serverUrl}${metadata.url}`;
+          // Add JWT token for backward compatibility with migrated URLs
+          previewUrl = addJwtTokenToUploadsUrl(url);
         }
       }
 
@@ -225,6 +250,14 @@ export function MultiFilePreview({
         console.error('No URL available');
         return;
       }
+
+      // Add full URL if relative
+      if (!fileUrl.startsWith('http')) {
+        fileUrl = `${CONFIG.serverUrl}${fileUrl}`;
+      }
+
+      // Add JWT token for backward compatibility with migrated URLs
+      fileUrl = addJwtTokenToUploadsUrl(fileUrl);
 
       // Open in new tab
       window.open(fileUrl, '_blank', 'noopener,noreferrer');
