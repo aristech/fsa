@@ -94,7 +94,7 @@ export function FieldTaskDetails({
           type: 'completion',
           clientId: task.clientId,
           taskIds: [task.id],
-          location: getTaskLocation(task),
+          location: getTaskLocation(),
           priority: task.priority as 'low' | 'medium' | 'high' | 'urgent',
           tags: task.tags || task.labels || [],
           reportDate: new Date(),

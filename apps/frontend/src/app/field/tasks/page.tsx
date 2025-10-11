@@ -436,7 +436,7 @@ export default function FieldTasksPage() {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <Iconify icon="eva:pin-fill" width={14} />
                       <Typography variant="caption" color="text.secondary">
-                        {getTaskLocation(task)}
+                        {getTaskLocation()}
                       </Typography>
                     </Box>
                   </Box>

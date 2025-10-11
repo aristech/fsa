@@ -1,17 +1,18 @@
 import type { SWRConfiguration } from 'swr';
-import useSWR, { mutate } from 'swr';
 import type {
-  CreateTimeEntryPayload,
   IKanban,
-  IKanbanColumn,
-  IKanbanTask,
   ITimeEntry,
+  IKanbanTask,
+  IKanbanColumn,
+  CreateTimeEntryPayload,
   UpdateTimeEntryPayload,
 } from 'src/types/kanban';
-import { startTransition, useMemo } from 'react';
+
+import useSWR, { mutate } from 'swr';
+import { useMemo, startTransition } from 'react';
 
 import { useClient } from 'src/contexts/client-context';
-import axios, { endpoints, fetcher } from 'src/lib/axios';
+import axios, { fetcher, endpoints } from 'src/lib/axios';
 
 // ----------------------------------------------------------------------
 

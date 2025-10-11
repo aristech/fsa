@@ -3,9 +3,9 @@
 import type {FileMetadata} from 'src/components/upload/types';
 
 import useSWR from 'swr';
-import {useEffect, useMemo, useState} from 'react';
+import {useMemo, useState, useEffect} from 'react';
 
-import {Avatar, Box, Card, Chip, Collapse, IconButton, Stack, Typography} from '@mui/material';
+import {Box, Card, Chip, Stack, Avatar, Collapse, IconButton, Typography} from '@mui/material';
 
 import {useTranslate} from 'src/locales/use-locales';
 import axiosInstance, {endpoints} from 'src/lib/axios';

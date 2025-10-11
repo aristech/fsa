@@ -4,15 +4,15 @@ import type { IKanbanTask } from 'src/types/kanban';
 
 import dayjs, { type Dayjs } from 'dayjs';
 import { useBoolean } from 'minimal-shared/hooks';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 
-import { alpha, Box, Fab, IconButton, Typography, useTheme } from '@mui/material';
+import { Box, Fab, alpha, useTheme, IconButton, Typography } from '@mui/material';
 
 import { useGetFieldBoard } from 'src/actions/field-kanban';
 
 import { Iconify } from 'src/components/iconify';
 import { FieldTaskDetails } from 'src/components/field/field-task-details';
-import { type CalendarTask, type CalendarView, MobileCalendar, MobileDatePicker, } from 'src/components/mobile';
+import { MobileCalendar, MobileDatePicker, type CalendarTask, type CalendarView, } from 'src/components/mobile';
 
 import { KanbanTaskCreateDialog } from 'src/sections/kanban/components/kanban-task-create-dialog';
 
@@ -127,9 +127,7 @@ export default function FieldCalendarPage() {
     // );
 
     const transformedTasks = allTasks
-      .map((task) => {
-        return transformKanbanTaskToCalendarTask(task);
-      })
+      .map((task) => transformKanbanTaskToCalendarTask(task))
       .filter((task): task is CalendarTask => task !== null);
 
     // Add a test task for debugging
@@ -257,7 +255,7 @@ export default function FieldCalendarPage() {
       <Fab
         color="primary"
         aria-label="Add task"
-        onClick={() => handleTaskCreate(selectedDate)}
+        onClick={() => handleTaskCreate()}
         sx={{
           position: 'fixed',
           bottom: '100px', // Account for bottom navigation on all screen sizes

@@ -1,9 +1,10 @@
 import type { SWRConfiguration } from 'swr';
-import useSWR from 'swr';
 import type { IPostItem } from 'src/types/blog';
+
+import useSWR from 'swr';
 import { useMemo } from 'react';
 
-import { endpoints, fetcher } from 'src/lib/axios';
+import { fetcher, endpoints } from 'src/lib/axios';
 
 // ----------------------------------------------------------------------
 
