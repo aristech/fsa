@@ -252,7 +252,7 @@ export function KanbanDetailsMaterials({ taskId }: KanbanDetailsMaterialsProps) 
         });
 
         // Refresh the materials data
-        mutate(endpoints.fsa.tasks.materials.list(taskId));
+        await mutate(endpoints.fsa.tasks.materials.list(taskId));
         toast.success('Material added to task');
       } catch (err) {
         console.error('Failed to add material:', err);
@@ -268,7 +268,7 @@ export function KanbanDetailsMaterials({ taskId }: KanbanDetailsMaterialsProps) 
         await axiosInstance.delete(endpoints.fsa.tasks.materials.remove(taskId, taskMaterialId));
 
         // Refresh the materials data
-        mutate(endpoints.fsa.tasks.materials.list(taskId));
+        await mutate(endpoints.fsa.tasks.materials.list(taskId));
         toast.success('Material removed from task');
       } catch (err) {
         console.error('Failed to remove material:', err);
@@ -288,7 +288,7 @@ export function KanbanDetailsMaterials({ taskId }: KanbanDetailsMaterialsProps) 
         });
 
         // Refresh the materials data
-        mutate(endpoints.fsa.tasks.materials.list(taskId));
+        await mutate(endpoints.fsa.tasks.materials.list(taskId));
         toast.success('Material quantity updated');
       } catch (err) {
         console.error('Failed to update material quantity:', err);

@@ -116,12 +116,12 @@ const BlockLabel = styled('span')(({ theme }) => ({
 type Props = {
   task: IKanbanTask;
   open: boolean;
-  onClose: () => void;
-  onDeleteTask: () => void;
-  onUpdateTask: (updateTask: IKanbanTask) => void;
+  onCloseAction: () => void;
+  onDeleteTaskAction: () => void;
+  onUpdateTaskAction: (updateTask: IKanbanTask) => void;
 };
 
-export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose }: Props) {
+export function KanbanDetails({ task, open, onUpdateTaskAction, onDeleteTaskAction, onCloseAction }: Props) {
   const tabs = useTabs('overview');
   const { t } = useTranslate('common');
   const { user, tenant } = useAuthContext();
@@ -243,20 +243,20 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
 
   // Handle real-time comment events
   useRealtimeComments(task.id, {
-    onCreated: (comment) => {
+    onCreated: async (comment) => {
       // Refresh comments data when a new comment is created
-      mutate(`/api/v1/comments/${task.id}`);
+      await mutate(`/api/v1/comments/${task.id}`);
       toast.success(`${t('newCommentFrom', { defaultValue: 'New comment from' })} ${comment.name}`);
       // Auto-scroll to show new comment
       setTimeout(scrollCommentsToBottom, 100);
     },
-    onUpdated: (commentId, comment) => {
+    onUpdated: async () => {
       // Refresh comments data when a comment is updated
-      mutate(`/api/v1/comments/${task.id}`);
+      await mutate(`/api/v1/comments/${task.id}`);
     },
-    onDeleted: (commentId) => {
+    onDeleted: async () => {
       // Refresh comments data when a comment is deleted
-      mutate(`/api/v1/comments/${task.id}`);
+      await mutate(`/api/v1/comments/${task.id}`);
     },
   });
 
@@ -325,7 +325,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, {
           taskData: { id: task.id, name: taskName },
         });
-        onUpdateTask({ ...task, name: taskName });
+        onUpdateTaskAction({ ...task, name: taskName });
         toast.success(t('taskNameUpdated', { defaultValue: 'Task name updated' }));
       }
     } catch (error) {
@@ -334,7 +334,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       // Revert to original name on error
       setTaskName(task.name);
     }
-  }, [onUpdateTask, task, taskName, t]);
+  }, [onUpdateTaskAction, task, taskName, t]);
 
   const handleKeyUpTaskName = useCallback(
     async (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -355,7 +355,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, {
           taskData: { id: task.id, description: taskDescription },
         });
-        onUpdateTask({ ...task, description: taskDescription });
+        onUpdateTaskAction({ ...task, description: taskDescription });
         toast.success(t('taskDescriptionUpdated', { defaultValue: 'Task description updated' }));
       }
     } catch (error) {
@@ -364,7 +364,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       // Revert to original description on error
       setTaskDescription(task.description || '');
     }
-  }, [taskDescription, task, onUpdateTask, t]);
+  }, [taskDescription, task, onUpdateTaskAction, t]);
   // Keep local tags in sync with incoming task changes
   useEffect(() => {
     setTags(task.tags || task.labels || []);
@@ -376,7 +376,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, {
         taskData: { id: task.id, labels: newTags },
       });
-      onUpdateTask({ ...task, labels: newTags, tags: newTags });
+      onUpdateTaskAction({ ...task, labels: newTags, tags: newTags });
 
       // Invalidate kanban cache to refresh the board view
       await mutate((key) => typeof key === 'string' && key.includes(endpoints.kanban));
@@ -403,7 +403,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       });
 
       // Update the task in the parent state
-      onUpdateTask({
+      onUpdateTaskAction({
         ...task,
         clientId,
         clientName: selectedClient?.name || undefined,
@@ -432,7 +432,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         });
 
         // Update parent component state
-        onUpdateTask({ ...task, priority: newValue });
+        onUpdateTaskAction({ ...task, priority: newValue });
 
         // Invalidate kanban cache to refresh the board view
         await mutate((key) => typeof key === 'string' && key.includes(endpoints.kanban));
@@ -443,7 +443,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         setPriority(task.priority);
       }
     },
-    [task, onUpdateTask, t]
+    [task, onUpdateTaskAction, t]
   );
 
   const handleChangeStatus = useCallback(
@@ -460,7 +460,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         })
         .then(() => {
           // Update the task in the parent component
-          onUpdateTask({ ...task, columnId: newValue, status: newValue } as any);
+          onUpdateTaskAction({ ...task, columnId: newValue, status: newValue } as any);
           toast.success(
             t('taskStatusUpdatedSuccessfully', { defaultValue: 'Task status updated successfully' })
           );
@@ -474,7 +474,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           setStatus(task.columnId || task.status);
         });
     },
-    [task, onUpdateTask, t]
+    [task, onUpdateTaskAction, t]
   );
 
   const handleConfirmMakePublic = useCallback(async () => {
@@ -489,7 +489,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       setIsPrivate(false);
 
       // Update parent task
-      onUpdateTask({
+      onUpdateTaskAction({
         ...task,
         isPrivate: false,
       } as any);
@@ -500,7 +500,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
       console.error('Failed to make task public:', error);
       toast.error(t('failedToUpdatePrivacy', { defaultValue: 'Failed to update privacy status' }));
     }
-  }, [task, onUpdateTask, t, confirmMakePublicDialog]);
+  }, [task, onUpdateTaskAction, t, confirmMakePublicDialog]);
   // Persist date changes (start/end) with debounce to prevent conflicts during selection
   useEffect(() => {
     if (!rangePicker.startDate || !rangePicker.endDate) return undefined;
@@ -559,7 +559,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           repeat: data?.repeat !== undefined ? data.repeat : (task as any).repeat,
           reminder: data?.reminder !== undefined ? data.reminder : (task as any).reminder,
         };
-        onUpdateTask(updatedTask as any);
+        onUpdateTaskAction(updatedTask as any);
 
         toast.success(t('scheduleUpdated', { defaultValue: 'Schedule updated successfully' }));
       } catch (error) {
@@ -569,7 +569,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         );
       }
     },
-    [task, onUpdateTask, t, rangePicker.startDate, rangePicker.endDate]
+    [task, onUpdateTaskAction, t, rangePicker.startDate, rangePicker.endDate]
   );
 
   // Subtask handlers
@@ -577,7 +577,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     async (subtaskId: string, completed: boolean) => {
       try {
         await axiosInstance.put(`/api/v1/subtasks/${task.id}/${subtaskId}`, { completed });
-        mutate(`/api/v1/subtasks/${task.id}`);
+        await mutate(`/api/v1/subtasks/${task.id}`);
         toast.success(
           completed
             ? t('subtaskCompleted', { defaultValue: 'Subtask completed' })
@@ -597,7 +597,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     try {
       await axiosInstance.post(`/api/v1/subtasks/${task.id}`, { title: newSubtaskTitle.trim() });
       setNewSubtaskTitle('');
-      mutate(`/api/v1/subtasks/${task.id}`);
+      await mutate(`/api/v1/subtasks/${task.id}`);
       toast.success(t('subtaskCreated', { defaultValue: 'Subtask created' }));
     } catch (error) {
       console.error('Failed to create subtask:', error);
@@ -609,7 +609,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     async (subtaskId: string) => {
       try {
         await axiosInstance.delete(`/api/v1/subtasks/${task.id}/${subtaskId}`);
-        mutate(`/api/v1/subtasks/${task.id}`);
+        await mutate(`/api/v1/subtasks/${task.id}`);
         toast.success(t('subtaskDeleted', { defaultValue: 'Subtask deleted' }));
       } catch (error) {
         console.error('Failed to delete subtask:', error);
@@ -683,7 +683,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         await axiosInstance.put(`/api/v1/subtasks/${task.id}/reorder`, { subtaskIds });
 
         // Refresh subtasks data
-        mutate(`/api/v1/subtasks/${task.id}`);
+        await mutate(`/api/v1/subtasks/${task.id}`);
 
         toast.success(t('subtasksReordered', { defaultValue: 'Subtasks reordered' }));
       } catch (error) {
@@ -718,7 +718,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         await Promise.all(uploadPromises);
 
         // Refresh subtasks data
-        mutate(`/api/v1/subtasks/${task.id}`);
+        await mutate(`/api/v1/subtasks/${task.id}`);
 
         toast.success(
           t('attachmentsUploaded', { defaultValue: 'Attachments uploaded successfully' })
@@ -741,7 +741,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         );
 
         // Refresh subtasks data
-        mutate(`/api/v1/subtasks/${task.id}`);
+        await mutate(`/api/v1/subtasks/${task.id}`);
 
         toast.success(t('attachmentDeleted', { defaultValue: 'Attachment deleted successfully' }));
       } catch (error) {
@@ -756,7 +756,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
     <KanbanDetailsToolbar
       taskName={task.name}
       taskId={task.id}
-      onDelete={onDeleteTask}
+      onDelete={onDeleteTaskAction}
       taskStatus={task.status}
       workOrderId={(task as any)?.workOrderId}
       workOrderNumber={(task as any)?.workOrderNumber}
@@ -768,7 +768,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, {
             taskData: { id: task.id, completeStatus: next },
           });
-          onUpdateTask({ ...task, completeStatus: next });
+          onUpdateTaskAction({ ...task, completeStatus: next });
           toast.success(
             next
               ? t('markedComplete', { defaultValue: 'Marked complete' })
@@ -792,7 +792,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
                 workOrderTitle: undefined,
               },
             });
-            onUpdateTask({
+            onUpdateTaskAction({
               ...(task as any),
               workOrderId: undefined,
               workOrderNumber: undefined,
@@ -835,7 +835,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           });
 
           // Update local task with all the new information
-          onUpdateTask({
+          onUpdateTaskAction({
             ...(task as any),
             workOrderId: wo.id,
             workOrderNumber: wo.number,
@@ -853,7 +853,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
           console.error('Failed to refresh kanban data:', error);
         }
       }}
-      onCloseDetails={onClose}
+      onCloseDetails={onCloseAction}
       onCreateReport={reportCreateDrawer.onTrue}
       isPrivate={isPrivate}
       isCreator={user?.id === task.reporter?.id}
@@ -987,7 +987,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
                 await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, {
                   taskData: { id: task.id, assignees: list.map((p) => p.id) },
                 });
-                onUpdateTask({ ...task, assignee: list });
+                onUpdateTaskAction({ ...task, assignee: list });
               } catch (e) {
                 console.error('Failed to update assignees', e);
               }
@@ -1245,7 +1245,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
               await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, {
                 taskData: { id: task.id, attachments: files },
               });
-              onUpdateTask({ ...(task as any), attachments: files } as any);
+              onUpdateTaskAction({ ...(task as any), attachments: files } as any);
             } catch (e) {
               console.error('Failed to update attachments', e);
             }
@@ -1398,7 +1398,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
   return (
     <Drawer
       open={open}
-      onClose={onClose}
+      onClose={onCloseAction}
       aria-hidden={!open}
       anchor="right"
       slotProps={{

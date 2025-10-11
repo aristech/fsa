@@ -154,7 +154,7 @@ export function ClientList() {
         `${endpoints.fsa.clients.details(selectedClient._id)}${cascadeDelete ? '?cascade=true' : ''}`
       );
       toast.success(t('clients.clientDeleted'));
-      mutate(); // Refresh the list
+      await mutate(); // Refresh the list
       setDeleteDialogOpen(false);
       setSelectedClient(null);
       setCascadeDeleteInfo(null);
@@ -358,11 +358,11 @@ export function ClientList() {
       {cascadeDeleteInfo && (
         <CascadeDeleteDialog
           open={deleteDialogOpen}
-          onClose={() => {
+          onCloseAction={() => {
             setDeleteDialogOpen(false);
             setCascadeDeleteInfo(null);
           }}
-          onConfirm={confirmDelete}
+          onConfirmAction={confirmDelete}
           title={t('clients.deleteClient', { defaultValue: 'Delete Client' })}
           entityName={selectedClient?.name || 'Client'}
           entityType="client"
@@ -374,9 +374,9 @@ export function ClientList() {
       {/* Import Dialog */}
       <ClientImportDialog
         open={importDialogOpen}
-        onClose={() => setImportDialogOpen(false)}
-        onSuccess={() => {
-          mutate(); // Refresh the client list
+        onCloseAction={() => setImportDialogOpen(false)}
+        onSuccessAction={async () => {
+          await mutate(); // Refresh the client list
           setImportDialogOpen(false);
         }}
       />

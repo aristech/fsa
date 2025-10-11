@@ -219,7 +219,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 // Mobile Modal Component
 export type MobileModalProps = {
   open: boolean;
-  onClose: () => void;
+  onCloseAction: () => void;
   title?: string;
   children: React.ReactNode;
   actions?: React.ReactNode;
@@ -269,7 +269,7 @@ const DialogActionsStyled = styled(DialogActions)(({ theme }) => ({
 
 export function MobileModal({
   open,
-  onClose,
+  onCloseAction,
   title,
   children,
   actions,
@@ -300,14 +300,14 @@ export function MobileModal({
 
   const handleBackdropClick = (event: React.MouseEvent) => {
     if (backdropClose && event.target === event.currentTarget) {
-      onClose();
+      onCloseAction();
     }
   };
 
   return (
     <StyledDialog
       open={open}
-      onClose={onClose}
+      onClose={onCloseAction}
       fullScreen={fullScreen}
       {...(getSizeProps() as any)}
       BackdropProps={{
@@ -327,7 +327,7 @@ export function MobileModal({
             </Typography>
           )}
           {showCloseButton && (
-            <IconButton onClick={onClose} size="small" sx={{ ml: 'auto' }}>
+            <IconButton onClick={onCloseAction} size="small" sx={{ ml: 'auto' }}>
               <Iconify icon="eva:close-fill" width={20} />
             </IconButton>
           )}
@@ -415,11 +415,11 @@ export function MobileLoadingOverlay({
 // Success Animation Component
 export function MobileSuccessAnimation({
   open,
-  onComplete,
+  onCompleteAction,
   message = 'Success!',
 }: {
   open: boolean;
-  onComplete?: () => void;
+  onCompleteAction?: () => void;
   message?: string;
 }) {
   const theme = useTheme();
@@ -427,13 +427,13 @@ export function MobileSuccessAnimation({
   useEffect(() => {
     if (open) {
       const timer = setTimeout(() => {
-        onComplete?.();
+        onCompleteAction?.();
       }, 2000);
 
       return () => clearTimeout(timer);
     }
     return undefined;
-  }, [open, onComplete]);
+  }, [open, onCompleteAction]);
 
   if (!open) return null;
 

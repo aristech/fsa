@@ -29,10 +29,10 @@ export type CalendarTask = {
 export type MobileCalendarProps = {
   tasks: CalendarTask[];
   view: CalendarView;
-  onViewChange: (view: CalendarView) => void;
-  onTaskSelect: (task: CalendarTask) => void;
-  onDateSelect: (date: Date) => void;
-  onTaskCreate?: (date: Date) => void;
+  onViewChangeAction: (view: CalendarView) => void;
+  onTaskSelectAction: (task: CalendarTask) => void;
+  onDateSelectAction: (date: Date) => void;
+  onTaskCreateAction?: (date: Date) => void;
   selectedDate?: Date;
   loading?: boolean;
 };
@@ -107,7 +107,7 @@ const ViewButton = styled(IconButton, {
   },
 }));
 
-const WeekView = styled(Box)(({ theme }) => ({
+const WeekView = styled(Box)(() => ({
   display: 'flex',
   flexDirection: 'column',
   height: '100%',
@@ -137,7 +137,7 @@ const DayHeader = styled(Box, {
   },
 }));
 
-const WeekGrid = styled(Box)(({ theme }) => ({
+const WeekGrid = styled(Box)(() => ({
   flex: 1,
   display: 'flex',
   overflow: 'hidden',
@@ -193,7 +193,7 @@ const TaskItem = styled(Box, {
   };
 });
 
-const MonthView = styled(Box)(({ theme }) => ({
+const MonthView = styled(Box)(() => ({
   display: 'flex',
   flexDirection: 'column',
   height: '100%',
@@ -321,12 +321,10 @@ const getStatusColor = (status: TaskStatus, theme: any): string => {
 export function MobileCalendar({
   tasks,
   view,
-  onViewChange,
-  onTaskSelect,
-  onDateSelect,
-  onTaskCreate,
+  onViewChangeAction,
+  onTaskSelectAction,
+  onDateSelectAction,
   selectedDate = new Date(),
-  loading = false,
 }: MobileCalendarProps) {
   const theme = useTheme();
   const [currentDate, setCurrentDate] = useState(selectedDate);
@@ -429,7 +427,7 @@ export function MobileCalendar({
                 key={index}
                 isToday={isToday}
                 isSelected={isSelected}
-                onClick={() => onDateSelect(date)}
+                onClick={() => onDateSelectAction(date)}
               >
                 {dayTasks.map((task) => (
                   <TaskItem
@@ -438,7 +436,7 @@ export function MobileCalendar({
                     status={task.status}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onTaskSelect(task);
+                      onTaskSelectAction(task);
                     }}
                   >
                     <Typography variant="caption" sx={{ fontWeight: 600 }}>
@@ -472,7 +470,7 @@ export function MobileCalendar({
               isToday={isToday}
               isSelected={isSelected}
               isCurrentMonth={isCurrentMonth}
-              onClick={() => onDateSelect(date)}
+              onClick={() => onDateSelectAction(date)}
             >
               <Typography
                 variant="body2"
@@ -495,7 +493,7 @@ export function MobileCalendar({
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    onTaskSelect(task);
+                    onTaskSelectAction(task);
                   }}
                 />
               ))}
@@ -519,7 +517,7 @@ export function MobileCalendar({
     return (
       <AgendaView>
         {sortedTasks.map((task) => (
-          <AgendaItem key={task.id} onClick={() => onTaskSelect(task)}>
+          <AgendaItem key={task.id} onClick={() => onTaskSelectAction(task)}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
               <Box
                 sx={{
@@ -606,7 +604,7 @@ export function MobileCalendar({
           <DayColumn
             isToday={isToday}
             isSelected
-            onClick={() => onDateSelect(currentDate)}
+            onClick={() => onDateSelectAction(currentDate)}
             sx={{ flex: 1 }}
           >
             {dayTasks.map((task) => (
@@ -616,7 +614,7 @@ export function MobileCalendar({
                 status={task.status}
                 onClick={(e) => {
                   e.stopPropagation();
-                  onTaskSelect(task);
+                  onTaskSelectAction(task);
                 }}
               >
                 <Typography variant="caption" sx={{ fontWeight: 600 }}>
@@ -680,7 +678,7 @@ export function MobileCalendar({
         </Box>
 
         <ViewSelector>
-          <ViewButton active={view === 'day'} onClick={() => onViewChange('day')} title="Day View">
+          <ViewButton active={view === 'day'} onClick={() => onViewChangeAction('day')} title="Day View">
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
               <Iconify icon="eva:clock-fill" width={20} />
               <Typography variant="caption" sx={{ fontSize: '10px', lineHeight: 1 }}>
@@ -690,7 +688,7 @@ export function MobileCalendar({
           </ViewButton>
           <ViewButton
             active={view === 'week'}
-            onClick={() => onViewChange('week')}
+            onClick={() => onViewChangeAction('week')}
             title="Week View"
           >
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
@@ -702,7 +700,7 @@ export function MobileCalendar({
           </ViewButton>
           <ViewButton
             active={view === 'month'}
-            onClick={() => onViewChange('month')}
+            onClick={() => onViewChangeAction('month')}
             title="Month View"
           >
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
@@ -714,7 +712,7 @@ export function MobileCalendar({
           </ViewButton>
           <ViewButton
             active={view === 'agenda'}
-            onClick={() => onViewChange('agenda')}
+            onClick={() => onViewChangeAction('agenda')}
             title="Agenda View"
           >
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>

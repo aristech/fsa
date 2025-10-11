@@ -45,7 +45,7 @@ export function KanbanDetailsCommentInput({
       });
 
       setMessage('');
-      mutate(`/api/v1/comments/${taskId}`);
+      await mutate(`/api/v1/comments/${taskId}`);
       toast.success('Comment added');
 
       // Notify parent to scroll to bottom

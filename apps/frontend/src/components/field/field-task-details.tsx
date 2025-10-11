@@ -38,7 +38,7 @@ export function FieldTaskDetails({
     }
   }, [task, onConvertToReport, reportCreateDrawer]);
 
-  const getTaskLocation = (taskData: IKanbanTask) => 'Field Location';
+  const getTaskLocation = () => 'Field Location';
 
   if (!task) return null;
 
@@ -48,9 +48,9 @@ export function FieldTaskDetails({
         <KanbanDetails
           task={task}
           open={open}
-          onClose={onClose}
-          onUpdateTask={onUpdateTask}
-          onDeleteTask={onDeleteTask}
+          onCloseAction={onClose}
+          onUpdateTaskAction={onUpdateTask}
+          onDeleteTaskAction={onDeleteTask}
         />
 
         {/* Custom Convert to Report Button */}

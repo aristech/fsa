@@ -465,7 +465,7 @@ export function WorkOrderDetails({ id }: Props) {
                       <WorkOrderDetailsAttachments
                         attachments={(workOrder as any)?.attachments || []}
                         workOrderId={id}
-                        onChange={async (attachments) => {
+                        onChangeAction={async (attachments) => {
                           try {
                             await axiosInstance.put(endpoints.fsa.workOrders.details(id), {
                               attachments,
@@ -535,7 +535,7 @@ export function WorkOrderDetails({ id }: Props) {
                             .filter(Boolean)
                         : []
                     }
-                    onChange={async (personnelIds) => {
+                    onChangeAction={async (personnelIds) => {
                       try {
                         await axiosInstance.put(endpoints.fsa.workOrders.details(id), {
                           personnelIds,

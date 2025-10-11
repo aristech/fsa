@@ -89,7 +89,7 @@ export function RolesList() {
       await axiosInstance.delete(endpoints.fsa.roles.details(roleToDelete._id));
 
       toast.success(t('personnel.roles.roleDeleted'));
-      mutate(); // Refresh the list
+      await mutate(); // Refresh the list
     } catch (error) {
       console.error('Error deleting role:', error);
       toast.error(t('personnel.roles.failedToDelete'));

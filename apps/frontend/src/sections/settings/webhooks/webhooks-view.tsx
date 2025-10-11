@@ -242,11 +242,11 @@ export function WebhooksView() {
       <WebhookFormDialog
         open={openForm}
         webhook={editingWebhook}
-        onClose={() => {
+        onCloseAction={() => {
           setOpenForm(false);
           setEditingWebhook(null);
         }}
-        onSubmit={handleSubmit}
+        onSubmitAction={handleSubmit}
       />
 
       <ConfirmDialog

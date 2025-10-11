@@ -19,11 +19,11 @@ import { Iconify } from 'src/components/iconify';
 // ----------------------------------------------------------------------
 
 type Props = {
-  onSuccess: (message: string) => void;
-  onError: (message: string) => void;
+  onSuccessAction: (message: string) => void;
+  onErrorAction: (message: string) => void;
 };
 
-export function LogoUpload({ onSuccess, onError }: Props) {
+export function LogoUpload({ onSuccessAction, onErrorAction }: Props) {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -63,7 +63,7 @@ export function LogoUpload({ onSuccess, onError }: Props) {
       if (!files || files.length === 0) return;
 
       if (files.length > 1) {
-        onError('Please upload only one logo file at a time.');
+        onErrorAction('Please upload only one logo file at a time.');
         event.target.value = '';
         return;
       }
@@ -73,14 +73,14 @@ export function LogoUpload({ onSuccess, onError }: Props) {
       // Validate file type
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
       if (!allowedTypes.includes(file.type)) {
-        onError('Invalid file type. Please upload JPG, PNG, WebP, or SVG files only.');
+        onErrorAction('Invalid file type. Please upload JPG, PNG, WebP, or SVG files only.');
         event.target.value = '';
         return;
       }
 
       // Validate file size (5MB)
       if (file.size > 5 * 1024 * 1024) {
-        onError('File too large. Maximum size is 5MB.');
+        onErrorAction('File too large. Maximum size is 5MB.');
         event.target.value = '';
         return;
       }
@@ -98,17 +98,17 @@ export function LogoUpload({ onSuccess, onError }: Props) {
         });
 
         setLogoUrl(response.data.logoUrl);
-        onSuccess('Logo uploaded successfully!');
+        onSuccessAction('Logo uploaded successfully!');
       } catch (error) {
         console.error('Error uploading logo:', error);
-        onError('Failed to upload logo. Please try again.');
+        onErrorAction('Failed to upload logo. Please try again.');
       } finally {
         setIsUploading(false);
         // Reset input value so the same file can be selected again
         event.target.value = '';
       }
     },
-    [onError, onSuccess]
+    [onErrorAction, onSuccessAction]
   );
 
   const handleRemoveLogo = useCallback(async () => {
@@ -120,14 +120,14 @@ export function LogoUpload({ onSuccess, onError }: Props) {
       });
 
       setLogoUrl(null);
-      onSuccess('Logo removed successfully!');
+      onSuccessAction('Logo removed successfully!');
     } catch (error) {
       console.error('Error removing logo:', error);
-      onError('Failed to remove logo. Please try again.');
+      onErrorAction('Failed to remove logo. Please try again.');
     } finally {
       setIsRemoving(false);
     }
-  }, [onError, onSuccess]);
+  }, [onErrorAction, onSuccessAction]);
 
   if (!canCustomize) {
     return (

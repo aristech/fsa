@@ -188,7 +188,7 @@ const inputComponents: any = {
         variants: [
           ...inputBaseVariants.input,
           {
-            props: (props: any) => !props.isFieldFocused && !!props.isFieldValueEmpty,
+            props: (props: any) => !props.isFieldFocused && props.isFieldValueEmpty,
             style: {
               opacity: 1,
               color: theme.vars?.palette.text.disabled,

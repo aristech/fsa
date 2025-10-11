@@ -79,7 +79,7 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
 
   const handleDeleteTask = useCallback(async () => {
     try {
-      deleteTask(columnId, task.id, task);
+      await deleteTask(columnId, task.id, task);
       toast.success('Delete success!', { position: 'top-center' });
     } catch (error) {
       console.error(error);
@@ -89,7 +89,7 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
   const handleUpdateTask = useCallback(
     async (taskData: IKanbanTask) => {
       try {
-        updateTask(columnId, taskData);
+        await updateTask(columnId, taskData);
       } catch (error) {
         console.error(error);
       }
@@ -101,9 +101,9 @@ export function KanbanTaskItem({ task, columnId, sx, ...other }: TaskItemProps) 
     <KanbanDetails
       task={task}
       open={taskDetailsDialog.value}
-      onClose={taskDetailsDialog.onFalse}
-      onUpdateTask={handleUpdateTask}
-      onDeleteTask={handleDeleteTask}
+      onCloseAction={taskDetailsDialog.onFalse}
+      onUpdateTaskAction={handleUpdateTask}
+      onDeleteTaskAction={handleDeleteTask}
     />
   );
   const renderTaskDisplay = () => (

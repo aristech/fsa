@@ -35,8 +35,8 @@ export type MobileFormStep = {
 
 export type MobileFormWizardProps = {
   steps: MobileFormStep[];
-  onComplete: (data: any) => void;
-  onCancel?: () => void;
+  onCompleteAction: (data: any) => void;
+  onCancelAction?: () => void;
   initialData?: any;
   showProgress?: boolean;
   allowSkip?: boolean;
@@ -94,12 +94,11 @@ const ProgressStep = styled(Box, {
 // Mobile Form Wizard Component
 export function MobileFormWizard({
   steps,
-  onComplete,
-  onCancel,
+  onCompleteAction,
+  onCancelAction,
   initialData = {},
   showProgress = true,
   allowSkip = false,
-  orientation = 'vertical',
 }: MobileFormWizardProps) {
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState(initialData);
@@ -119,7 +118,7 @@ export function MobileFormWizard({
     setCompletedSteps((prev) => new Set([...prev, activeStep]));
 
     if (isLastStep) {
-      onComplete(formData);
+      onCompleteAction(formData);
     } else {
       setActiveStep((prev) => prev + 1);
     }
@@ -197,8 +196,8 @@ export function MobileFormWizard({
           </Box>
 
           <Box sx={{ display: 'flex', gap: 1 }}>
-            {onCancel && (
-              <Button variant="text" onClick={onCancel} color="error">
+            {onCancelAction && (
+              <Button variant="text" onClick={onCancelAction} color="error">
                 Cancel
               </Button>
             )}
@@ -226,7 +225,7 @@ export function MobileFormWizard({
 export function MobileDatePicker({
   label,
   value,
-  onChange,
+  onChangeAction,
   minDate,
   maxDate,
   disabled,
@@ -236,21 +235,25 @@ export function MobileDatePicker({
 }: {
   label: string;
   value: Dayjs | null;
-  onChange: (date: Dayjs | null) => void;
-  minDate?: Dayjs;
-  maxDate?: Dayjs;
+  onChangeAction: (date: Dayjs | null) => void;
+  minDate?: string | Date;
+  maxDate?: string | Date;
   disabled?: boolean;
   required?: boolean;
   error?: boolean;
   helperText?: string;
 }) {
+  // Convert serializable date types to Dayjs
+  const minDateDayjs = minDate ? dayjs(minDate) : undefined;
+  const maxDateDayjs = maxDate ? dayjs(maxDate) : undefined;
+
   return (
     <DatePicker
       label={label}
       value={value}
-      onChange={onChange}
-      minDate={minDate}
-      maxDate={maxDate}
+      onChange={onChangeAction}
+      minDate={minDateDayjs}
+      maxDate={maxDateDayjs}
       disabled={disabled}
       slotProps={{
         textField: {
@@ -345,7 +348,7 @@ function SimpleTimeInput({
 export function MobileTimePicker({
   label,
   value,
-  onChange,
+  onChangeAction,
   disabled,
   required,
   error,
@@ -353,7 +356,7 @@ export function MobileTimePicker({
 }: {
   label: string;
   value: Dayjs | null;
-  onChange: (date: Dayjs | null) => void;
+  onChangeAction: (date: Dayjs | null) => void;
   disabled?: boolean;
   required?: boolean;
   error?: boolean;
@@ -363,7 +366,7 @@ export function MobileTimePicker({
     <SimpleTimeInput
       label={label}
       value={value}
-      onChange={onChange}
+      onChange={onChangeAction}
       disabled={disabled}
       required={required}
       error={error}
@@ -376,7 +379,7 @@ export function MobileTimePicker({
 export function MobileSelect({
   label,
   value,
-  onChange,
+  onChangeAction,
   options,
   disabled,
   required,
@@ -386,7 +389,7 @@ export function MobileSelect({
 }: {
   label: string;
   value: any;
-  onChange: (value: any) => void;
+  onChangeAction: (value: any) => void;
   options: { value: any; label: string; disabled?: boolean }[];
   disabled?: boolean;
   required?: boolean;
@@ -399,7 +402,7 @@ export function MobileSelect({
       <InputLabel>{label}</InputLabel>
       <Select
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => onChangeAction(e.target.value)}
         label={label}
         multiple={multiple}
         sx={{
@@ -432,7 +435,7 @@ export function MobileSelect({
 export function MobileImagePicker({
   label,
   value,
-  onChange,
+  onChangeAction,
   accept = 'image/*',
   multiple = false,
   disabled,
@@ -441,7 +444,7 @@ export function MobileImagePicker({
 }: {
   label: string;
   value: File[] | null;
-  onChange: (files: File[] | null) => void;
+  onChangeAction: (files: File[] | null) => void;
   accept?: string;
   multiple?: boolean;
   disabled?: boolean;
@@ -454,7 +457,7 @@ export function MobileImagePicker({
     const files = event.target.files;
     if (files) {
       const fileArray = Array.from(files);
-      onChange(multiple ? fileArray : fileArray.slice(0, 1));
+      onChangeAction(multiple ? fileArray : fileArray.slice(0, 1));
     }
   };
 

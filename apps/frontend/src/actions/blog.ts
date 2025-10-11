@@ -1,10 +1,9 @@
 import type { SWRConfiguration } from 'swr';
-import type { IPostItem } from 'src/types/blog';
-
 import useSWR from 'swr';
+import type { IPostItem } from 'src/types/blog';
 import { useMemo } from 'react';
 
-import { fetcher, endpoints } from 'src/lib/axios';
+import { endpoints, fetcher } from 'src/lib/axios';
 
 // ----------------------------------------------------------------------
 
@@ -27,7 +26,7 @@ export function useGetPosts() {
     ...swrOptions,
   });
 
-  const memoizedValue = useMemo(
+  return useMemo(
     () => ({
       posts: data?.posts || [],
       postsLoading: isLoading,
@@ -37,8 +36,6 @@ export function useGetPosts() {
     }),
     [data?.posts, error, isLoading, isValidating]
   );
-
-  return memoizedValue;
 }
 
 // ----------------------------------------------------------------------
@@ -54,7 +51,7 @@ export function useGetPost(title: string) {
     ...swrOptions,
   });
 
-  const memoizedValue = useMemo(
+  return useMemo(
     () => ({
       post: data?.post,
       postLoading: isLoading,
@@ -63,8 +60,6 @@ export function useGetPost(title: string) {
     }),
     [data?.post, error, isLoading, isValidating]
   );
-
-  return memoizedValue;
 }
 
 // ----------------------------------------------------------------------
@@ -80,7 +75,7 @@ export function useGetLatestPosts(title: string) {
     ...swrOptions,
   });
 
-  const memoizedValue = useMemo(
+  return useMemo(
     () => ({
       latestPosts: data?.latestPosts || [],
       latestPostsLoading: isLoading,
@@ -90,8 +85,6 @@ export function useGetLatestPosts(title: string) {
     }),
     [data?.latestPosts, error, isLoading, isValidating]
   );
-
-  return memoizedValue;
 }
 
 // ----------------------------------------------------------------------
@@ -108,7 +101,7 @@ export function useSearchPosts(query: string) {
     keepPreviousData: true,
   });
 
-  const memoizedValue = useMemo(
+  return useMemo(
     () => ({
       searchResults: data?.results || [],
       searchLoading: isLoading,
@@ -118,6 +111,4 @@ export function useSearchPosts(query: string) {
     }),
     [data?.results, error, isLoading, isValidating]
   );
-
-  return memoizedValue;
 }

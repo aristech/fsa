@@ -35,8 +35,8 @@ export interface CascadeDeleteInfo {
 
 type Props = {
   open: boolean;
-  onClose: () => void;
-  onConfirm: (cascadeDelete: boolean) => void;
+  onCloseAction: () => void;
+  onConfirmAction: (cascadeDelete: boolean) => void;
   title: string;
   entityName: string;
   entityType: 'work-order' | 'client';
@@ -46,8 +46,8 @@ type Props = {
 
 export function CascadeDeleteDialog({
   open,
-  onClose,
-  onConfirm,
+  onCloseAction,
+  onConfirmAction,
   title,
   entityName,
   entityType,
@@ -60,11 +60,11 @@ export function CascadeDeleteDialog({
   const handleClose = () => {
     setCascadeDelete(false);
     setUnderstood(false);
-    onClose();
+    onCloseAction();
   };
 
   const handleConfirm = () => {
-    onConfirm(cascadeDelete);
+    onConfirmAction(cascadeDelete);
     handleClose();
   };
 

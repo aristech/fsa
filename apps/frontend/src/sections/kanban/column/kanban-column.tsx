@@ -41,7 +41,7 @@ export function KanbanColumn({ column, tasks, sx, ...other }: ColumnProps) {
     async (columnName: string) => {
       try {
         if (column.name !== columnName) {
-          updateColumn(column.id, columnName);
+          await updateColumn(column.id, columnName);
 
           toast.success('Update success!', { position: 'top-center' });
         }
@@ -54,7 +54,7 @@ export function KanbanColumn({ column, tasks, sx, ...other }: ColumnProps) {
 
   const handleDeleteColumn = useCallback(async () => {
     try {
-      deleteColumn(column.id);
+      await deleteColumn(column.id);
 
       toast.success('Delete success!', { position: 'top-center' });
     } catch (error) {
@@ -65,7 +65,7 @@ export function KanbanColumn({ column, tasks, sx, ...other }: ColumnProps) {
   const handleAddTask = useCallback(
     async (taskData: IKanbanTask) => {
       try {
-        createTask(column.id, taskData);
+        await createTask(column.id, taskData);
 
         openAddTask.onFalse();
       } catch (error) {
@@ -75,7 +75,7 @@ export function KanbanColumn({ column, tasks, sx, ...other }: ColumnProps) {
     [column.id, openAddTask]
   );
 
-  const handleCreateTask = useCallback(async (taskData: any) => {
+  const handleCreateTask = useCallback(async () => {
     try {
       // The createTask function now handles cache updates automatically
       // No need to reload the page

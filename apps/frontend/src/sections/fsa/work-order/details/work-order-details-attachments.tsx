@@ -1,19 +1,19 @@
 'use client';
 
-import type { FileMetadata } from 'src/components/upload/types';
+import type {FileMetadata} from 'src/components/upload/types';
 
 import useSWR from 'swr';
-import { useMemo, useState, useEffect } from 'react';
+import {useEffect, useMemo, useState} from 'react';
 
-import { Box, Card, Chip, Stack, Avatar, Collapse, Typography, IconButton } from '@mui/material';
+import {Avatar, Box, Card, Chip, Collapse, IconButton, Stack, Typography} from '@mui/material';
 
-import { useTranslate } from 'src/locales/use-locales';
-import axiosInstance, { endpoints } from 'src/lib/axios';
+import {useTranslate} from 'src/locales/use-locales';
+import axiosInstance, {endpoints} from 'src/lib/axios';
 
-import { Iconify } from 'src/components/iconify';
-import { MultiFilePreview } from 'src/components/upload';
+import {Iconify} from 'src/components/iconify';
+import {MultiFilePreview} from 'src/components/upload';
 
-import { useAuthContext } from 'src/auth/hooks/use-auth-context';
+import {useAuthContext} from 'src/auth/hooks/use-auth-context';
 
 // ----------------------------------------------------------------------
 
@@ -37,10 +37,10 @@ type GroupedAttachment = {
 type Props = {
   attachments: Attachment[];
   workOrderId: string;
-  onChange?: (attachments: Attachment[]) => void;
+  onChangeAction?: (attachments: Attachment[]) => void;
 };
 
-export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange }: Props) {
+export function WorkOrderDetailsAttachments({ attachments, workOrderId }: Props) {
   const [uploadedAttachments, setUploadedAttachments] = useState<Attachment[]>(attachments);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     workOrder: true,
@@ -67,7 +67,11 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange
   }, [attachments]);
 
   // Group all attachments by source (computed with useMemo)
-  const rawGroupedAttachments = useMemo(() => {
+
+
+  // Group by source type
+  // Note: MultiFilePreview will handle signed URL generation automatically
+  const groupedAttachments = useMemo(() => {
     const grouped: GroupedAttachment[] = [];
 
     // 1. Work order attachments
@@ -76,7 +80,7 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange
 
       grouped.push({
         source: 'workOrder',
-        sourceName: t('workOrder', { defaultValue: 'Work Order' }),
+        sourceName: t('workOrder', {defaultValue: 'Work Order'}),
         sourceId: workOrderId,
         attachment: {
           ...att,
@@ -109,7 +113,7 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange
 
             grouped.push({
               source: 'task',
-              sourceName: t('task', { defaultValue: 'Task' }),
+              sourceName: t('task', {defaultValue: 'Task'}),
               sourceId: task._id,
               taskTitle: task.name || task.title,
               attachment: {
@@ -123,7 +127,7 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange
             // In case task attachments are objects (future compatibility)
             grouped.push({
               source: 'task',
-              sourceName: t('task', { defaultValue: 'Task' }),
+              sourceName: t('task', {defaultValue: 'Task'}),
               sourceId: task._id,
               taskTitle: task.name || task.title,
               attachment: {
@@ -146,7 +150,7 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange
               const url = subtaskAtt.url || `/api/v1/uploads/${subtaskAtt.filename}`;
               grouped.push({
                 source: 'subtask',
-                sourceName: t('subtask', { defaultValue: 'Subtask' }),
+                sourceName: t('subtask', {defaultValue: 'Subtask'}),
                 sourceId: subtask._id,
                 taskTitle: task.name || task.title,
                 subtaskTitle: subtask.title,
@@ -165,10 +169,6 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId, onChange
 
     return grouped;
   }, [uploadedAttachments, tasks, workOrderId, t]);
-
-  // Group by source type
-  // Note: MultiFilePreview will handle signed URL generation automatically
-  const groupedAttachments = rawGroupedAttachments;
   const workOrderAttachments = groupedAttachments.filter((g) => g.source === 'workOrder');
   const taskAttachments = groupedAttachments.filter((g) => g.source === 'task');
   const subtaskAttachments = groupedAttachments.filter((g) => g.source === 'subtask');

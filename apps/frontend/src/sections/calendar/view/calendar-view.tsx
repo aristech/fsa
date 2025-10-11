@@ -127,7 +127,7 @@ export function CalendarView() {
     setSelectedDateRange(null);
   };
 
-  const handleCreateTaskSuccess = (task: any) => {
+  const handleCreateTaskSuccess = () => {
     handleCloseCreateTask();
     // Task events will be refreshed automatically through SWR
   };
@@ -364,9 +364,9 @@ export function CalendarView() {
         <KanbanDetails
           task={selectedTask}
           open={openTaskDetails}
-          onClose={handleCloseTaskDetails}
-          onUpdateTask={handleUpdateTask}
-          onDeleteTask={handleDeleteTask}
+          onCloseAction={handleCloseTaskDetails}
+          onUpdateTaskAction={handleUpdateTask}
+          onDeleteTaskAction={handleDeleteTask}
         />
       )}
 

@@ -19,7 +19,7 @@ export function RHFWorkOrderPersonnel({ name, disabled }: Props) {
       render={({ field }) => (
         <WorkOrderPersonnelSelection
           value={field.value || []}
-          onChange={field.onChange}
+          onChangeAction={field.onChange}
           disabled={disabled}
         />
       )}

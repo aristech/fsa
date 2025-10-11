@@ -41,16 +41,16 @@ type Personnel = {
 
 type Props = {
   open: boolean;
-  onClose: () => void;
+  onCloseAction: () => void;
   selectedPersonnel?: Personnel[];
-  onAssign?: (personnel: Personnel[]) => void;
+  onAssignAction?: (personnel: Personnel[]) => void;
 };
 
 export function WorkOrderPersonnelDialog({
   selectedPersonnel = [],
   open,
-  onClose,
-  onAssign,
+  onCloseAction,
+  onAssignAction,
 }: Props) {
   const [searchContact, setSearchContact] = useState('');
   const [selected, setSelected] = useState<Personnel[]>(selectedPersonnel);
@@ -82,10 +82,10 @@ export function WorkOrderPersonnelDialog({
   );
 
   const handleAssign = () => {
-    if (onAssign) {
-      onAssign(selected);
+    if (onAssignAction) {
+      onAssignAction(selected);
     }
-    onClose();
+    onCloseAction();
   };
 
   // Update selected when selectedPersonnel prop changes
@@ -94,7 +94,7 @@ export function WorkOrderPersonnelDialog({
   }, [selectedPersonnel]);
 
   return (
-    <Dialog fullWidth maxWidth="xs" open={open} onClose={onClose}>
+    <Dialog fullWidth maxWidth="xs" open={open} onClose={onCloseAction}>
       <DialogTitle sx={{ pb: 0 }}>
         {t('assignPersonnel', { defaultValue: 'Assign Personnel' })}
         <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
@@ -174,7 +174,7 @@ export function WorkOrderPersonnelDialog({
         )}
 
         <Box sx={{ display: 'flex', gap: 1, mt: 3 }}>
-          <Button variant="outlined" onClick={onClose} fullWidth>
+          <Button variant="outlined" onClick={onCloseAction} fullWidth>
             {t('cancel', { defaultValue: 'Cancel' })}
           </Button>
           <Button variant="contained" onClick={handleAssign} fullWidth>

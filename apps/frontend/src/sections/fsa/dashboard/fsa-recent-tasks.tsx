@@ -219,9 +219,9 @@ export function FsaRecentTasks() {
         <KanbanDetails
           task={selectedTask}
           open={!!selectedTask}
-          onClose={handleCloseTask}
-          onUpdateTask={() => {}}
-          onDeleteTask={() => {}}
+          onCloseAction={handleCloseTask}
+          onUpdateTaskAction={() => {}}
+          onDeleteTaskAction={() => {}}
         />
       )}
     </Card>

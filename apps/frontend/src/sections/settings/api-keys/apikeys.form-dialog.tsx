@@ -32,8 +32,8 @@ type User = { _id: string; firstName: string; lastName: string; email: string; r
 type Props = {
   open: boolean;
   apiKey: ApiKey | null;
-  onClose: () => void;
-  onSubmit: (data: ApiKeyFormData) => void;
+  onCloseAction: () => void;
+  onSubmitAction: (data: ApiKeyFormData) => void;
 };
 
 const PERMISSIONS = [
@@ -52,7 +52,7 @@ const PERMISSIONS = [
   '*',
 ];
 
-export function ApiKeyFormDialog({ open, apiKey, onClose, onSubmit }: Props) {
+export function ApiKeyFormDialog({ open, apiKey, onCloseAction, onSubmitAction }: Props) {
   const [users, setUsers] = useState<User[]>([]);
 
   const {
@@ -99,9 +99,9 @@ export function ApiKeyFormDialog({ open, apiKey, onClose, onSubmit }: Props) {
   }, [apiKey, reset]);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onCloseAction} maxWidth="md" fullWidth>
       <DialogTitle>{apiKey ? 'Edit API Key' : 'Create API Key'}</DialogTitle>
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmitAction)}>
         <DialogContent>
           <Controller
             name="name"
@@ -185,7 +185,7 @@ export function ApiKeyFormDialog({ open, apiKey, onClose, onSubmit }: Props) {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onCloseAction}>Cancel</Button>
           <Button type="submit" variant="contained" disabled={isSubmitting}>
             {apiKey ? 'Update' : 'Create'}
           </Button>

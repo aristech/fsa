@@ -64,7 +64,7 @@ export function CompanySettingsView() {
                 subheader={t('settings.company.info.subtitle')}
               />
               <CardContent>
-                <CompanyInfoForm onSuccess={handleSuccess} onError={handleError} />
+                <CompanyInfoForm onSuccessAction={handleSuccess} onErrorAction={handleError} />
               </CardContent>
             </Card>
           </Grid>
@@ -77,7 +77,7 @@ export function CompanySettingsView() {
                 subheader={t('settings.company.logo.subtitle')}
               />
               <CardContent>
-                <LogoUpload onSuccess={handleSuccess} onError={handleError} />
+                <LogoUpload onSuccessAction={handleSuccess} onErrorAction={handleError} />
               </CardContent>
             </Card>
           </Grid>

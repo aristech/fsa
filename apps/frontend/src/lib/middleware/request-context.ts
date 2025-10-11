@@ -144,10 +144,10 @@ export function withRequestContext(
           : null,
         client: client
           ? {
-              _id: client._id.toString(),
-              name: client.name,
-              email: client.email,
-              company: client.company,
+              _id: client?._id.toString(),
+              name: client?.name,
+              email: client?.email,
+              company: client?.company,
             }
           : undefined,
         filters,

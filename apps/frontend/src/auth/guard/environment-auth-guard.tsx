@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useEnvironmentAccess } from '@/hooks/use-environment-access';
 
 import { paths } from 'src/routes/paths';
 import { useRouter, usePathname } from 'src/routes/hooks';
@@ -10,7 +11,6 @@ import { CONFIG } from 'src/global-config';
 import { SplashScreen } from 'src/components/loading-screen';
 
 import { useAuthContext } from '../hooks';
-import { useEnvironmentAccess } from '../../hooks/use-environment-access';
 
 // ----------------------------------------------------------------------
 
@@ -72,11 +72,9 @@ export function EnvironmentAuthGuard({ children }: EnvironmentAuthGuardProps) {
     }
 
     // Check dashboard access
-    if (isDashboardPath && !canAccessDashboard) {
-      return false;
-    }
+    return !(isDashboardPath && !canAccessDashboard);
 
-    return true;
+
   };
 
   const checkPermissions = async (): Promise<void> => {

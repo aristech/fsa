@@ -45,8 +45,8 @@ type ColumnMapping = {
 
 type ClientImportDialogProps = {
   open: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
+  onCloseAction: () => void;
+  onSuccessAction: () => void;
 };
 
 // Define the available Client model fields for mapping
@@ -93,7 +93,7 @@ const DEFAULT_MAPPINGS: { [key: string]: string } = {
 
 // ----------------------------------------------------------------------
 
-export function ClientImportDialog({ open, onClose, onSuccess }: ClientImportDialogProps) {
+export function ClientImportDialog({ open, onCloseAction, onSuccessAction }: ClientImportDialogProps) {
   const [activeStep, setActiveStep] = useState(0);
   const [file, setFile] = useState<File | null>(null);
   const [excelData, setExcelData] = useState<any[]>([]);
@@ -134,7 +134,7 @@ export function ClientImportDialog({ open, onClose, onSuccess }: ClientImportDia
 
   const handleClose = () => {
     handleReset();
-    onClose();
+    onCloseAction();
   };
 
   const readExcelFile = useCallback(async (uploadedFile: File) => {
@@ -221,7 +221,7 @@ export function ClientImportDialog({ open, onClose, onSuccess }: ClientImportDia
     setActiveStep((prev) => prev - 1);
   };
 
-  const transformData = () => excelData.map((row, idx) => {
+  const transformData = () => excelData.map((row) => {
       const client: any = {
         address: {},
         contactPerson: {},
@@ -231,7 +231,7 @@ export function ClientImportDialog({ open, onClose, onSuccess }: ClientImportDia
         const mappedField = columnMapping[col];
         if (mappedField && row[colIdx]) {
           const value = row[colIdx];
-          
+
           // Handle nested fields
           if (mappedField.includes('.')) {
             const [parent, child] = mappedField.split('.');
@@ -292,7 +292,7 @@ export function ClientImportDialog({ open, onClose, onSuccess }: ClientImportDia
         } else {
           toast.success(`Successfully imported ${results.success} clients (${successMsg.join(', ')})`);
         }
-        onSuccess();
+        onSuccessAction();
       }
       if (results.failed > 0 && results.success === 0) {
         toast.error(`Failed to import ${results.failed} clients`);

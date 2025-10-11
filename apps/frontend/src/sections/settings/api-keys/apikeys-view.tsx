@@ -289,11 +289,11 @@ export function ApiKeysView() {
       <ApiKeyFormDialog
         open={openForm}
         apiKey={editing}
-        onClose={() => {
+        onCloseAction={() => {
           setOpenForm(false);
           setEditing(null);
         }}
-        onSubmit={handleSubmit}
+        onSubmitAction={handleSubmit}
       />
 
       <ConfirmDialog
@@ -342,7 +342,7 @@ export function ApiKeysView() {
       <ApiKeyTestDialog
         open={testDialog.open}
         apiKey={testDialog.apiKey}
-        onClose={() => setTestDialog({ open: false, apiKey: null })}
+        onCloseAction={() => setTestDialog({ open: false, apiKey: null })}
       />
     </Container>
   );

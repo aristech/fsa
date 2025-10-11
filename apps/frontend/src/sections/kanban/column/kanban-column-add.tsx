@@ -29,7 +29,7 @@ export function KanbanColumnAdd({ sx, ...other }: BoxProps) {
     try {
       const columnData = { id: uuidv4(), name: columnName.trim() ? columnName : 'Untitled' };
 
-      createColumn(columnData);
+      await createColumn(columnData);
 
       setColumnName('');
 

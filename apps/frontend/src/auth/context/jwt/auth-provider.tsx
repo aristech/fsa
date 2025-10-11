@@ -33,7 +33,7 @@ export function AuthProvider({ children }: Props) {
         sessionStorage.getItem(JWT_STORAGE_KEY) || localStorage.getItem(JWT_STORAGE_KEY);
 
       if (accessToken && isValidToken(accessToken)) {
-        setSession(accessToken, {
+        await setSession(accessToken, {
           // keep it where it was found to avoid bouncing between storages
           remember: !!localStorage.getItem(JWT_STORAGE_KEY),
         });

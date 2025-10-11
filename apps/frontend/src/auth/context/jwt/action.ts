@@ -49,7 +49,7 @@ export const signInWithPassword = async ({
       throw new Error('Access token not found in response');
     }
 
-    setSession(accessToken, { remember: !!rememberMe });
+    await setSession(accessToken, { remember: !!rememberMe });
   } catch (error) {
     console.error('Error during sign in:', error);
     throw error;
@@ -113,7 +113,7 @@ export const signInWithGoogle = async ({
       throw new Error('Access token not found in response');
     }
 
-    setSession(accessTokenResponse, { remember: true });
+    await setSession(accessTokenResponse, { remember: true });
   } catch (error) {
     console.error('Error during Google sign in:', error);
     throw error;

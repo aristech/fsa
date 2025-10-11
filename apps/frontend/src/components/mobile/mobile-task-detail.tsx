@@ -13,10 +13,10 @@ import { type CalendarTask } from './mobile-calendar';
 export type MobileTaskDetailProps = {
   task: CalendarTask | null;
   open: boolean;
-  onClose: () => void;
-  onEdit?: (task: CalendarTask) => void;
-  onComplete?: (task: CalendarTask) => void;
-  onDelete?: (task: CalendarTask) => void;
+  onCloseAction: () => void;
+  onEditAction?: (task: CalendarTask) => void;
+  onCompleteAction?: (task: CalendarTask) => void;
+  onDeleteAction?: (task: CalendarTask) => void;
 };
 
 const TaskHeader = styled(Box)(({ theme }) => ({
@@ -106,10 +106,10 @@ const StatusChip = styled(Chip, {
 export function MobileTaskDetail({
   task,
   open,
-  onClose,
-  onEdit,
-  onComplete,
-  onDelete,
+  onCloseAction,
+  onEditAction,
+  onCompleteAction,
+  onDeleteAction,
 }: MobileTaskDetailProps) {
   // const theme = useTheme();
 
@@ -165,37 +165,37 @@ export function MobileTaskDetail({
   return (
     <MobileModal
       open={open}
-      onClose={onClose}
+      onCloseAction={onCloseAction}
       title="Task Details"
       size="medium"
       actions={
         <Box sx={{ display: 'flex', gap: 1, width: '100%' }}>
-          {onEdit && (
+          {onEditAction && (
             <MobileButton
               variant="outline"
               size="medium"
               icon={<Iconify icon="eva:edit-fill" width={16} />}
-              onClick={() => onEdit(task)}
+              onClick={() => onEditAction(task)}
             >
               Edit
             </MobileButton>
           )}
-          {onComplete && task.status !== 'completed' && (
+          {onCompleteAction && task.status !== 'completed' && (
             <MobileButton
               variant="primary"
               size="medium"
               icon={<Iconify icon="eva:checkmark-fill" width={16} />}
-              onClick={() => onComplete(task)}
+              onClick={() => onCompleteAction(task)}
             >
               Complete
             </MobileButton>
           )}
-          {onDelete && (
+          {onDeleteAction && (
             <MobileButton
               variant="danger"
               size="medium"
               icon={<Iconify icon="eva:trash-fill" width={16} />}
-              onClick={() => onDelete(task)}
+              onClick={() => onDeleteAction(task)}
             >
               Delete
             </MobileButton>

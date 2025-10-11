@@ -389,7 +389,7 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
             <MobileDatePicker
               label={t('reports.filters.fromDate')}
               value={filters.dateFrom ? dayjs(filters.dateFrom) : null}
-              onChange={(date) => handleDateFromChange(date?.toDate() || null)}
+              onChangeAction={(date) => handleDateFromChange(date?.toDate() || null)}
             />
           </Grid>
 
@@ -397,7 +397,7 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
             <MobileDatePicker
               label={t('reports.filters.toDate')}
               value={filters.dateTo ? dayjs(filters.dateTo) : null}
-              onChange={(date) => handleDateToChange(date?.toDate() || null)}
+              onChangeAction={(date) => handleDateToChange(date?.toDate() || null)}
             />
           </Grid>
         </Grid>

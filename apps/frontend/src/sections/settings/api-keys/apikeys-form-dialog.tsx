@@ -34,13 +34,13 @@ import { type Personnel, personnelService } from 'src/lib/services/personnel-ser
 type Props = {
   open: boolean;
   apiKey: ApiKey | null;
-  onClose: () => void;
-  onSubmit: (data: ApiKeyFormData) => void;
+  onCloseAction: () => void;
+  onSubmitAction: (data: ApiKeyFormData) => void;
 };
 
 // ----------------------------------------------------------------------
 
-export function ApiKeyFormDialog({ open, apiKey, onClose, onSubmit }: Props) {
+export function ApiKeyFormDialog({ open, apiKey, onCloseAction, onSubmitAction }: Props) {
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
   const [loadingPersonnel, setLoadingPersonnel] = useState(false);
 
@@ -93,9 +93,9 @@ export function ApiKeyFormDialog({ open, apiKey, onClose, onSubmit }: Props) {
   }, [apiKey, reset]);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onCloseAction} maxWidth="md" fullWidth>
       <DialogTitle>{apiKey ? 'Edit API Key' : 'Create API Key'}</DialogTitle>
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmitAction)}>
         <DialogContent>
           <Controller
             name="name"
@@ -148,7 +148,6 @@ export function ApiKeyFormDialog({ open, apiKey, onClose, onSubmit }: Props) {
                 {...field}
                 label="Expires At (optional)"
                 type="datetime-local"
-                InputLabelProps={{ shrink: true }}
                 fullWidth
                 sx={{ mt: 2 }}
               />
@@ -156,7 +155,7 @@ export function ApiKeyFormDialog({ open, apiKey, onClose, onSubmit }: Props) {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onCloseAction}>Cancel</Button>
           <Button type="submit" variant="contained" disabled={isSubmitting}>
             {apiKey ? 'Update' : 'Create'}
           </Button>

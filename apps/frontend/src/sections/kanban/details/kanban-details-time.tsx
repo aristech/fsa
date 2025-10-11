@@ -75,7 +75,7 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
       setHours('');
       setDate(dayjs().format('YYYY-MM-DD'));
       setNotes('');
-      mutate(listKey);
+      await mutate(listKey);
       toast.success('Time entry added successfully');
     } catch (error: any) {
       const message = error?.response?.data?.message || 'Failed to add time entry';
@@ -86,7 +86,7 @@ export function KanbanDetailsTime({ taskId, workOrderId }: Props) {
   const handleDelete = async (id: string) => {
     try {
       await axiosInstance.delete(endpoints.fsa.timeEntries.delete(id));
-      mutate(listKey);
+      await mutate(listKey);
       toast.success('Time entry deleted successfully');
     } catch (error: any) {
       const message = error?.response?.data?.message || 'Failed to delete time entry';

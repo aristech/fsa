@@ -1,18 +1,17 @@
 import type { SWRConfiguration } from 'swr';
+import useSWR, { mutate } from 'swr';
 import type {
-  IKanban,
-  ITimeEntry,
-  IKanbanTask,
-  IKanbanColumn,
   CreateTimeEntryPayload,
+  IKanban,
+  IKanbanColumn,
+  IKanbanTask,
+  ITimeEntry,
   UpdateTimeEntryPayload,
 } from 'src/types/kanban';
-
-import useSWR, { mutate } from 'swr';
-import { useMemo, startTransition } from 'react';
+import { startTransition, useMemo } from 'react';
 
 import { useClient } from 'src/contexts/client-context';
-import axios, { fetcher, endpoints } from 'src/lib/axios';
+import axios, { endpoints, fetcher } from 'src/lib/axios';
 
 // ----------------------------------------------------------------------
 
@@ -50,15 +49,13 @@ export function useGetBoard(myTasksOnly = false) {
     params.append('assignedToMe', 'true');
   }
 
-  const url = params.toString()
-    ? `${KANBAN_ENDPOINT}?${params.toString()}`
-    : KANBAN_ENDPOINT;
+  const url = params.toString() ? `${KANBAN_ENDPOINT}?${params.toString()}` : KANBAN_ENDPOINT;
 
   const { data, isLoading, error, isValidating } = useSWR<BoardData>(url, fetcher, {
     ...swrOptions,
   });
 
-  const memoizedValue = useMemo(() => {
+  return useMemo(() => {
     const rawTasks = Array.isArray(data?.data?.board?.tasks) ? data.data.board.tasks : [];
     const rawColumns = Array.isArray(data?.data?.board?.columns) ? data.data.board.columns : [];
 
@@ -89,8 +86,6 @@ export function useGetBoard(myTasksOnly = false) {
       boardEmpty: !isLoading && !isValidating && !columns.length,
     };
   }, [data?.data?.board?.columns, data?.data?.board?.tasks, error, isLoading, isValidating]);
-
-  return memoizedValue;
 }
 
 // ----------------------------------------------------------------------
@@ -107,7 +102,7 @@ export async function createColumn(columnData: IKanbanColumn) {
   /**
    * Work in local
    */
-  mutate(
+  await mutate(
     KANBAN_ENDPOINT,
     (currentData) => {
       const { data } = currentData as BoardData;
@@ -247,7 +242,7 @@ export async function deleteColumn(columnId: IKanbanColumn['id']) {
   /**
    * Work in local
    */
-  mutate(
+  await mutate(
     KANBAN_ENDPOINT,
     (currentData) => {
       const { data } = currentData as BoardData;
@@ -344,9 +339,9 @@ export async function createTask(columnId: IKanbanColumn['id'], taskData: IKanba
       await Promise.all(urlsToUpdate.map((url) => mutate(url)));
 
       // Also revalidate calendar cache since new tasks with dates appear there
-      mutate(endpoints.calendar);
+      await mutate(endpoints.calendar);
       if (taskData.clientId) {
-        mutate(`${endpoints.calendar}?clientId=${taskData.clientId}`);
+        await mutate(`${endpoints.calendar}?clientId=${taskData.clientId}`);
       }
     } catch (error) {
       // Remove optimistic task on error
@@ -429,12 +424,12 @@ export async function updateTaskDates(
     await axios.post(KANBAN_ENDPOINT, { taskData }, { params: { endpoint: 'update-task' } });
 
     // Revalidate both kanban and calendar caches
-    mutate(KANBAN_ENDPOINT);
-    mutate(endpoints.calendar);
+    await mutate(KANBAN_ENDPOINT);
+    await mutate(endpoints.calendar);
 
     // Also revalidate client-filtered endpoints (common patterns)
-    mutate((key) => typeof key === 'string' && key.includes(KANBAN_ENDPOINT));
-    mutate((key) => typeof key === 'string' && key.includes(endpoints.calendar));
+    await mutate((key) => typeof key === 'string' && key.includes(KANBAN_ENDPOINT));
+    await mutate((key) => typeof key === 'string' && key.includes(endpoints.calendar));
   }
 }
 
@@ -450,15 +445,15 @@ export async function updateTask(columnId: IKanbanColumn['id'], taskData: IKanba
 
     // Revalidate the cache to get fresh data from server
     // Revalidate both the base URL and the client-filtered URL if applicable
-    mutate(KANBAN_ENDPOINT);
+    await mutate(KANBAN_ENDPOINT);
     if (taskData.clientId) {
-      mutate(`${KANBAN_ENDPOINT}?clientId=${taskData.clientId}`);
+      await mutate(`${KANBAN_ENDPOINT}?clientId=${taskData.clientId}`);
     }
 
     // Also revalidate calendar cache since tasks appear in both views
-    mutate(endpoints.calendar);
+    await mutate(endpoints.calendar);
     if (taskData.clientId) {
-      mutate(`${endpoints.calendar}?clientId=${taskData.clientId}`);
+      await mutate(`${endpoints.calendar}?clientId=${taskData.clientId}`);
     }
   } else {
     /**
@@ -507,13 +502,13 @@ export async function moveTask(updateTasks: IKanban['tasks']) {
 
     // Revalidate the cache to get fresh data from server
     // Revalidate both the base URL and the client-filtered URL if applicable
-    mutate(KANBAN_ENDPOINT);
+    await mutate(KANBAN_ENDPOINT);
 
     // Extract client ID from any task in the updateTasks
     const allTasks = Object.values(updateTasks).flat();
     const clientId = allTasks.find((task) => task.clientId)?.clientId;
     if (clientId) {
-      mutate(`${KANBAN_ENDPOINT}?clientId=${clientId}`);
+      await mutate(`${KANBAN_ENDPOINT}?clientId=${clientId}`);
     }
   } else {
     /**
@@ -553,21 +548,21 @@ export async function deleteTask(
 
     // Revalidate the cache to get fresh data from server
     // Revalidate both the base URL and the client-filtered URL if applicable
-    mutate(KANBAN_ENDPOINT);
+    await mutate(KANBAN_ENDPOINT);
     if (taskData?.clientId) {
-      mutate(`${KANBAN_ENDPOINT}?clientId=${taskData.clientId}`);
+      await mutate(`${KANBAN_ENDPOINT}?clientId=${taskData.clientId}`);
     }
 
     // Also revalidate calendar cache since deleted tasks should be removed from calendar
-    mutate(endpoints.calendar);
+    await mutate(endpoints.calendar);
     if (taskData?.clientId) {
-      mutate(`${endpoints.calendar}?clientId=${taskData.clientId}`);
+      await mutate(`${endpoints.calendar}?clientId=${taskData.clientId}`);
     }
   } else {
     /**
      * Work in local (fallback for when server is disabled)
      */
-    mutate(
+    await mutate(
       KANBAN_ENDPOINT,
       (currentData) => {
         const { data } = currentData as BoardData;

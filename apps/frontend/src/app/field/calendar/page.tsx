@@ -2,23 +2,17 @@
 
 import type { IKanbanTask } from 'src/types/kanban';
 
-import dayjs from 'dayjs';
-import { type Dayjs } from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 import { useBoolean } from 'minimal-shared/hooks';
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
-import { Box, Fab, alpha, useTheme, Typography, IconButton } from '@mui/material';
+import { alpha, Box, Fab, IconButton, Typography, useTheme } from '@mui/material';
 
 import { useGetFieldBoard } from 'src/actions/field-kanban';
 
 import { Iconify } from 'src/components/iconify';
 import { FieldTaskDetails } from 'src/components/field/field-task-details';
-import {
-  MobileCalendar,
-  MobileDatePicker,
-  type CalendarView,
-  type CalendarTask,
-} from 'src/components/mobile';
+import { type CalendarTask, type CalendarView, MobileCalendar, MobileDatePicker, } from 'src/components/mobile';
 
 import { KanbanTaskCreateDialog } from 'src/sections/kanban/components/kanban-task-create-dialog';
 
@@ -133,9 +127,8 @@ export default function FieldCalendarPage() {
     // );
 
     const transformedTasks = allTasks
-      .map((task, index) => {
-        const transformed = transformKanbanTaskToCalendarTask(task);
-        return transformed;
+      .map((task) => {
+        return transformKanbanTaskToCalendarTask(task);
       })
       .filter((task): task is CalendarTask => task !== null);
 
@@ -154,8 +147,7 @@ export default function FieldCalendarPage() {
       color: '#1976d2',
     };
 
-    const finalTasks = [...transformedTasks, testTask];
-    return finalTasks;
+    return [...transformedTasks, testTask];
   }, [board?.tasks]);
 
   const handleViewChange = useCallback((view: CalendarView) => {
@@ -192,7 +184,7 @@ export default function FieldCalendarPage() {
   }, []);
 
   const handleTaskCreate = useCallback(
-    (date: Date) => {
+    () => {
       taskCreateDialog.onTrue();
     },
     [taskCreateDialog]
@@ -202,7 +194,7 @@ export default function FieldCalendarPage() {
     setSelectedTask(updatedTask);
   }, []);
 
-  const handleConvertToReport = useCallback((task: IKanbanTask) => {
+  const handleConvertToReport = useCallback(() => {
     // TODO: Implement task to report conversion
   }, []);
 
@@ -252,10 +244,10 @@ export default function FieldCalendarPage() {
         <MobileCalendar
           tasks={calendarTasks}
           view={currentView}
-          onViewChange={handleViewChange}
-          onTaskSelect={handleTaskSelect}
-          onDateSelect={handleDateSelect}
-          onTaskCreate={handleTaskCreate}
+          onViewChangeAction={handleViewChange}
+          onTaskSelectAction={handleTaskSelect}
+          onDateSelectAction={handleDateSelect}
+          onTaskCreateAction={handleTaskCreate}
           selectedDate={selectedDate}
           loading={boardLoading}
         />
@@ -348,7 +340,7 @@ export default function FieldCalendarPage() {
         <MobileDatePicker
           label="Go to Date"
           value={dayjs(selectedDate)}
-          onChange={handleDatePickerChange}
+          onChangeAction={handleDatePickerChange}
         />
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
           <IconButton onClick={() => setDatePickerOpen(false)}>

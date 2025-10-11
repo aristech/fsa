@@ -127,7 +127,7 @@ export function JwtCreatePasswordView() {
     );
   }
 
-  if (tokenValid === false) {
+  if (!tokenValid) {
     return (
       <Stack spacing={3} sx={{ textAlign: 'center' }}>
         <Box

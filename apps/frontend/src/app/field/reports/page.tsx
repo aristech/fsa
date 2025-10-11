@@ -122,19 +122,16 @@ export default function FieldReportsPage() {
     setCreateDrawerOpen(true);
   }, []);
 
-  const handleReportCreated = useCallback(
-    (newReport: IReport) => {
-      setCreateDrawerOpen(false);
-      mutate([endpoints.fsa.reports.list, filters]);
-      toast.success('Report created successfully');
-    },
-    [filters]
-  );
+  const handleReportCreated = useCallback(async () => {
+    setCreateDrawerOpen(false);
+    await mutate([endpoints.fsa.reports.list, filters]);
+    toast.success('Report created successfully');
+  }, [filters]);
 
   const handleReportUpdated = useCallback(
-    (updatedReport: IReport) => {
+    async (updatedReport: IReport) => {
       setSelectedReport(updatedReport);
-      mutate([endpoints.fsa.reports.list, filters]);
+      await mutate([endpoints.fsa.reports.list, filters]);
     },
     [filters]
   );
@@ -251,7 +248,7 @@ export default function FieldReportsPage() {
                 <MobileSelect
                   label="Type"
                   value={filters.type || ''}
-                  onChange={(value) => handleFilterChange('type', value)}
+                  onChangeAction={(value) => handleFilterChange('type', value)}
                   options={reportTypes}
                 />
               </Box>
@@ -259,7 +256,7 @@ export default function FieldReportsPage() {
                 <MobileSelect
                   label="Status"
                   value={filters.status || ''}
-                  onChange={(value) => handleFilterChange('status', value)}
+                  onChangeAction={(value) => handleFilterChange('status', value)}
                   options={reportStatuses}
                 />
               </Box>
@@ -270,14 +267,14 @@ export default function FieldReportsPage() {
                 <MobileDatePicker
                   label="From Date"
                   value={filters.dateFrom ? dayjs(filters.dateFrom) : null}
-                  onChange={(date) => handleFilterChange('dateFrom', date?.toDate())}
+                  onChangeAction={(date) => handleFilterChange('dateFrom', date?.toDate())}
                 />
               </Box>
               <Box sx={{ flex: 1 }}>
                 <MobileDatePicker
                   label="To Date"
                   value={filters.dateTo ? dayjs(filters.dateTo) : null}
-                  onChange={(date) => handleFilterChange('dateTo', date?.toDate())}
+                  onChangeAction={(date) => handleFilterChange('dateTo', date?.toDate())}
                 />
               </Box>
             </Box>

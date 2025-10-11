@@ -41,11 +41,11 @@ const companyInfoSchema = z.object({
 type CompanyInfoFormData = z.infer<typeof companyInfoSchema>;
 
 type Props = {
-  onSuccess: (message: string) => void;
-  onError: (message: string) => void;
+  onSuccessAction: (message: string) => void;
+  onErrorAction: (message: string) => void;
 };
 
-export function CompanyInfoForm({ onSuccess, onError }: Props) {
+export function CompanyInfoForm({ onSuccessAction, onErrorAction }: Props) {
   const methods = useForm<CompanyInfoFormData>({
     resolver: zodResolver(companyInfoSchema),
     defaultValues: {
@@ -89,24 +89,24 @@ export function CompanyInfoForm({ onSuccess, onError }: Props) {
       } catch (error) {
         console.error('Error loading company info:', error);
         // We can optionally show a specific error message for loading failures
-        onError('Failed to load company information. Please refresh the page.');
+        onErrorAction('Failed to load company information. Please refresh the page.');
       }
     };
 
     loadCompanyInfo();
-  }, [methods, onError]);
+  }, [methods, onErrorAction]);
 
   const onSubmit = async (data: CompanyInfoFormData) => {
     try {
       // Use apiCall for update operations - automatic error toasts will be shown for errors
       await apiCall.put('/api/v1/company-info', data);
-      onSuccess('Company information updated successfully!');
+      onSuccessAction('Company information updated successfully!');
     } catch (error) {
       console.error('Error updating company info:', error);
       // The automatic error handling will show the appropriate toast message
       // based on the error code (e.g., "Only the company owner can update company information")
       // We can still provide a fallback generic message for the UI state
-      onError('Update failed. Please see the error message above.');
+      onErrorAction('Update failed. Please see the error message above.');
     }
   };
 

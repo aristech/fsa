@@ -426,7 +426,7 @@ export function WorkOrderList() {
                     <TableCell>
                       {row.personnelIds && row.personnelIds.length > 0 ? (
                         <Stack direction="row" spacing={0.5} flexWrap="wrap">
-                          {row.personnelIds.map((personnel, index) => (
+                          {row.personnelIds.map((personnel) => (
                             <Chip
                               key={personnel._id}
                               label={truncateText(personnel.user?.name || personnel.employeeId)}
@@ -566,11 +566,11 @@ export function WorkOrderList() {
       {cascadeDeleteInfo && (
         <CascadeDeleteDialog
           open={deleteOpen}
-          onClose={() => {
+          onCloseAction={() => {
             setDeleteOpen(false);
             setCascadeDeleteInfo(null);
           }}
-          onConfirm={async (cascadeDelete) => {
+          onConfirmAction={async (cascadeDelete) => {
             if (!selectedId) return;
             try {
               setDeleting(true);

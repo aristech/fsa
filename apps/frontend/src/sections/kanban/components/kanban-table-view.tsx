@@ -167,9 +167,9 @@ export function KanbanTableView({ myTasksOnly = false }: KanbanTableViewProps) {
 
   // Listen for kanban refresh events from AI
   useEffect(() => {
-    const handleKanbanRefresh = (event: CustomEvent) => {
+    const handleKanbanRefresh = async () => {
       // Trigger SWR revalidation to refresh the kanban data
-      mutate('/api/v1/kanban');
+      await mutate('/api/v1/kanban');
     };
 
     window.addEventListener('kanban-refresh', handleKanbanRefresh as EventListener);
@@ -654,9 +654,9 @@ export function KanbanTableView({ myTasksOnly = false }: KanbanTableViewProps) {
         <KanbanDetails
           task={selectedTask}
           open={taskDetailsDialog.value}
-          onClose={taskDetailsDialog.onFalse}
-          onUpdateTask={handleUpdateTask}
-          onDeleteTask={handleDeleteTask}
+          onCloseAction={taskDetailsDialog.onFalse}
+          onUpdateTaskAction={handleUpdateTask}
+          onDeleteTaskAction={handleDeleteTask}
         />
       )}
 

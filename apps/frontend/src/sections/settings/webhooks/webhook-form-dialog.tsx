@@ -36,11 +36,11 @@ export type Webhook = Partial<WebhookFormData> & { _id: string };
 type Props = {
   open: boolean;
   webhook: Webhook | null;
-  onClose: () => void;
-  onSubmit: (data: WebhookFormData) => void;
+  onCloseAction: () => void;
+  onSubmitAction: (data: WebhookFormData) => void;
 };
 
-export function WebhookFormDialog({ open, webhook, onClose, onSubmit }: Props) {
+export function WebhookFormDialog({ open, webhook, onCloseAction, onSubmitAction }: Props) {
   const [topics, setTopics] = useState<string[]>([]);
   const [loadingTopics, setLoadingTopics] = useState(false);
 
@@ -117,9 +117,9 @@ export function WebhookFormDialog({ open, webhook, onClose, onSubmit }: Props) {
   }, [webhook, reset]);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onCloseAction} maxWidth="md" fullWidth>
       <DialogTitle>{webhook ? 'Edit Webhook' : 'Create Webhook'}</DialogTitle>
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmitAction)}>
         <DialogContent>
           <Controller
             name="name"
@@ -232,7 +232,7 @@ export function WebhookFormDialog({ open, webhook, onClose, onSubmit }: Props) {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onCloseAction}>Cancel</Button>
           <Button type="submit" variant="contained" disabled={isSubmitting}>
             {webhook ? 'Update' : 'Create'}
           </Button>

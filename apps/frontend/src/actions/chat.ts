@@ -1,11 +1,11 @@
 import type { SWRConfiguration } from 'swr';
-import type { IChatMessage, IChatParticipant, IChatConversation } from 'src/types/chat';
+import useSWR, { mutate } from 'swr';
+import type { IChatConversation, IChatMessage, IChatParticipant } from 'src/types/chat';
 
 import { useMemo } from 'react';
 import { keyBy } from 'es-toolkit';
-import useSWR, { mutate } from 'swr';
 
-import axios, { fetcher, endpoints } from 'src/lib/axios';
+import axios, { endpoints, fetcher } from 'src/lib/axios';
 
 // ----------------------------------------------------------------------
 
@@ -32,7 +32,7 @@ export function useGetContacts() {
     ...swrOptions,
   });
 
-  const memoizedValue = useMemo(
+  return useMemo(
     () => ({
       contacts: data?.contacts || [],
       contactsLoading: isLoading,
@@ -42,8 +42,6 @@ export function useGetContacts() {
     }),
     [data?.contacts, error, isLoading, isValidating]
   );
-
-  return memoizedValue;
 }
 
 // ----------------------------------------------------------------------
@@ -59,7 +57,7 @@ export function useGetConversations() {
     ...swrOptions,
   });
 
-  const memoizedValue = useMemo(() => {
+  return useMemo(() => {
     const byId = data?.conversations.length ? keyBy(data.conversations, (option) => option.id) : {};
     const allIds = Object.keys(byId);
 
@@ -71,8 +69,6 @@ export function useGetConversations() {
       conversationsEmpty: !isLoading && !isValidating && !allIds.length,
     };
   }, [data?.conversations, error, isLoading, isValidating]);
-
-  return memoizedValue;
 }
 
 // ----------------------------------------------------------------------
@@ -90,7 +86,7 @@ export function useGetConversation(conversationId: string) {
     ...swrOptions,
   });
 
-  const memoizedValue = useMemo(
+  return useMemo(
     () => ({
       conversation: data?.conversation,
       conversationLoading: isLoading,
@@ -100,8 +96,6 @@ export function useGetConversation(conversationId: string) {
     }),
     [data?.conversation, error, isLoading, isValidating]
   );
-
-  return memoizedValue;
 }
 
 // ----------------------------------------------------------------------
@@ -122,36 +116,36 @@ export async function sendMessage(conversationId: string, messageData: IChatMess
   /**
    * Work in local
    */
-  mutate(
-    conversationUrl,
-    (currentData) => {
-      const currentConversation: IChatConversation = currentData.conversation;
+  await mutate(
+      conversationUrl,
+      (currentData) => {
+          const currentConversation: IChatConversation = currentData.conversation;
 
-      const conversation = {
-        ...currentConversation,
-        messages: [...currentConversation.messages, messageData],
-      };
+          const conversation = {
+              ...currentConversation,
+              messages: [...currentConversation.messages, messageData],
+          };
 
-      return { ...currentData, conversation };
-    },
-    false
+          return {...currentData, conversation};
+      },
+      false
   );
 
-  mutate(
-    conversationsUrl,
-    (currentData) => {
-      const currentConversations: IChatConversation[] = currentData.conversations;
+  await mutate(
+      conversationsUrl,
+      (currentData) => {
+          const currentConversations: IChatConversation[] = currentData.conversations;
 
-      const conversations: IChatConversation[] = currentConversations.map(
-        (conversation: IChatConversation) =>
-          conversation.id === conversationId
-            ? { ...conversation, messages: [...conversation.messages, messageData] }
-            : conversation
-      );
+          const conversations: IChatConversation[] = currentConversations.map(
+              (conversation: IChatConversation) =>
+                  conversation.id === conversationId
+                      ? {...conversation, messages: [...conversation.messages, messageData]}
+                      : conversation
+          );
 
-      return { ...currentData, conversations };
-    },
-    false
+          return {...currentData, conversations};
+      },
+      false
   );
 }
 
@@ -169,16 +163,16 @@ export async function createConversation(conversationData: IChatConversation) {
   /**
    * Work in local
    */
-  mutate(
-    url,
-    (currentData) => {
-      const currentConversations: IChatConversation[] = currentData.conversations;
+  await mutate(
+      url,
+      (currentData) => {
+          const currentConversations: IChatConversation[] = currentData.conversations;
 
-      const conversations: IChatConversation[] = [...currentConversations, conversationData];
+          const conversations: IChatConversation[] = [...currentConversations, conversationData];
 
-      return { ...currentData, conversations };
-    },
-    false
+          return {...currentData, conversations};
+      },
+      false
   );
 
   return res.data;
@@ -197,17 +191,17 @@ export async function clickConversation(conversationId: string) {
   /**
    * Work in local
    */
-  mutate(
-    [CHAT_ENDPOINT, { params: { endpoint: 'conversations' } }],
-    (currentData) => {
-      const currentConversations: IChatConversation[] = currentData.conversations;
+  await mutate(
+      [CHAT_ENDPOINT, {params: {endpoint: 'conversations'}}],
+      (currentData) => {
+          const currentConversations: IChatConversation[] = currentData.conversations;
 
-      const conversations = currentConversations.map((conversation: IChatConversation) =>
-        conversation.id === conversationId ? { ...conversation, unreadCount: 0 } : conversation
-      );
+          const conversations = currentConversations.map((conversation: IChatConversation) =>
+              conversation.id === conversationId ? {...conversation, unreadCount: 0} : conversation
+          );
 
-      return { ...currentData, conversations };
-    },
-    false
+          return {...currentData, conversations};
+      },
+      false
   );
 }

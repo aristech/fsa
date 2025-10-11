@@ -182,7 +182,7 @@ export function PersonnelCreateView({
         let loadedRoles: RoleOption[] = Array.isArray(rolesJson?.data) ? rolesJson.data : [];
         // Ensure current role exists in options
         if (p?.role?._id && !loadedRoles.some((r) => String(r._id) === String(p.role._id))) {
-          loadedRoles = [...loadedRoles, p.role];
+          loadedRoles = [...loadedRoles, p?.role];
         }
         setRoles(loadedRoles);
 

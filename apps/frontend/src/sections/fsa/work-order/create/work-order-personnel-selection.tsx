@@ -51,11 +51,11 @@ type DialogPersonnel = {
 
 type Props = {
   value: string[];
-  onChange: (value: string[]) => void;
+  onChangeAction: (value: string[]) => void;
   disabled?: boolean;
 };
 
-export function WorkOrderPersonnelSelection({ value = [], onChange, disabled = false }: Props) {
+export function WorkOrderPersonnelSelection({ value = [], onChangeAction, disabled = false }: Props) {
   const contactsDialog = useBoolean();
   const { t } = useTranslate('common');
 
@@ -135,10 +135,10 @@ export function WorkOrderPersonnelSelection({ value = [], onChange, disabled = f
                 Boolean(p.user?.name && p.user?.email && p.role?.name)
               )}
               open={contactsDialog.value}
-              onClose={contactsDialog.onFalse}
-              onAssign={(personnelList: DialogPersonnel[]) => {
+              onCloseAction={contactsDialog.onFalse}
+              onAssignAction={(personnelList: DialogPersonnel[]) => {
                 const personnelIds = personnelList.map((p) => p._id);
-                onChange(personnelIds);
+                onChangeAction(personnelIds);
               }}
             />
           </>

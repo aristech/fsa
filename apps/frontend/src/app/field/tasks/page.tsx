@@ -145,7 +145,7 @@ export default function FieldTasksPage() {
     taskCreateDialog.onTrue();
   }, [taskCreateDialog]);
 
-  const handleConvertToReport = useCallback((task: IKanbanTask) => {
+  const handleConvertToReport = useCallback(() => {
     // This will be handled by the FieldTaskDetails component
   }, []);
 
@@ -260,7 +260,7 @@ export default function FieldTasksPage() {
     return columnName || t('unknown', { defaultValue: 'Unknown' });
   };
 
-  const getTaskLocation = (task: IKanbanTask) =>
+  const getTaskLocation = () =>
     t('fieldLocation', { defaultValue: 'Field Location' });
 
   return (
@@ -333,7 +333,7 @@ export default function FieldTasksPage() {
               <MobileSelect
                 label={t('status', { defaultValue: 'Status' })}
                 value={filters.status}
-                onChange={(value) => handleFilterChange('status', value)}
+                onChangeAction={(value) => handleFilterChange('status', value)}
                 options={taskStatuses}
               />
             </Box>
@@ -341,7 +341,7 @@ export default function FieldTasksPage() {
               <MobileSelect
                 label={t('priority', { defaultValue: 'Priority' })}
                 value={filters.priority}
-                onChange={(value) => handleFilterChange('priority', value)}
+                onChangeAction={(value) => handleFilterChange('priority', value)}
                 options={taskPriorities.map((p) => ({
                   value: p.value,
                   label: t(p.label.toLowerCase().replace(' ', ''), { defaultValue: p.label }),

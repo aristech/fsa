@@ -27,10 +27,10 @@ import {
 type Props = {
   open: boolean;
   apiKey: ApiKey | null;
-  onClose: () => void;
+  onCloseAction: () => void;
 };
 
-export function ApiKeyTestDialog({ open, apiKey, onClose }: Props) {
+export function ApiKeyTestDialog({ open, apiKey, onCloseAction }: Props) {
   const [loading, setLoading] = useState(false);
   const [usageStats, setUsageStats] = useState<ApiKeyUsageStats | null>(null);
   const [status, setStatus] = useState<ApiKeyStatus | null>(null);
@@ -73,7 +73,7 @@ export function ApiKeyTestDialog({ open, apiKey, onClose }: Props) {
     setUsageStats(null);
     setStatus(null);
     setError(null);
-    onClose();
+    onCloseAction();
   };
 
   if (!apiKey) return null;
