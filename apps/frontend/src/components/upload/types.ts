@@ -6,8 +6,22 @@ import type { PreviewOrientation, MultiFilePreviewProps } from './components/mul
 
 // ----------------------------------------------------------------------
 
-export type FileUploadType = File | string | null;
-export type FilesUploadType = (File | string)[];
+export interface FileMetadata {
+  filename: string;
+  originalName?: string;
+  url?: string;
+  signedUrl?: string;
+  size?: number;
+  mimetype?: string;
+  scope?: string;
+  ownerId?: string;
+  tenantId?: string;
+  uploadedAt?: string;
+  uploadedBy?: any;
+}
+
+export type FileUploadType = File | string | FileMetadata | null;
+export type FilesUploadType = (File | string | FileMetadata)[];
 
 export type UploadProps = DropzoneOptions & {
   error?: boolean;
@@ -22,7 +36,7 @@ export type UploadProps = DropzoneOptions & {
   onDelete?: () => void;
   onUpload?: () => void;
   onRemoveAll?: () => void;
-  onRemove?: (file: File | string) => void;
+  onRemove?: (file: File | string | FileMetadata) => void;
   slotProps?: {
     wrapper?: React.ComponentProps<typeof UploadWrapper>;
     multiPreview?: Partial<MultiFilePreviewProps>;

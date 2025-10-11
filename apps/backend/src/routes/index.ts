@@ -31,6 +31,7 @@ import { stripeWebhookRoutes } from "./stripe-webhook";
 import brandingRoutes from "./branding";
 import { usageMonitoringRoutes } from "./usage-monitoring";
 import supportRoutes from "./support";
+import { secureFilesRoutes } from "./secure-files";
 
 export async function registerRoutes(fastify: FastifyInstance) {
   // Health check
@@ -69,6 +70,7 @@ export async function registerRoutes(fastify: FastifyInstance) {
   await fastify.register(smsReminderRoutes, { prefix: "/api/v1/sms-reminders" });
   await fastify.register(subscriptionRoutes, { prefix: "/api/v1/subscription" });
   await fastify.register(stripeWebhookRoutes, { prefix: "/api/v1/stripe" });
+  await fastify.register(secureFilesRoutes, { prefix: "/api/v1/files" });
 
   // Authenticated routes - Branding, Usage Monitoring, and Support
   await fastify.register(async function (fastify) {

@@ -1,6 +1,6 @@
 'use client';
 
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { useState, useCallback } from 'react';
 
 import {
@@ -137,39 +137,51 @@ export function ClientImportDialog({ open, onClose, onSuccess }: ClientImportDia
     onClose();
   };
 
-  const readExcelFile = useCallback((uploadedFile: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' }) as any[][];
+  const readExcelFile = useCallback(async (uploadedFile: File) => {
+    try {
+      const buffer = await uploadedFile.arrayBuffer();
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
 
-        // Extract headers from the specified row
-        const headers = jsonData[headerRowIndex] || [];
-        const dataRows = jsonData.slice(headerRowIndex + 1).filter((row) => row.some((cell) => cell));
+      const worksheet = workbook.worksheets[0];
+      const jsonData: any[][] = [];
 
-        setExcelColumns(headers);
-        setExcelData(dataRows);
-
-        // Auto-suggest mappings based on column names
-        const autoMapping: ColumnMapping = {};
-        headers.forEach((header: string) => {
-          if (DEFAULT_MAPPINGS[header]) {
-            autoMapping[header] = DEFAULT_MAPPINGS[header];
+      // Convert worksheet to 2D array similar to xlsx output
+      worksheet.eachRow({ includeEmpty: true }, (row) => {
+        const rowData: any[] = [];
+        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          // Get cell value, handling different cell types
+          let value = cell.value;
+          if (value && typeof value === 'object') {
+            // Handle rich text, formulas, etc.
+            value = (value as any).text || (value as any).result || '';
           }
+          rowData[colNumber - 1] = value || '';
         });
-        setColumnMapping(autoMapping);
+        jsonData.push(rowData);
+      });
 
-        toast.success('File loaded successfully');
-      } catch (error) {
-        console.error('Error reading Excel file:', error);
-        toast.error('Failed to read Excel file');
-      }
-    };
-    reader.readAsBinaryString(uploadedFile);
+      // Extract headers from the specified row
+      const headers = jsonData[headerRowIndex] || [];
+      const dataRows = jsonData.slice(headerRowIndex + 1).filter((row) => row.some((cell) => cell));
+
+      setExcelColumns(headers);
+      setExcelData(dataRows);
+
+      // Auto-suggest mappings based on column names
+      const autoMapping: ColumnMapping = {};
+      headers.forEach((header: string) => {
+        if (DEFAULT_MAPPINGS[header]) {
+          autoMapping[header] = DEFAULT_MAPPINGS[header];
+        }
+      });
+      setColumnMapping(autoMapping);
+
+      toast.success('File loaded successfully');
+    } catch (error) {
+      console.error('Error reading Excel file:', error);
+      toast.error('Failed to read Excel file');
+    }
   }, [headerRowIndex]);
 
   const handleDropSingleFile = useCallback((acceptedFiles: File[]) => {

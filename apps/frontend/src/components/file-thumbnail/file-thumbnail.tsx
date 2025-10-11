@@ -63,7 +63,7 @@ export function FileThumbnail({
           className={fileThumbnailClasses.removeBtn}
           {...slotProps?.removeBtn}
         >
-          <Iconify icon="mingcute:close-line" width={12} />
+          <Iconify icon="mingcute:close-line" width={22} />
         </RemoveButton>
       )}
 

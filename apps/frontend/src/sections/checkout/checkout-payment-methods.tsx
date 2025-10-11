@@ -18,7 +18,8 @@ import FormHelperText from '@mui/material/FormHelperText';
 
 import { Iconify } from 'src/components/iconify';
 
-import { PaymentCardCreateForm } from '../payment/payment-card-create-form';
+// Temporarily disabled - payment components removed
+// import { PaymentCardCreateForm } from '../payment/payment-card-create-form';
 
 // ----------------------------------------------------------------------
 
@@ -81,7 +82,8 @@ export function CheckoutPaymentMethods({ name, options, sx, ...other }: Props) {
       <Dialog fullWidth maxWidth="xs" open={openForm.value} onClose={openForm.onFalse}>
         <DialogTitle>Add card</DialogTitle>
 
-        <PaymentCardCreateForm sx={{ px: 3 }} />
+        {/* <PaymentCardCreateForm sx={{ px: 3 }} /> */}
+        <Box sx={{ p: 3 }}>Payment form temporarily disabled</Box>
 
         <DialogActions>
           <Button color="inherit" variant="outlined" onClick={openForm.onFalse}>

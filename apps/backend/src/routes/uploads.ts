@@ -4,6 +4,7 @@ import { User } from "../models";
 import EnhancedSubscriptionMiddleware from "../middleware/enhanced-subscription-middleware";
 import { EnvSubscriptionService } from "../services/env-subscription-service";
 import { FileTrackingService } from "../services/file-tracking-service";
+import { SignedUrlService } from "../services/signed-url-service";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
@@ -136,10 +137,14 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
 
       const saved: Array<{
         url: string;
+        signedUrl?: string;
         path: string;
         name: string;
         size: number;
         mime: string;
+        filename?: string;
+        scope?: string;
+        ownerId?: string;
       }> = [];
 
       fastify.log.info(
@@ -208,7 +213,18 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
         await fs.writeFile(destPath, file.buffer);
 
         const st = await fs.stat(destPath);
-        // Properly encode filename in URL to handle Greek characters and special chars
+
+        // Generate signed URL for secure access (preferred method)
+        const signedUrlData = SignedUrlService.generateSignedUrl({
+          tenantId: String(tenantId),
+          scope: scopeDir,
+          ownerId: String(ownerId),
+          filename: filename,
+          action: 'view',
+          expiresInMinutes: 24 * 60, // 24 hours
+        });
+
+        // Also keep legacy token-based URL for backward compatibility
         const encodedFilename = encodeURIComponent(filename);
         const rel = `/api/v1/uploads/${tenantId}/${scopeDir}/${ownerId}/${encodedFilename}`;
         const host = request.headers.host;
@@ -226,14 +242,19 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
           sanitizedFilename: sanitizedOriginalName,
           finalFilename: filename,
           encodedUrl: encodedFilename,
+          hasSignedUrl: true,
         }, "uploads: processed filename");
 
         saved.push({
-          url: absWithToken,
+          url: absWithToken, // Legacy token-based URL for backward compatibility
+          signedUrl: `${protocol}://${host}${signedUrlData.url}`, // New signed URL
           path: rel,
           name: file.filename,
           size: st.size,
           mime: file.mimetype,
+          filename: filename, // Include filename for client-side signed URL generation
+          scope: scopeDir,
+          ownerId: String(ownerId),
         });
 
         // Track individual file in FileTrackingService to prevent deletion by cleanup

@@ -13,8 +13,9 @@ import DialogActions from '@mui/material/DialogActions';
 
 import { Iconify } from 'src/components/iconify';
 
-import { PaymentCardItem } from '../payment/payment-card-item';
-import { PaymentCardCreateForm } from '../payment/payment-card-create-form';
+// Temporarily disabled - payment components removed
+// import { PaymentCardItem } from '../payment/payment-card-item';
+// import { PaymentCardCreateForm } from '../payment/payment-card-create-form';
 
 // ----------------------------------------------------------------------
 
@@ -29,7 +30,8 @@ export function AccountBillingPayment({ cards, sx, ...other }: Props) {
     <Dialog fullWidth maxWidth="xs" open={openForm.value} onClose={openForm.onFalse}>
       <DialogTitle>Add card</DialogTitle>
 
-      <PaymentCardCreateForm sx={{ px: 3 }} />
+      {/* <PaymentCardCreateForm sx={{ px: 3 }} /> */}
+      <Box sx={{ p: 3 }}>Payment form temporarily disabled</Box>
 
       <DialogActions>
         <Button color="inherit" variant="outlined" onClick={openForm.onFalse}>
@@ -68,8 +70,11 @@ export function AccountBillingPayment({ cards, sx, ...other }: Props) {
             gridTemplateColumns: { xs: 'repeat(1, 1fr)', md: 'repeat(2, 1fr)' },
           }}
         >
+          {/* Temporarily disabled - payment components removed */}
           {cards.map((card) => (
-            <PaymentCardItem key={card.id} card={card} />
+            <Box key={card.id} sx={{ p: 2, border: '1px solid', borderColor: 'divider' }}>
+              Card ending in {card.cardNumber.slice(-4)}
+            </Box>
           ))}
         </Box>
       </Card>

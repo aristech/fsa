@@ -14,8 +14,8 @@ export type SingleFilePreviewProps = React.ComponentProps<typeof PreviewRoot> & 
 };
 
 export function SingleFilePreview({ sx, file, className, ...other }: SingleFilePreviewProps) {
-  const fileMeta = getFileMeta(file);
-  const { previewUrl } = useFilePreview(file);
+  const fileMeta = getFileMeta(file as File | string | null);
+  const { previewUrl } = useFilePreview(file as File | string | null);
 
   return (
     <PreviewRoot

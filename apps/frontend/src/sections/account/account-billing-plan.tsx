@@ -21,7 +21,8 @@ import { Iconify } from 'src/components/iconify';
 
 import { useAuthContext } from 'src/auth/hooks';
 
-import { PaymentCardListDialog } from '../payment/payment-card-list-dialog';
+// Temporarily disabled - payment components removed
+// import { PaymentCardListDialog } from '../payment/payment-card-list-dialog';
 
 // ----------------------------------------------------------------------
 
@@ -41,7 +42,7 @@ export function AccountBillingPlan({ cardList, addressBook, plans }: Props) {
   const { hasPermission } = usePermissions();
 
   const openAddress = useBoolean();
-  const openCards = useBoolean();
+  // const openCards = useBoolean(); // Temporarily disabled - payment components removed
 
   // Check if user can manage subscription
   const canManageSubscription = user?.isTenantOwner || hasPermission(PERMISSIONS.TENANT_MANAGE);
@@ -53,7 +54,7 @@ export function AccountBillingPlan({ cardList, addressBook, plans }: Props) {
   const primaryAddress = addressBook.find((address) => address.primary) || null;
 
   const [selectedPlan, setSelectedPlan] = useState('');
-  const [selectedCard, setSelectedCard] = useState<IPaymentCard | null>(primaryCard);
+  const [selectedCard] = useState<IPaymentCard | null>(primaryCard); // setSelectedCard temporarily disabled
   const [selectedAddress] = useState<IAddressItem | null>(primaryAddress);
 
   const handleSelectPlan = useCallback(
@@ -68,9 +69,10 @@ export function AccountBillingPlan({ cardList, addressBook, plans }: Props) {
 
   // Address selection handled by downstream UI; remove unused handler to satisfy lint
 
-  const handleSelectCard = useCallback((newValue: IPaymentCard | null) => {
-    setSelectedCard(newValue);
-  }, []);
+  // Temporarily disabled - payment components removed
+  // const handleSelectCard = useCallback((newValue: IPaymentCard | null) => {
+  //   setSelectedCard(newValue);
+  // }, []);
 
   const renderPlans = () =>
     plans.map((plan) => (
@@ -213,20 +215,21 @@ export function AccountBillingPlan({ cardList, addressBook, plans }: Props) {
     );
   };
 
-  const renderCardListDialog = () => (
-    <PaymentCardListDialog
-      list={cardList}
-      open={openCards.value}
-      onClose={openCards.onFalse}
-      selected={(selectedId: string) => selectedCard?.id === selectedId}
-      onSelect={handleSelectCard}
-      action={
-        <Button size="small" startIcon={<Iconify icon="mingcute:add-line" />}>
-          Add
-        </Button>
-      }
-    />
-  );
+  const renderCardListDialog = () => null; // Temporarily disabled - payment components removed
+  // (
+  //   <PaymentCardListDialog
+  //     list={cardList}
+  //     open={openCards.value}
+  //     onClose={openCards.onFalse}
+  //     selected={(selectedId: string) => selectedCard?.id === selectedId}
+  //     onSelect={handleSelectCard}
+  //     action={
+  //       <Button size="small" startIcon={<Iconify icon="mingcute:add-line" />}>
+  //         Add
+  //       </Button>
+  //     }
+  //   />
+  // );
 
   return (
     <>

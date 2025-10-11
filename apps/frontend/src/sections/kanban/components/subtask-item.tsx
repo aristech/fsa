@@ -283,6 +283,7 @@ export function SubtaskItem({
         >
           <SubtaskAttachments
             attachments={subtask.attachments}
+            subtaskId={subtask._id}
             onUpload={handleUpload}
             onDelete={handleDeleteAttachment}
             isUploading={isUploading}

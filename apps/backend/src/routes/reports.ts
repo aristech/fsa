@@ -524,7 +524,9 @@ export async function reportsRoutes(fastify: FastifyInstance) {
         const canSubmit =
           report.createdBy.toString() === user.id ||
           report.assignedTo?.toString() === user.id ||
-          isTaskAssignee;
+          isTaskAssignee ||
+          user.role === "admin" ||
+          user.role === "supervisor";
 
         if (!canSubmit) {
           return reply.code(403).send({

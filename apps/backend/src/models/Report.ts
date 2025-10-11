@@ -183,6 +183,7 @@ export interface IReport extends Document {
   location?: string;
   weather?: string;
   equipment?: string[];
+  notes?: string;
 
   // Time Tracking
   reportDate: Date;
@@ -514,6 +515,7 @@ const ReportSchema: Schema = new Schema(
     location: { type: String, trim: true },
     weather: { type: String, trim: true },
     equipment: [{ type: String, trim: true }],
+    notes: { type: String, trim: true },
 
     // Time Tracking
     reportDate: { type: Date, required: true, index: true },

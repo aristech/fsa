@@ -81,6 +81,18 @@ export function ReportOverviewTab({ report, onUpdate }: ReportOverviewTabProps) 
                 </Box>
               </Grid>
             )}
+            {report.notes && (
+              <Grid size={{ xs: 12 }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                    Notes
+                  </Typography>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                    {report.notes}
+                  </Typography>
+                </Box>
+              </Grid>
+            )}
           </Grid>
         </CardContent>
       </Card>
@@ -155,7 +167,7 @@ export function ReportOverviewTab({ report, onUpdate }: ReportOverviewTabProps) 
             <Grid size={{ xs: 12, sm: 4 }}>
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="h4" color="primary" sx={{ fontWeight: 600 }}>
-                  ${report.totalCost.toFixed(2)}
+                  {report.totalCost.toFixed(2)}€
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Total Cost
@@ -165,7 +177,7 @@ export function ReportOverviewTab({ report, onUpdate }: ReportOverviewTabProps) 
             <Grid size={{ xs: 12, sm: 4 }}>
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="h4" color="info.main" sx={{ fontWeight: 600 }}>
-                  ${report.totalMaterialCost.toFixed(2)}
+                  {report.totalMaterialCost.toFixed(2)}€
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Material Cost
@@ -175,7 +187,7 @@ export function ReportOverviewTab({ report, onUpdate }: ReportOverviewTabProps) 
             <Grid size={{ xs: 12, sm: 4 }}>
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="h4" color="success.main" sx={{ fontWeight: 600 }}>
-                  ${report.totalLaborCost.toFixed(2)}
+                  {report.totalLaborCost.toFixed(2)}€
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Labor Cost

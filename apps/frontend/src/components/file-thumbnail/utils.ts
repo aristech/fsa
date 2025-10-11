@@ -162,12 +162,13 @@ export function getFileIcon(input?: FileInput): string {
 }
 
 /**
- * Builds complete file metadata from a File object or file path.
+ * Builds complete file metadata from a File object, file path, or FileMetadata object.
  *
  * @example getFileMeta(fileObj)
  * @example getFileMeta('/path/to/file.png')
+ * @example getFileMeta({ filename: 'image.jpg', mimetype: 'image/jpeg', ... })
  */
-export function getFileMeta(file?: File | string | null): FileMetaData {
+export function getFileMeta(file?: File | string | any | null): FileMetaData {
   if (file instanceof File) {
     const formatFromMime = detectFileFormat(file.type);
     const formatFromName = detectFileFormat(file.name);
@@ -192,6 +193,25 @@ export function getFileMeta(file?: File | string | null): FileMetaData {
       name: getFileName(file),
       type: getFileExtension(file),
       format: detectFileFormat(file),
+    };
+  }
+
+  // Handle FileMetadata objects (e.g., from backend with mimetype, filename, etc.)
+  if (typeof file === 'object' && file !== null) {
+    const mimetype = file.mimetype || file.type || '';
+    const filename = file.originalName || file.filename || file.name || '';
+    const size = file.size || 0;
+
+    const formatFromMime = detectFileFormat(mimetype);
+    const formatFromName = detectFileFormat(filename);
+
+    return {
+      key: file.filename || file.url || uuidv4(),
+      name: filename,
+      type: mimetype,
+      size,
+      format: formatFromMime !== 'unknown' ? formatFromMime : formatFromName,
+      path: file.url,
     };
   }
 

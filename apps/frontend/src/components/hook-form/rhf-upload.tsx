@@ -1,5 +1,5 @@
 import type { BoxProps } from '@mui/material/Box';
-import type { UploadProps } from '../upload';
+import type { UploadProps, FileMetadata } from '../upload';
 
 import { Controller, useFormContext } from 'react-hook-form';
 
@@ -81,9 +81,11 @@ export function RHFUpload({ name, multiple, helperText, ...other }: RHFUploadPro
           setValue(name, value, { shouldValidate: true });
         };
 
-        const onRemove = (inputFile: File | string) => {
+        const onRemove = (inputFile: File | string | FileMetadata) => {
           if (multiple && Array.isArray(field.value)) {
-            const filtered = field.value.filter((file: File | string) => file !== inputFile);
+            const filtered = field.value.filter(
+              (file: File | string | FileMetadata) => file !== inputFile
+            );
             setValue(name, filtered, { shouldValidate: true });
           } else {
             // For single file, clear the value

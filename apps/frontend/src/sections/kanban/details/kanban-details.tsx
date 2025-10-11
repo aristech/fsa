@@ -124,7 +124,7 @@ type Props = {
 export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose }: Props) {
   const tabs = useTabs('overview');
   const { t } = useTranslate('common');
-  const { user } = useAuthContext();
+  const { user, tenant } = useAuthContext();
 
   const contactsDialog = useBoolean();
   const reportCreateDrawer = useBoolean();
@@ -1239,6 +1239,7 @@ export function KanbanDetails({ task, open, onUpdateTask, onDeleteTask, onClose 
         <KanbanDetailsAttachments
           attachments={task.attachments}
           taskId={task.id}
+          tenantId={tenant?._id}
           onChange={async (files: any[]) => {
             try {
               await axiosInstance.post(`${endpoints.kanban}?endpoint=update-task`, {

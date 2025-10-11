@@ -124,7 +124,6 @@ export function ReportCreateDrawer({
   const [reportNotes, setReportNotes] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
   const [signatures, setSignatures] = useState<SignatureData[]>([]);
-  const [reportStatus, setReportStatus] = useState<'draft' | 'submitted'>('draft');
   const [previewUrls, setPreviewUrls] = useState<Map<number, string>>(new Map());
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -570,7 +569,6 @@ export function ReportCreateDrawer({
       setReportNotes('');
       setAttachments([]);
       setSignatures([]);
-      setReportStatus('draft');
     }
 
     // Update the ref to track current open state
@@ -732,6 +730,7 @@ export function ReportCreateDrawer({
       let currentFacingMode: 'user' | 'environment' = 'environment'; // Default to rear camera
       let flashEnabled = false;
       let videoTrack: MediaStreamTrack | null = null;
+      let imageCapture: any = null; // For Samsung devices that support ImageCapture API
 
       // Function to start camera with specific facing mode
       const startCamera = async (facingMode: 'user' | 'environment') => {
@@ -741,18 +740,38 @@ export function ReportCreateDrawer({
         }
 
         try {
+          // Request camera with torch capability for better mobile support
           const constraints: MediaStreamConstraints = {
             video: {
               facingMode: { ideal: facingMode },
+              // @ts-expect-error - torch is not in official types but supported by some browsers
+              advanced: [{ torch: true }],
             },
           };
 
-          currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+          try {
+            currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+          } catch {
+            // If torch constraint fails, try without it
+            currentStream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: { ideal: facingMode } },
+            });
+          }
 
           // Get the video track for flash control
           const tracks = currentStream.getVideoTracks();
           if (tracks.length > 0) {
             videoTrack = tracks[0];
+
+            // Initialize ImageCapture for Samsung devices
+
+            if (typeof ImageCapture !== 'undefined') {
+              try {
+                imageCapture = new ImageCapture(videoTrack);
+              } catch (err) {
+                console.log('ImageCapture not available:', err);
+              }
+            }
           }
 
           return currentStream;
@@ -763,6 +782,15 @@ export function ReportCreateDrawer({
           const tracks = currentStream.getVideoTracks();
           if (tracks.length > 0) {
             videoTrack = tracks[0];
+
+            // Initialize ImageCapture for Samsung devices
+            if (typeof ImageCapture !== 'undefined') {
+              try {
+                imageCapture = new ImageCapture(videoTrack);
+              } catch (err) {
+                console.log('ImageCapture not available:', err);
+              }
+            }
           }
           return currentStream;
         }
@@ -912,7 +940,7 @@ export function ReportCreateDrawer({
             }
           };
 
-          // Toggle flash handler
+          // Toggle flash handler with Samsung device support
           const toggleFlash = async () => {
             if (!videoTrack) {
               toast.warning('Flash not available on this device');
@@ -920,28 +948,110 @@ export function ReportCreateDrawer({
             }
 
             try {
-              // Check if torch is supported
-              const capabilities = videoTrack.getCapabilities();
-              // @ts-expect-error - torch is not in official types yet
-              if (!capabilities.torch) {
-                toast.warning('Flash not supported on this camera');
-                return;
+              flashEnabled = !flashEnabled;
+              let success = false;
+
+              // Method 1: Try ImageCapture API (works best on Samsung devices)
+              if (imageCapture && !success) {
+                try {
+                  const photoCapabilities = await imageCapture.getPhotoCapabilities();
+                  if (
+                    photoCapabilities.fillLightMode &&
+                    photoCapabilities.fillLightMode.includes('flash')
+                  ) {
+                    await imageCapture.track.applyConstraints({
+                      advanced: [{ fillLightMode: flashEnabled ? 'flash' : 'off' }],
+                    });
+                    success = true;
+                    console.log('Flash toggled using ImageCapture fillLightMode');
+                  }
+                } catch (err) {
+                  console.log('ImageCapture fillLightMode failed:', err);
+                }
               }
 
-              flashEnabled = !flashEnabled;
+              // Method 2: Try torch constraint with advanced array (standard Android)
+              if (!success) {
+                try {
+                  await videoTrack.applyConstraints({
+                    // @ts-expect-error - torch is not in official types yet
+                    advanced: [{ torch: flashEnabled }],
+                  });
+                  success = true;
+                  console.log('Flash toggled using torch with advanced array');
+                } catch (err) {
+                  console.log('Torch with advanced array failed:', err);
+                }
+              }
 
-              // Apply torch setting
-              await videoTrack.applyConstraints({
-                // @ts-expect-error - torch is not in official types yet
-                advanced: [{ torch: flashEnabled }],
-              });
+              // Method 3: Try direct torch constraint (some devices)
+              if (!success) {
+                try {
+                  // @ts-expect-error - torch is not in official types yet
+                  await videoTrack.applyConstraints({ torch: flashEnabled });
+                  success = true;
+                  console.log('Flash toggled using direct torch constraint');
+                } catch (err) {
+                  console.log('Direct torch constraint failed:', err);
+                }
+              }
 
-              // Update button appearance
-              flashBtn.style.opacity = flashEnabled ? '1' : '0.5';
-              toast.success(`Flash ${flashEnabled ? 'on' : 'off'}`);
+              // Method 4: Try fillLightMode directly on track (Samsung fallback)
+              if (!success) {
+                try {
+                  await videoTrack.applyConstraints({
+                    // @ts-expect-error - fillLightMode is not in official types
+                    advanced: [{ fillLightMode: flashEnabled ? 'flash' : 'off' }],
+                  });
+                  success = true;
+                  console.log('Flash toggled using fillLightMode on track');
+                } catch (err) {
+                  console.log('FillLightMode on track failed:', err);
+                }
+              }
+
+              // Method 5: Try with whiteBalanceMode (some Samsung devices)
+              if (!success) {
+                try {
+                  await videoTrack.applyConstraints({
+                    // @ts-expect-error - custom constraint
+                    advanced: [{ torch: flashEnabled, whiteBalanceMode: 'continuous' }],
+                  });
+                  success = true;
+                  console.log('Flash toggled using torch with whiteBalanceMode');
+                } catch (err) {
+                  console.log('Torch with whiteBalanceMode failed:', err);
+                }
+              }
+
+              if (success) {
+                // Update button appearance if successful
+                flashBtn.style.opacity = flashEnabled ? '1' : '0.5';
+                toast.success(`Flash ${flashEnabled ? 'on' : 'off'}`);
+              } else {
+                // All methods failed
+                throw new Error('All flash methods failed');
+              }
             } catch (error) {
               console.error('Error toggling flash:', error);
-              toast.error('Failed to toggle flash');
+              // Reset flash state if it failed
+              flashEnabled = !flashEnabled;
+              flashBtn.style.opacity = '0.5';
+
+              // Check if it's a Samsung device
+              const isSamsung = /samsung/i.test(navigator.userAgent);
+
+              if (isSamsung) {
+                toast.warning(
+                  'Flash not available on this Samsung device. This is a known Samsung browser limitation. Try using Chrome browser or switching to the rear camera.',
+                  { duration: 5000 }
+                );
+              } else {
+                toast.warning(
+                  'Flash not supported on this camera. Try switching to the rear camera or ensure camera permissions are granted.',
+                  { duration: 4000 }
+                );
+              }
             }
           };
 
@@ -1284,6 +1394,9 @@ export function ReportCreateDrawer({
   const onFormSubmit = handleSubmit(async (data) => {
     setIsSubmitting(true);
 
+    // Determine status: 'submitted' if online, 'draft' if offline
+    const reportStatus = isOffline ? 'draft' : 'submitted';
+
     // Prepare the complete report data
     const reportData = {
       ...data,
@@ -1327,7 +1440,9 @@ export function ReportCreateDrawer({
           await handleFileUploads(reportId);
 
           toast.success(
-            reportStatus === 'draft' ? 'Report saved as draft' : 'Report submitted for review'
+            isOffline
+              ? 'Report saved locally and will sync when online'
+              : 'Report submitted successfully'
           );
           onSuccess(response.data);
           onClose();
@@ -1408,8 +1523,8 @@ export function ReportCreateDrawer({
                 px: 1,
                 py: 0.5,
                 borderRadius: 1,
-                backgroundColor: theme.palette.warning.lighter,
-                color: theme.palette.warning.darker,
+                backgroundColor: theme.palette.warning.light,
+                color: theme.palette.warning.dark,
               }}
             >
               <Iconify icon="eva:wifi-off-fill" width={14} />
@@ -1993,22 +2108,35 @@ export function ReportCreateDrawer({
         variant="subtitle1"
         sx={{ fontWeight: 600, color: 'primary.main', fontSize: { xs: '0.95rem', sm: '1rem' } }}
       >
-        Signatures & Status
+        Signatures & Summary
       </Typography>
 
-      {/* Report Status */}
-      <TextField
-        select
-        label="Report Status *"
-        value={reportStatus}
-        onChange={(e) => setReportStatus(e.target.value as 'draft' | 'submitted')}
-        required
-        fullWidth
-        helperText="Choose whether to save as draft or submit for approval"
-      >
-        <option value="draft">Save as Draft</option>
-        <option value="submitted">Submit for Review</option>
-      </TextField>
+      {/* Offline indicator with explanation */}
+      {isOffline && (
+        <Box
+          sx={{
+            p: 2,
+            border: '1px solid',
+            borderColor: 'warning.main',
+            borderRadius: 1,
+            backgroundColor: 'warning.lighter',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 1.5,
+          }}
+        >
+          <Iconify icon="eva:wifi-off-fill" width={20} sx={{ color: 'warning.main', mt: 0.25 }} />
+          <Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+              Offline Mode
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              You are currently offline. Your report will be saved locally and automatically
+              submitted when your connection is restored.
+            </Typography>
+          </Box>
+        </Box>
+      )}
 
       {/* Digital Signatures */}
       <SignatureCollector
@@ -2119,7 +2247,7 @@ export function ReportCreateDrawer({
           variant="contained"
           onClick={handleExplicitSubmit}
           disabled={isSubmitting || !validateStep(1)}
-          startIcon={<Iconify icon="eva:save-fill" width={16} />}
+          startIcon={<Iconify icon="eva:paper-plane-fill" width={16} />}
           sx={{
             flex: 1,
             height: { xs: 48, sm: 56 },
@@ -2127,11 +2255,7 @@ export function ReportCreateDrawer({
             minWidth: 0,
           }}
         >
-          {isSubmitting
-            ? 'Submitting...'
-            : reportStatus === 'draft'
-              ? 'Save Draft'
-              : 'Submit Report'}
+          {isSubmitting ? 'Submitting...' : 'Submit Report'}
         </Button>
       )}
     </Box>

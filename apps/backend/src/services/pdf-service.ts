@@ -114,6 +114,18 @@ export class PDFService {
 
     if (report.weather) addKeyValue("Weather", report.weather);
 
+    // Notes section
+    if (report.notes) {
+      doc
+        .fontSize(10)
+        .fillColor("#666666")
+        .text("Notes:", { continued: false })
+        .fillColor("#000000")
+        .fontSize(9)
+        .text(report.notes, { align: "left", paragraphGap: 5 })
+        .moveDown(0.3);
+    }
+
     doc.moveDown();
 
     // Client Information

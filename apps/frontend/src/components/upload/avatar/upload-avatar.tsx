@@ -46,8 +46,8 @@ export function UploadAvatar({
   const hasError = isDragReject || !!error;
   const showFilesRejected = !hideFilesRejected && fileRejections.length > 0;
 
-  const fileMeta = getFileMeta(file);
-  const { previewUrl } = useFilePreview(file);
+  const fileMeta = getFileMeta(file as File | string | null);
+  const { previewUrl } = useFilePreview(file as File | string | null);
 
   const renderPlaceholder = () => (
     <PlaceholderContainer className={uploadClasses.placeholder.root}>

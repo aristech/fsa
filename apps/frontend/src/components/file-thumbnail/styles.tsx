@@ -37,15 +37,15 @@ export const ThumbnailImage = styled('img', {
 
 export const RemoveButton = styled(IconButton)(({ theme }) => ({
   top: 4,
-  right: 28,
+  right: 4,
   position: 'absolute',
   padding: theme.spacing(0.5),
-  width: 20,
-  height: 20,
+  width: 26,
+  height: 26,
   color: theme.vars?.palette.common.white,
   backgroundColor: varAlpha(theme.vars?.palette.grey['900Channel'] || '0 0 0', 0.48),
   '&:hover': {
-    backgroundColor: varAlpha(theme.vars?.palette.grey['900Channel'] || '0 0 0', 0.72),
+    backgroundColor: theme.palette.error.main,
   },
 }));
 

@@ -221,6 +221,7 @@ export interface IReport {
   location?: string;
   weather?: string;
   equipment: string[];
+  notes?: string;
 
   // Time Tracking
   reportDate: Date;
@@ -296,6 +297,7 @@ export interface CreateReportData {
   location?: string;
   weather?: string;
   equipment?: string[];
+  notes?: string;
   reportDate?: Date;
   priority?: IReport['priority'];
   tags?: string[];

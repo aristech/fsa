@@ -57,19 +57,31 @@ export function LogoUpload({ onSuccess, onError }: Props) {
 
   const handleFileUpload = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
+      const files = event.target.files;
+
+      // Ensure only one file is selected
+      if (!files || files.length === 0) return;
+
+      if (files.length > 1) {
+        onError('Please upload only one logo file at a time.');
+        event.target.value = '';
+        return;
+      }
+
+      const file = files[0];
 
       // Validate file type
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
       if (!allowedTypes.includes(file.type)) {
         onError('Invalid file type. Please upload JPG, PNG, WebP, or SVG files only.');
+        event.target.value = '';
         return;
       }
 
       // Validate file size (5MB)
       if (file.size > 5 * 1024 * 1024) {
         onError('File too large. Maximum size is 5MB.');
+        event.target.value = '';
         return;
       }
 
