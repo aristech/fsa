@@ -7,6 +7,8 @@ import {useMemo, useState, useEffect} from 'react';
 
 import {Box, Card, Chip, Stack, Avatar, Collapse, IconButton, Typography} from '@mui/material';
 
+import {extractFileMetadataFromUrl} from 'src/utils/file-url-converter';
+
 import {useTranslate} from 'src/locales/use-locales';
 import axiosInstance, {endpoints} from 'src/lib/axios';
 
@@ -96,10 +98,9 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId }: Props)
         task.attachments.forEach((taskAtt: any) => {
           // Task attachments are strings (URLs), not objects
           if (typeof taskAtt === 'string') {
-            // Extract filename from URL
-            const urlParts = taskAtt.split('/');
-            const filenameWithQuery = urlParts[urlParts.length - 1];
-            const filename = decodeURIComponent(filenameWithQuery.split('?')[0]);
+            // Try to extract metadata from URL (includes scope)
+            const extracted = extractFileMetadataFromUrl(taskAtt);
+            const filename = extracted?.filename || decodeURIComponent(taskAtt.split('/').pop()?.split('?')[0] || '');
 
             // Guess mime type from file extension
             const ext = filename.split('.').pop()?.toLowerCase() || '';
@@ -114,13 +115,14 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId }: Props)
             grouped.push({
               source: 'task',
               sourceName: t('task', {defaultValue: 'Task'}),
-              sourceId: task._id,
+              sourceId: extracted?.ownerId || task._id,
               taskTitle: task.name || task.title,
               attachment: {
                 name: filename,
                 url: taskAtt,
                 type: mimetype,
                 size: 0, // Size not available for task attachments
+                filename: extracted?.filename, // Add filename for signed URL generation
               },
             });
           } else if (taskAtt && typeof taskAtt === 'object') {
@@ -179,17 +181,31 @@ export function WorkOrderDetailsAttachments({ attachments, workOrderId }: Props)
 
   // Convert grouped attachments to FileMetadata for MultiFilePreview
   const convertGroupToFileMetadata = (groupAttachments: GroupedAttachment[]): FileMetadata[] =>
-    groupAttachments.map((item) => ({
-      filename: item.attachment.name,
-      originalName: item.attachment.name,
-      url: item.attachment.url,
-      size: item.attachment.size,
-      mimetype: item.attachment.type,
-      scope:
-        item.source === 'workOrder' ? 'work_orders' : item.source === 'task' ? 'tasks' : 'subtasks',
-      ownerId: item.sourceId,
-      tenantId, // Add tenantId for signed URL generation
-    }));
+    groupAttachments.map((item) => {
+      // Try to extract metadata from URL (includes scope, ownerId, etc.)
+      const extracted = item.attachment.url ? extractFileMetadataFromUrl(item.attachment.url) : null;
+
+      // Use extracted scope if available, otherwise use default based on source
+      const scope = extracted?.scope || (
+        item.source === 'workOrder' ? 'work_orders' :
+        item.source === 'task' ? 'tasks' :
+        'subtasks'
+      );
+
+      const ownerId = extracted?.ownerId || item.sourceId;
+      const filename = extracted?.filename || item.attachment.filename || item.attachment.name;
+
+      return {
+        filename,
+        originalName: item.attachment.name,
+        url: item.attachment.url,
+        size: item.attachment.size,
+        mimetype: item.attachment.type,
+        scope,
+        ownerId,
+        tenantId: extracted?.tenantId || tenantId, // Use extracted tenantId if available
+      };
+    });
 
   const renderAttachmentGroup = (
     groupTitle: string,

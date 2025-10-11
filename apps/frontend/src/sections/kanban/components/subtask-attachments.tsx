@@ -2,6 +2,8 @@ import type { FileMetadata } from 'src/components/upload/types';
 
 import { useCallback } from 'react';
 
+import { extractFileMetadataFromUrl } from 'src/utils/file-url-converter';
+
 import { CONFIG } from 'src/global-config';
 
 import { UploadBox, MultiFilePreview } from 'src/components/upload';
@@ -45,18 +47,23 @@ export function SubtaskAttachments({
 
   // Convert subtask attachments to FileMetadata format
   // MultiFilePreview will handle signed URL generation automatically
-  const fileMetadata: FileMetadata[] = attachments.map((att) => ({
-    filename: att.filename,
-    originalName: att.originalName,
-    url: att.url, // Can be undefined - MultiFilePreview will generate signed URL
-    size: att.size,
-    mimetype: att.mimetype,
-    scope: 'subtasks',
-    ownerId: subtaskId || 'unknown',
-    tenantId,
-    uploadedAt: att.uploadedAt,
-    uploadedBy: att.uploadedBy,
-  }));
+  const fileMetadata: FileMetadata[] = attachments.map((att) => {
+    // Try to extract metadata from URL if available
+    const extracted = att.url ? extractFileMetadataFromUrl(att.url) : null;
+
+    return {
+      filename: extracted?.filename || att.filename,
+      originalName: att.originalName,
+      url: att.url, // Can be undefined - MultiFilePreview will generate signed URL
+      size: att.size,
+      mimetype: att.mimetype,
+      scope: extracted?.scope || 'subtasks',
+      ownerId: extracted?.ownerId || subtaskId || 'unknown',
+      tenantId: extracted?.tenantId || tenantId,
+      uploadedAt: att.uploadedAt,
+      uploadedBy: att.uploadedBy,
+    };
+  });
 
   const handleRemove = useCallback(
     (file: File | string | FileMetadata) => {

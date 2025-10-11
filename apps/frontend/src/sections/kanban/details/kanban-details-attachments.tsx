@@ -2,6 +2,8 @@ import type { FileMetadata } from 'src/components/upload/types';
 
 import { useState, useEffect, useCallback } from 'react';
 
+import { extractFileMetadataFromUrl } from 'src/utils/file-url-converter';
+
 import axiosInstance from 'src/lib/axios';
 import { CONFIG } from 'src/global-config';
 
@@ -23,7 +25,22 @@ export function KanbanDetailsAttachments({ attachments, taskId, tenantId, onChan
   // Convert URL strings to FileMetadata objects on mount/update
   useEffect(() => {
     const fileMetadata: FileMetadata[] = attachments.map((url) => {
-      // Extract filename from URL
+      // Try to extract metadata from URL (includes scope, ownerId, filename, tenantId)
+      const extracted = extractFileMetadataFromUrl(url);
+
+      if (extracted) {
+        // Use extracted metadata from URL
+        return {
+          filename: extracted.filename,
+          originalName: extracted.filename,
+          url,
+          scope: extracted.scope,
+          ownerId: extracted.ownerId,
+          tenantId: extracted.tenantId,
+        };
+      }
+
+      // Fallback: Extract filename manually if URL parsing fails
       const urlParts = url.split('/');
       const filenameWithQuery = urlParts[urlParts.length - 1];
       const filename = decodeURIComponent(filenameWithQuery.split('?')[0]);

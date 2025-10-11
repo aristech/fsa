@@ -5,6 +5,8 @@ import type { FileMetadata } from 'src/components/upload';
 
 import { Box, Stack, Typography } from '@mui/material';
 
+import { extractFileMetadataFromUrl } from 'src/utils/file-url-converter';
+
 import { MultiFilePreview } from 'src/components/upload';
 import { EmptyContent } from 'src/components/empty-content';
 
@@ -26,16 +28,21 @@ const convertToFileMetadata = (
   reportId: string,
   tenantId: string
 ): FileMetadata[] =>
-  files.map((file) => ({
-    filename: file.filename,
-    originalName: file.originalName,
-    url: file.url,
-    size: file.size,
-    mimetype: file.mimetype,
-    scope: 'reports',
-    ownerId: reportId,
-    tenantId,
-  }));
+  files.map((file) => {
+    // Try to extract metadata from URL if available
+    const extracted = file.url ? extractFileMetadataFromUrl(file.url) : null;
+
+    return {
+      filename: extracted?.filename || file.filename,
+      originalName: file.originalName,
+      url: file.url,
+      size: file.size,
+      mimetype: file.mimetype,
+      scope: extracted?.scope || 'reports',
+      ownerId: extracted?.ownerId || reportId,
+      tenantId: extracted?.tenantId || tenantId,
+    };
+  });
 
 export function ReportAttachmentsTab({ report, onUpdate, canEdit }: ReportAttachmentsTabProps) {
   const { tenant } = useAuthContext();
