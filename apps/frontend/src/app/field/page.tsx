@@ -223,15 +223,6 @@ export default function FieldDashboard() {
         >
           {t('viewTasks', { defaultValue: 'View Tasks' })}
         </MobileButton>
-        <MobileButton
-          variant="outline"
-          size="large"
-          fullWidth
-          icon={<Iconify icon="solar:document-text-bold" width={20} />}
-          onClick={() => router.push('/field/reports')}
-        >
-          {t('createReport', { defaultValue: 'Create Report' })}
-        </MobileButton>
       </Box>
 
       {/* Stats Cards */}

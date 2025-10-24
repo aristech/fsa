@@ -584,6 +584,54 @@ export async function deleteTask(
 }
 
 // ----------------------------------------------------------------------
+
+export async function archiveTask(taskId: IKanbanTask['id'], taskData?: IKanbanTask) {
+  /**
+   * Work on server
+   */
+  if (enableServer) {
+    const data = { taskId };
+    await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'archive-task' } });
+
+    // Revalidate the cache to get fresh data from server
+    await mutate(KANBAN_ENDPOINT);
+    if (taskData?.clientId) {
+      await mutate(`${KANBAN_ENDPOINT}?clientId=${taskData.clientId}`);
+    }
+
+    // Also revalidate calendar cache since archived tasks should be removed from calendar
+    await mutate(endpoints.calendar);
+    if (taskData?.clientId) {
+      await mutate(`${endpoints.calendar}?clientId=${taskData.clientId}`);
+    }
+  }
+}
+
+// ----------------------------------------------------------------------
+
+export async function unarchiveTask(taskId: IKanbanTask['id'], taskData?: IKanbanTask) {
+  /**
+   * Work on server
+   */
+  if (enableServer) {
+    const data = { taskId };
+    await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'unarchive-task' } });
+
+    // Revalidate the cache to get fresh data from server
+    await mutate(KANBAN_ENDPOINT);
+    if (taskData?.clientId) {
+      await mutate(`${KANBAN_ENDPOINT}?clientId=${taskData.clientId}`);
+    }
+
+    // Also revalidate calendar cache since unarchived tasks should appear in calendar
+    await mutate(endpoints.calendar);
+    if (taskData?.clientId) {
+      await mutate(`${endpoints.calendar}?clientId=${taskData.clientId}`);
+    }
+  }
+}
+
+// ----------------------------------------------------------------------
 // Time entries actions
 
 export async function listTimeEntries(params: {

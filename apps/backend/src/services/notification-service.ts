@@ -58,9 +58,10 @@ export class NotificationService {
       });
 
       const savedNotification = await notification.save();
-      
+
       // Get updated unread count and emit real-time notification
       const unreadCount = await this.getUnreadCount(params.tenantId, params.userId);
+      console.log(`🔔 Emitting notification:created to user ${params.userId}, unreadCount: ${unreadCount}`);
       realtimeService.emitNotificationToUser(params.userId, 'created', {
         notification: savedNotification,
         unreadCount,
@@ -441,11 +442,21 @@ export class NotificationService {
       query._id = { $in: notificationIds };
     }
 
-    await Notification.updateMany(query, { 
-      isArchived: true, 
-      isRead: true, 
-      updatedAt: new Date() 
+    await Notification.updateMany(query, {
+      isArchived: true,
+      isRead: true,
+      updatedAt: new Date()
     });
+  }
+
+  /**
+   * Delete all notifications for a user
+   */
+  static async deleteAllNotifications(
+    tenantId: string,
+    userId: string
+  ): Promise<void> {
+    await Notification.deleteMany({ tenantId, userId });
   }
 
   /**

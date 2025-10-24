@@ -10,6 +10,8 @@ export interface OfflineDraftReport {
   data: any;
   timestamp: number;
   status: 'draft' | 'pending_sync';
+  syncAttempts?: number;
+  lastSyncAttempt?: number;
   metadata: {
     userId: string;
     userEmail: string;
@@ -140,11 +142,57 @@ class OfflineStorageManager {
   }
 
   /**
-   * Get drafts that need to be synced
+   * Get drafts that need to be synced (with exponential backoff)
    */
   getPendingSyncDrafts(): OfflineDraftReport[] {
     const drafts = this.getAllDrafts();
-    return drafts.filter((draft) => draft.status === 'pending_sync');
+    const now = Date.now();
+
+    return drafts.filter((draft) => {
+      if (draft.status !== 'pending_sync') return false;
+
+      // If never attempted, allow sync
+      if (!draft.syncAttempts || !draft.lastSyncAttempt) return true;
+
+      // Exponential backoff: 1min, 5min, 15min, 30min, 1hr, 2hr, 4hr, 8hr, 24hr
+      const backoffMinutes = [1, 5, 15, 30, 60, 120, 240, 480, 1440];
+      const attemptIndex = Math.min(draft.syncAttempts - 1, backoffMinutes.length - 1);
+      const backoffMs = backoffMinutes[attemptIndex] * 60 * 1000;
+
+      // Only retry if enough time has passed
+      return (now - draft.lastSyncAttempt) >= backoffMs;
+    });
+  }
+
+  /**
+   * Mark a sync attempt for a draft
+   */
+  markSyncAttempt(draftId: string, failed: boolean = true): boolean {
+    try {
+      const drafts = this.getAllDrafts();
+      const draftIndex = drafts.findIndex((draft) => draft.id === draftId);
+
+      if (draftIndex === -1) {
+        return false;
+      }
+
+      const draft = drafts[draftIndex];
+      draft.lastSyncAttempt = Date.now();
+
+      if (failed) {
+        draft.syncAttempts = (draft.syncAttempts || 0) + 1;
+      } else {
+        // Sync succeeded, remove the draft or mark as synced
+        draft.status = 'draft';
+        draft.syncAttempts = 0;
+      }
+
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(drafts));
+      return true;
+    } catch (error) {
+      console.error('Failed to mark sync attempt:', error);
+      return false;
+    }
   }
 
   /**

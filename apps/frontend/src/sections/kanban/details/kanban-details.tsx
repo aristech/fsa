@@ -121,7 +121,13 @@ type Props = {
   onUpdateTaskAction: (updateTask: IKanbanTask) => void;
 };
 
-export function KanbanDetails({ task, open, onUpdateTaskAction, onDeleteTaskAction, onCloseAction }: Props) {
+export function KanbanDetails({
+  task,
+  open,
+  onUpdateTaskAction,
+  onDeleteTaskAction,
+  onCloseAction,
+}: Props) {
   const tabs = useTabs('overview');
   const { t } = useTranslate('common');
   const { user, tenant } = useAuthContext();
@@ -858,6 +864,29 @@ export function KanbanDetails({ task, open, onUpdateTaskAction, onDeleteTaskActi
       isPrivate={isPrivate}
       isCreator={user?.id === task.reporter?.id}
       onTogglePrivate={confirmMakePublicDialog.onTrue}
+      isArchived={task.isArchived}
+      onArchive={async () => {
+        try {
+          const { archiveTask } = await import('src/actions/kanban');
+          await archiveTask(task.id, task);
+          onCloseAction();
+          toast.success(t('taskArchived', { defaultValue: 'Task archived successfully' }));
+        } catch (e) {
+          console.error('Failed to archive task', e);
+          toast.error(t('failedToArchive', { defaultValue: 'Failed to archive task' }));
+        }
+      }}
+      onUnarchive={async () => {
+        try {
+          const { unarchiveTask } = await import('src/actions/kanban');
+          await unarchiveTask(task.id, task);
+          onCloseAction();
+          toast.success(t('taskUnarchived', { defaultValue: 'Task unarchived successfully' }));
+        } catch (e) {
+          console.error('Failed to unarchive task', e);
+          toast.error(t('failedToUnarchive', { defaultValue: 'Failed to unarchive task' }));
+        }
+      }}
     />
   );
   const renderTabs = () => (

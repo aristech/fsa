@@ -107,3 +107,13 @@ export async function getNotification(
   );
   return response.data;
 }
+
+/**
+ * Delete all notifications for the current user
+ */
+export async function deleteAllNotifications(): Promise<NotificationActionResponse> {
+  const response = await axiosInstance.delete<NotificationActionResponse>(
+    endpoints.notifications.deleteAll
+  );
+  return response.data;
+}

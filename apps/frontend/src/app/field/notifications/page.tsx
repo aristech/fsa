@@ -81,19 +81,24 @@ export default function FieldNotificationsPage() {
   const [selectedTab, setSelectedTab] = useState('all');
   const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
 
-  // Fetch notifications
+  // Fetch notifications based on selected tab
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
 
+      const params: any = {
+        limit: 50,
+        skip: 0,
+        isArchived: false, // Don't show archived notifications
+      };
+
+      // Add filter based on selected tab
+      if (selectedTab === 'unread') {
+        params.isRead = false;
+      }
+
       const [notificationsResponse, countsResponse] = await Promise.all([
-        axiosInstance.get('/api/v1/notifications', {
-          params: {
-            limit: 50,
-            skip: 0,
-            isArchived: false, // Don't show archived notifications
-          },
-        }),
+        axiosInstance.get('/api/v1/notifications', { params }),
         axiosInstance.get('/api/v1/notifications/counts'),
       ]);
 
@@ -110,16 +115,16 @@ export default function FieldNotificationsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedTab]);
 
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Filter notifications based on selected tab
+  // Filter notifications based on selected tab (for category filters only)
+  // Note: 'all' and 'unread' are handled by the API query
   const filteredNotifications = notifications.filter((notification) => {
-    if (selectedTab === 'all') return true;
-    if (selectedTab === 'unread') return !notification.isRead;
+    if (selectedTab === 'all' || selectedTab === 'unread') return true;
     return notification.category === selectedTab;
   });
 
@@ -187,15 +192,25 @@ export default function FieldNotificationsPage() {
     }
   };
 
-  // Mark all as read
+  // Mark all as read (marks ALL notifications, not just loaded ones)
   const markAllAsRead = async () => {
-    const unreadNotifications = notifications.filter((n) => !n.isRead);
-    if (unreadNotifications.length === 0) {
+    if (counts.unread === 0) {
       toast.info('All notifications are already read');
       return;
     }
 
-    await markAsRead(unreadNotifications.map((n) => n._id));
+    try {
+      // Call API without notificationIds to mark ALL unread notifications as read
+      await axiosInstance.put('/api/v1/notifications/mark-read', {});
+
+      // Refresh notifications and counts
+      await fetchNotifications();
+
+      toast.success('All notifications marked as read');
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      toast.error('Failed to mark all notifications as read');
+    }
   };
 
   // Get notification icon
@@ -256,10 +271,9 @@ export default function FieldNotificationsPage() {
       await markAsRead([notification._id]);
     }
 
-    // Here you could navigate to the related entity
-    // For now, we'll just show a toast
+    // Show info about the notification
     toast.info(
-      `Viewing ${notification.relatedEntity.entityType}: ${notification.relatedEntity.entityTitle || notification.relatedEntity.entityId}`
+      `Notification: ${notification.title}`
     );
   };
 

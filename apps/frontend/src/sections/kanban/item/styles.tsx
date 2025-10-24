@@ -12,6 +12,8 @@ import { styled } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import AvatarGroup, { avatarGroupClasses } from '@mui/material/AvatarGroup';
 
+import { truncateText } from 'src/utils/text-truncate';
+
 import { Iconify } from 'src/components/iconify';
 import { imageClasses } from 'src/components/image';
 
@@ -93,7 +95,7 @@ export function ItemName({ name, sx, ...other }: ItemNameProps) {
       sx={[{ display: 'block' }, ...(Array.isArray(sx) ? sx : [sx])]}
       {...other}
     >
-      {name}
+      {truncateText(name)}
     </Typography>
   );
 }

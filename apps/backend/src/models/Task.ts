@@ -53,6 +53,8 @@ export interface ITask extends Document {
   originalRecurringTaskId?: string;
   // Private task flag - only creator can see it
   isPrivate?: boolean;
+  // Archive flag - archived tasks are hidden from board but kept for analytics
+  isArchived?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -230,6 +232,12 @@ const TaskSchema = new Schema<ITask>(
       default: false,
       index: true, // Index for efficient filtering of private tasks
     },
+    // Archive flag - archived tasks are hidden from board but kept for analytics
+    isArchived: {
+      type: Boolean,
+      default: false,
+      index: true, // Index for efficient filtering of archived tasks
+    },
   },
   {
     timestamps: true,
@@ -245,6 +253,7 @@ TaskSchema.index({ tenantId: 1, status: 1 }); // Keep for migration compatibilit
 TaskSchema.index({ tenantId: 1, priority: 1 });
 TaskSchema.index({ tenantId: 1, clientId: 1 });
 TaskSchema.index({ tenantId: 1, isPrivate: 1, createdBy: 1 }); // For private task filtering
+TaskSchema.index({ tenantId: 1, isArchived: 1 }); // For archived task filtering
 
 export const Task =
   mongoose.models.Task || mongoose.model<ITask>("Task", TaskSchema);

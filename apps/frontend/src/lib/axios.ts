@@ -407,6 +407,7 @@ export const endpoints = {
     counts: '/api/v1/notifications/counts',
     markRead: '/api/v1/notifications/mark-read',
     archive: '/api/v1/notifications/archive',
+    deleteAll: '/api/v1/notifications',
   },
   webhook: {
     list: () => axiosInstance.get('/api/v1/webhooks'),

@@ -144,6 +144,31 @@ export async function notificationRoutes(fastify: FastifyInstance) {
   });
 
   /**
+   * DELETE /api/notifications
+   * Delete all notifications for the current user
+   */
+  fastify.delete('/', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const req = request as AuthenticatedRequest;
+      const { tenant, user } = req.context!;
+      const tenantId = tenant._id;
+
+      await NotificationService.deleteAllNotifications(tenantId, user.id);
+
+      return {
+        success: true,
+        message: 'All notifications deleted',
+      };
+    } catch (error) {
+      console.error('Error deleting notifications:', error);
+      return reply.code(500).send({
+        success: false,
+        error: 'Failed to delete notifications',
+      });
+    }
+  });
+
+  /**
    * GET /api/notifications/:id
    * Get a specific notification
    */

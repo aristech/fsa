@@ -12,9 +12,8 @@ import { Box, Drawer, Button, useTheme, TextField, Typography, Autocomplete } fr
 
 import axiosInstance, { endpoints } from 'src/lib/axios';
 import { offlineStorage } from 'src/lib/offline-storage';
-import { offlineSyncService } from 'src/lib/offline-sync';
 import { ReportService } from 'src/lib/services/report-service';
-import { getNetworkStatus, addNetworkStatusListener } from 'src/lib/network-utils';
+import { addNetworkStatusListener } from 'src/lib/network-utils';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
@@ -69,7 +68,7 @@ const reportSchema = zod.object({
   reportDate: zod.union([zod.string(), zod.date()]),
   priority: zod.enum(['low', 'medium', 'high', 'urgent']).optional(),
   clientId: zod.string().min(1, 'Client is required'),
-  workOrderId: zod.string().optional(),
+  workOrderId: zod.string().optional().nullable(),
   taskIds: zod.array(zod.string()).optional(),
   location: zod.string().min(1, 'Location is required'),
   weather: zod.string().optional(),
@@ -141,12 +140,8 @@ export function ReportCreateDrawer({
     return unsubscribe;
   }, []);
 
-  // Trigger sync when component mounts (if online)
-  useEffect(() => {
-    if (getNetworkStatus().isOnline) {
-      offlineSyncService.syncPendingDrafts();
-    }
-  }, []);
+  // Note: Sync is now handled automatically by offline-sync service with exponential backoff
+  // No need to manually trigger on component mount to avoid annoying retries
 
   // Data fetching
   const { data: clientsData, error: clientsError } = useSWR(
@@ -1402,6 +1397,9 @@ export function ReportCreateDrawer({
       ...data,
       // Ensure reportDate is a Date object
       reportDate: data.reportDate ? new Date(data.reportDate) : new Date(),
+      // Convert empty strings to undefined for ObjectId fields
+      workOrderId: data.workOrderId && data.workOrderId.trim() !== '' ? data.workOrderId : undefined,
+      clientId: data.clientId && data.clientId.trim() !== '' ? data.clientId : undefined,
       status: reportStatus,
       notes: reportNotes,
       materialsUsed: selectedMaterials.map((m) => ({
@@ -1451,9 +1449,19 @@ export function ReportCreateDrawer({
           throw new Error(response.message || 'Failed to create report');
         }
       } catch (serverError: any) {
-        console.warn('Server save failed, saving locally:', serverError);
+        console.warn('Server save failed:', serverError);
 
-        // If server save fails, save locally as fallback
+        // Check if it's a validation error - if so, don't save offline
+        const isValidationError = serverError?.response?.status === 400 ||
+                                   serverError?.response?.status === 422 ||
+                                   serverError?.response?.data?.errors;
+
+        if (isValidationError) {
+          // Don't save validation errors offline - let them be handled in the error handler below
+          throw serverError;
+        }
+
+        // Only save offline if it's a network/server error (not validation)
         await saveOfflineDraft(reportData);
         return;
       }

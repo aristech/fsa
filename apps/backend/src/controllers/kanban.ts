@@ -70,7 +70,13 @@ export async function getKanbanData(
     ]);
 
     // Filter private tasks - only show if user is the creator
+    // Filter archived tasks - exclude from board view
     const tasks = allTasks.filter((task: any) => {
+      // Exclude archived tasks from board
+      if (task.isArchived === true) {
+        return false;
+      }
+      // Only show private tasks to creator
       if (task.isPrivate === true) {
         return task.createdBy?.toString() === user.id.toString();
       }
@@ -396,6 +402,10 @@ export async function handleKanbanPost(
         return await handleMoveTask(req, reply, body);
       case "remove-task-assignees":
         return await handleRemoveTaskAssignees(req, reply, body);
+      case "archive-task":
+        return await handleArchiveTask(req, reply, body);
+      case "unarchive-task":
+        return await handleUnarchiveTask(req, reply, body);
       // Column (Status) endpoints
       case "rename-column":
         return await handleRenameColumn(req, reply, body);
@@ -847,6 +857,241 @@ async function handleDeleteTask(
   });
 }
 
+async function handleArchiveTask(
+  req: AuthenticatedRequest,
+  reply: FastifyReply,
+  body: any,
+) {
+  const { tenant, user } = req.context!;
+  const { taskId } = body;
+
+  if (!taskId) {
+    return reply.code(400).send({
+      success: false,
+      error: "Task ID is required",
+    });
+  }
+
+  // Find the task
+  const task = await Task.findOne({
+    _id: taskId,
+    tenantId: tenant._id,
+  });
+
+  if (!task) {
+    return reply.code(404).send({
+      success: false,
+      error: "Task not found",
+    });
+  }
+
+  // Check if user has permission to archive this task
+  const userPermissions = await PermissionService.getUserPermissions(
+    user.id,
+    tenant._id.toString(),
+  );
+
+  if (!userPermissions) {
+    return reply.code(403).send({
+      success: false,
+      error: "Access denied: Unable to verify permissions",
+    });
+  }
+
+  // Only allow archive if user is creator or has appropriate permissions
+  const canArchive = await PermissionService.canEditTask(
+    userPermissions,
+    taskId,
+    tenant._id.toString(),
+  );
+
+  if (!canArchive) {
+    return reply.code(403).send({
+      success: false,
+      error: "You don't have permission to archive this task",
+    });
+  }
+
+  // Archive the task and disable recurring/reminder
+  task.isArchived = true;
+
+  // Disable recurring when archiving
+  if (task.repeat?.enabled) {
+    task.repeat.enabled = false;
+  }
+
+  // Disable reminder when archiving
+  if (task.reminder?.enabled) {
+    task.reminder.enabled = false;
+  }
+
+  await task.save();
+
+  // Send notifications to task creator and assignees (excluding current user)
+  try {
+    const recipients = new Set<string>();
+    if (task.createdBy && task.createdBy !== user.id) {
+      recipients.add(task.createdBy);
+    }
+    if (task.assignees) {
+      task.assignees.forEach((assigneeId: string) => {
+        if (assigneeId !== user.id) {
+          recipients.add(assigneeId);
+        }
+      });
+    }
+
+    const notificationPromises = Array.from(recipients).map((userId) =>
+      NotificationService.createNotification({
+        tenantId: tenant._id.toString(),
+        userId,
+        type: "task_updated",
+        title: `Task archived: ${task.title}`,
+        message: `The task "${task.title}" has been archived.`,
+        relatedEntity: {
+          entityType: "task",
+          entityId: task._id.toString(),
+          entityTitle: task.title,
+        },
+        metadata: {
+          taskId: task._id.toString(),
+          workOrderId: task.workOrderId,
+          reporterId: task.createdBy,
+        },
+        createdBy: user.id,
+      }),
+    );
+
+    await Promise.all(notificationPromises);
+  } catch (error) {
+    console.error("Error sending task archive notifications:", error);
+  }
+
+  return reply.send({
+    success: true,
+    message: "Task archived successfully",
+    data: {
+      task: {
+        _id: task._id,
+        title: task.title,
+        isArchived: task.isArchived,
+      },
+    },
+  });
+}
+
+async function handleUnarchiveTask(
+  req: AuthenticatedRequest,
+  reply: FastifyReply,
+  body: any,
+) {
+  const { tenant, user } = req.context!;
+  const { taskId } = body;
+
+  if (!taskId) {
+    return reply.code(400).send({
+      success: false,
+      error: "Task ID is required",
+    });
+  }
+
+  // Find the task
+  const task = await Task.findOne({
+    _id: taskId,
+    tenantId: tenant._id,
+  });
+
+  if (!task) {
+    return reply.code(404).send({
+      success: false,
+      error: "Task not found",
+    });
+  }
+
+  // Check if user has permission to unarchive this task
+  const userPermissions = await PermissionService.getUserPermissions(
+    user.id,
+    tenant._id.toString(),
+  );
+
+  if (!userPermissions) {
+    return reply.code(403).send({
+      success: false,
+      error: "Access denied: Unable to verify permissions",
+    });
+  }
+
+  // Only allow unarchive if user is creator or has appropriate permissions
+  const canUnarchive = await PermissionService.canEditTask(
+    userPermissions,
+    taskId,
+    tenant._id.toString(),
+  );
+
+  if (!canUnarchive) {
+    return reply.code(403).send({
+      success: false,
+      error: "You don't have permission to unarchive this task",
+    });
+  }
+
+  // Unarchive the task
+  task.isArchived = false;
+  await task.save();
+
+  // Send notifications to task creator and assignees (excluding current user)
+  try {
+    const recipients = new Set<string>();
+    if (task.createdBy && task.createdBy !== user.id) {
+      recipients.add(task.createdBy);
+    }
+    if (task.assignees) {
+      task.assignees.forEach((assigneeId: string) => {
+        if (assigneeId !== user.id) {
+          recipients.add(assigneeId);
+        }
+      });
+    }
+
+    const notificationPromises = Array.from(recipients).map((userId) =>
+      NotificationService.createNotification({
+        tenantId: tenant._id.toString(),
+        userId,
+        type: "task_updated",
+        title: `Task unarchived: ${task.title}`,
+        message: `The task "${task.title}" has been unarchived.`,
+        relatedEntity: {
+          entityType: "task",
+          entityId: task._id.toString(),
+          entityTitle: task.title,
+        },
+        metadata: {
+          taskId: task._id.toString(),
+          workOrderId: task.workOrderId,
+          reporterId: task.createdBy,
+        },
+        createdBy: user.id,
+      }),
+    );
+
+    await Promise.all(notificationPromises);
+  } catch (error) {
+    console.error("Error sending task unarchive notifications:", error);
+  }
+
+  return reply.send({
+    success: true,
+    message: "Task unarchived successfully",
+    data: {
+      task: {
+        _id: task._id,
+        title: task.title,
+        isArchived: task.isArchived,
+      },
+    },
+  });
+}
+
 async function handleUpdateTask(
   req: AuthenticatedRequest,
   reply: FastifyReply,
@@ -967,6 +1212,22 @@ async function handleUpdateTask(
   ) {
     updateData.completeStatus = completeStatus;
     changes.push("completeStatus");
+
+    // If marking as complete, disable recurring and reminder
+    if (completeStatus === true) {
+      if (existingTask.repeat?.enabled) {
+        updateData.repeat = {
+          ...existingTask.repeat,
+          enabled: false,
+        };
+      }
+      if (existingTask.reminder?.enabled) {
+        updateData.reminder = {
+          ...existingTask.reminder,
+          enabled: false,
+        };
+      }
+    }
   }
   let previousAssignees: string[] = [];
   if (assignees !== undefined) {

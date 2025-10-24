@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import React, { useRef, useState, useEffect } from 'react';
 
 import { styled } from '@mui/material/styles';
@@ -231,7 +232,7 @@ export function MobileHeader({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const lastScrollY = useRef(0);
-
+  const router = useRouter();
   // Handle scroll for collapsible header
   useEffect(() => {
     if (!collapsible) return undefined;
@@ -284,7 +285,8 @@ export function MobileHeader({
 
   // Handle notification click
   const handleNotificationClick = () => {
-    onNotificationClick?.();
+    // send user to notifications page
+    router.push('/field/notifications');
   };
 
   return (

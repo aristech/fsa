@@ -205,8 +205,14 @@ export function KanbanTableView({ myTasksOnly = false }: KanbanTableViewProps) {
 
   // Filter and sort tasks using the modular search utility
   const filteredAndSortedTasks = useMemo(() => {
-    // First apply search filter
-    const searchFiltered = searchTasks(tasks, searchTerm);
+    // If no search term, exclude archived tasks
+    // If searching, include archived tasks in results
+    const tasksToFilter = searchTerm
+      ? tasks // Include all tasks (including archived) when searching
+      : tasks.filter((task) => !task.isArchived); // Exclude archived tasks when not searching
+
+    // Apply search filter
+    const searchFiltered = searchTasks(tasksToFilter, searchTerm);
 
     // Then apply sorting
     return sortTasks(searchFiltered, table.orderBy, table.order);
@@ -405,7 +411,18 @@ export function KanbanTableView({ myTasksOnly = false }: KanbanTableViewProps) {
                 </TableRow>
               ) : (
                 paginatedTasks.map((task) => (
-                  <TableRow key={task.id} hover>
+                  <TableRow
+                    key={task.id}
+                    hover
+                    sx={{
+                      ...(task.isArchived && {
+                        backgroundColor: 'rgba(255, 86, 48, 0.08)',
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 86, 48, 0.12)',
+                        },
+                      }),
+                    }}
+                  >
                     {/* Task Name & Description */}
                     <TableCell sx={{ maxWidth: 200 }}>
                       <Stack spacing={0.5}>

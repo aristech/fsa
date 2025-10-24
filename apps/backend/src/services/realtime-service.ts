@@ -239,15 +239,27 @@ class RealtimeService {
 
   // Emit notification events to specific user
   emitNotificationToUser(userId: string, eventType: 'created' | 'updated' | 'read' | 'unread_count', data: any) {
-    if (!this.io) return;
-    
+    if (!this.io) {
+      console.log('⚠️  Cannot emit notification: Socket.IO not initialized');
+      return;
+    }
+
     const eventName = `notification:${eventType}` as keyof RealtimeEvents;
-    
+
     // Find all connections for this user
+    let emittedCount = 0;
     for (const [socketId, userData] of this.connectedUsers.entries() as any) {
       if (userData.userId === userId) {
+        console.log(`📤 Emitting ${eventName} to socket ${socketId} (user: ${userId})`);
         this.io.to(socketId).emit(eventName, data);
+        emittedCount++;
       }
+    }
+
+    if (emittedCount === 0) {
+      console.log(`⚠️  No active connections found for user ${userId}`);
+    } else {
+      console.log(`✅ Emitted ${eventName} to ${emittedCount} connection(s) for user ${userId}`);
     }
   }
 

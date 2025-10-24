@@ -496,6 +496,15 @@ const ReportSchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "WorkOrder",
       index: true,
+      default: null,
+      validate: {
+        validator: function (v: any) {
+          // Allow null, undefined, or valid ObjectId
+          // Reject empty strings
+          return v === null || v === undefined || (typeof v === 'string' && v.trim() !== '');
+        },
+        message: 'Work Order ID must be a valid ObjectId or null/undefined',
+      },
     },
     taskIds: [
       {
@@ -598,6 +607,21 @@ ReportSchema.index({ reportDate: 1, createdAt: 1 });
 ReportSchema.index({
   location: "text",
   tags: "text",
+});
+
+// Pre-save middleware to clean empty strings for ObjectId fields
+ReportSchema.pre("save", async function (this: IReport) {
+  // Convert empty strings to null for ObjectId fields
+  // Check if value is a string (not an ObjectId or populated document)
+  const workOrderValue = this.workOrderId as any;
+  if (typeof workOrderValue === 'string' && workOrderValue.trim() === '') {
+    this.workOrderId = undefined as any;
+  }
+
+  const clientValue = this.clientId as any;
+  if (typeof clientValue === 'string' && clientValue.trim() === '') {
+    this.clientId = undefined as any;
+  }
 });
 
 // Pre-save middleware to calculate costs

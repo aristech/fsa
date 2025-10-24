@@ -58,6 +58,9 @@ type Props = BoxProps & {
   isPrivate?: boolean;
   isCreator?: boolean;
   onTogglePrivate?: () => void;
+  isArchived?: boolean;
+  onArchive?: () => void;
+  onUnarchive?: () => void;
 };
 
 export function KanbanDetailsToolbar({
@@ -78,6 +81,9 @@ export function KanbanDetailsToolbar({
   isPrivate = false,
   isCreator = false,
   onTogglePrivate,
+  isArchived = false,
+  onArchive,
+  onUnarchive,
   ...other
 }: Props) {
   const smUp = useMediaQuery((theme) => theme.breakpoints.up('sm'));
@@ -86,6 +92,7 @@ export function KanbanDetailsToolbar({
   const workOrderSearchDialog = useBoolean();
 
   const confirmDialog = useBoolean();
+  const confirmArchiveDialog = useBoolean();
 
   const [completed, setCompleted] = useState<boolean>(!!completeStatus);
   const [isUpdatingWorkOrder, setIsUpdatingWorkOrder] = useState(false);
@@ -339,6 +346,34 @@ export function KanbanDetailsToolbar({
         <ListItemText primary={t('createReport', { defaultValue: 'Create Report' })} />
       </MenuItem>
 
+      {isArchived ? (
+        <MenuItem
+          onClick={() => {
+            actionsMenu.onClose();
+            onUnarchive?.();
+          }}
+          sx={{ color: 'warning.main' }}
+        >
+          <ListItemIcon>
+            <Iconify icon="solar:archive-up-minimlistic-bold" sx={{ color: 'warning.main' }} />
+          </ListItemIcon>
+          <ListItemText primary={t('unarchive', { defaultValue: 'Unarchive' })} />
+        </MenuItem>
+      ) : (
+        <MenuItem
+          onClick={() => {
+            actionsMenu.onClose();
+            confirmArchiveDialog.onTrue();
+          }}
+          sx={{ color: 'warning.main' }}
+        >
+          <ListItemIcon>
+            <Iconify icon="solar:archive-down-minimlistic-bold" sx={{ color: 'warning.main' }} />
+          </ListItemIcon>
+          <ListItemText primary={t('archive', { defaultValue: 'Archive' })} />
+        </MenuItem>
+      )}
+
       <MenuItem
         onClick={() => {
           actionsMenu.onClose();
@@ -555,6 +590,27 @@ export function KanbanDetailsToolbar({
     />
   );
 
+  const renderConfirmArchiveDialog = () => (
+    <ConfirmDialog
+      open={confirmArchiveDialog.value}
+      onClose={confirmArchiveDialog.onFalse}
+      title="Archive"
+      content={
+        <>
+          Are you sure you want to archive <strong> {taskName} </strong>? The task will be hidden from the board but data will be kept for analytics.
+        </>
+      }
+      action={
+        <Button variant="contained" color="warning" onClick={() => {
+          onArchive?.();
+          confirmArchiveDialog.onFalse();
+        }}>
+          Archive
+        </Button>
+      }
+    />
+  );
+
   return (
     <>
       <Box
@@ -719,6 +775,7 @@ export function KanbanDetailsToolbar({
       {renderActionsMenu()}
       {renderWorkOrderSearchDialog()}
       {renderConfirmDialog()}
+      {renderConfirmArchiveDialog()}
     </>
   );
 }

@@ -21,6 +21,12 @@ export interface RealtimeEvents {
   'user:typing': (data: { taskId: string; userId: string; userEmail: string }) => void;
   'user:stop_typing': (data: { taskId: string; userId: string; userEmail: string }) => void;
 
+  // Notifications
+  'notification:created': (data: { notification: any; unreadCount: number }) => void;
+  'notification:updated': (data: { notification: any; unreadCount: number }) => void;
+  'notification:read': (data: { notificationId: string; unreadCount: number }) => void;
+  'notification:unread_count': (data: { unreadCount: number }) => void;
+
   // Generic events
   notification: (data: { type: string; message: string; data?: any }) => void;
 }

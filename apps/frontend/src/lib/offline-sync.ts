@@ -146,15 +146,30 @@ const syncDraft = async (draft: OfflineDraftReport): Promise<void> => {
         await uploadDraftFiles(reportId, draft.data.attachments, draft.metadata.userId);
       }
 
-      // Mark draft as synced
-      offlineStorage.updateDraftStatus(draft.id, 'draft');
+      // Mark draft as synced successfully
+      offlineStorage.markSyncAttempt(draft.id, false);
 
       console.log(`✅ Draft ${draft.id} synced successfully as report ${reportId}`);
     } else {
       throw new Error(response.message || 'Failed to create report');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Failed to sync draft ${draft.id}:`, error);
+
+    // Check if it's a validation error - if so, remove the draft (it's invalid)
+    const isValidationError = error?.response?.status === 400 ||
+                               error?.response?.status === 422 ||
+                               error?.response?.data?.errors;
+
+    if (isValidationError) {
+      console.warn(`Removing invalid draft ${draft.id} due to validation error`);
+      offlineStorage.removeDraft(draft.id);
+      toast.warning(`Draft removed due to validation error. Please recreate the report.`);
+    } else {
+      // Mark sync attempt as failed (for backoff)
+      offlineStorage.markSyncAttempt(draft.id, true);
+    }
+
     throw error;
   }
 };

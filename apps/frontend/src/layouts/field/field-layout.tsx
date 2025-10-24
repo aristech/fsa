@@ -1,13 +1,13 @@
 'use client';
 
+import type { MobileNavigationItem } from 'src/components/mobile';
+
 import { Box, useTheme, Container } from '@mui/material';
 
+import { useNotificationsContext } from 'src/contexts/notifications-context';
+
 import { Iconify } from 'src/components/iconify';
-import {
-  MobileHeader,
-  MobileBottomNavigation,
-  type MobileNavigationItem,
-} from 'src/components/mobile';
+import { MobileHeader, MobileBottomNavigation } from 'src/components/mobile';
 
 import { useAuthContext } from 'src/auth/hooks/use-auth-context';
 
@@ -25,7 +25,6 @@ const navigationItems: MobileNavigationItem[] = [
     label: 'Tasks',
     icon: <Iconify icon="solar:clipboard-list-bold" width={24} />,
     path: '/field/tasks',
-    badge: 3,
   },
   {
     label: 'Reports',
@@ -36,7 +35,6 @@ const navigationItems: MobileNavigationItem[] = [
     label: 'Notifications',
     icon: <Iconify icon="solar:bell-bold" width={24} />,
     path: '/field/notifications',
-    badge: 5,
   },
   { label: 'Profile', icon: <Iconify icon="solar:user-bold" width={24} />, path: '/field/profile' },
 ];
@@ -44,6 +42,9 @@ const navigationItems: MobileNavigationItem[] = [
 export function FieldLayout({ children }: FieldLayoutProps) {
   const theme = useTheme();
   const { user, authenticated } = useAuthContext();
+
+  // Get real-time notification counts from context
+  const { counts } = useNotificationsContext();
 
   return (
     <Box
@@ -62,7 +63,7 @@ export function FieldLayout({ children }: FieldLayoutProps) {
           title="Field Operations"
           subtitle={`Welcome, ${user?.firstName || 'Field Operator'}`}
           showNotifications
-          notificationCount={5}
+          notificationCount={counts.unread}
           sticky
           collapsible
         />

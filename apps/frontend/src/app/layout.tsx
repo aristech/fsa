@@ -9,6 +9,7 @@ import { CONFIG } from 'src/global-config';
 import { LocalizationProvider } from 'src/locales';
 import { detectLanguage } from 'src/locales/server';
 import { I18nProvider } from 'src/locales/i18n-provider';
+import { NotificationsProvider } from 'src/contexts/notifications-context';
 import { themeConfig, ThemeProvider, primary as primaryColor } from 'src/theme';
 
 import { Snackbar } from 'src/components/snackbar';
@@ -92,13 +93,15 @@ export default async function RootLayout({ children }: RootLayoutProps) {
                     defaultMode={themeConfig.defaultMode}
                   >
                     <MotionLazy>
-                      <CheckoutProvider>
-                        <DynamicTitle />
-                        <Snackbar />
-                        <ProgressBar />
-                        <SettingsDrawer defaultSettings={defaultSettings} />
-                        {children}
-                      </CheckoutProvider>
+                      <NotificationsProvider>
+                        <CheckoutProvider>
+                          <DynamicTitle />
+                          <Snackbar />
+                          <ProgressBar />
+                          <SettingsDrawer defaultSettings={defaultSettings} />
+                          {children}
+                        </CheckoutProvider>
+                      </NotificationsProvider>
                     </MotionLazy>
                   </ThemeProvider>
                 </AppRouterCacheProvider>

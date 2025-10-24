@@ -57,6 +57,8 @@ export type IKanbanTask = {
   clientCompany?: string;
   // Private task flag
   isPrivate?: boolean;
+  // Archive flag
+  isArchived?: boolean;
   // Timestamps
   createdAt?: string;
   updatedAt?: string;

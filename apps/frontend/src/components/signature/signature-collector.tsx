@@ -470,10 +470,6 @@ export function SignatureCollector({
             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
               {signature.signerName}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {signature.signerTitle && `${signature.signerTitle} • `}
-              {typeInfo.label}
-            </Typography>
           </Box>
           <Chip
             label={typeInfo.label}
