@@ -42,7 +42,7 @@ const ICONS = {
   ecommerce: icon('ic-ecommerce'),
   analytics: icon('ic-analytics'),
   dashboard: icon('ic-dashboard'),
-  // FSA Icons
+  // ErgoFlow Icons
   workOrder: icon('ic-course'),
   customer: icon('ic-banking'),
   technician: icon('ic-user'),
@@ -86,33 +86,15 @@ export function useNavData(): NavSectionProps['data'] {
           icon: ICONS.analytics,
         },
         { title: t('overview.reports'), path: '/dashboard/analytics/reports', icon: ICONS.tour },
+        { title: t('management.calendar'), path: paths.dashboard.calendar, icon: ICONS.calendar },
       ],
     },
     /**
      * Management
      */
     {
-      subheader: t('management.title'),
-      items: [
-        { title: t('management.projectsTasks'), path: paths.dashboard.kanban, icon: ICONS.kanban },
-        { title: t('management.calendar'), path: paths.dashboard.calendar, icon: ICONS.calendar },
-        // {
-        //   title: t('management.chat'),
-        //   path: paths.dashboard.chat,
-        //   icon: ICONS.chat,
-        //   info: (
-        //     <Label color="error" variant="inverted">
-        //       +32
-        //     </Label>
-        //   ),
-        // },
-      ],
-    },
-    /**
-     * Field Service Automation
-     */
-    {
       subheader: t('fieldService.title'),
+
       items: [
         {
           title: t('fieldService.workOrders.title'),
@@ -120,7 +102,15 @@ export function useNavData(): NavSectionProps['data'] {
           icon: ICONS.workOrder,
           requiredPermissions: 'work_orders.view',
         },
-
+        { title: t('management.projectsTasks'), path: paths.dashboard.kanban, icon: ICONS.kanban },
+      ],
+    },
+    /**
+     * Field Service Automation
+     */
+    {
+      subheader: t('management.title'),
+      items: [
         {
           title: t('fieldService.clients.title'),
           path: paths.dashboard.fsa.clients.root,

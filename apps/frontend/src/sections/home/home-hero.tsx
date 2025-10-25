@@ -8,7 +8,6 @@ import { useRef, useState } from 'react';
 import { m, useScroll, useSpring, useTransform, useMotionValueEvent } from 'framer-motion';
 
 import Box from '@mui/material/Box';
-import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
@@ -101,7 +100,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
             }),
           ]}
         >
-          ProgressNet FSA
+          ErgoFlow
         </Box>
       </Box>
     </m.div>
@@ -169,38 +168,8 @@ export function HomeHero({ sx, ...other }: BoxProps) {
             startIcon={<Iconify width={24} icon="custom:flash-outline" />}
             sx={{ height: 52 }}
           >
-            <span>
-              {t('home.hero.getStarted')}
-              <Box
-                component="small"
-                sx={[
-                  (theme) => ({
-                    mt: '-4px',
-                    opacity: 0.64,
-                    display: 'flex',
-                    lineHeight: '18px',
-                    fontSize: theme.typography.pxToRem(10),
-                    fontWeight: theme.typography.fontWeightMedium,
-                  }),
-                ]}
-              >
-                {t('home.hero.freeTrial')}
-              </Box>
-            </span>
+            <span>{t('home.hero.getStarted')}</span>
           </Button>
-
-          <Link
-            color="inherit"
-            variant="body2"
-            target="_blank"
-            rel="noopener noreferrer"
-            href={paths.freeUI}
-            underline="always"
-            sx={{ gap: 0.75, alignItems: 'center', display: 'inline-flex' }}
-          >
-            <Iconify width={16} icon="eva:external-link-fill" />
-            {t('home.hero.viewDemo')}
-          </Link>
         </Stack>
       </m.div>
 
@@ -211,7 +180,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
           variant="outlined"
           target="_blank"
           rel="noopener noreferrer"
-          href={paths.figmaUrl}
+          href={paths.docs}
           startIcon={<Iconify width={24} icon="solar:figma-outline" />}
           sx={{ height: 52, borderColor: 'currentColor' }}
         >

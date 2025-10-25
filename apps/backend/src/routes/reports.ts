@@ -25,6 +25,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
         limit = 20,
         type,
         status,
+        priority,
         clientId,
         workOrderId,
         createdBy,
@@ -52,6 +53,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
       const baseFilter: any = {};
       if (type) baseFilter.type = type;
       if (status) baseFilter.status = status;
+      if (priority) baseFilter.priority = priority;
       if (clientId) baseFilter.clientId = clientId;
       if (workOrderId) baseFilter.workOrderId = workOrderId;
       if (createdBy) baseFilter.createdBy = createdBy;
@@ -66,8 +68,16 @@ export async function reportsRoutes(fastify: FastifyInstance) {
 
       if (dateFrom || dateTo) {
         baseFilter.reportDate = {};
-        if (dateFrom) baseFilter.reportDate.$gte = new Date(dateFrom);
-        if (dateTo) baseFilter.reportDate.$lte = new Date(dateTo);
+        if (dateFrom) {
+          const fromDate = new Date(dateFrom);
+          fromDate.setHours(0, 0, 0, 0);
+          baseFilter.reportDate.$gte = fromDate;
+        }
+        if (dateTo) {
+          const toDate = new Date(dateTo);
+          toDate.setHours(23, 59, 59, 999);
+          baseFilter.reportDate.$lte = toDate;
+        }
       }
 
       if (search) {

@@ -17,19 +17,14 @@ import {
   Chip,
   Grid,
   Stack,
-  Select,
-  MenuItem,
   TextField,
   Typography,
-  InputLabel,
-  FormControl,
   Autocomplete,
 } from '@mui/material';
 
 import { useTranslate } from 'src/locales/use-locales';
 import { personnelService } from 'src/lib/services/personnel-service';
 
-import { MobileDatePicker } from 'src/components/mobile';
 
 // ----------------------------------------------------------------------
 
@@ -52,14 +47,6 @@ const reportTypes = [
 const reportStatuses = ['draft', 'submitted', 'under_review', 'approved', 'rejected', 'published'];
 
 const priorities = ['low', 'medium', 'high', 'urgent'];
-
-const getSortOptions = (t: any) => [
-  { value: 'createdAt', label: t('reports.sortOptions.createdDate') },
-  { value: 'reportDate', label: t('reports.sortOptions.reportDate') },
-  { value: 'totalCost', label: t('reports.sortOptions.totalCost') },
-  { value: 'status', label: t('reports.sortOptions.status') },
-  { value: 'type', label: t('reports.sortOptions.type') },
-];
 
 export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps) {
   const { t } = useTranslate('dashboard');
@@ -145,39 +132,6 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
     (event: any, newValue: UserOption | null) => {
       setSelectedCreatedBy(newValue);
       onFiltersChange({ createdBy: newValue?._id || undefined });
-    },
-    [onFiltersChange]
-  );
-
-  // Handle date range change
-  const handleDateFromChange = useCallback(
-    (date: Date | null) => {
-      onFiltersChange({ dateFrom: date || undefined });
-    },
-    [onFiltersChange]
-  );
-
-  const handleDateToChange = useCallback(
-    (date: Date | null) => {
-      onFiltersChange({ dateTo: date || undefined });
-    },
-    [onFiltersChange]
-  );
-
-  // Handle sort change
-  const handleSortChange = useCallback(
-    (event: any) => {
-      const value = event.target.value;
-      onFiltersChange({ sortBy: value });
-    },
-    [onFiltersChange]
-  );
-
-  // Handle sort order change
-  const handleSortOrderChange = useCallback(
-    (event: any) => {
-      const value = event.target.value as 'asc' | 'desc';
-      onFiltersChange({ sortOrder: value });
     },
     [onFiltersChange]
   );
@@ -346,58 +300,11 @@ export function ReportsFilters({ filters, onFiltersChange }: ReportsFiltersProps
                 <TextField
                   {...params}
                   label={t('reports.filters.createdBy', { defaultValue: 'Created By' })}
-                  placeholder={t('reports.filters.selectCreatedBy', { defaultValue: 'Select user' })}
+                  placeholder={t('reports.filters.selectCreatedBy', {
+                    defaultValue: 'Select user',
+                  })}
                 />
               )}
-            />
-          </Grid>
-
-          {/* Sort Options */}
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Stack direction="row" spacing={1}>
-              <FormControl fullWidth size="small">
-                <InputLabel>{t('reports.filters.sortBy')}</InputLabel>
-                <Select
-                  value={filters.sortBy || 'createdAt'}
-                  label={t('reports.filters.sortBy')}
-                  onChange={handleSortChange}
-                >
-                  {getSortOptions(t).map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <FormControl size="small" sx={{ minWidth: 100 }}>
-                <InputLabel>{t('reports.filters.order')}</InputLabel>
-                <Select
-                  value={filters.sortOrder || 'desc'}
-                  label={t('reports.filters.order')}
-                  onChange={handleSortOrderChange}
-                >
-                  <MenuItem value="asc">{t('reports.sortOrder.asc')}</MenuItem>
-                  <MenuItem value="desc">{t('reports.sortOrder.desc')}</MenuItem>
-                </Select>
-              </FormControl>
-            </Stack>
-          </Grid>
-
-          {/* Date Range */}
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <MobileDatePicker
-              label={t('reports.filters.fromDate')}
-              value={filters.dateFrom ? dayjs(filters.dateFrom) : null}
-              onChangeAction={(date) => handleDateFromChange(date?.toDate() || null)}
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <MobileDatePicker
-              label={t('reports.filters.toDate')}
-              value={filters.dateTo ? dayjs(filters.dateTo) : null}
-              onChangeAction={(date) => handleDateToChange(date?.toDate() || null)}
             />
           </Grid>
         </Grid>

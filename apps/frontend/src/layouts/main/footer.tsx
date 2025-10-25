@@ -17,7 +17,7 @@ import { Logo } from 'src/components/logo';
 
 const LINKS = [
   {
-    headline: 'ProgressNet FSA',
+    headline: 'ErgoFlow',
     children: [
       { name: 'About us', href: paths.about },
       { name: 'Contact us', href: paths.contact },
@@ -81,7 +81,7 @@ export function Footer({
                 [theme.breakpoints.up(layoutQuery)]: { mx: 'unset' },
               })}
             >
-              The starting point for your next project with ProgressNet FSA.
+              The starting point for your next project with ErgoFlow.
             </Typography>
 
             <Box

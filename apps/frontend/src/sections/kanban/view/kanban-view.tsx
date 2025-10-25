@@ -12,16 +12,20 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Switch from '@mui/material/Switch';
 import { styled } from '@mui/material/styles';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import GlobalStyles from '@mui/material/GlobalStyles';
+import InputAdornment from '@mui/material/InputAdornment';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
+import { searchTasks } from 'src/utils/search-utils';
 import { extractTaskIdFromUrl } from 'src/utils/task-sharing';
 
 import { useGetBoard } from 'src/actions/kanban';
 import { useTranslate } from 'src/locales/use-locales';
 import { DashboardContent } from 'src/layouts/dashboard';
 
+import { Iconify } from 'src/components/iconify';
 import { EmptyContent } from 'src/components/empty-content';
 
 import { kanbanClasses } from '../classes';
@@ -65,6 +69,7 @@ export function KanbanView({ taskId }: KanbanViewProps = {}) {
   const [columnFixed, setColumnFixed] = useState(false);
   const [tableView, setTableView] = useState(false);
   const [myTasksOnly, setMyTasksOnly] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedTask, setSelectedTask] = useState<IKanbanTask | null>(null);
   const taskDetailsDialog = useBoolean();
 
@@ -152,6 +157,19 @@ export function KanbanView({ taskId }: KanbanViewProps = {}) {
     }
   }, [taskDetailsDialog, router]);
 
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value);
+  };
+
+  // Filter tasks based on search term for each column
+  const getFilteredTasksForColumn = useCallback(
+    (columnTasks: IKanbanTask[]) => {
+      if (!searchTerm) return columnTasks;
+      return searchTasks(columnTasks, searchTerm);
+    },
+    [searchTerm]
+  );
+
   const renderList = () => {
     if (tableView) {
       return <KanbanTableView myTasksOnly={myTasksOnly} />;
@@ -161,7 +179,11 @@ export function KanbanView({ taskId }: KanbanViewProps = {}) {
       <FlexibleColumnContainer columnFixed={columnFixed}>
         <AnimatePresence>
           {board.columns.map((column) => (
-            <KanbanColumn key={column.id} column={column} tasks={board.tasks[column.id]} />
+            <KanbanColumn
+              key={column.id}
+              column={column}
+              tasks={getFilteredTasksForColumn(board.tasks[column.id])}
+            />
           ))}
         </AnimatePresence>
         <KanbanColumnAdd />
@@ -175,57 +197,87 @@ export function KanbanView({ taskId }: KanbanViewProps = {}) {
         mb: 3,
         pr: { sm: 3 },
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        flexDirection: 'column',
+        gap: 2,
       }}
     >
-      <Typography variant="h4">{t('kanban', { defaultValue: 'Kanban' })}</Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Typography variant="h4">{t('kanban', { defaultValue: 'Kanban' })}</Typography>
 
-      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-        <FormControlLabel
-          label={t('myTasks', { defaultValue: 'My tasks' })}
-          labelPlacement="start"
-          control={
-            <Switch
-              checked={myTasksOnly}
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                setMyTasksOnly(event.target.checked);
-              }}
-              slotProps={{ input: { id: 'my-tasks-switch' } }}
-            />
-          }
-        />
-
-        <FormControlLabel
-          label={t('tableView', { defaultValue: 'Table view' })}
-          labelPlacement="start"
-          control={
-            <Switch
-              checked={tableView}
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                setTableView(event.target.checked);
-              }}
-              slotProps={{ input: { id: 'table-view-switch' } }}
-            />
-          }
-        />
-
-        {!tableView && (
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
           <FormControlLabel
-            label={t('fixedColumn', { defaultValue: 'Fixed column' })}
+            label={t('myTasks', { defaultValue: 'My tasks' })}
             labelPlacement="start"
             control={
               <Switch
-                checked={columnFixed}
+                checked={myTasksOnly}
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                  setColumnFixed(event.target.checked);
+                  setMyTasksOnly(event.target.checked);
                 }}
-                slotProps={{ input: { id: 'fixed-column-switch' } }}
+                slotProps={{ input: { id: 'my-tasks-switch' } }}
               />
             }
           />
-        )}
+
+          <FormControlLabel
+            label={t('tableView', { defaultValue: 'Table view' })}
+            labelPlacement="start"
+            control={
+              <Switch
+                checked={tableView}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  setTableView(event.target.checked);
+                }}
+                slotProps={{ input: { id: 'table-view-switch' } }}
+              />
+            }
+          />
+
+          {!tableView && (
+            <FormControlLabel
+              label={t('fixedColumn', { defaultValue: 'Fixed column' })}
+              labelPlacement="start"
+              control={
+                <Switch
+                  checked={columnFixed}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setColumnFixed(event.target.checked);
+                  }}
+                  slotProps={{ input: { id: 'fixed-column-switch' } }}
+                />
+              }
+            />
+          )}
+        </Box>
       </Box>
+
+      {!tableView && (
+        <TextField
+          fullWidth
+          value={searchTerm}
+          onChange={handleSearchChange}
+          placeholder={t('searchTasksPlaceholder', {
+            defaultValue: 'Search across tasks, clients, work orders, and personnel...',
+          })}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
+              </InputAdornment>
+            ),
+          }}
+          helperText={t('searchTasksHelper', {
+            defaultValue:
+              'Search by task name, description, labels, client info, work order details, assignee, or reporter',
+          })}
+        />
+      )}
     </Box>
   );
 

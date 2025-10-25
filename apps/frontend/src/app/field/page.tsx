@@ -1,7 +1,10 @@
 'use client';
 
+import type { IKanbanTask } from 'src/types/kanban';
+
 import { useRouter } from 'next/navigation';
-import { useMemo, useState, useEffect } from 'react';
+import { useBoolean } from 'minimal-shared/hooks';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 
 import {
   Box,
@@ -19,6 +22,7 @@ import { useTranslate } from 'src/locales/use-locales';
 
 import { Iconify } from 'src/components/iconify';
 import { MobileCard, MobileButton } from 'src/components/mobile';
+import { FieldTaskDetails } from 'src/components/field/field-task-details';
 
 import { useAuthContext } from 'src/auth/hooks/use-auth-context';
 
@@ -27,9 +31,13 @@ export default function FieldDashboard() {
   const { authenticated, loading } = useAuthContext();
   const { t } = useTranslate('common');
 
+  // Modal states
+  const taskDetailsDialog = useBoolean();
+
   // Real data
   const [tasks, setTasks] = useState<any[]>([]);
   const [materials, setMaterials] = useState<any[]>([]);
+  const [selectedTask, setSelectedTask] = useState<IKanbanTask | null>(null);
 
   useEffect(() => {
     if (!authenticated) return undefined;
@@ -116,9 +124,26 @@ export default function FieldDashboard() {
       tasks.slice(0, 5).map((task) => {
         const start = Array.isArray(task.due) ? task.due[0] : undefined;
         const end = Array.isArray(task.due) ? task.due[1] : undefined;
-        const attachmentsCount = Array.isArray(task.attachments) ? task.attachments.length : 0;
+        const attachments = Array.isArray(task.attachments) ? task.attachments : [];
+        const attachmentsCount = attachments.length;
         return {
           _id: task.id || task._id || task.uid || String(task.taskId || ''),
+          id: task.id || task._id || task.uid || String(task.taskId || ''),
+          name:
+            task.name ||
+            task.title ||
+            task.taskTitle ||
+            task.task_name ||
+            task.task ||
+            task?.workOrderTitle ||
+            task?.work_order_title ||
+            task?.title ||
+            task?.name ||
+            task?.uid ||
+            task?.id ||
+            task?._id ||
+            task?.taskId ||
+            'Untitled Task',
           title:
             task.name ||
             task.title ||
@@ -138,18 +163,28 @@ export default function FieldDashboard() {
           status: (task?.status?.slug || task?.status || task?.columnSlug || 'pending')
             .toString()
             .toLowerCase(),
+          columnId: task.columnId,
           priority: (task?.priority?.slug || task?.priority || 'medium').toString().toLowerCase(),
+          labels: Array.isArray(task.labels) ? task.labels : [],
+          tags: Array.isArray(task.tags) ? task.tags : [],
+          attachments,
+          comments: Array.isArray(task.comments) ? task.comments : [],
+          assignee: Array.isArray(task.assignee) ? task.assignee : [],
+          due: Array.isArray(task.due) ? task.due : [start || new Date().toISOString(), end || new Date().toISOString()],
           startDate: start,
+          endDate: end,
           dueDate: end || new Date().toISOString(),
           estimatedHours: task.estimatedHours || task.estimated_hours || 0,
           actualHours: task.actualHours || task.actual_hours || 0,
           location: task.location || task.site || '—',
           clientName: task.clientName || task.clientCompany || undefined,
+          clientId: task.clientId,
           workOrderNumber: task.workOrderNumber || undefined,
           workOrderTitle: task.workOrderTitle || undefined,
           attachmentsCount,
           assignees: Array.isArray(task.assignee) ? task.assignee : [],
           completeStatus: !!task.completeStatus,
+          reporter: task.reporter || { id: '', name: '', avatarUrl: null },
         };
       }),
     [tasks]
@@ -171,6 +206,29 @@ export default function FieldDashboard() {
         })),
     [materials]
   );
+
+  const handleTaskSelect = useCallback(
+    (task: any) => {
+      setSelectedTask(task);
+      taskDetailsDialog.onTrue();
+    },
+    [taskDetailsDialog]
+  );
+
+  const handleTaskUpdate = useCallback((updatedTask: IKanbanTask) => {
+    setSelectedTask(updatedTask);
+  }, []);
+
+  const refreshTasks = useCallback(async () => {
+    try {
+      const kanbanRes = await axios.get(`${endpoints.kanban}?assignedToMe=true`);
+      const board = kanbanRes.data?.data?.board || kanbanRes.data?.board || null;
+      const boardTasks = board?.tasks || [];
+      setTasks(Array.isArray(boardTasks) ? boardTasks : []);
+    } catch {
+      setTasks([]);
+    }
+  }, []);
 
   if (loading) {
     return <Box sx={{ p: 3 }} />;
@@ -321,9 +379,7 @@ export default function FieldDashboard() {
                   }
                   timestamp={dueTime}
                   badge={task.attachmentsCount > 0 ? task.attachmentsCount : undefined}
-                  onTap={() => {
-                    /* Navigate to task */
-                  }}
+                  onTap={() => handleTaskSelect(task)}
                   swipeable
                   onSwipeRight={() => {
                     /* Start task */
@@ -446,6 +502,29 @@ export default function FieldDashboard() {
           </Box>
         </CardContent>
       </Card>
+
+      {/* Task Details Dialog */}
+      {selectedTask && (
+        <FieldTaskDetails
+          task={selectedTask}
+          open={taskDetailsDialog.value}
+          onClose={() => {
+            taskDetailsDialog.onFalse();
+            // Refresh tasks after closing to reflect any changes
+            setTimeout(() => {
+              refreshTasks();
+            }, 500);
+          }}
+          onUpdateTask={handleTaskUpdate}
+          onDeleteTask={() => {
+            taskDetailsDialog.onFalse();
+            // Refresh tasks after deletion
+            setTimeout(() => {
+              refreshTasks();
+            }, 500);
+          }}
+        />
+      )}
     </Box>
   );
 }

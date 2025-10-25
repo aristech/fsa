@@ -1,7 +1,7 @@
 import type { IMaterial } from 'src/lib/models/Material';
 
 import useSWR, { mutate } from 'swr';
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import {
   Box,
@@ -69,16 +69,11 @@ function AddMaterialDialog({ open, onClose, onAdd }: AddMaterialDialogProps) {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const fetchMaterials = useCallback(async () => {
-    if (!searchTerm.trim()) {
-      setMaterials([]);
-      return;
-    }
-
+  const fetchMaterials = useCallback(async (search: string = '') => {
     setLoading(true);
     try {
       const response = await MaterialService.getAllMaterials({
-        name: searchTerm,
+        name: search,
         category: '',
         status: 'active',
         limit: 20,
@@ -92,7 +87,14 @@ function AddMaterialDialog({ open, onClose, onAdd }: AddMaterialDialogProps) {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm]);
+  }, []);
+
+  // Fetch materials when dialog opens
+  useEffect(() => {
+    if (open) {
+      fetchMaterials('');
+    }
+  }, [open, fetchMaterials]);
 
   const handleAdd = () => {
     if (selectedMaterial && quantity > 0) {
@@ -123,14 +125,15 @@ function AddMaterialDialog({ open, onClose, onAdd }: AddMaterialDialogProps) {
             onChange={(_, newValue) => setSelectedMaterial(newValue)}
             onInputChange={(_, newValue) => {
               setSearchTerm(newValue);
-              fetchMaterials();
+              fetchMaterials(newValue);
             }}
+            openOnFocus
             getOptionLabel={(option) => `${option.name} (${option.sku || 'No SKU'})`}
             renderInput={(params) => (
               <TextField
                 {...params}
                 label="Search Materials"
-                placeholder="Type to search materials..."
+                placeholder="Search or select a material..."
                 slotProps={{
                   input: {
                     ...params.InputProps,
@@ -168,7 +171,7 @@ function AddMaterialDialog({ open, onClose, onAdd }: AddMaterialDialogProps) {
               );
             }}
             loading={loading}
-            noOptionsText={searchTerm ? 'No materials found' : 'Start typing to search materials'}
+            noOptionsText={searchTerm ? 'No materials found' : 'No materials available'}
           />
 
           {selectedMaterial && (

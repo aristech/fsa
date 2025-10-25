@@ -20,7 +20,7 @@ export const paths = {
   page404: '/error/404',
   page500: '/error/500',
   components: '/components',
-  docs: '#',
+  docs: '/docs',
   changelog: '#',
   zoneStore: '#',
   upgradePlan: '/upgrade',

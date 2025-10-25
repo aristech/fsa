@@ -10,6 +10,7 @@ import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 
 import { Box, Drawer, Button, useTheme, TextField, Typography, Autocomplete } from '@mui/material';
 
+import { useTranslate } from 'src/locales/use-locales';
 import axiosInstance, { endpoints } from 'src/lib/axios';
 import { offlineStorage } from 'src/lib/offline-storage';
 import { ReportService } from 'src/lib/services/report-service';
@@ -25,30 +26,30 @@ import { useAuthContext } from 'src/auth/hooks';
 
 // ----------------------------------------------------------------------
 
-const reportTypes = [
-  { value: 'daily', label: 'Daily Report', icon: 'eva:calendar-fill', color: 'primary' },
-  { value: 'weekly', label: 'Weekly Report', icon: 'eva:clock-fill', color: 'info' },
-  { value: 'monthly', label: 'Monthly Report', icon: 'eva:calendar-outline', color: 'success' },
+const getReportTypes = (t: any) => [
+  { value: 'daily', label: t('reports.create.types.daily'), icon: 'eva:calendar-fill', color: 'primary' },
+  { value: 'weekly', label: t('reports.create.types.weekly'), icon: 'eva:clock-fill', color: 'info' },
+  { value: 'monthly', label: t('reports.create.types.monthly'), icon: 'eva:calendar-outline', color: 'success' },
   {
     value: 'incident',
-    label: 'Incident Report',
+    label: t('reports.create.types.incident'),
     icon: 'eva:alert-triangle-fill',
     color: 'warning',
   },
   {
     value: 'maintenance',
-    label: 'Maintenance Report',
+    label: t('reports.create.types.maintenance'),
     icon: 'eva:settings-fill',
     color: 'secondary',
   },
-  { value: 'inspection', label: 'Inspection Report', icon: 'eva:search-fill', color: 'info' },
+  { value: 'inspection', label: t('reports.create.types.inspection'), icon: 'eva:search-fill', color: 'info' },
   {
     value: 'completion',
-    label: 'Completion Report',
+    label: t('reports.create.types.completion'),
     icon: 'eva:checkmark-circle-fill',
     color: 'success',
   },
-  { value: 'safety', label: 'Safety Report', icon: 'eva:shield-fill', color: 'error' },
+  { value: 'safety', label: t('reports.create.types.safety'), icon: 'eva:shield-fill', color: 'error' },
 ];
 
 // ----------------------------------------------------------------------
@@ -93,6 +94,8 @@ export function ReportCreateDrawer({
 }: ReportCreateDrawerProps) {
   const theme = useTheme();
   const { user } = useAuthContext();
+  const { t } = useTranslate('field');
+  const reportTypes = useMemo(() => getReportTypes(t), [t]);
 
   // Track if drawer was previously open to avoid unnecessary resets
   const prevOpenRef = useRef(false);
@@ -407,7 +410,7 @@ export function ReportCreateDrawer({
   // Auto-fill from task selection
   useEffect(() => {
     if (watchedTaskIds?.[0]) {
-      const selectedTask = allTasks.find((t) => t.value === watchedTaskIds?.[0]);
+      const selectedTask = allTasks.find((task) => task.value === watchedTaskIds?.[0]);
       if (selectedTask) {
         // Ensure we get a string value for location
         const taskLocation =
@@ -495,7 +498,7 @@ export function ReportCreateDrawer({
           console.error('Error fetching task materials:', error);
 
           // Fallback: check if the task itself has materials embedded
-          const selectedTask = allTasks.find((t) => t.value === watchedTaskIds?.[0]);
+          const selectedTask = allTasks.find((task) => task.value === watchedTaskIds?.[0]);
           if (selectedTask?.task?.materials) {
             const embeddedMaterials = Array.isArray(selectedTask.task.materials)
               ? selectedTask.task.materials
@@ -604,7 +607,7 @@ export function ReportCreateDrawer({
       const maxSize = 10 * 1024 * 1024; // 10MB
       const validFiles = fileArray.filter((file) => {
         if (file.size > maxSize) {
-          toast.error(`File "${file.name}" is too large. Maximum size is 10MB.`);
+          toast.error(t('reports.create.messages.fileTooLarge', { filename: file.name, maxSize: 10 }));
           return false;
         }
         return true;
@@ -615,7 +618,7 @@ export function ReportCreateDrawer({
         setAttachments((prev) => [...prev, ...validFiles]);
       }
     }
-  }, []);
+  }, [t]);
 
   // Manage preview URLs for images
   useEffect(() => {
@@ -670,20 +673,20 @@ export function ReportCreateDrawer({
         signedAt: new Date(),
       };
       setSignatures((prev) => [...prev, newSignature]);
-      toast.success('Signature added successfully');
+      toast.success(t('reports.create.messages.signatureAdded'));
     },
-    []
+    [t]
   );
 
   const handleRemoveSignature = useCallback((id: string) => {
     setSignatures((prev) => prev.filter((sig) => sig.id !== id));
-    toast.success('Signature removed');
-  }, []);
+    toast.success(t('reports.create.messages.signatureRemoved'));
+  }, [t]);
 
   const handleUpdateSignature = useCallback((id: string, updates: Partial<SignatureData>) => {
     setSignatures((prev) => prev.map((sig) => (sig.id === id ? { ...sig, ...updates } : sig)));
-    toast.success('Signature updated');
-  }, []);
+    toast.success(t('reports.create.messages.signatureUpdated'));
+  }, [t]);
 
   // Get initial form data for signature collection
   const getInitialSignatureFormData = useCallback(
@@ -841,7 +844,7 @@ export function ReportCreateDrawer({
 
           // Capture button
           const captureBtn = document.createElement('button');
-          captureBtn.textContent = 'Capture Photo';
+          captureBtn.textContent = t('reports.create.files.camera.capture');
           captureBtn.style.padding = '12px 20px';
           captureBtn.style.backgroundColor = '#1976d2';
           captureBtn.style.color = 'white';
@@ -855,7 +858,7 @@ export function ReportCreateDrawer({
 
           // Cancel button
           const cancelBtn = document.createElement('button');
-          cancelBtn.textContent = 'Cancel';
+          cancelBtn.textContent = t('reports.create.files.camera.cancel');
           cancelBtn.style.padding = '12px 20px';
           cancelBtn.style.backgroundColor = '#f44336';
           cancelBtn.style.color = 'white';
@@ -869,7 +872,7 @@ export function ReportCreateDrawer({
           // Switch camera button
           const switchCameraBtn = document.createElement('button');
           switchCameraBtn.textContent = '🔄';
-          switchCameraBtn.title = 'Switch Camera';
+          switchCameraBtn.title = t('reports.create.files.camera.switchCamera');
           switchCameraBtn.style.padding = '12px 16px';
           switchCameraBtn.style.backgroundColor = '#9c27b0';
           switchCameraBtn.style.color = 'white';
@@ -882,7 +885,7 @@ export function ReportCreateDrawer({
           // Flash/torch button
           const flashBtn = document.createElement('button');
           flashBtn.textContent = '🔦';
-          flashBtn.title = 'Toggle Flash';
+          flashBtn.title = t('reports.create.files.camera.toggleFlash');
           flashBtn.style.padding = '12px 16px';
           flashBtn.style.backgroundColor = '#ff9800';
           flashBtn.style.color = 'white';
@@ -895,7 +898,7 @@ export function ReportCreateDrawer({
 
           // Title
           const title = document.createElement('h3');
-          title.textContent = 'Take Photo';
+          title.textContent = t('reports.create.files.camera.title');
           title.style.margin = '0 0 12px 0';
           title.style.textAlign = 'center';
           title.style.color = '#333';
@@ -903,8 +906,7 @@ export function ReportCreateDrawer({
 
           // Instructions
           const instructions = document.createElement('p');
-          instructions.textContent =
-            'Use 🔄 to switch cameras, 🔦 for flash, then click "Capture Photo"';
+          instructions.textContent = t('reports.create.files.camera.instructions');
           instructions.style.margin = '0 0 12px 0';
           instructions.style.textAlign = 'center';
           instructions.style.color = '#666';
@@ -928,17 +930,17 @@ export function ReportCreateDrawer({
             try {
               const newStream = await startCamera(currentFacingMode);
               video.srcObject = newStream;
-              toast.info(`Switched to ${currentFacingMode === 'user' ? 'front' : 'rear'} camera`);
+              toast.info(t('reports.create.messages.cameraSwitched', { camera: currentFacingMode === 'user' ? 'front' : 'rear' }));
             } catch (error) {
               console.error('Error switching camera:', error);
-              toast.error('Failed to switch camera');
+              toast.error(t('reports.create.messages.cameraSwitchFailed'));
             }
           };
 
           // Toggle flash handler with Samsung device support
           const toggleFlash = async () => {
             if (!videoTrack) {
-              toast.warning('Flash not available on this device');
+              toast.warning(t('reports.create.messages.flashNotAvailable'));
               return;
             }
 
@@ -1022,7 +1024,7 @@ export function ReportCreateDrawer({
               if (success) {
                 // Update button appearance if successful
                 flashBtn.style.opacity = flashEnabled ? '1' : '0.5';
-                toast.success(`Flash ${flashEnabled ? 'on' : 'off'}`);
+                toast.success(flashEnabled ? t('reports.create.messages.flashOn') : t('reports.create.messages.flashOff'));
               } else {
                 // All methods failed
                 throw new Error('All flash methods failed');
@@ -1038,12 +1040,12 @@ export function ReportCreateDrawer({
 
               if (isSamsung) {
                 toast.warning(
-                  'Flash not available on this Samsung device. This is a known Samsung browser limitation. Try using Chrome browser or switching to the rear camera.',
+                  t('reports.create.messages.flashNotAvailableSamsung'),
                   { duration: 5000 }
                 );
               } else {
                 toast.warning(
-                  'Flash not supported on this camera. Try switching to the rear camera or ensure camera permissions are granted.',
+                  t('reports.create.messages.flashNotSupported'),
                   { duration: 4000 }
                 );
               }
@@ -1076,7 +1078,7 @@ export function ReportCreateDrawer({
                       },
                     } as FileList;
                     handleFileUpload(fileList);
-                    toast.success('Photo captured successfully!');
+                    toast.success(t('reports.create.messages.photoCaptured'));
                   }
                 },
                 'image/jpeg',
@@ -1123,7 +1125,7 @@ export function ReportCreateDrawer({
         .catch((error) => {
           console.error('Error accessing camera:', error);
           toast.error(
-            'Could not access camera. Please check permissions or try file upload instead.'
+            t('reports.create.messages.cameraAccessFailed')
           );
 
           // Fallback to file input
@@ -1139,7 +1141,7 @@ export function ReportCreateDrawer({
         });
     } else {
       // Fallback for browsers that don't support getUserMedia
-      toast.info('Camera not supported. Using file picker instead.');
+      toast.info(t('reports.create.messages.cameraNotSupported'));
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/*';
@@ -1150,7 +1152,7 @@ export function ReportCreateDrawer({
       };
       input.click();
     }
-  }, [handleFileUpload]);
+  }, [handleFileUpload, t]);
 
   const validateStep = useCallback(
     (step: number) => {
@@ -1182,9 +1184,9 @@ export function ReportCreateDrawer({
     if (validateStep(currentStep)) {
       setCurrentStep((prev) => Math.min(prev + 1, 3));
     } else {
-      toast.error('Please fill in all required fields');
+      toast.error(t('reports.create.messages.fillRequiredFields'));
     }
-  }, [currentStep, validateStep]);
+  }, [currentStep, validateStep, t]);
 
   const handlePrevious = useCallback(() => {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
@@ -1228,13 +1230,13 @@ export function ReportCreateDrawer({
         );
 
         const statusMessage = isOffline
-          ? 'Report saved offline as draft. It will sync when connection is restored.'
-          : 'Report saved as draft locally.';
+          ? t('reports.create.messages.draftSavedOffline')
+          : t('reports.create.messages.draftSavedLocally');
 
         toast.success(statusMessage, {
           duration: 5000,
           action: {
-            label: 'View Drafts',
+            label: t('reports.create.buttons.viewDrafts'),
             onClick: () => {
               // TODO: Navigate to drafts view
               // TODO: Navigate to drafts view
@@ -1246,11 +1248,11 @@ export function ReportCreateDrawer({
         onClose();
       } catch (error) {
         console.error('Failed to save offline draft:', error);
-        toast.error('Failed to save draft locally. Please try again.');
+        toast.error(t('reports.create.messages.draftSaveFailed'));
         throw error;
       }
     },
-    [attachments, user, isOffline, onSuccess, onClose]
+    [attachments, user, isOffline, onSuccess, onClose, t]
   );
 
   // Helper function to handle file uploads
@@ -1301,7 +1303,7 @@ export function ReportCreateDrawer({
           allAttachments = [...allAttachments, ...attachmentData];
         } catch (uploadError) {
           console.error('Attachment upload failed:', uploadError);
-          toast.warning('Report saved, but attachment upload failed.');
+          toast.warning(t('reports.create.messages.attachmentUploadFailed'));
         }
       }
 
@@ -1366,7 +1368,7 @@ export function ReportCreateDrawer({
           allAttachments = [...allAttachments, ...signatureAttachments];
         } catch (uploadError) {
           console.error('Signature upload failed:', uploadError);
-          toast.warning('Report saved, but signature upload failed.');
+          toast.warning(t('reports.create.messages.signatureUploadFailed'));
         }
       }
 
@@ -1378,11 +1380,11 @@ export function ReportCreateDrawer({
           });
         } catch (updateError) {
           console.error('Failed to update report with attachments:', updateError);
-          toast.warning('Files uploaded but failed to update report.');
+          toast.warning(t('reports.create.messages.reportUpdateFailed'));
         }
       }
     },
-    [attachments, signatures, user]
+    [attachments, signatures, user, t]
   );
 
   // React Hook Form submit handler
@@ -1439,14 +1441,14 @@ export function ReportCreateDrawer({
 
           toast.success(
             isOffline
-              ? 'Report saved locally and will sync when online'
-              : 'Report submitted successfully'
+              ? t('reports.create.messages.reportSavedOffline')
+              : t('reports.create.messages.reportSubmitted')
           );
           onSuccess(response.data);
           onClose();
           return;
         } else {
-          throw new Error(response.message || 'Failed to create report');
+          throw new Error(response.message || t('reports.create.messages.createReportFailed'));
         }
       } catch (serverError: any) {
         console.warn('Server save failed:', serverError);
@@ -1474,11 +1476,11 @@ export function ReportCreateDrawer({
         const errorMessages = validationErrors
           .map((err: any) => `${err.path?.join('.')} ${err.message || err.code}`)
           .join(', ');
-        toast.error(`Validation error: ${errorMessages}`);
+        toast.error(t('reports.create.messages.validationError', { errors: errorMessages }));
       } else if (error?.response?.data?.message) {
         toast.error(error.response.data.message);
       } else {
-        toast.error(error.message || 'Failed to create report');
+        toast.error(error.message || t('reports.create.messages.createReportFailed'));
       }
     } finally {
       setIsSubmitting(false);
@@ -1520,7 +1522,7 @@ export function ReportCreateDrawer({
             variant="h6"
             sx={{ fontWeight: 600, fontSize: { xs: '1rem', sm: '1.25rem' } }}
           >
-            Create New Report
+            {t('reports.create.title')}
           </Typography>
           {isOffline && (
             <Box
@@ -1540,7 +1542,7 @@ export function ReportCreateDrawer({
                 variant="caption"
                 sx={{ fontWeight: 500, fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
               >
-                Offline
+                {t('reports.create.offline.badge')}
               </Typography>
             </Box>
           )}
@@ -1550,7 +1552,7 @@ export function ReportCreateDrawer({
           color="text.secondary"
           sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
         >
-          Step {currentStep} of 3
+          {t('reports.create.stepIndicator', { step: currentStep, total: 3 })}
         </Typography>
       </Box>
       <Button
@@ -1602,11 +1604,11 @@ export function ReportCreateDrawer({
         variant="subtitle1"
         sx={{ fontWeight: 600, color: 'primary.main', fontSize: { xs: '0.95rem', sm: '1rem' } }}
       >
-        Report Details
+        {t('reports.create.steps.reportDetails')}
       </Typography>
 
-      <RHFSelect name="type" label="Report Type *">
-        <option value="">Select Report Type...</option>
+      <RHFSelect name="type" label={t('reports.create.fields.reportType.label')}>
+        <option value="">{t('reports.create.fields.reportType.placeholder')}</option>
         {reportTypes.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
@@ -1616,11 +1618,11 @@ export function ReportCreateDrawer({
 
       <RHFDateTimePicker
         name="reportDate"
-        label="Report Date & Time *"
+        label={t('reports.create.fields.reportDate.label')}
         slotProps={{
           textField: {
             fullWidth: true,
-            helperText: 'Date and time when the work was performed',
+            helperText: t('reports.create.fields.reportDate.helperText'),
           },
         }}
       />
@@ -1636,13 +1638,13 @@ export function ReportCreateDrawer({
           }}
         >
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-            Client *
+            {t('reports.create.fields.client.label')}
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 600 }}>
-            {clients.find((c) => c.value === watchedClientId)?.label || 'Unknown Client'}
+            {clients.find((c) => c.value === watchedClientId)?.label || t('reports.create.fields.client.notSelected')}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-            Pre-filled from task
+            {t('reports.create.fields.client.preFilled')}
           </Typography>
         </Box>
       ) : null}
@@ -1658,14 +1660,14 @@ export function ReportCreateDrawer({
           }}
         >
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-            Work Order
+            {t('reports.create.fields.workOrder.label')}
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 600 }}>
             {workOrders.find((wo: any) => wo.value === watchedWorkOrderId)?.label ||
-              'Unknown Work Order'}
+              t('reports.create.fields.workOrder.unknown')}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-            Pre-filled from task
+            {t('reports.create.fields.workOrder.preFilled')}
           </Typography>
         </Box>
       ) : null}
@@ -1681,39 +1683,39 @@ export function ReportCreateDrawer({
           }}
         >
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-            Task
+            {t('reports.create.fields.task.label')}
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 600 }}>
-            {tasks.find((task) => task.value === watchedTaskIds?.[0])?.label || 'Unknown Task'}
+            {tasks.find((task) => task.value === watchedTaskIds?.[0])?.label || t('reports.create.fields.task.unknown')}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-            Pre-filled from task
+            {t('reports.create.fields.task.preFilled')}
           </Typography>
         </Box>
       ) : null}
 
       <RHFTextField
         name="location"
-        label="Location *"
-        placeholder="Work site address or location..."
+        label={t('reports.create.fields.location.label')}
+        placeholder={t('reports.create.fields.location.placeholder')}
         InputProps={{
           startAdornment: (
             <Iconify icon="eva:pin-fill" width={20} sx={{ mr: 1, color: 'action.active' }} />
           ),
         }}
-        helperText="Auto-filled from client address when available"
+        helperText={t('reports.create.fields.location.helperText')}
       />
 
       <RHFTextField
         name="weather"
-        label="Weather Conditions"
-        placeholder="Sunny, rainy, windy, temperature..."
+        label={t('reports.create.fields.weather.label')}
+        placeholder={t('reports.create.fields.weather.placeholder')}
         InputProps={{
           startAdornment: (
             <Iconify icon="eva:cloud-fill" width={20} sx={{ mr: 1, color: 'action.active' }} />
           ),
         }}
-        helperText="Weather conditions during work (helpful for outdoor jobs)"
+        helperText={t('reports.create.fields.weather.helperText')}
       />
     </Box>
   );
@@ -1724,7 +1726,7 @@ export function ReportCreateDrawer({
         variant="subtitle1"
         sx={{ fontWeight: 600, color: 'primary.main', fontSize: { xs: '0.95rem', sm: '1rem' } }}
       >
-        Materials & Documentation
+        {t('reports.create.steps.materialsAndDocumentation')}
       </Typography>
 
       {/* Materials Section */}
@@ -1733,7 +1735,7 @@ export function ReportCreateDrawer({
           variant="subtitle2"
           sx={{ mb: 2, fontWeight: 600, fontSize: { xs: '0.9rem', sm: '1rem' } }}
         >
-          Materials Used
+          {t('reports.create.materials.title')}
         </Typography>
 
         <Autocomplete
@@ -1748,9 +1750,9 @@ export function ReportCreateDrawer({
           renderInput={(params) => (
             <TextField
               {...params}
-              label="Add Material"
-              placeholder="Search for materials..."
-              helperText={`Select materials used in this report (${materials.length} available)`}
+              label={t('reports.create.materials.addMaterial')}
+              placeholder={t('reports.create.materials.searchPlaceholder')}
+              helperText={t('reports.create.materials.helperText', { count: materials.length })}
               fullWidth
             />
           )}
@@ -1794,7 +1796,7 @@ export function ReportCreateDrawer({
                         display: 'block',
                       }}
                     >
-                      {option.material?.sku && `SKU: ${option.material.sku} • `}
+                      {option.material?.sku && `${t('reports.create.materials.sku')}: ${option.material.sku} • `}
                       {option.material?.unitCost?.toFixed(2) || '0.00'}€ per{' '}
                       {option.material?.unit || 'unit'}
                     </Typography>
@@ -1813,7 +1815,7 @@ export function ReportCreateDrawer({
             );
           }}
           noOptionsText={
-            materials.length === 0 ? 'No materials available' : 'No matching materials found'
+            materials.length === 0 ? t('reports.create.materials.noMaterials') : t('reports.create.materials.noMatchingMaterials')
           }
           clearOnEscape
           openOnFocus
@@ -1872,7 +1874,7 @@ export function ReportCreateDrawer({
                 </Box>
 
                 <TextField
-                  label="Qty"
+                  label={t('reports.create.materials.quantity')}
                   type="number"
                   value={material.quantity}
                   onChange={(e) => {
@@ -1894,7 +1896,7 @@ export function ReportCreateDrawer({
                   }}
                   sx={{ width: { xs: 80, sm: 100 } }}
                   inputProps={{ min: 0, max: 100, step: 1 }}
-                  helperText="Max: 100"
+                  helperText={t('reports.create.materials.maxQuantity', { max: 100 })}
                   size="small"
                 />
 
@@ -1919,7 +1921,7 @@ export function ReportCreateDrawer({
           variant="subtitle2"
           sx={{ mb: 2, fontWeight: 600, fontSize: { xs: '0.9rem', sm: '1rem' } }}
         >
-          Photos & Files
+          {t('reports.create.files.title')}
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: 'wrap' }}>
@@ -1929,7 +1931,7 @@ export function ReportCreateDrawer({
             onClick={handleCameraCapture}
             sx={{ flex: { xs: '1 1 100%', sm: 1 }, height: { xs: 48, sm: 56 }, minWidth: 0 }}
           >
-            Take Photo
+            {t('reports.create.files.takePhoto')}
           </Button>
 
           <Button
@@ -1938,7 +1940,7 @@ export function ReportCreateDrawer({
             startIcon={<Iconify icon="eva:attach-fill" width={16} />}
             sx={{ flex: { xs: '1 1 100%', sm: 1 }, height: { xs: 48, sm: 56 }, minWidth: 0 }}
           >
-            Upload Files
+            {t('reports.create.files.uploadFiles')}
             <input
               type="file"
               hidden
@@ -2044,12 +2046,12 @@ export function ReportCreateDrawer({
                       sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
                     >
                       {isImage
-                        ? 'Image'
+                        ? t('reports.create.files.types.image')
                         : file.type.startsWith('video/')
-                          ? 'Video'
+                          ? t('reports.create.files.types.video')
                           : file.type.includes('pdf')
-                            ? 'PDF Document'
-                            : 'File'}{' '}
+                            ? t('reports.create.files.types.pdf')
+                            : t('reports.create.files.types.file')}{' '}
                       • {(file.size / 1024 / 1024).toFixed(2)} MB
                     </Typography>
                     {isImage && (
@@ -2062,7 +2064,7 @@ export function ReportCreateDrawer({
                           fontSize: { xs: '0.7rem', sm: '0.75rem' },
                         }}
                       >
-                        Captured photo
+                        {t('reports.create.files.capturedPhoto')}
                       </Typography>
                     )}
                   </Box>
@@ -2093,13 +2095,13 @@ export function ReportCreateDrawer({
 
       {/* Notes Section */}
       <TextField
-        label="Additional Notes"
+        label={t('reports.create.notes.label')}
         value={reportNotes}
         onChange={(e) => setReportNotes(e.target.value)}
-        placeholder="Notes..."
+        placeholder={t('reports.create.notes.placeholder')}
         multiline
         rows={4}
-        helperText="Optional: Provide any additional context or observations"
+        helperText={t('reports.create.notes.helperText')}
         fullWidth
         sx={{
           '& .MuiOutlinedInput-root': {
@@ -2116,7 +2118,7 @@ export function ReportCreateDrawer({
         variant="subtitle1"
         sx={{ fontWeight: 600, color: 'primary.main', fontSize: { xs: '0.95rem', sm: '1rem' } }}
       >
-        Signatures & Summary
+        {t('reports.create.steps.signaturesAndSummary')}
       </Typography>
 
       {/* Offline indicator with explanation */}
@@ -2136,11 +2138,10 @@ export function ReportCreateDrawer({
           <Iconify icon="eva:wifi-off-fill" width={20} sx={{ color: 'warning.main', mt: 0.25 }} />
           <Box>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
-              Offline Mode
+              {t('reports.create.offline.modeTitle')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              You are currently offline. Your report will be saved locally and automatically
-              submitted when your connection is restored.
+              {t('reports.create.offline.modeMessage')}
             </Typography>
           </Box>
         </Box>
@@ -2170,23 +2171,23 @@ export function ReportCreateDrawer({
           variant="subtitle2"
           sx={{ fontWeight: 600, mb: 1, fontSize: { xs: '0.9rem', sm: '0.875rem' } }}
         >
-          Report Summary
+          {t('reports.create.summary.title')}
         </Typography>
         <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-          • Type: {reportTypes.find((t) => t.value === watch('type'))?.label}
+          • {t('reports.create.summary.type')}: {reportTypes.find((rt) => rt.value === watch('type'))?.label}
         </Typography>
         <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-          • Client:{' '}
-          {clients.find((c) => c.value === watch('clientId'))?.client?.name || 'Not selected'}
+          • {t('reports.create.summary.client')}:{' '}
+          {clients.find((c) => c.value === watch('clientId'))?.client?.name || t('reports.create.fields.client.notSelected')}
         </Typography>
         <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-          • Materials: {selectedMaterials.length} items
+          • {t('reports.create.summary.materials')}: {selectedMaterials.length} {t('reports.create.summary.items')}
         </Typography>
         <Typography variant="body2" sx={{ mb: 1, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-          • Files: {attachments.length} attachments
+          • {t('reports.create.summary.files')}: {attachments.length} {t('reports.create.summary.attachments')}
         </Typography>
         <Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-          • Signatures: {signatures.length} collected
+          • {t('reports.create.summary.signatures')}: {signatures.length} {t('reports.create.summary.collected')}
         </Typography>
       </Box>
     </Box>
@@ -2229,7 +2230,7 @@ export function ReportCreateDrawer({
             order: { xs: 2, sm: 1 },
           }}
         >
-          Previous
+          {t('reports.create.buttons.previous')}
         </Button>
       )}
 
@@ -2247,7 +2248,7 @@ export function ReportCreateDrawer({
             minWidth: 0,
           }}
         >
-          Next
+          {t('reports.create.buttons.next')}
         </Button>
       ) : (
         <Button
@@ -2263,7 +2264,7 @@ export function ReportCreateDrawer({
             minWidth: 0,
           }}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit Report'}
+          {isSubmitting ? t('reports.create.buttons.submitting') : t('reports.create.buttons.submit')}
         </Button>
       )}
     </Box>

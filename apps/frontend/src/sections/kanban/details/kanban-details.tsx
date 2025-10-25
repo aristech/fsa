@@ -1313,28 +1313,6 @@ export function KanbanDetails({
         <Label variant="soft" sx={{ letterSpacing: 1, color: 'text.secondary' }}>
           Double click to edit • Drag to reorder
         </Label>
-        <Box sx={{ width: '100%', maxWidth: '100%' }}>
-          {subtasks.map((subtask, index) => (
-            <Fragment key={subtask._id}>
-              <SubtaskItem
-                subtask={subtask}
-                taskId={task.id}
-                isEditing={editingSubtaskId === subtask._id}
-                editingTitle={editingSubtaskTitle}
-                isSaving={isSavingSubtask}
-                onToggleCompleted={handleToggleSubtask}
-                onStartEdit={handleStartEditSubtask}
-                onEditTitleChange={setEditingSubtaskTitle}
-                onSaveEdit={handleSaveEditSubtask}
-                onCancelEdit={handleCancelEditSubtask}
-                onDelete={handleDeleteSubtask}
-                onUploadAttachment={handleUploadSubtaskAttachment}
-                onDeleteAttachment={handleDeleteSubtaskAttachment}
-              />
-              {index < subtasks.length - 1 && <Divider sx={{ my: 1 }} />}
-            </Fragment>
-          ))}
-        </Box>
 
         {/* Add new subtask */}
         <Box
@@ -1386,6 +1364,29 @@ export function KanbanDetails({
           >
             {t('add', { defaultValue: 'Add' })}
           </Button>
+        </Box>
+
+        <Box sx={{ width: '100%', maxWidth: '100%' }}>
+          {subtasks.map((subtask, index) => (
+            <Fragment key={subtask._id}>
+              <SubtaskItem
+                subtask={subtask}
+                taskId={task.id}
+                isEditing={editingSubtaskId === subtask._id}
+                editingTitle={editingSubtaskTitle}
+                isSaving={isSavingSubtask}
+                onToggleCompleted={handleToggleSubtask}
+                onStartEdit={handleStartEditSubtask}
+                onEditTitleChange={setEditingSubtaskTitle}
+                onSaveEdit={handleSaveEditSubtask}
+                onCancelEdit={handleCancelEditSubtask}
+                onDelete={handleDeleteSubtask}
+                onUploadAttachment={handleUploadSubtaskAttachment}
+                onDeleteAttachment={handleDeleteSubtaskAttachment}
+              />
+              {index < subtasks.length - 1 && <Divider sx={{ my: 1 }} />}
+            </Fragment>
+          ))}
         </Box>
       </Box>
     );

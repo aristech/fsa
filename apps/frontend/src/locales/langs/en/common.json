@@ -298,9 +298,10 @@
     },
     "features": {
       "title": "Why Choose",
-      "subtitle": "ProgressNet FSA?",
+      "subtitle": "ErgoFlow?",
       "caption": "Field Service Excellence",
       "workOrderManagement": {
+        "title": "Work Order Management",
         "description": "Efficiently manage and track work orders from creation to completion."
       },
       "realTimeTracking": {
@@ -326,6 +327,57 @@
       "customerPortal": {
         "title": "Customer Portal",
         "description": "Let customers track service requests and view progress."
+      }
+    },
+    "advertisement": {
+      "title": "Get started with",
+      "appName": "ErgoFlow",
+      "titleSuffix": "today",
+      "purchaseNow": "Purchase now",
+      "getFreeVersion": "Get free version"
+    },
+    "testimonials": {
+      "caption": "testimonials",
+      "title": "Rumors are flying",
+      "subtitle": "that...",
+      "stats": {
+        "purchasedOrders": "Purchased order",
+        "happyCustomers": "Happy customers",
+        "reviewRate": "Review rate"
+      }
+    },
+    "faqs": {
+      "caption": "FAQs",
+      "title": "We've got the",
+      "subtitle": "answers",
+      "contactTitle": "Still have questions?",
+      "contactDescription": "Please describe your case to receive the most accurate advice",
+      "contactButton": "Contact us",
+      "questions": {
+        "update": {
+          "question": "How can I get the update?",
+          "answer": "You will get 12 months of free updates with the purchase. Please renew your license to get updates after that."
+        },
+        "license": {
+          "question": "Which license is right for you?",
+          "answer": "All licenses do not apply to open source. One license / one end product (3 licenses / 3 products...). Standard / Plus license used in free products (Internal management...). Extended license used in charge products, collect fees from users (SAAS...)."
+        },
+        "validity": {
+          "question": "How long is my license valid for?",
+          "answer": "The license is lifetime. You get 12 months of free updates."
+        },
+        "platforms": {
+          "question": "Which platforms will the template support?",
+          "answer": "The components in MUI are designed to work in the latest, stable releases of all major browsers, including Chrome, Firefox, Safari, and Edge. We don't support Internet Explorer 11."
+        },
+        "standardLicense": {
+          "question": "For what kind of projects is the Standard license intended?",
+          "answer": "The Standard license is designed for internal applications in which staff will access the application. An example could be the back-office dashboard of a public-facing e-commerce website in which staff would sign in and manage inventory, customers, etc."
+        },
+        "freeDemo": {
+          "question": "Do you have a free demo to review the code before purchasing?",
+          "answer": "Yes, you can check out our open source dashboard template which should give you an overview of the code quality and folder structure. Keep in mind that some aspects may differ from this Paid version."
+        }
       }
     }
   },

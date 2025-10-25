@@ -2,12 +2,11 @@
 
 import type { IReport, ReportSearchParams } from 'src/lib/models/Report';
 
-import dayjs from 'dayjs';
 import useSWR, { mutate } from 'swr';
 import { useMemo, useState, useCallback } from 'react';
 import { ReportCreateDrawer } from '@/sections/field/reports/report-create-drawer';
 
-import { Box, Fab, Chip, alpha, useTheme, Typography, InputAdornment } from '@mui/material';
+import { Box, Chip, alpha, useTheme, Typography, InputAdornment } from '@mui/material';
 
 import { formatDate } from 'src/utils/format-date';
 
@@ -21,7 +20,6 @@ import {
   MobileInput,
   MobileButton,
   MobileSelect,
-  MobileDatePicker,
 } from 'src/components/mobile';
 
 import { ReportDetailsDrawer } from 'src/sections/fsa/reports/components/report-details-drawer';
@@ -116,10 +114,6 @@ export default function FieldReportsPage() {
   const handleReportSelect = useCallback((report: IReport) => {
     setSelectedReport(report);
     setDetailsDrawerOpen(true);
-  }, []);
-
-  const handleCreateReport = useCallback(() => {
-    setCreateDrawerOpen(true);
   }, []);
 
   const handleReportCreated = useCallback(async () => {
@@ -258,23 +252,6 @@ export default function FieldReportsPage() {
                   value={filters.status || ''}
                   onChangeAction={(value) => handleFilterChange('status', value)}
                   options={reportStatuses}
-                />
-              </Box>
-            </Box>
-
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Box sx={{ flex: 1 }}>
-                <MobileDatePicker
-                  label="From Date"
-                  value={filters.dateFrom ? dayjs(filters.dateFrom) : null}
-                  onChangeAction={(date) => handleFilterChange('dateFrom', date?.toDate())}
-                />
-              </Box>
-              <Box sx={{ flex: 1 }}>
-                <MobileDatePicker
-                  label="To Date"
-                  value={filters.dateTo ? dayjs(filters.dateTo) : null}
-                  onChangeAction={(date) => handleFilterChange('dateTo', date?.toDate())}
                 />
               </Box>
             </Box>
@@ -459,18 +436,11 @@ export default function FieldReportsPage() {
               <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
                 No Reports Found
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              <Typography variant="body2" color="text.secondary">
                 {filters.search || filters.type || filters.status
                   ? 'Try adjusting your filters'
-                  : 'Create your first report to get started'}
+                  : 'Reports can be created from task drawers'}
               </Typography>
-              <MobileButton
-                variant="primary"
-                onClick={handleCreateReport}
-                startIcon={<Iconify icon="eva:plus-fill" width={16} />}
-              >
-                Create First Report
-              </MobileButton>
             </Box>
           )}
 
@@ -482,27 +452,6 @@ export default function FieldReportsPage() {
           )}
         </Box>
       </Box>
-
-      {/* Floating Action Button */}
-      <Fab
-        color="primary"
-        aria-label="Create report"
-        onClick={handleCreateReport}
-        sx={{
-          position: 'fixed',
-          bottom: '100px', // Account for bottom navigation on all screen sizes
-          right: '24px',
-          zIndex: theme.zIndex.speedDial,
-          boxShadow: theme.shadows[8],
-          '&:hover': {
-            boxShadow: theme.shadows[12],
-            transform: 'scale(1.05)',
-          },
-          transition: 'all 0.2s ease-in-out',
-        }}
-      >
-        <Iconify icon="eva:plus-fill" width={24} />
-      </Fab>
 
       {/* Create Report Drawer */}
       <ReportCreateDrawer

@@ -8,6 +8,8 @@ import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
 import Container from '@mui/material/Container';
 
+import { useTranslate } from 'src/locales';
+
 import { varFade, AnimateCountUp, MotionViewport } from 'src/components/animate';
 import {
   useCarousel,
@@ -49,6 +51,7 @@ const renderLines = () => (
 );
 
 export function HomeTestimonials({ sx, ...other }: BoxProps) {
+  const { t } = useTranslate();
   const carousel = useCarousel({
     align: 'start',
     slidesToShow: {
@@ -66,9 +69,9 @@ export function HomeTestimonials({ sx, ...other }: BoxProps) {
 
   const renderDescription = () => (
     <SectionTitle
-      caption="testimonials"
-      title="Rumors are flying"
-      txtGradient="that..."
+      caption={t('home.testimonials.caption')}
+      title={t('home.testimonials.title')}
+      txtGradient={t('home.testimonials.subtitle')}
       sx={{ mb: { xs: 5, md: 8 }, textAlign: 'center' }}
     />
   );
@@ -141,16 +144,16 @@ export function HomeTestimonials({ sx, ...other }: BoxProps) {
         sx={{ gap: 5, flexDirection: { xs: 'column', md: 'row' } }}
       >
         {[
-          { label: 'Purchased order', value: 12.121 },
-          { label: 'Happy customers', value: 160 },
-          { label: 'Review rate', value: 4.9 },
+          { label: t('home.testimonials.stats.purchasedOrders'), value: 12.121, key: 'purchasedOrders' },
+          { label: t('home.testimonials.stats.happyCustomers'), value: 160, key: 'happyCustomers' },
+          { label: t('home.testimonials.stats.reviewRate'), value: 4.9, key: 'reviewRate' },
         ].map((item) => (
-          <Stack key={item.label} spacing={2} sx={{ textAlign: 'center', width: 1 }}>
+          <Stack key={item.key} spacing={2} sx={{ textAlign: 'center', width: 1 }}>
             <m.div variants={varFade('inUp', { distance: 24 })}>
               <AnimateCountUp
                 to={item.value}
-                unit={item.label === 'Purchased order' ? 'k+' : '+'}
-                toFixed={item.label === 'Happy customers' ? 0 : 1}
+                unit={item.key === 'purchasedOrders' ? 'k+' : '+'}
+                toFixed={item.key === 'happyCustomers' ? 0 : 1}
                 sx={[
                   (theme) => ({
                     fontWeight: 'fontWeightBold',

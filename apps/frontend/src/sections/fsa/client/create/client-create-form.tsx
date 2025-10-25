@@ -197,7 +197,7 @@ export function ClientCreateForm() {
             </Stack>
 
             {/* Billing Address */}
-            <Stack spacing={2}>
+            {/* <Stack spacing={2}>
               <Typography variant="h6">
                 {t('clients.form.billingAddress')} ({t('clients.optional')})
               </Typography>
@@ -238,7 +238,7 @@ export function ClientCreateForm() {
                   />
                 </Grid>
               </Grid>
-            </Stack>
+            </Stack> */}
 
             {/* Contact Person */}
             <Stack spacing={2}>

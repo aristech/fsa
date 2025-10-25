@@ -5,7 +5,6 @@ import { m } from 'framer-motion';
 import { varAlpha } from 'minimal-shared/utils';
 
 import Box from '@mui/material/Box';
-import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
@@ -13,6 +12,8 @@ import Typography from '@mui/material/Typography';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import Accordion, { accordionClasses } from '@mui/material/Accordion';
+
+import { useTranslate } from 'src/locales';
 
 import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
@@ -22,110 +23,42 @@ import { FloatLine, FloatPlusIcon, FloatTriangleDownIcon } from './components/sv
 
 // ----------------------------------------------------------------------
 
-const FAQs = [
-  {
-    question: 'How can I get the update?',
-    answer: (
-      <Typography>
-        You will get 12 months of free
-        <Link
-          href="https://support.mui.com/hc/en-us/articles/360008775240-How-do-I-get-access-to-an-item-I-purchased"
-          target="_blank"
-          rel="noopener noreferrer"
-          sx={{ mx: 0.5 }}
-        >
-          updates
-        </Link>
-        with the purchase. Please renew your license to get updates after that.
-      </Typography>
-    ),
-  },
-  {
-    question: 'Which license is right for you?',
-    answer: (
-      <Box component="ul" sx={{ pl: 3, listStyleType: 'disc' }}>
-        <li> All licenses do not apply to open source.</li>
-        <li> One licenses / one end product (3 licenses / 3 products...).</li>
-        <li>
-          <strong>Standard / Plus</strong> license used in free products (Internal management...).
-        </li>
-        <li>
-          <strong>Extended</strong> license used in charge products, collect fees from users
-          (SAAS...).
-        </li>
-        <li>
-          Learn more about the
-          <Link
-            href="https://progressnet.io/"
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{ mx: 0.5 }}
-          >
-            package & license
-          </Link>
-        </li>
-      </Box>
-    ),
-  },
-  {
-    question: 'How long is my license valid for?',
-    answer: (
-      <Box component="ul" sx={{ pl: 3, listStyleType: 'disc' }}>
-        <li> The license is lifetime.</li>
-        <li> You get 12 months of free updates.</li>
-      </Box>
-    ),
-  },
-  {
-    question: 'Which platforms will the template support?',
-    answer: (
-      <Typography>
-        {`The components in MUI are designed to work in the latest, stable releases of all major browsers, including Chrome, Firefox, Safari, and Edge. We don't support Internet Explorer 11. `}
-        Learn more about the
-        <Link
-          href="https://mui.com/material-ui/getting-started/supported-platforms/"
-          target="_blank"
-          rel="noopener noreferrer"
-          sx={{ mx: 0.5 }}
-        >
-          supported platforms
-        </Link>
-      </Typography>
-    ),
-  },
-  {
-    question: 'For what kind of projects is the Standard license intended?',
-    answer: (
-      <Typography>
-        The Standard license is designed for internal applications in which staff will access the
-        application. An example could be the back-office dashboard of a public-facing e-commerce
-        website in which staff would sign in and manage inventory, customers, etc.
-      </Typography>
-    ),
-  },
-  {
-    question: 'Do you have a free demo to review the code before purchasing?',
-    answer: (
-      <Typography>
-        Yes, you can check out our
-        <Link
-          href="https://mui.com/store/items/minimal-dashboard-free/"
-          target="_blank"
-          rel="noopener noreferrer"
-          sx={{ mx: 0.5 }}
-        >
-          open source
-        </Link>
-        dashboard template which should give you an overview of the code quality and folder
-        structure. Keep in mind that some aspects may differ from this Paid version.
-      </Typography>
-    ),
-  },
-];
-
-// ----------------------------------------------------------------------
-
 export function HomeFAQs({ sx, ...other }: BoxProps) {
+  const { t } = useTranslate();
+
+  const FAQs = [
+    {
+      key: 'update',
+      question: t('home.faqs.questions.update.question'),
+      answer: <Typography>{t('home.faqs.questions.update.answer')}</Typography>,
+    },
+    {
+      key: 'license',
+      question: t('home.faqs.questions.license.question'),
+      answer: <Typography>{t('home.faqs.questions.license.answer')}</Typography>,
+    },
+    {
+      key: 'validity',
+      question: t('home.faqs.questions.validity.question'),
+      answer: <Typography>{t('home.faqs.questions.validity.answer')}</Typography>,
+    },
+    {
+      key: 'platforms',
+      question: t('home.faqs.questions.platforms.question'),
+      answer: <Typography>{t('home.faqs.questions.platforms.answer')}</Typography>,
+    },
+    {
+      key: 'standardLicense',
+      question: t('home.faqs.questions.standardLicense.question'),
+      answer: <Typography>{t('home.faqs.questions.standardLicense.answer')}</Typography>,
+    },
+    {
+      key: 'freeDemo',
+      question: t('home.faqs.questions.freeDemo.question'),
+      answer: <Typography>{t('home.faqs.questions.freeDemo.answer')}</Typography>,
+    },
+  ];
+
   const [expanded, setExpanded] = useState<string | false>(FAQs[0].question);
 
   const handleChange = (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
@@ -134,9 +67,9 @@ export function HomeFAQs({ sx, ...other }: BoxProps) {
 
   const renderDescription = () => (
     <SectionTitle
-      caption="FAQs"
-      title="We’ve got the"
-      txtGradient="answers"
+      caption={t('home.faqs.caption')}
+      title={t('home.faqs.title')}
+      txtGradient={t('home.faqs.subtitle')}
       sx={{ textAlign: 'center' }}
     />
   );
@@ -157,7 +90,7 @@ export function HomeFAQs({ sx, ...other }: BoxProps) {
     >
       {FAQs.map((item, index) => (
         <Accordion
-          key={item.question}
+          key={item.key}
           disableGutters
           component={m.div}
           variants={varFade('inUp', { distance: 24 })}
@@ -205,12 +138,12 @@ export function HomeFAQs({ sx, ...other }: BoxProps) {
       ]}
     >
       <m.div variants={varFade('in')}>
-        <Typography variant="h4">Still have questions?</Typography>
+        <Typography variant="h4">{t('home.faqs.contactTitle')}</Typography>
       </m.div>
 
       <m.div variants={varFade('in')}>
         <Typography sx={{ mt: 2, mb: 3, color: 'text.secondary' }}>
-          Please describe your case to receive the most accurate advice
+          {t('home.faqs.contactDescription')}
         </Typography>
       </m.div>
 
@@ -221,7 +154,7 @@ export function HomeFAQs({ sx, ...other }: BoxProps) {
           href="mailto:support@progressnet.gr?subject=[Feedback] from Customer"
           startIcon={<Iconify icon="solar:letter-bold" />}
         >
-          Contact us
+          {t('home.faqs.contactButton')}
         </Button>
       </m.div>
     </Box>

@@ -185,7 +185,7 @@ export function PlusIcon() {
 
 // ----------------------------------------------------------------------
 
-const TEXT = 'ProgressNet FSA';
+const TEXT = 'ErgoFlow';
 
 export function Texts({ sx, ...other }: BoxProps & MotionProps) {
   return (

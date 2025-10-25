@@ -11,6 +11,7 @@ import Container from '@mui/material/Container';
 import { paths } from 'src/routes/paths';
 
 import { CONFIG } from 'src/global-config';
+import { useTranslate } from 'src/locales';
 
 import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
@@ -20,6 +21,8 @@ import { FloatLine, FloatPlusIcon } from './components/svg-elements';
 // ----------------------------------------------------------------------
 
 export function HomeAdvertisement({ sx, ...other }: BoxProps) {
+  const { t } = useTranslate();
+
   return (
     <Box
       component="section"
@@ -55,7 +58,7 @@ export function HomeAdvertisement({ sx, ...other }: BoxProps) {
             })}
           >
             {renderImage()}
-            {renderDescription()}
+            {renderDescription(t)}
             {renderBlur()}
           </Box>
         </Container>
@@ -74,7 +77,7 @@ const renderLines = () => (
   </>
 );
 
-const renderDescription = () => (
+const renderDescription = (t: any) => (
   <Stack spacing={5} sx={{ zIndex: 9 }}>
     <Box
       component={m.h2}
@@ -85,8 +88,8 @@ const renderDescription = () => (
         typography: { xs: 'h2', md: 'h1' },
       }}
     >
-      Get started with
-      <br /> ProgressNet FSA
+      {t('home.advertisement.title')}
+      <br /> {t('home.advertisement.appName')}
       <Box
         component="span"
         sx={(theme) => ({
@@ -96,7 +99,7 @@ const renderDescription = () => (
           ml: 1,
         })}
       >
-        today
+        {t('home.advertisement.titleSuffix')}
       </Box>
     </Box>
 
@@ -117,7 +120,7 @@ const renderDescription = () => (
           rel="noopener noreferrer"
           href={paths.upgradePlan}
         >
-          Purchase now
+          {t('home.advertisement.purchaseNow')}
         </Button>
       </m.div>
 
@@ -136,7 +139,7 @@ const renderDescription = () => (
             '&:hover': { borderColor: 'currentColor' },
           }}
         >
-          Get free version
+          {t('home.advertisement.getFreeVersion')}
         </Button>
       </m.div>
     </Box>

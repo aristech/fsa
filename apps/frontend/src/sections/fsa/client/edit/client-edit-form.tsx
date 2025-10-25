@@ -279,7 +279,7 @@ export function ClientEditForm({ client }: Props) {
               </Stack>
 
               {/* Billing Address */}
-              <Stack spacing={2}>
+              {/* <Stack spacing={2}>
                 <Typography variant="h6">
                   {t('clients.form.billingAddress')} ({t('clients.optional')})
                 </Typography>
@@ -320,7 +320,7 @@ export function ClientEditForm({ client }: Props) {
                     />
                   </Grid>
                 </Grid>
-              </Stack>
+              </Stack> */}
 
               {/* Contact Person */}
               <Stack spacing={2}>

@@ -285,8 +285,12 @@ export function MobileHeader({
 
   // Handle notification click
   const handleNotificationClick = () => {
-    // send user to notifications page
-    router.push('/field/notifications');
+    if (onNotificationClick) {
+      onNotificationClick();
+    } else {
+      // Fallback to notifications page if no callback provided
+      router.push('/field/notifications');
+    }
   };
 
   return (

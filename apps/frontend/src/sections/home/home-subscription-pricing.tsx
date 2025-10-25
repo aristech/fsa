@@ -158,7 +158,7 @@ export function HomeSubscriptionPricing({ sx, ...other }: BoxProps) {
     <SectionTitle
       caption={t.sectionSubtitle}
       title={t.sectionTitle}
-      txtGradient="pricing"
+      txtGradient=""
       description={t.sectionDescription}
       sx={{ mb: 8, textAlign: 'center' }}
     />

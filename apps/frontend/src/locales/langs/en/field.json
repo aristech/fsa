@@ -1,4 +1,16 @@
 {
+  "header": {
+    "title": "Field Operations",
+    "welcome": "Welcome, {{name}}",
+    "defaultName": "Field Operator"
+  },
+  "navigation": {
+    "calendar": "Calendar",
+    "tasks": "Tasks",
+    "reports": "Reports",
+    "notifications": "Notifications",
+    "profile": "Profile"
+  },
   "dashboard": {
     "title": "Field Dashboard",
     "subtitle": "Manage your field operations",
@@ -60,5 +72,147 @@
     "title": "Profile",
     "personalInfo": "Personal Information",
     "workHistory": "Work History"
+  },
+  "reports": {
+    "create": {
+      "title": "Create New Report",
+      "stepIndicator": "Step {{step}} of {{total}}",
+      "steps": {
+        "reportDetails": "Report Details",
+        "materialsAndDocumentation": "Materials & Documentation",
+        "signaturesAndSummary": "Signatures & Summary"
+      },
+      "types": {
+        "daily": "Daily Report",
+        "weekly": "Weekly Report",
+        "monthly": "Monthly Report",
+        "incident": "Incident Report",
+        "maintenance": "Maintenance Report",
+        "inspection": "Inspection Report",
+        "completion": "Completion Report",
+        "safety": "Safety Report"
+      },
+      "fields": {
+        "reportType": {
+          "label": "Report Type *",
+          "placeholder": "Select Report Type..."
+        },
+        "reportDate": {
+          "label": "Report Date & Time *",
+          "helperText": "Date and time when the work was performed"
+        },
+        "client": {
+          "label": "Client *",
+          "preFilled": "Pre-filled from task",
+          "notSelected": "Not selected"
+        },
+        "workOrder": {
+          "label": "Work Order",
+          "preFilled": "Pre-filled from task",
+          "unknown": "Unknown Work Order"
+        },
+        "task": {
+          "label": "Task",
+          "preFilled": "Pre-filled from task",
+          "unknown": "Unknown Task"
+        },
+        "location": {
+          "label": "Location *",
+          "placeholder": "Work site address or location...",
+          "helperText": "Auto-filled from client address when available"
+        },
+        "weather": {
+          "label": "Weather Conditions",
+          "placeholder": "Sunny, rainy, windy, temperature...",
+          "helperText": "Weather conditions during work (helpful for outdoor jobs)"
+        }
+      },
+      "materials": {
+        "title": "Materials Used",
+        "addMaterial": "Add Material",
+        "searchPlaceholder": "Search for materials...",
+        "helperText": "Select materials used in this report ({{count}} available)",
+        "noMaterials": "No materials available",
+        "noMatchingMaterials": "No matching materials found",
+        "quantity": "Qty",
+        "maxQuantity": "Max: {{max}}",
+        "sku": "SKU"
+      },
+      "files": {
+        "title": "Photos & Files",
+        "takePhoto": "Take Photo",
+        "uploadFiles": "Upload Files",
+        "camera": {
+          "title": "Take Photo",
+          "capture": "Capture Photo",
+          "cancel": "Cancel",
+          "switchCamera": "Switch Camera",
+          "toggleFlash": "Toggle Flash",
+          "instructions": "Use 🔄 to switch cameras, 🔦 for flash, then click \"Capture Photo\""
+        },
+        "types": {
+          "image": "Image",
+          "video": "Video",
+          "pdf": "PDF Document",
+          "file": "File"
+        },
+        "capturedPhoto": "Captured photo"
+      },
+      "notes": {
+        "label": "Additional Notes",
+        "placeholder": "Notes...",
+        "helperText": "Optional: Provide any additional context or observations"
+      },
+      "offline": {
+        "badge": "Offline",
+        "modeTitle": "Offline Mode",
+        "modeMessage": "You are currently offline. Your report will be saved locally and automatically submitted when your connection is restored."
+      },
+      "summary": {
+        "title": "Report Summary",
+        "type": "Type",
+        "client": "Client",
+        "materials": "Materials",
+        "files": "Files",
+        "signatures": "Signatures",
+        "items": "items",
+        "attachments": "attachments",
+        "collected": "collected"
+      },
+      "buttons": {
+        "previous": "Previous",
+        "next": "Next",
+        "submit": "Submit Report",
+        "submitting": "Submitting...",
+        "viewDrafts": "View Drafts"
+      },
+      "messages": {
+        "signatureAdded": "Signature added successfully",
+        "signatureRemoved": "Signature removed",
+        "signatureUpdated": "Signature updated",
+        "fillRequiredFields": "Please fill in all required fields",
+        "photoCaptured": "Photo captured successfully!",
+        "fileTooLarge": "File \"{{filename}}\" is too large. Maximum size is {{maxSize}}MB.",
+        "draftSavedOffline": "Report saved offline as draft. It will sync when connection is restored.",
+        "draftSavedLocally": "Report saved as draft locally.",
+        "draftSaveFailed": "Failed to save draft locally. Please try again.",
+        "attachmentUploadFailed": "Report saved, but attachment upload failed.",
+        "signatureUploadFailed": "Report saved, but signature upload failed.",
+        "reportUpdateFailed": "Files uploaded but failed to update report.",
+        "reportSavedOffline": "Report saved locally and will sync when online",
+        "reportSubmitted": "Report submitted successfully",
+        "validationError": "Validation error: {{errors}}",
+        "createReportFailed": "Failed to create report",
+        "cameraSwitched": "Switched to {{camera}} camera",
+        "cameraSwitchFailed": "Failed to switch camera",
+        "flashNotAvailable": "Flash not available on this device",
+        "flashOn": "Flash on",
+        "flashOff": "Flash off",
+        "flashNotSupported": "Flash not supported on this camera. Try switching to the rear camera or ensure camera permissions are granted.",
+        "flashNotAvailableSamsung": "Flash not available on this Samsung device. This is a known Samsung browser limitation. Try using Chrome browser or switching to the rear camera.",
+        "cameraAccessFailed": "Could not access camera. Please check permissions or try file upload instead.",
+        "cameraNotSupported": "Camera not supported. Using file picker instead."
+      }
+    }
   }
 }
